@@ -13,7 +13,7 @@
         <input type="text" data-search-input data-search-scope="profilesList" class="search-input w-full" placeholder="Search by applicant name…">
     </div>
 
-    <div class="profiles-container" id="profilesList">
+    <div class="profiles-container custom-scrollbar" id="profilesList">
         @forelse ($applications as $app)
             <div class="profile-card" data-search-row data-search-text="{{ $app->first_name }} {{ $app->last_name }}">
 

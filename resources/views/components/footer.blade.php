@@ -3,8 +3,11 @@
         <div class="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div>
                 <div class="flex items-center gap-3">
-                    <x-logo-mark class="h-12 w-12" />
-                    <span class="text-sm font-bold text-gray-900">Red Cubs Pet Patrol</span>
+                    <img
+                        src="{{ asset('images/rcpp-logo-2.png') }}"
+                        alt="Red Cubs Pet Patrol"
+                        class="h-28 w-auto object-contain"
+                    >
                 </div>
             </div>
 
