@@ -39,14 +39,14 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   }
   .topbar-toggle {
-    @apply bg-transparent border-0 text-white text-xl cursor-pointer px-2 py-1 rounded-md transition hover:bg-white/15;
+    @apply bg-transparent border-0 text-white text-xl cursor-pointer px-2 py-1 rounded-md transition hover:bg-white hover:bg-opacity-15;
   }
   .topbar-title {
     @apply font-primary font-bold text-lg;
   }
 
   .sidebar-overlay {
-    @apply hidden fixed inset-0 bg-black/40 z-[1099];
+    @apply hidden fixed inset-0 bg-black bg-opacity-40 z-[1099];
   }
   .sidebar-overlay.active {
     @apply block;
@@ -123,7 +123,7 @@
 
   /* ---------- Buttons ---------- */
   .btn { @apply inline-flex items-center justify-center gap-1.5 px-5 py-1.5 cursor-pointer border-0 no-underline font-sans text-sm font-semibold rounded-btn transition whitespace-nowrap; }
-  .btn-primary { @apply inline-flex items-center justify-center rounded-full bg-maroon-500 px-7 py-3 font-primary text-sm font-semibold text-white transition hover:bg-maroon-600 focus:outline-none focus:ring-4 focus:ring-maroon-500/20 shadow-sm hover:scale-[1.02]; }
+  .btn-primary { @apply inline-flex items-center justify-center rounded-full bg-maroon-500 px-7 py-3 font-primary text-sm font-semibold text-white transition hover:bg-maroon-600 focus:outline-none focus:ring-4 focus:ring-maroon-500 shadow-sm hover:scale-[1.02]; }
   .btn-secondary { @apply bg-background text-text-dark border border-[#bbb] h-[38px] hover:bg-accent-light hover:border-text-light; }
   .btn-adoptMe { @apply bg-accent-light text-text-light border border-text-light hover:bg-[#dcc27c]; }
   .btn-apply { @apply bg-status-success-bg text-status-success-text border border-status-success-text hover:bg-status-success-text hover:text-white; }
@@ -185,14 +185,28 @@
     @apply border-primary bg-primary-muted;
   }
 
-  /* ---------- Pet grid / card ---------- */
-  .pet-grid { @apply grid gap-5; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
-  .pet-grid.is-loading { @apply opacity-50 pointer-events-none; }
-  .pet-card { @apply bg-white border border-[#d6d6d6] rounded-xl p-3.5 transition hover:-translate-y-1 hover:shadow-card; }
-  .pet-card img { @apply w-full h-[165px] object-cover rounded-lg border border-[#999]; }
-  .pet-card h3 { @apply mt-2.5 mb-0.5 text-[1.15rem] text-[#2f2327] font-semibold; }
-  .pet-card p { @apply text-[#666] text-sm mb-2.5; }
-  .card-actions { @apply flex justify-end; }
+  .pet-grid {
+    @apply grid gap-5;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  }
+  .pet-grid.is-loading {
+    @apply opacity-50 pointer-events-none;
+  }
+  .pet-card {
+    @apply bg-white border border-[#d6d6d6] rounded-xl p-3.5 transition hover:-translate-y-1 hover:shadow-card;
+  }
+  .pet-card img {
+    @apply w-full h-[165px] object-cover rounded-lg border border-[#999];
+  }
+  .pet-card h3 {
+    @apply mt-2.5 mb-0.5 text-[1.15rem] text-[#2f2327] font-semibold;
+  }
+  .pet-card p {
+    @apply text-[#666] text-sm mb-2.5;
+  }
+  .card-actions {
+    @apply flex justify-end;
+  }
 
   /* ---------- Empty state ---------- */
   .empty-state {
@@ -207,7 +221,7 @@
 
   /* ---------- Modal ---------- */
   .modal-overlay {
-    @apply fixed inset-0 bg-black/45 flex justify-center items-center z-[9999] opacity-0 invisible transition-all duration-200;
+    @apply fixed inset-0 bg-black bg-opacity-45 flex justify-center items-center z-[9999] opacity-0 invisible transition-all duration-200;
   }
   .modal-overlay.show { @apply opacity-100 visible; }
   .pet-modal { @apply w-[860px] max-w-[94vw] bg-white rounded-2xl p-8 shadow-modal max-h-[90vh] overflow-y-auto; }
@@ -333,7 +347,6 @@
   }
 
   /* ---------- Alert / info cards (overdue & flagged notices) ---------- */
-<<<<<<< HEAD
   .alert-card { @apply mt-6 bg-status-processing-bg rounded-lg p-6 font-primary w-full; }
   .alert-card h3 { @apply text-[#5d4a2b] mb-2.5 mt-1 text-xl font-bold; }
   .alert-card p { @apply text-[#6b5737] leading-relaxed mb-2.5 text-sm; }
@@ -374,121 +387,6 @@
   .reports-table th { @apply text-center p-2.5 border-b border-[#999] font-semibold font-primary; }
   .reports-table td { @apply text-center font-primary py-3 px-2.5; }
   .reports-table tbody tr:hover { @apply bg-[#fafafa]; }
-=======
-  .alert-card {
-    @apply mt-6 bg-status-processing-bg rounded-lg p-6 font-primary;
-  }
-  .alert-card h3 {
-    @apply text-[#5d4a2b] mb-2.5 mt-2.5 text-2xl;
-  }
-  .alert-card p {
-    @apply text-[#6b5737] leading-relaxed mb-2.5;
-  }
-  .info-card {
-    @apply mt-6 bg-secondary-bg border border-[#d9d9d9] rounded-lg p-6;
-  }
-  .info-card h3 {
-    @apply mt-0 mb-[1.125rem] text-[#2f2327] text-2xl;
-  }
-  .action-list {
-    @apply list-none p-0 mb-5;
-  }
-  .action-list li {
-    @apply flex items-start gap-2 mb-4 leading-relaxed;
-  }
-  .dot {
-    @apply w-2 h-2 rounded-full mt-2 shrink-0;
-  }
-  .dot.red {
-    @apply bg-[#b71c1c];
-  }
-  .dot.yellow {
-    @apply bg-[#f0b429];
-  }
-  .dot.green {
-    @apply bg-[#2e9d42];
-  }
-  .warning-list {
-    @apply list-none p-0 m-0;
-  }
-  .warning-list li {
-    @apply mb-[1.125rem] leading-relaxed;
-  }
-  .icon-list {
-    @apply list-none p-0 m-0;
-  }
-  .icon-list li {
-    @apply flex items-start gap-2.5 mb-[1.125rem] leading-relaxed;
-  }
-  .icon-list i {
-    @apply w-[18px] mt-0.5 shrink-0;
-  }
-  .contact-card {
-    @apply mt-6 bg-[#dfeaf8] rounded-lg p-5;
-  }
-  .contact-card p {
-    @apply m-0 text-[#35527a] leading-relaxed;
-  }
-  .report-preview-card {
-    @apply bg-secondary-bg border border-[#d8d8d8] rounded-[10px] px-[1.375rem] py-[1.125rem] my-6 mx-auto max-w-[620px] shadow-card;
-  }
-  .report-preview-card h3 {
-    @apply m-0 text-[#2f2327];
-  }
-  .report-preview-card small {
-    @apply block mt-1 mb-4 text-[#666];
-  }
-  .report-row {
-    @apply flex justify-between py-1.5 border-b border-[#cfcfcf] text-sm last:border-b-0;
-  }
-
-  /* ---------- Check-ins / schedule ---------- */
-  .schedule-card {
-    @apply mt-6;
-  }
-  .schedule-card h2 {
-    @apply mt-0 mb-6 font-primary;
-  }
-  .schedule-item {
-    @apply flex justify-between items-center mb-[1.125rem] flex-wrap gap-2.5;
-  }
-  .schedule-info {
-    @apply flex items-center gap-2 text-lg font-primary;
-  }
-  .status-dot {
-    @apply w-2 h-2 rounded-full;
-  }
-  .status-dot.completed {
-    @apply bg-[#2f6f5b];
-  }
-  .status-dot.pending {
-    @apply bg-[#8a6235];
-  }
-  .status-dot.upcoming {
-    @apply bg-[#b5b5b5];
-  }
-  .schedule-actions {
-    @apply flex items-center gap-3;
-  }
-  .reports-card {
-    @apply mt-6 max-w-[500px] mx-auto;
-  }
-  .reports-card h2 {
-    @apply mt-0 mb-4 font-primary;
-  }
-  .reports-table {
-    @apply w-full border-collapse;
-  }
-  .reports-table th {
-    @apply text-center p-2.5 border-b border-[#999] font-semibold font-primary;
-  }
-  .reports-table td {
-    @apply text-center font-primary py-3 px-2.5;
-  }
-  .reports-table tbody tr:hover {
-    @apply bg-[#fafafa];
-  }
->>>>>>> origin/main
 
   /* ---------- Toasts ---------- */
   .toast-host {
