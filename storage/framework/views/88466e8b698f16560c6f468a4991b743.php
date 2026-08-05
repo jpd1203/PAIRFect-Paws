@@ -7,7 +7,7 @@
         <p>Adopter lifestyle profiles collected from applications.</p>
     </div>
 
-    <div class="my-3">
+    <div class="my-5">
         <input type="text" data-search-input data-search-scope="profilesList" class="search-input w-full" placeholder="Search by applicant name…">
     </div>
 
@@ -50,9 +50,10 @@
 
             </div>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-            <div class="empty-state text-center py-16 text-[#888]">
-                <i class="fa-solid fa-circle-user text-4xl mb-3 block text-[#c9c2b8]"></i>
-                No adopter profiles yet.
+            <div class="empty-state">
+                <i class="fa-solid fa-circle-check"></i>
+                <h3>No adopter profiles yet.</h3>
+                <p>No adopter profiles have been created yet. Profiles will appear here once applications are submitted.</p>
             </div>
         <?php endif; ?>
     </div>

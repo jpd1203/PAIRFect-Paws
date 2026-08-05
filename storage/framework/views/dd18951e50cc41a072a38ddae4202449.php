@@ -7,7 +7,7 @@
         <p>A pet may be assessed a maximum of 3 times.</p>
     </div>
 
-    <div class="my-3">
+    <div class="my-5">
         <input type="text" data-search-input data-search-scope="assessmentTableBody"
                class="search-input w-full" placeholder="Search">
     </div>
@@ -24,7 +24,7 @@
                 <tbody id="assessmentTableBody">
                     <?php $__empty_1 = true; $__currentLoopData = $pets; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pet): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <tr data-search-row data-search-text="<?php echo e($pet->name); ?> <?php echo e($pet->species); ?>">
-                            <td class="!text-left font-semibold"><?php echo e($pet->name); ?> <span class="text-[#999] font-normal">(<?php echo e($pet->species); ?>)</span></td>
+                            <td class="font-semibold"><?php echo e($pet->name); ?> <span class="text-[#999] font-normal">(<?php echo e($pet->species); ?>)</span></td>
                             <td><?php echo e($pet->last_assessed_by ?? '—'); ?></td>
                             <td><?php echo e($pet->last_assessed_at?->format('M j, Y') ?? '—'); ?></td>
                             <td>
@@ -45,7 +45,7 @@
                                 <?php if($pet->assessment_count < 3): ?>
                                     <a href="<?php echo e(route('admin.assessments.create', $pet)); ?>" class="btn btn-primary btn-sm">Assess</a>
                                 <?php else: ?>
-                                    <span class="text-[#bbb]">Complete</span>
+                                    <span class="badge badge-completed">Complete</span>
                                 <?php endif; ?>
                             </td>
                         </tr>

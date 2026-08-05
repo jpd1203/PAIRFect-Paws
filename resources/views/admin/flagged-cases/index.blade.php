@@ -58,9 +58,16 @@
                 @endunless
             </div>
         @empty
-            <div class="empty-state text-center py-16 text-[#888]">
-                <i class="fa-solid fa-circle-check text-4xl mb-3 block text-[#c9c2b8]"></i>
-                No flagged cases right now.
+            <!-- <div class="empty-state text-center py-16 text-[#888]">
+                <i class="fa-solid fa-circle-check text-7xl mb-5 block text-[#c9c2b8]"></i>
+                <p class="text-4 text-[#6b7280]">
+                    No flagged cases right now.
+                </p>
+            </div> -->
+            <div class="empty-state">
+                <i class="fa-solid fa-circle-check"></i>
+                <h3>No flagged cases right now.</h3>
+                <p>Great news! There are currently no post-adoption cases that require attention.</p>
             </div>
         @endforelse
     </div>

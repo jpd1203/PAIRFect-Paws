@@ -7,14 +7,14 @@
             <h2>Audit Logs</h2>
             <p>A record of every meaningful staff action across the system.</p>
         </div>
-        <a href="<?php echo e(route('admin.audit-logs.export')); ?>" class="btn btn-secondary"><i class="fa-solid fa-download"></i> Export CSV</a>
     </div>
 
-    <div class="my-3">
-        <input type="text" data-search-input data-search-scope="auditTableBody" class="search-input w-full" placeholder="Search by user or action…">
+    <div class="flex flex-wrap gap-3 items-center my-5">
+        <input type="text" data-search-input data-search-scope="auditTableBody" class="search-input flex-1 min-w-[220px]" placeholder="Search by user or action…">
+        <a href="<?php echo e(route('admin.audit-logs.export')); ?>" class="btn btn-primary"><i class="fa-solid fa-download"></i> Export CSV</a>
     </div>
 
-    <div class="records-container">
+    <div class="records-container custom-scrollbar">
         <div class="table-responsive">
             <table class="w-full">
                 <thead>
@@ -26,7 +26,7 @@
                             <td><?php echo e($log->timestamp->format('M j, Y g:i A')); ?></td>
                             <td class="font-semibold"><?php echo e($log->user_name); ?></td>
                             <td><span class="badge <?php echo e($log->role === 'Admin' ? 'badge-approved' : ($log->role === 'Volunteer' ? 'badge-scheduled' : 'badge-pending')); ?>"><?php echo e($log->role); ?></span></td>
-                            <td class="!text-left"><?php echo e($log->action); ?></td>
+                            <td class=""><?php echo e($log->action); ?></td>
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr><td colspan="4" class="text-[#888] py-6">No activity recorded yet.</td></tr>

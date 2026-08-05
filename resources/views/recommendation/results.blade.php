@@ -104,7 +104,7 @@
             </div>
 
             <!-- RIGHT: Compatibility results -->
-            <div>
+            <div class="reco-panel" id="recoPanel">
                 <h3 class="font-primary text-xl mb-5">Compatibility results</h3>
 
                 <div id="matchResults" class="flex flex-col gap-4">

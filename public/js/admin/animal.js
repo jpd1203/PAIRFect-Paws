@@ -9,8 +9,8 @@ function openViewAnimalModal(id) {
     document.getElementById('vName').value = a.name;
     document.getElementById('vSpecies').value = a.species;
     document.getElementById('vBreed').value = a.breed;
-    document.getElementById('vAgeGroup').value = a.age_group;
     document.getElementById('vAgeYears').value = a.age_years ?? '';
+    document.getElementById('vAgeMonths').value = a.age_months ?? '';
     document.getElementById('vSex').value = a.sex;
     document.getElementById('vIntake').value = a.intake;
     document.getElementById('vHealth').value = a.health;

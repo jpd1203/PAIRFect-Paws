@@ -11,7 +11,7 @@
 <div class="custom-modal-header flex items-start justify-between">
     <div>
         <h2>Assessment Summary — {{ $animal->name }}</h2>
-        <small>{{ $animal->breed }} &middot; {{ $animal->species }} &middot; {{ $animal->age_display }} &middot; PET-{{ str_pad($animal->id, 3, '0', STR_PAD_LEFT) }}</small>
+        <small>{{ $animal->breed }} &middot; {{ $animal->species }} &middot; {{ $animal->age_display }} &middot;</small>
     </div>
     <button type="button" class="text-[#999] text-xl leading-none hover:text-text-dark" onclick="closeModal('assessmentSummaryModal')">&times;</button>
 </div>

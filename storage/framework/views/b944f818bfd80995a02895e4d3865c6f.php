@@ -7,7 +7,11 @@
             <h2>Manage Funds</h2>
             <p>Track all donation and fund records.</p>
         </div>
-        <button class="btn btn-primary" onclick="openModal('recordFundsModal')">Record Funds</button>
+    </div>
+
+    <div class="flex flex-wrap gap-3 items-center my-5">
+        <input type="text" data-search-input data-search-scope="" class="search-input flex-1 min-w-[220px]" placeholder="Search by user or action…">
+        <button class="btn btn-primary" onclick="openModal('recordFundsModal')"><i class="fa-solid fa-wallet"></i>Record Funds</button>
     </div>
 
     <div class="stats-grid !grid-cols-2 my-5 max-[576px]:!grid-cols-1">
@@ -50,24 +54,26 @@
             <form action="<?php echo e(route('admin.funds.store')); ?>" method="POST">
                 <?php echo csrf_field(); ?>
                 <div class="custom-modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Date</label>
-                        <input type="date" name="recorded_date" class="form-control" value="<?php echo e(now()->format('Y-m-d')); ?>" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Entry Type</label>
-                        <select name="entry_type" class="form-select" required>
-                            <option value="donation">Donation Added</option>
-                            <option value="expense">Shelter Spent</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Activity</label>
-                        <input name="activity" class="form-control" placeholder="e.g. Veterinary Supplies" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Amount (₱)</label>
-                        <input type="number" name="amount" step="0.01" min="0.01" class="form-control" required>
+                    <div class="grid grid-cols-2 gap-4 max-[768px]:grid-cols-1">
+                        <div class="form-group">
+                            <label class="form-label">Date</label>
+                            <input type="date" name="recorded_date" class="form-control" value="<?php echo e(now()->format('Y-m-d')); ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Entry Type</label>
+                            <select name="entry_type" class="form-select" required>
+                                <option value="donation">Donation Added</option>
+                                <option value="expense">Shelter Spent</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Activity</label>
+                            <input name="activity" class="form-control" placeholder="e.g. Veterinary Supplies" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Amount (₱)</label>
+                            <input type="number" name="amount" step="0.01" min="0.01" class="form-control" required>
+                        </div>
                     </div>
                 </div>
                 <div class="custom-modal-footer-1">

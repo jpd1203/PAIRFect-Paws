@@ -11,20 +11,53 @@
 
     <div class="stats-grid">
         <div class="stat-card">
-            <i class="fa-solid fa-paw stat-icon text-primary"></i>
-            <h6>Total Pets</h6>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-paw stat-icon text-primary"></i>
+                <h6>Total Pets</h6>
+            </div>
             <h1>{{ $totalPets }}</h1>
         </div>
+
         <div class="stat-card">
-            <i class="fa-solid fa-circle-check stat-icon text-status-success-text"></i>
-            <h6>Available for Adoption</h6>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check stat-icon text-status-success-text"></i>
+                <h6>Available for Adoption</h6>
+            </div>
             <h1>{{ $availablePets }}</h1>
         </div>
+
         <div class="stat-card">
-            <i class="fa-solid fa-file stat-icon text-status-processing-text"></i>
-            <h6>Pending Applications</h6>
-            <h1>{{ $pendingApplications }}</h1>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-heart-circle-check stat-icon text-[#EC4899]"></i>
+                <h6>Adopted this month</h6>
+            </div>
+            <h1>0</h1>
         </div>
+
+        <div class="stat-card">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-file stat-icon text-status-processing-text"></i>
+                <h6>Pending Applications</h6>
+            </div>
+            <h1>0</h1>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-list stat-icon text-blue-600"></i>
+                <h6>Active monitoring cases</h6>
+            </div>
+            <h1>0</h1>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation stat-icon text-primary"></i>
+                <h6>Flagged cases</h6>
+            </div>
+            <h1>0</h1>
+        </div>
+        
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5 items-start">

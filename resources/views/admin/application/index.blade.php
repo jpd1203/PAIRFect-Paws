@@ -9,9 +9,9 @@
         <p>Review adoption applications and manage the interview pipeline.</p>
     </div>
 
-    <div class="my-3">
-        <input type="text" data-search-input data-search-scope="applicationTableBody"
-               class="search-input w-full" placeholder="Search by applicant or pet name…">
+    <div class="flex flex-wrap gap-3 items-center my-5">
+        <input type="text" data-search-input data-search-scope="applicationTableBody" class="search-input flex-1 min-w-[220px]" placeholder="Search by applicant or pet name…">
+        <button class="btn btn-primary" onclick="openModal('addVolunteerModal')"> Schedule Interview</button>
     </div>
 
     <div class="filter-bar" data-filter-bar data-filter-scope="applicationTableBody">
@@ -33,7 +33,7 @@
                     @forelse ($applications as $app)
                         <tr data-search-row data-search-text="{{ $app->first_name }} {{ $app->last_name }} {{ $app->pet?->name }}"
                             data-filter-row data-status="{{ $app->status_slug }}">
-                            <td class="!text-left font-semibold">{{ $app->first_name }} {{ $app->last_name }}</td>
+                            <td class="font-semibold">{{ $app->first_name }} {{ $app->last_name }}</td>
                             <td>{{ $app->pet?->name }}</td>
                             <td>{{ $app->created_at->format('M j, Y') }}</td>
                             <td><span class="badge {{ $app->status_badge_class }}">{{ $app->status_display }}</span></td>

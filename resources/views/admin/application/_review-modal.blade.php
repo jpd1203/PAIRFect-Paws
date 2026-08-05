@@ -1,5 +1,5 @@
 <div class="custom-modal-backdrop" id="applicationReviewModal">
-    <div class="custom-modal review-modal">
+    <div class="custom-modal review-modal ">
 
         <div class="review-header">
             <div>
@@ -9,7 +9,7 @@
             <span id="reviewStatusBadge" class="badge"></span>
         </div>
 
-        <div class="custom-modal-body !pt-0">
+        <div class="custom-modal-body custom-scrollbar">
 
             <div class="review-section">
                 <h6>Personal Information</h6>
@@ -51,7 +51,7 @@
                 <div class="review-row" id="rInterviewNotesRow">
                     <span>Interview Notes</span>
                 </div>
-                <p id="rInterviewNotesText" class="text-[.88rem] text-[#555] bg-neutral-light rounded-lg p-3 mt-1"></p>
+                <p id="rInterviewNotesText" class="text-[.88rem] text-[#555] bg-neutral-light rounded-lg p-3 mt-2"></p>
             </div>
 
             <div id="rDecisionRemarksSection" class="review-section">

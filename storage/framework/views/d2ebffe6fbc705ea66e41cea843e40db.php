@@ -2,6 +2,7 @@
     <div class="custom-modal custom-modal-wide">
         <div class="custom-modal-header">
             <h3 id="viewAnimalTitle">Animal Profile</h3>
+            <p>Animal's profile information</p>
         </div>
         <form id="viewAnimalForm" method="POST" enctype="multipart/form-data">
             <?php echo csrf_field(); ?>
@@ -28,17 +29,12 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Age Group</label>
-                        <select id="vAgeGroup" name="age_group" class="form-select">
-                            <?php $__currentLoopData = $options::AGE_GROUPS; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <option><?php echo e($a); ?></option>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        </select>
-                    </div>
+                        <label class="form-label">Age</label>
 
-                    <div class="form-group">
-                        <label class="form-label">Age (years)</label>
-                        <input id="vAgeYears" name="age_years" type="number" min="0" max="30" class="form-control">
+                        <div class="flex gap-2">
+                            <input id="vAgeYears" name="age_years" type="number" class="form-control flex-1" placeholder="Years">
+                            <input id="vAgeMonths" name="age_months" type="number" class="form-control flex-1" placeholder="Months">
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -95,7 +91,7 @@
 
                     <div class="form-group col-span-3">
                         <label class="form-label">Notes</label>
-                        <textarea id="vNotes" name="notes" class="form-control" rows="2"></textarea>
+                        <textarea id="vNotes" name="notes" class="form-control" rows="1"></textarea>
                     </div>
 
                     <div class="form-group col-span-3">

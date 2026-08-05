@@ -7,9 +7,9 @@
         <p>Review adoption applications and manage the interview pipeline.</p>
     </div>
 
-    <div class="my-3">
-        <input type="text" data-search-input data-search-scope="applicationTableBody"
-               class="search-input w-full" placeholder="Search by applicant or pet name…">
+    <div class="flex flex-wrap gap-3 items-center my-5">
+        <input type="text" data-search-input data-search-scope="applicationTableBody" class="search-input flex-1 min-w-[220px]" placeholder="Search by applicant or pet name…">
+        <button class="btn btn-primary" onclick="openModal('addVolunteerModal')"> Schedule Interview</button>
     </div>
 
     <div class="filter-bar" data-filter-bar data-filter-scope="applicationTableBody">
@@ -31,7 +31,7 @@
                     <?php $__empty_1 = true; $__currentLoopData = $applications; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $app): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <tr data-search-row data-search-text="<?php echo e($app->first_name); ?> <?php echo e($app->last_name); ?> <?php echo e($app->pet?->name); ?>"
                             data-filter-row data-status="<?php echo e($app->status_slug); ?>">
-                            <td class="!text-left font-semibold"><?php echo e($app->first_name); ?> <?php echo e($app->last_name); ?></td>
+                            <td class="font-semibold"><?php echo e($app->first_name); ?> <?php echo e($app->last_name); ?></td>
                             <td><?php echo e($app->pet?->name); ?></td>
                             <td><?php echo e($app->created_at->format('M j, Y')); ?></td>
                             <td><span class="badge <?php echo e($app->status_badge_class); ?>"><?php echo e($app->status_display); ?></span></td>
