@@ -5,6 +5,7 @@
 @php
     use App\Models\AdoptionApplication;
     $statusValue = $application?->status ?? -1;
+    $pendingValue = AdoptionApplication::STATUS_PENDING;
     $scheduledValue = AdoptionApplication::STATUS_SCHEDULED;
     $underReviewValue = AdoptionApplication::STATUS_UNDER_REVIEW;
 @endphp
@@ -70,6 +71,12 @@
 
                         <span class="arrow">&rarr;</span>
 
+                        <span class="step {{ $statusValue == $pendingValue ? 'active' : ($statusValue > $pendingValue ? 'completed' : '') }}">
+                            Pending
+                        </span>
+
+                        <span class="arrow">&rarr;</span>
+
                         <span class="step {{ $statusValue == $scheduledValue ? 'active' : ($statusValue > $scheduledValue ? 'completed' : '') }}">
                             Interview Scheduled
                         </span>
@@ -82,9 +89,19 @@
 
                         <span class="arrow">&rarr;</span>
 
-                        <span class="step {{ in_array($application->status, [AdoptionApplication::STATUS_APPROVED, AdoptionApplication::STATUS_REJECTED]) ? 'active' : '' }}">
-                            Decision
-                        </span>
+                        @if ($statusValue == AdoptionApplication::STATUS_APPROVED)
+                            <span class="step completed font-semibold">
+                                Decision
+                            </span>
+                        @elseif ($statusValue == AdoptionApplication::STATUS_REJECTED)
+                            <span class="step bg-[#fdf4f4] text-[#b91c1c] border border-red-300 font-semibold">
+                                Decision
+                            </span>
+                        @else
+                            <span class="step">
+                                Decision
+                            </span>
+                        @endif
 
                     </div>
 

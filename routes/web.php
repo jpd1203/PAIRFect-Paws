@@ -41,12 +41,17 @@ Route::get('/donate', function () {
     return view('donate', ['channels' => $channels]);
 })->name('donate');
 
+use App\Http\Controllers\Auth\RegisterController;
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     // Throttled: 5 attempts / minute per IP+email to slow credential stuffing
     Route::post('/login', [LoginController::class, 'store'])
         ->middleware('throttle:login')
         ->name('login.store');
+
+    Route::post('/register', [RegisterController::class, 'store'])
+        ->name('register.store');
 });
 
 Route::post('/logout', [LoginController::class, 'destroy'])

@@ -25,11 +25,12 @@ class StoreApplicationRequest extends FormRequest
             'phone_number' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-\s()]+$/'],
             'address' => ['required', 'string', 'max:255'],
 
-            'housing_type' => ['required', Rule::in(ApplicationOptions::HOUSING_TYPES)],
-            'other_pets' => ['required', Rule::in(ApplicationOptions::OTHER_PETS_OPTIONS)],
-            'household_size' => ['required', Rule::in(ApplicationOptions::HOUSEHOLD_SIZES)],
-            'monthly_income_range' => ['required', Rule::in(ApplicationOptions::INCOME_RANGES)],
+            'physical_activity_level' => ['required', Rule::in(ApplicationOptions::PHYSICAL_ACTIVITY_LEVELS)],
+            'time_availability' => ['required', Rule::in(ApplicationOptions::TIME_AVAILABILITY_OPTIONS)],
             'prior_pet_experience' => ['required', Rule::in(ApplicationOptions::PRIOR_EXPERIENCE_OPTIONS)],
+            'housing_type' => ['required', Rule::in(ApplicationOptions::HOUSING_TYPES)],
+            'household_composition' => ['required', Rule::in(ApplicationOptions::HOUSEHOLD_COMPOSITIONS)],
+            'monthly_income_range' => ['required', Rule::in(ApplicationOptions::INCOME_RANGES)],
 
             // document upload: allow-list mime types, cap size (5MB), never trust client extension alone
             'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],

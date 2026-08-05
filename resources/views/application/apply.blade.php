@@ -72,41 +72,21 @@
                 <div class="form-grid !gap-y-3">
 
                     <div class="form-group">
-                        <label for="housing_type">Housing Type *</label>
-                        <select id="housing_type" name="housing_type" required>
-                            <option value="">Select Housing Type</option>
-                            @foreach (\App\Support\ApplicationOptions::HOUSING_TYPES as $option)
-                                <option value="{{ $option }}" @selected(old('housing_type') === $option)>{{ $option }}</option>
+                        <label for="physical_activity_level">Physical Activity Level *</label>
+                        <select id="physical_activity_level" name="physical_activity_level" required>
+                            <option value="">Select Activity Level</option>
+                            @foreach (\App\Support\ApplicationOptions::PHYSICAL_ACTIVITY_LEVELS as $option)
+                                <option value="{{ $option }}" @selected(old('physical_activity_level') === $option)>{{ $option }}</option>
                             @endforeach
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="other_pets">Other Pets? *</label>
-                        <select id="other_pets" name="other_pets" required>
-                            <option value="">Select Option</option>
-                            @foreach (\App\Support\ApplicationOptions::OTHER_PETS_OPTIONS as $option)
-                                <option value="{{ $option }}" @selected(old('other_pets') === $option)>{{ $option }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="household_size">Household Size *</label>
-                        <select id="household_size" name="household_size" required>
-                            <option value="">Select Household Size</option>
-                            @foreach (\App\Support\ApplicationOptions::HOUSEHOLD_SIZES as $option)
-                                <option value="{{ $option }}" @selected(old('household_size') === $option)>{{ $option }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="monthly_income_range">Monthly Income Range *</label>
-                        <select id="monthly_income_range" name="monthly_income_range" required>
-                            <option value="">Select Income Range</option>
-                            @foreach (\App\Support\ApplicationOptions::INCOME_RANGES as $option)
-                                <option value="{{ $option }}" @selected(old('monthly_income_range') === $option)>{{ $option }}</option>
+                        <label for="time_availability">Time Availability *</label>
+                        <select id="time_availability" name="time_availability" required>
+                            <option value="">Select Time Availability</option>
+                            @foreach (\App\Support\ApplicationOptions::TIME_AVAILABILITY_OPTIONS as $option)
+                                <option value="{{ $option }}" @selected(old('time_availability') === $option)>{{ $option }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -117,6 +97,36 @@
                             <option value="">Select Experience</option>
                             @foreach (\App\Support\ApplicationOptions::PRIOR_EXPERIENCE_OPTIONS as $option)
                                 <option value="{{ $option }}" @selected(old('prior_pet_experience') === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="housing_type">Housing Type *</label>
+                        <select id="housing_type" name="housing_type" required>
+                            <option value="">Select Housing Type</option>
+                            @foreach (\App\Support\ApplicationOptions::HOUSING_TYPES as $option)
+                                <option value="{{ $option }}" @selected(old('housing_type') === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="household_composition">Household Composition *</label>
+                        <select id="household_composition" name="household_composition" required>
+                            <option value="">Select Household Composition</option>
+                            @foreach (\App\Support\ApplicationOptions::HOUSEHOLD_COMPOSITIONS as $option)
+                                <option value="{{ $option }}" @selected(old('household_composition') === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="monthly_income_range">Monthly Income Range *</label>
+                        <select id="monthly_income_range" name="monthly_income_range" required>
+                            <option value="">Select Income Range</option>
+                            @foreach (\App\Support\ApplicationOptions::INCOME_RANGES as $option)
+                                <option value="{{ $option }}" @selected(old('monthly_income_range') === $option)>{{ $option }}</option>
                             @endforeach
                         </select>
                     </div>
