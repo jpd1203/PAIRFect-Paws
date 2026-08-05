@@ -99,10 +99,95 @@ class DatabaseSeeder extends Seeder
         );
 
         if ($joshApplication->wasRecentlyCreated) {
-            $adoptedOn = now()->subMonths(4);
+            $adoptedOn = now()->subMonths(3);
             $checkIn1 = CheckIn::create(['user_id' => $adopter->id, 'pet_id' => $petModels['Mimi']->id, 'application_id' => $joshApplication->id, 'milestone' => 'ThreeDay', 'due_date' => $adoptedOn->copy()->addDays(3), 'status' => CheckIn::STATUS_SUBMITTED]);
-            CheckIn::create(['user_id' => $adopter->id, 'pet_id' => $petModels['Mimi']->id, 'application_id' => $joshApplication->id, 'milestone' => 'ThreeWeek', 'due_date' => $adoptedOn->copy()->addWeeks(3), 'status' => CheckIn::STATUS_SUBMITTED]);
-            CheckIn::create(['user_id' => $adopter->id, 'pet_id' => $petModels['Mimi']->id, 'application_id' => $joshApplication->id, 'milestone' => 'ThreeMonth', 'due_date' => $adoptedOn->copy()->addMonths(3), 'status' => CheckIn::STATUS_SUBMITTED]);
+            $checkIn2 = CheckIn::create(['user_id' => $adopter->id, 'pet_id' => $petModels['Mimi']->id, 'application_id' => $joshApplication->id, 'milestone' => 'ThreeWeek', 'due_date' => $adoptedOn->copy()->addWeeks(3), 'status' => CheckIn::STATUS_SUBMITTED]);
+            $checkIn3 = CheckIn::create(['user_id' => $adopter->id, 'pet_id' => $petModels['Mimi']->id, 'application_id' => $joshApplication->id, 'milestone' => 'ThreeMonth', 'due_date' => now()->addDays(5), 'status' => CheckIn::STATUS_PENDING]);
+
+            \App\Models\PostAdoptionReport::create([
+                'check_in_id' => $checkIn1->id,
+                'user_id' => $adopter->id,
+                'pet_id' => $petModels['Mimi']->id,
+                'milestone' => 'ThreeDay',
+                'health_status' => 'Excellent',
+                'eating_and_drinking' => 'Normal appetite, drinking water regularly.',
+                'behavior' => 'Very friendly, playful, adjusting quickly to the new home.',
+                'living_conditions' => 'Indoor apartment with litter box and cat tower.',
+                'vet_visit' => true,
+                'concerns' => 'None, doing great!',
+                'report_date' => $adoptedOn->copy()->addDays(3),
+                'flagged' => false,
+            ]);
+
+            \App\Models\PostAdoptionReport::create([
+                'check_in_id' => $checkIn2->id,
+                'user_id' => $adopter->id,
+                'pet_id' => $petModels['Mimi']->id,
+                'milestone' => 'ThreeWeek',
+                'health_status' => 'Good',
+                'eating_and_drinking' => 'Eating well, active and happy.',
+                'behavior' => 'Loves cuddling and lounging near windows.',
+                'living_conditions' => 'Safe indoor environment.',
+                'vet_visit' => false,
+                'concerns' => 'No issues reported.',
+                'report_date' => $adoptedOn->copy()->addWeeks(3),
+                'flagged' => false,
+            ]);
+        }
+
+        // ---- Overdue Check-in Demo Data (for Bruno -> /post-adoption/overdue-notice) ----
+        $overdueCheckIn = CheckIn::firstOrCreate(
+            ['user_id' => $adopter->id, 'pet_id' => $petModels['Bruno']->id, 'milestone' => 'ThreeWeek'],
+            [
+                'application_id' => $joshApplication->id,
+                'due_date' => now()->subDays(12),
+                'status' => CheckIn::STATUS_OVERDUE,
+            ]
+        );
+
+        if ($overdueCheckIn->wasRecentlyCreated) {
+            \App\Models\FlaggedCase::create([
+                'check_in_id' => $overdueCheckIn->id,
+                'description' => 'Overdue 3-Week Check-in report (12 days past due date)',
+                'is_escalated' => true,
+                'escalation_reason' => 'Multiple automated reminders unacknowledged',
+            ]);
+        }
+
+        // ---- Flagged Report Demo Data (for Luna -> /post-adoption/flagged-notice & /admin/flagged-cases) ----
+        $flaggedCheckIn = CheckIn::firstOrCreate(
+            ['user_id' => $adopter->id, 'pet_id' => $petModels['Luna']->id, 'milestone' => 'ThreeDay'],
+            [
+                'application_id' => $joshApplication->id,
+                'due_date' => now()->subDays(5),
+                'status' => CheckIn::STATUS_FLAGGED,
+            ]
+        );
+
+        if ($flaggedCheckIn->wasRecentlyCreated) {
+            \App\Models\PostAdoptionReport::create([
+                'check_in_id' => $flaggedCheckIn->id,
+                'user_id' => $adopter->id,
+                'pet_id' => $petModels['Luna']->id,
+                'milestone' => 'ThreeDay',
+                'health_status' => 'Poor',
+                'eating_and_drinking' => 'Appetite loss, reluctant to eat dry food.',
+                'behavior' => 'Lethargic and hiding under bed.',
+                'living_conditions' => 'Indoor house.',
+                'vet_visit' => false,
+                'concerns' => 'Pet seems lethargic and not eating well since yesterday.',
+                'report_date' => now()->subDays(4),
+                'flagged' => true,
+                'flag_reason' => 'Reported poor health status & loss of appetite. Shelter vet follow-up required.',
+            ]);
+
+            \App\Models\FlaggedCase::create([
+                'check_in_id' => $flaggedCheckIn->id,
+                'description' => 'Pet reported with Poor health status and lethargy',
+                'marked_for_intervention' => true,
+                'intervention_type' => 'Shelter Visit',
+                'intervention_notes' => 'Field team scheduled to check on pet condition tomorrow morning',
+            ]);
         }
 
         // ---- A pending application (fresh, no interview yet) ----

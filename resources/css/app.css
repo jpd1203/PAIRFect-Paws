@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -64,11 +64,25 @@
 
   /* ---------- Buttons ---------- */
   .btn { @apply inline-flex items-center justify-center gap-1.5 px-5 py-1.5 cursor-pointer border-0 no-underline font-sans text-sm font-semibold rounded-btn transition whitespace-nowrap; }
-  .btn-primary { @apply bg-primary text-white h-[42px] hover:bg-primary-hover focus:outline-none focus:ring-4 focus:ring-primary/20; }
+  .btn-primary { @apply inline-flex items-center justify-center rounded-full bg-maroon-500 px-7 py-3 font-primary text-sm font-semibold text-white transition hover:bg-maroon-600 focus:outline-none focus:ring-4 focus:ring-maroon-500/20 shadow-sm hover:scale-[1.02]; }
   .btn-secondary { @apply bg-background text-text-dark border border-[#bbb] h-[38px] hover:bg-accent-light hover:border-text-light; }
   .btn-adoptMe { @apply bg-accent-light text-text-light border border-text-light hover:bg-[#dcc27c]; }
   .btn-apply { @apply bg-status-success-bg text-status-success-text border border-status-success-text hover:bg-status-success-text hover:text-white; }
-  .btn-submitOverdue { @apply bg-neutral-light text-text-dark border border-text-dark hover:bg-accent-light; }
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-full border-2 border-maroon-500 px-6 py-3 text-sm font-semibold text-maroon-500 transition hover:bg-maroon-500 hover:text-white;
+  }
+  .section-title {
+    @apply text-3xl font-[900] leading-tight text-gray-900 sm:text-4xl tracking-tight;
+  }
+  .section-title-accent {
+    @apply text-maroon-500 font-[900];
+  }
+  .bg-maroon-500 {
+    background-color: #a6242c;
+  }
+  .bg-maroon-600 {
+    background-color: #8f1f26;
+  }
 
   /* ---------- Badges ---------- */
   .badge { @apply inline-flex items-center px-5 py-1 rounded-full text-sm font-semibold whitespace-nowrap border; }
@@ -87,12 +101,12 @@
   .filter-section select.active-filter { @apply border-primary bg-primary-muted; }
 
   /* ---------- Pet grid / card ---------- */
-  .pet-grid { @apply grid gap-7; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+  .pet-grid { @apply grid gap-5; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
   .pet-grid.is-loading { @apply opacity-50 pointer-events-none; }
-  .pet-card { @apply bg-white border border-[#d6d6d6] rounded-2xl p-[18px] transition hover:-translate-y-1 hover:shadow-card; }
-  .pet-card img { @apply w-full h-[220px] object-cover rounded-[10px] border border-[#999]; }
-  .pet-card h3 { @apply mt-3.5 mb-1 text-[1.4rem] text-[#2f2327] font-semibold; }
-  .pet-card p { @apply text-[#555] text-base mb-3.5; }
+  .pet-card { @apply bg-white border border-[#d6d6d6] rounded-xl p-3.5 transition hover:-translate-y-1 hover:shadow-card; }
+  .pet-card img { @apply w-full h-[165px] object-cover rounded-lg border border-[#999]; }
+  .pet-card h3 { @apply mt-2.5 mb-0.5 text-[1.15rem] text-[#2f2327] font-semibold; }
+  .pet-card p { @apply text-[#666] text-sm mb-2.5; }
   .card-actions { @apply flex justify-end; }
 
   /* ---------- Empty state ---------- */
@@ -105,15 +119,15 @@
     @apply fixed inset-0 bg-black/45 flex justify-center items-center z-[9999] opacity-0 invisible transition-all duration-200;
   }
   .modal-overlay.show { @apply opacity-100 visible; }
-  .pet-modal { @apply w-[650px] max-w-[90vw] bg-[#f5f5f5] rounded-2xl p-6 shadow-modal max-h-[88vh] overflow-y-auto; }
-  .modal-header h2 { @apply m-0 text-text-dark; }
-  .modal-header p { @apply m-0 text-text-light; }
-  .modal-image { @apply flex justify-center my-5 mb-6; }
-  .modal-image img { @apply w-[200px] h-[200px] object-cover rounded-[10px] border border-[#555]; }
+  .pet-modal { @apply w-[860px] max-w-[94vw] bg-white rounded-2xl p-8 shadow-modal max-h-[90vh] overflow-y-auto; }
+  .modal-header h2 { @apply m-0 text-text-dark text-3xl font-bold; }
+  .modal-header p { @apply m-0 text-[#777] text-base; }
+  .modal-image { @apply flex justify-center my-3 mb-6; }
+  .modal-image img { @apply w-[180px] h-[180px] object-cover rounded-xl border border-[#444]; }
   .profile-table { @apply w-full; }
-  .profile-row { @apply flex justify-between px-3 py-2 border-b border-[#8a8a8a]; }
-  .profile-row span:first-child { @apply font-medium; }
-  .profile-row span:last-child { @apply text-text-dark; }
+  .profile-row { @apply flex justify-between px-1 py-2 border-b border-[#8a8a8a] text-sm; }
+  .profile-row span:first-child { @apply font-medium text-[#333]; }
+  .profile-row span:last-child { @apply text-text-dark text-right; }
   .modal-actions { @apply mt-6 flex justify-end gap-4; }
 
   /* ---------- Report modal add-ons ---------- */
@@ -159,24 +173,24 @@
   .note-section { @apply mt-6 pt-4 border-t border-[#d8d8d8] text-[15px] leading-relaxed text-[#444]; }
 
   /* ---------- Alert / info cards (overdue & flagged notices) ---------- */
-  .alert-card { @apply mt-6 bg-status-processing-bg rounded-lg p-6 font-primary; }
-  .alert-card h3 { @apply text-[#5d4a2b] mb-2.5 mt-2.5 text-2xl; }
-  .alert-card p { @apply text-[#6b5737] leading-relaxed mb-2.5; }
-  .info-card { @apply mt-6 bg-secondary-bg border border-[#d9d9d9] rounded-lg p-6; }
-  .info-card h3 { @apply mt-0 mb-[1.125rem] text-[#2f2327] text-2xl; }
-  .action-list { @apply list-none p-0 mb-5; }
-  .action-list li { @apply flex items-start gap-2 mb-4 leading-relaxed; }
+  .alert-card { @apply mt-6 bg-status-processing-bg rounded-lg p-6 font-primary w-full; }
+  .alert-card h3 { @apply text-[#5d4a2b] mb-2.5 mt-1 text-xl font-bold; }
+  .alert-card p { @apply text-[#6b5737] leading-relaxed mb-2.5 text-sm; }
+  .info-card { @apply mt-6 bg-secondary-bg border border-[#d9d9d9] rounded-lg p-6 w-full; }
+  .info-card h3 { @apply mt-0 mb-[1rem] text-[#2f2327] text-xl font-bold; }
+  .action-list { @apply list-none p-0 mb-4; }
+  .action-list li { @apply flex items-start gap-2 mb-3 leading-relaxed text-sm; }
   .dot { @apply w-2 h-2 rounded-full mt-2 shrink-0; }
   .dot.red { @apply bg-[#b71c1c]; }
   .dot.yellow { @apply bg-[#f0b429]; }
   .dot.green { @apply bg-[#2e9d42]; }
   .warning-list { @apply list-none p-0 m-0; }
-  .warning-list li { @apply mb-[1.125rem] leading-relaxed; }
+  .warning-list li { @apply mb-[1rem] leading-relaxed text-sm; }
   .icon-list { @apply list-none p-0 m-0; }
-  .icon-list li { @apply flex items-start gap-2.5 mb-[1.125rem] leading-relaxed; }
+  .icon-list li { @apply flex items-start gap-2.5 mb-[1rem] leading-relaxed text-sm; }
   .icon-list i { @apply w-[18px] mt-0.5 shrink-0; }
-  .contact-card { @apply mt-6 bg-[#dfeaf8] rounded-lg p-5; }
-  .contact-card p { @apply m-0 text-[#35527a] leading-relaxed; }
+  .contact-card { @apply mt-6 bg-[#dfeaf8] rounded-lg p-5 w-full; }
+  .contact-card p { @apply m-0 text-[#35527a] leading-relaxed text-sm; }
   .report-preview-card { @apply bg-secondary-bg border border-[#d8d8d8] rounded-[10px] px-[1.375rem] py-[1.125rem] my-6 mx-auto max-w-[620px] shadow-card; }
   .report-preview-card h3 { @apply m-0 text-[#2f2327]; }
   .report-preview-card small { @apply block mt-1 mb-4 text-[#666]; }
@@ -192,6 +206,7 @@
   .status-dot.pending { @apply bg-[#8a6235]; }
   .status-dot.upcoming { @apply bg-[#b5b5b5]; }
   .schedule-actions { @apply flex items-center gap-3; }
+  .schedule-actions .btn { @apply min-w-[120px] justify-center text-center px-4 h-[38px]; }
   .reports-card { @apply mt-6 max-w-[500px] mx-auto; }
   .reports-card h2 { @apply mt-0 mb-4 font-primary; }
   .reports-table { @apply w-full border-collapse; }
@@ -232,3 +247,24 @@
   .compat-score { @apply text-2xl font-bold font-primary text-primary leading-none; }
   .compat-score-sub { @apply text-[.68rem] text-[#888] mt-0.5; }
 }
+
+/* Custom scrollbar for match results container */
+#matchResults::-webkit-scrollbar,
+.reco-panel::-webkit-scrollbar {
+  width: 7px;
+}
+#matchResults::-webkit-scrollbar-track,
+.reco-panel::-webkit-scrollbar-track {
+  background: #f0ebe4;
+  border-radius: 8px;
+}
+#matchResults::-webkit-scrollbar-thumb,
+.reco-panel::-webkit-scrollbar-thumb {
+  background: #c2b5a5;
+  border-radius: 8px;
+}
+#matchResults::-webkit-scrollbar-thumb:hover,
+.reco-panel::-webkit-scrollbar-thumb:hover {
+  background: #9e8d7c;
+}
+

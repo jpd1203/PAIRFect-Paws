@@ -7,7 +7,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Ported 1:1 from the original users.css design tokens
+        maroon: {
+          50: '#fbebec',
+          100: '#f3ccce',
+          200: '#e59a9f',
+          300: '#d5666e',
+          400: '#c13a44',
+          500: '#a6242c',
+          600: '#8f1f26',
+          700: '#731920',
+          800: '#59141a',
+          900: '#420f14',
+        },
+        cream: {
+          50: '#fffdfb',
+          100: '#fff8f0',
+          200: '#f7efe2',
+          300: '#efe3d0',
+        },
         background: "#FDF9F2",
         "secondary-bg": "#F8FAFC",
         primary: {
@@ -39,6 +56,7 @@ export default {
       fontFamily: {
         primary: ["Poppins", "sans-serif"],
         secondary: ["Inter", "sans-serif"],
+        sans: ["Inter", "sans-serif"],
       },
       borderRadius: {
         card: "12px",

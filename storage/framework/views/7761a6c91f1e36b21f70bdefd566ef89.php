@@ -1,8 +1,8 @@
-@extends('layouts.app')
 
-@section('title', 'Pet Recommendation - PAIRfect Paws')
 
-@section('content')
+<?php $__env->startSection('title', 'Pet Recommendation - PAIRfect Paws'); ?>
+
+<?php $__env->startSection('content'); ?>
 
     <div class="sticky-header">
         <div class="heading-text">
@@ -24,7 +24,7 @@
             <div class="reco-panel flex flex-col h-[565px] max-h-[calc(100vh-185px)] overflow-hidden" id="recoPanel">
                 <h3 class="font-primary text-xl mb-4 shrink-0">Pet Characteristics</h3>
 
-                @php
+                <?php
                     $sliderDefs = [
                         'energy' => [
                             'label' => 'Energy Level',
@@ -77,31 +77,32 @@
                             ],
                         ],
                     ];
-                @endphp
+                ?>
 
                 <div class="flex flex-col justify-between flex-1 py-1">
-                    @foreach ($sliderDefs as $key => $def)
-                        <div class="mb-2 last:mb-0" data-slider-group="{{ $key }}">
+                    <?php $__currentLoopData = $sliderDefs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $def): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <div class="mb-2 last:mb-0" data-slider-group="<?php echo e($key); ?>">
                             <div class="reco-slider-label">
-                                <span>{{ $def['label'] }}</span>
-                                <span class="text-primary font-bold" data-slider-value>{{ $sliders[$key] }}</span>
+                                <span><?php echo e($def['label']); ?></span>
+                                <span class="text-primary font-bold" data-slider-value><?php echo e($sliders[$key]); ?></span>
                             </div>
                             <input
                                 type="range"
                                 min="1"
                                 max="5"
                                 step="1"
-                                value="{{ $sliders[$key] }}"
+                                value="<?php echo e($sliders[$key]); ?>"
                                 class="reco-range"
-                                data-slider-input="{{ $key }}"
+                                data-slider-input="<?php echo e($key); ?>"
                             >
-                            <p class="reco-slider-hint" data-slider-desc>{{ $def['desc'][$sliders[$key]] }}</p>
+                            <p class="reco-slider-hint" data-slider-desc><?php echo e($def['desc'][$sliders[$key]]); ?></p>
                         </div>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </div>
 
                 <script id="sliderDescriptions" type="application/json">
-                    {!! json_encode(array_map(fn ($d) => $d['desc'], $sliderDefs)) !!}
+                    <?php echo json_encode(array_map(fn ($d) => $d['desc'], $sliderDefs)); ?>
+
                 </script>
             </div>
 
@@ -110,9 +111,9 @@
                 <h3 class="font-primary text-xl mb-4 shrink-0">Compatibility results</h3>
 
                 <div id="matchResults" class="flex flex-col gap-4 flex-1 overflow-y-auto pr-2">
-                    @foreach ($matches as $match)
-                        @include('recommendation._match-card', ['pet' => $match['pet'], 'result' => $match['result'], 'matcher' => $matcher])
-                    @endforeach
+                    <?php $__currentLoopData = $matches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $match): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <?php echo $__env->make('recommendation._match-card', ['pet' => $match['pet'], 'result' => $match['result'], 'matcher' => $matcher], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </div>
             </div>
 
@@ -127,11 +128,13 @@
         </div>
     </div>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
     <script>
-        window.RECO_RECOMPUTE_URL = @json(route('recommendation.recompute'));
+        window.RECO_RECOMPUTE_URL = <?php echo json_encode(route('recommendation.recompute'), 15, 512) ?>;
     </script>
-    <script src="{{ asset('js/recommendation.js') }}" defer></script>
-@endpush
+    <script src="<?php echo e(asset('js/recommendation.js')); ?>" defer></script>
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Mary Lois Denosta\.gemini\antigravity-ide\scratch\pairfect-paws-ui\resources\views/recommendation/results.blade.php ENDPATH**/ ?>

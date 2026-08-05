@@ -1,13 +1,13 @@
-@extends('layouts.app')
 
-@section('title', 'Submit Post-Adoption Report - PAIRfect Paws')
 
-@section('content')
+<?php $__env->startSection('title', 'Submit Post-Adoption Report - PAIRfect Paws'); ?>
+
+<?php $__env->startSection('content'); ?>
 
     <div class="sticky-header">
         <div class="heading-text">
             <h2>Submit Post-Adoption Report</h2>
-            <p>Complete your scheduled welfare check-in{{ $pet ? " for {$pet->name}" : '' }}.</p>
+            <p>Complete your scheduled welfare check-in<?php echo e($pet ? " for {$pet->name}" : ''); ?>.</p>
         </div>
     </div>
 
@@ -15,15 +15,15 @@
 
         <div class="contact-card">
             <p>
-                Pending check-in: <strong>{{ $checkIn?->milestone_report_label }}</strong> for <strong>{{ $pet?->name }}</strong>. Please complete and submit below.
+                Pending check-in: <strong><?php echo e($checkIn?->milestone_report_label); ?></strong> for <strong><?php echo e($pet?->name); ?></strong>. Please complete and submit below.
             </p>
         </div>
 
-        <form id="submitReportForm" action="{{ route('flagged.previewReport') }}" method="POST" enctype="multipart/form-data" novalidate>
-            @csrf
-            <input type="hidden" name="check_in_id" value="{{ $checkIn?->id }}">
-            <input type="hidden" name="pet_id" value="{{ $pet?->id }}">
-            <input type="hidden" name="milestone" value="{{ $checkIn?->milestone }}">
+        <form id="submitReportForm" action="<?php echo e(route('flagged.previewReport')); ?>" method="POST" enctype="multipart/form-data" novalidate>
+            <?php echo csrf_field(); ?>
+            <input type="hidden" name="check_in_id" value="<?php echo e($checkIn?->id); ?>">
+            <input type="hidden" name="pet_id" value="<?php echo e($pet?->id); ?>">
+            <input type="hidden" name="milestone" value="<?php echo e($checkIn?->milestone); ?>">
 
             <div class="form-section !mt-4">
 
@@ -33,22 +33,22 @@
 
                     <div class="form-group">
                         <label>Adopted Pet</label>
-                        <input type="text" value="{{ $pet?->name }}" disabled>
+                        <input type="text" value="<?php echo e($pet?->name); ?>" disabled>
                     </div>
 
                     <div class="form-group">
                         <label>Milestone</label>
-                        <input type="text" value="{{ $checkIn?->milestone_display }}" disabled>
+                        <input type="text" value="<?php echo e($checkIn?->milestone_display); ?>" disabled>
                     </div>
 
                     <div class="form-group">
                         <label>Adopter Name</label>
-                        <input type="text" value="{{ $adopter?->full_name }}" disabled>
+                        <input type="text" value="<?php echo e($adopter?->full_name); ?>" disabled>
                     </div>
 
                     <div class="form-group">
                         <label>Report Date</label>
-                        <input type="text" value="{{ now()->format('F j, Y') }}" disabled>
+                        <input type="text" value="<?php echo e(now()->format('F j, Y')); ?>" disabled>
                     </div>
                 </div>
             </div>
@@ -64,9 +64,9 @@
                         <label for="healthStatus">Overall Health Status</label>
                         <select id="healthStatus" name="health_status" required>
                             <option value="">Select Health Status</option>
-                            @foreach (\App\Support\ReportOptions::HEALTH_STATUSES as $option)
-                                <option value="{{ $option }}">{{ $option }}</option>
-                            @endforeach
+                            <?php $__currentLoopData = \App\Support\ReportOptions::HEALTH_STATUSES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $option): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($option); ?>"><?php echo e($option); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
 
@@ -74,9 +74,9 @@
                         <label for="eatingHabits">Eating &amp; Drinking Habits</label>
                         <select id="eatingHabits" name="eating_and_drinking" required>
                             <option value="">Select Habits</option>
-                            @foreach (\App\Support\ReportOptions::EATING_HABITS as $option)
-                                <option value="{{ $option }}">{{ $option }}</option>
-                            @endforeach
+                            <?php $__currentLoopData = \App\Support\ReportOptions::EATING_HABITS; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $option): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($option); ?>"><?php echo e($option); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
 
@@ -84,9 +84,9 @@
                         <label for="behavior">Behavior at Home</label>
                         <select id="behavior" name="behavior" required>
                             <option value="">Select Behavior</option>
-                            @foreach (\App\Support\ReportOptions::BEHAVIORS as $option)
-                                <option value="{{ $option }}">{{ $option }}</option>
-                            @endforeach
+                            <?php $__currentLoopData = \App\Support\ReportOptions::BEHAVIORS; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $option): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($option); ?>"><?php echo e($option); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
 
@@ -94,9 +94,9 @@
                         <label for="livingConditions">Living Conditions</label>
                         <select id="livingConditions" name="living_conditions" required>
                             <option value="">Select Living Condition</option>
-                            @foreach (\App\Support\ReportOptions::LIVING_CONDITIONS as $option)
-                                <option value="{{ $option }}">{{ $option }}</option>
-                            @endforeach
+                            <?php $__currentLoopData = \App\Support\ReportOptions::LIVING_CONDITIONS; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $option): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($option); ?>"><?php echo e($option); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
 
@@ -151,8 +151,10 @@
         </div>
     </div>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
-    <script src="{{ asset('js/submit-report.js') }}" defer></script>
-@endpush
+<?php $__env->startPush('scripts'); ?>
+    <script src="<?php echo e(asset('js/submit-report.js')); ?>" defer></script>
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Mary Lois Denosta\.gemini\antigravity-ide\scratch\pairfect-paws-ui\resources\views/flagged-cases/submit-report.blade.php ENDPATH**/ ?>

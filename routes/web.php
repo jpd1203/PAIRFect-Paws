@@ -11,9 +11,39 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Guest routes
+| Public / Guest routes
 |--------------------------------------------------------------------------
 */
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('animal.index');
+    }
+    return view('landing', ['impactTotal' => \App\Models\FundRecord::sum('donation_added')]);
+})->name('landing');
+
+Route::get('/landing', function () {
+    return view('landing', ['impactTotal' => \App\Models\FundRecord::sum('donation_added')]);
+});
+
+Route::get('/community-impact', function () {
+    $donations = \App\Models\FundRecord::orderByDesc('recorded_date')->get();
+    return view('community-impact', [
+        'donations' => $donations,
+        'totalDonated' => \App\Models\FundRecord::sum('donation_added'),
+        'totalSpent' => \App\Models\FundRecord::sum('shelter_spent'),
+    ]);
+})->name('community-impact');
+
+Route::get('/donate', function () {
+    $channels = [
+        ['name' => 'GCash', 'account_name' => 'Red Cubs Pet Patrol', 'account_number' => '0918 985 2149', 'qr' => null, 'accent' => 'blue'],
+        ['name' => 'BDO Unibank', 'account_name' => 'Red Cubs Pet Patrol Inc.', 'account_number' => '0012 3456 7890', 'qr' => null, 'accent' => 'navy'],
+        ['name' => 'BPI', 'account_name' => 'Red Cubs Pet Patrol Inc.', 'account_number' => '1234 5678 90', 'qr' => null, 'accent' => 'red'],
+        ['name' => 'Maya', 'account_name' => 'Red Cubs Pet Patrol', 'account_number' => '0918 985 2149', 'qr' => null, 'accent' => 'green'],
+    ];
+    return view('donate', ['channels' => $channels]);
+})->name('donate');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     // Throttled: 5 attempts / minute per IP+email to slow credential stuffing
