@@ -491,6 +491,10 @@
   .flag-card {
     @apply bg-[#fdf4f4] border border-[#e8b8b8] rounded-card p-[18px];
   }
+  .flag-card.is-resolved,
+  .flag-card[data-status*="resolved"] {
+    @apply bg-white border-[#e2ddd7];
+  }
   .flag-message {
     @apply text-[.95rem] text-[#7d4b52] leading-relaxed mb-3.5;
   }
@@ -835,4 +839,38 @@
 
 .custom-scrollbar::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* =========================================================
+   TOAST NOTIFICATION STYLES
+   ========================================================= */
+#toastHost {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  pointer-events: none;
+}
+.toast-notification {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #295f51;
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  pointer-events: auto;
+}
+.toast-notification.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.toast-notification.bg-status-danger-text {
+  background-color: #773e47;
 }

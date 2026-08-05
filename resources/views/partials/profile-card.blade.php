@@ -21,7 +21,7 @@
             <strong>{{ $user?->email ?? '' }}</strong>
         </div>
 
-        <a href="{{ route('animal.index') }}" class="profile-dropdown-item">
+        <a href="{{ route('landing') }}" class="profile-dropdown-item">
             <i class="fa-solid fa-house"></i> Home
         </a>
 

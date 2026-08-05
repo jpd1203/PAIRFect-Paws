@@ -16,8 +16,6 @@ class StaffLoginController extends Controller
 
     public function store(Request $request)
     {
-        dd('STAFF LOGIN CONTROLLER');
-        
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
@@ -41,7 +39,7 @@ class StaffLoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('admin.dashboard'));
+        return redirect()->route('admin.dashboard');
     }
 
     public function destroy(Request $request)
@@ -50,6 +48,6 @@ class StaffLoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('admin.login');
+        return redirect('/landing');
     }
 }

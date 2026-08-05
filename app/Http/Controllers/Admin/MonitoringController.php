@@ -25,16 +25,20 @@ class MonitoringController extends Controller
         return back()->with('toast', ['type' => 'success', 'message' => 'Reminder sent.']);
     }
 
-    public function flagAndNotify(CheckIn $checkIn)
+    public function flagAndNotify(\Illuminate\Http\Request $request, CheckIn $checkIn)
     {
         $checkIn->update(['status' => CheckIn::STATUS_FLAGGED]);
 
-        FlaggedCase::firstOrCreate(
-            ['check_in_id' => $checkIn->id],
-            ['description' => "{$checkIn->milestone_display} flagged for follow-up"]
-        );
+        $reason = $request->input('reason') ?: "{$checkIn->milestone_display} flagged for follow-up";
 
-        AuditLog::record(Auth::user(), "flagged {$checkIn->pet?->name}'s {$checkIn->milestone_display} for review");
+        $flaggedCase = FlaggedCase::firstOrNew(['check_in_id' => $checkIn->id]);
+        $flaggedCase->description = $reason;
+        $flaggedCase->resolved = false;
+        $flaggedCase->resolved_at = null;
+        $flaggedCase->resolved_by = null;
+        $flaggedCase->save();
+
+        AuditLog::record(Auth::user(), "flagged {$checkIn->pet?->name}'s {$checkIn->milestone_display} for review: {$reason}");
 
         return back()->with('toast', ['type' => 'success', 'message' => 'Case flagged and moved to Flagged Cases.']);
     }

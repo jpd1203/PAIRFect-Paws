@@ -15,15 +15,12 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 Route::get('/', function () {
-    if (auth()->check()) {
-        return redirect()->route('animal.index');
-    }
     return view('landing', ['impactTotal' => \App\Models\FundRecord::sum('donation_added')]);
-})->name('landing');
+})->name('home');
 
 Route::get('/landing', function () {
     return view('landing', ['impactTotal' => \App\Models\FundRecord::sum('donation_added')]);
-});
+})->name('landing');
 
 Route::get('/community-impact', function () {
     $donations = \App\Models\FundRecord::orderByDesc('recorded_date')->get();

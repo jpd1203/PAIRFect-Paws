@@ -20,13 +20,27 @@
     <div class="flag-cases" id="flagCasesList">
         @forelse ($flaggedCases as $case)
             @php
-                $status = $case->resolved ? 'resolved' : ($case->is_escalated ? 'escalated' : ($case->marked_for_intervention ? 'intervention' : 'open'));
+                $statuses = [];
+                if ($case->resolved) {
+                    $statuses[] = 'resolved';
+                } else {
+                    if ($case->marked_for_intervention) {
+                        $statuses[] = 'intervention';
+                    }
+                    if ($case->is_escalated) {
+                        $statuses[] = 'escalated';
+                    }
+                    if (empty($statuses)) {
+                        $statuses[] = 'open';
+                    }
+                }
+                $statusString = implode(' ', $statuses);
             @endphp
-            <div class="flag-card" data-filter-row data-status="{{ $status }}">
+            <div class="flag-card {{ $case->resolved ? 'is-resolved !bg-white !border-[#e2ddd7]' : '' }}" data-filter-row data-status="{{ $statusString }}">
                 <div class="flex justify-between items-start gap-3 mb-2">
                     <div>
                         <strong>{{ $case->checkIn?->pet?->name }}</strong>
-                        <span class="text-[#7d4b52] text-[.85rem]"> — adopted by {{ $case->checkIn?->user?->full_name }}</span>
+                        <span class="{{ $case->resolved ? 'text-[#666]' : 'text-[#7d4b52]' }} text-[.85rem]"> — adopted by {{ $case->checkIn?->user?->full_name }}</span>
                     </div>
                     <span class="badge {{ $case->resolved ? 'badge-approved' : ($case->is_escalated ? 'badge-rejected' : ($case->marked_for_intervention ? 'badge-flagged' : 'badge-pending')) }}">
                         {{ $case->resolved ? 'Resolved' : ($case->is_escalated ? 'Escalated' : ($case->marked_for_intervention ? 'Intervention' : 'Open')) }}
@@ -49,21 +63,12 @@
                     <div class="flag-actions">
                         <button type="button" class="btn btn-yellow btn-sm" onclick="openInterventionModal({{ $case->id }})">Mark for Intervention</button>
                         <button type="button" class="btn btn-danger btn-sm" onclick="openEscalateModal({{ $case->id }})">Escalate</button>
-                        <form action="{{ route('admin.flagged-cases.reminder', $case) }}" method="POST" class="inline-block">
-                            @csrf
-                            <button type="submit" class="btn btn-secondary btn-sm">Send Reminder</button>
-                        </form>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="openReminderModal({{ $case->id }}, '{{ addslashes($case->checkIn?->user?->full_name ?? '') }}', '{{ addslashes($case->checkIn?->pet?->name ?? '') }}')">Send Reminder</button>
                         <button type="button" class="btn btn-resolve btn-sm" onclick="openResolveModal({{ $case->id }})">Resolve</button>
                     </div>
                 @endunless
             </div>
         @empty
-            <!-- <div class="empty-state text-center py-16 text-[#888]">
-                <i class="fa-solid fa-circle-check text-7xl mb-5 block text-[#c9c2b8]"></i>
-                <p class="text-4 text-[#6b7280]">
-                    No flagged cases right now.
-                </p>
-            </div> -->
             <div class="empty-state">
                 <i class="fa-solid fa-circle-check"></i>
                 <h3>No flagged cases right now.</h3>
@@ -122,6 +127,32 @@
         </div>
     </div>
 
+    <!-- Send Reminder Modal -->
+    <div class="custom-modal-backdrop" id="reminderModal">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <h2>Send Follow-up Reminder</h2>
+                <small id="reminderSubheading" class="text-gray-500 font-medium"></small>
+            </div>
+            <form id="reminderForm" method="POST">
+                @csrf
+                <div class="custom-modal-body">
+                    <div class="mb-4 rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs leading-relaxed text-amber-900 font-medium">
+                        This will send an automated SMS & Email reminder notification to the adopter regarding their overdue post-adoption check-in.
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Custom Message (Optional)</label>
+                        <textarea name="custom_message" class="form-control remarks-textarea" rows="3" placeholder="Add an optional custom message for the adopter..."></textarea>
+                    </div>
+                </div>
+                <div class="custom-modal-footer-1">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('reminderModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send Reminder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Resolve -->
     <div class="custom-modal-backdrop" id="resolveModal">
         <div class="custom-modal">
@@ -153,6 +184,11 @@
         function openEscalateModal(id) {
             document.getElementById('escalateForm').action = `/admin/flagged-cases/${id}/escalate`;
             openModal('escalateModal');
+        }
+        function openReminderModal(id, adopter, pet) {
+            document.getElementById('reminderSubheading').textContent = `Adopter: ${adopter} · Pet: ${pet}`;
+            document.getElementById('reminderForm').action = `/admin/flagged-cases/${id}/reminder`;
+            openModal('reminderModal');
         }
         function openResolveModal(id) {
             document.getElementById('resolveForm').action = `/admin/flagged-cases/${id}/resolve`;

@@ -35,7 +35,7 @@
 
   /* ---------- Topbar (mobile) ---------- */
   .topbar {
-    @apply hidden max-[900px]:flex fixed top-0 left-0 right-0 h-topbar bg-primary text-white items-center gap-3.5 px-4 z-[1100];
+    @apply hidden max-[991px]:flex fixed top-0 left-0 right-0 h-topbar bg-primary text-white items-center gap-3.5 px-4 z-[1100];
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   }
   .topbar-toggle {
@@ -495,5 +495,26 @@
 #matchResults::-webkit-scrollbar-thumb:hover,
 .reco-panel::-webkit-scrollbar-thumb:hover {
   background: #9e8d7c;
+}
+
+@media (max-width: 991px) {
+  .app-container {
+    flex-direction: column;
+  }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .main-content {
+    margin-top: 56px;
+    height: calc(100vh - 56px);
+  }
 }
 

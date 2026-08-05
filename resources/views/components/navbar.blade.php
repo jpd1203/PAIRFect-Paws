@@ -1,6 +1,6 @@
 <header class="bg-maroon-500 sticky top-0 z-40 shadow-sm">
-    <nav class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8" aria-label="Main navigation">
-        <a href="{{ route('home') }}" class="flex items-center gap-3">
+    <nav class="flex w-full items-center justify-between px-4 py-3 sm:px-8 lg:px-12" aria-label="Main navigation">
+        <a href="{{ route('landing') }}" class="flex items-center gap-3">
             <x-logo-mark class="h-11 w-11" />
             <span class="leading-tight">
                 <span class="block text-[13px] font-extrabold uppercase tracking-wide text-white">Red Cubs Pet Patrol</span>
@@ -11,7 +11,7 @@
         </a>
 
         <div class="hidden items-center gap-8 md:flex">
-            <x-nav-link :href="route('home')" :active="request()->routeIs('home')">HOME</x-nav-link>
+            <x-nav-link :href="route('landing')" :active="request()->routeIs('landing') || request()->routeIs('home')">HOME</x-nav-link>
             <x-nav-link :href="route('donate')" :active="request()->routeIs('donate')">DONATE</x-nav-link>
 
             @auth

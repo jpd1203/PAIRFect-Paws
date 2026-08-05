@@ -19,31 +19,31 @@
                 </div>
             </div>
 
-            <div class="mt-10 overflow-hidden rounded-xl border border-gray-200">
+            <div class="mt-10 overflow-y-auto max-h-[420px] rounded-xl border border-gray-200 shadow-sm relative">
                 <table class="min-w-full divide-y divide-gray-200 text-left text-sm">
-                    <thead class="bg-gray-50">
+                    <thead class="bg-[#faf6f0] sticky top-0 z-10 shadow-xs">
                         <tr>
-                            <th scope="col" class="px-5 py-3 font-bold text-gray-700">Date</th>
-                            <th scope="col" class="px-5 py-3 font-bold text-gray-700">Activity</th>
-                            <th scope="col" class="px-5 py-3 font-bold text-gray-700">Donation Added</th>
-                            <th scope="col" class="px-5 py-3 font-bold text-gray-700">Shelter Spent</th>
+                            <th scope="col" class="px-5 py-3.5 font-bold uppercase tracking-wider text-[.75rem] text-gray-700">Date</th>
+                            <th scope="col" class="px-5 py-3.5 font-bold uppercase tracking-wider text-[.75rem] text-gray-700 text-center">Activity</th>
+                            <th scope="col" class="px-5 py-3.5 font-bold uppercase tracking-wider text-[.75rem] text-gray-700 text-right">Donation Added</th>
+                            <th scope="col" class="px-5 py-3.5 font-bold uppercase tracking-wider text-[.75rem] text-gray-700 text-right">Shelter Spent</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 bg-white">
                         @forelse ($donations as $donation)
-                            <tr>
-                                <td class="px-5 py-3 text-gray-600">{{ $donation->recorded_date?->format('m/d/Y') ?? '-' }}</td>
-                                <td class="px-5 py-3 text-gray-800">{{ $donation->activity }}</td>
-                                <td class="px-5 py-3 font-semibold text-maroon-600">
-                                    {{ $donation->donation_added > 0 ? number_format($donation->donation_added, 0) : '-' }}
+                            <tr class="hover:bg-cream-50 transition">
+                                <td class="px-5 py-3.5 text-gray-600 font-medium">{{ $donation->recorded_date?->format('m/d/Y') ?? '-' }}</td>
+                                <td class="px-5 py-3.5 text-gray-800 text-center">{{ $donation->activity }}</td>
+                                <td class="px-5 py-3.5 font-bold text-teal-700 text-right">
+                                    {{ $donation->donation_added > 0 ? number_format($donation->donation_added, 2) : '-' }}
                                 </td>
-                                <td class="px-5 py-3 font-semibold text-gray-700">
-                                    {{ $donation->shelter_spent > 0 ? '-'.number_format($donation->shelter_spent, 0) : '-' }}
+                                <td class="px-5 py-3.5 font-bold text-maroon-700 text-right">
+                                    {{ $donation->shelter_spent > 0 ? '-'.number_format($donation->shelter_spent, 2) : '-' }}
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="px-5 py-6 text-center text-gray-500">
+                                <td colspan="4" class="px-5 py-8 text-center text-gray-500 font-medium">
                                     No donation activity has been recorded yet.
                                 </td>
                             </tr>

@@ -34,6 +34,10 @@ function initSidebar() {
 
     toggle?.addEventListener('click', open);
     overlay?.addEventListener('click', close);
+
+    sidebar?.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', close);
+    });
 }
 
 function initProfileDropdown() {

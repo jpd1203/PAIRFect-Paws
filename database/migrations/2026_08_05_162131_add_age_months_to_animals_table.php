@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('animals', function (Blueprint $table) {
-            //
-        });
+        if (Schema::hasTable('pets') && !Schema::hasColumn('pets', 'age_months')) {
+            Schema::table('pets', function (Blueprint $table) {
+                $table->integer('age_months')->nullable()->after('age_years');
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('animals', function (Blueprint $table) {
-            //
-        });
+        if (Schema::hasTable('pets') && Schema::hasColumn('pets', 'age_months')) {
+            Schema::table('pets', function (Blueprint $table) {
+                $table->dropColumn('age_months');
+            });
+        }
     }
 };

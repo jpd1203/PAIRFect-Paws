@@ -31,7 +31,12 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('animal.index'));
+        $user = Auth::user();
+        if ($user && $user->isStaff()) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        return redirect()->route('animal.index');
     }
 
     public function destroy(Request $request)
@@ -40,6 +45,6 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect('/landing');
     }
 }

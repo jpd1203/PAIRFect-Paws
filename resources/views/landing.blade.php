@@ -1,30 +1,35 @@
 <x-public-layout :title="config('app.name').' - Compassion Make Us Human'">
 
     {{-- HERO --}}
-    <section class="relative overflow-hidden bg-cream-100 py-14 sm:py-20">
+    <section class="relative overflow-hidden bg-white min-h-[calc(100vh-68px)] pt-14 sm:pt-20 pb-20">
         <!-- Background Image All Over Hero Section -->
         <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
             <img src="{{ asset('images/hero-collage.jpg') }}" alt="Hero background"
-                 class="h-full w-full object-cover blur-[3px] opacity-85">
+                 class="h-full w-full object-cover object-center blur-[2px] opacity-85">
+            <div class="absolute inset-0 bg-white/10"></div>
+        </div>
+
+        <!-- Telephone Number in Drawn Position (far right side under DONATE/Login) -->
+        <div class="absolute right-4 top-4 sm:right-8 sm:top-6 lg:right-12 lg:top-6 z-20">
+            <div class="inline-flex items-center gap-2 rounded-full border-2 border-maroon-500 bg-white/95 backdrop-blur-sm px-4 py-2 text-sm font-black text-maroon-600 shadow-md">
+                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-.437 1.485L4.784 9.485a11.03 11.03 0 005.731 5.731l1.602-1.608a1.5 1.5 0 011.485-.437l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-8.284 0-15-6.716-15-15v-.5z"/></svg>
+                +63 918 985 2149
+            </div>
         </div>
 
         <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="max-w-2xl text-left">
+
+            <div class="max-w-2xl text-left pl-2 sm:pl-8 lg:pl-12">
                 <p class="text-sm font-[900] uppercase tracking-widest text-maroon-500">Compassion in Action</p>
                 <h1 class="mt-3 text-4xl font-[900] leading-tight text-gray-900 sm:text-5xl tracking-tight">
                     Welcome to<br>
                     <span class="text-maroon-500 font-[900]">Red Cubs Pet Patrol</span>
                 </h1>
 
-                <div class="mt-6 inline-flex items-center gap-2 rounded-full border-2 border-maroon-500 bg-white/90 backdrop-blur-sm px-4 py-2 text-sm font-black text-maroon-600 shadow-sm">
-                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-.437 1.485L4.784 9.485a11.03 11.03 0 005.731 5.731l1.602-1.608a1.5 1.5 0 011.485-.437l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5H15c-8.284 0-15-6.716-15-15v-.5z"/></svg>
-                    +63 918 985 2149
-                </div>
-
-                <h2 class="mt-8 text-2xl font-[900] text-maroon-500 sm:text-3xl tracking-tight">
+                <h2 class="mt-20 sm:mt-24 text-2xl font-[900] text-maroon-500 sm:text-3xl tracking-tight">
                     Together, We Make Every Pet Safe &amp; Loved
                 </h2>
-                <p class="mt-4 max-w-xl text-base leading-relaxed text-gray-700">
+                <p class="mt-4 max-w-xl text-lg font-bold leading-relaxed text-gray-900">
                     We rescue, protect, and care for pets in need. Together, we make every pet safe
                     and loved &mdash; find your perfect match today.
                 </p>
@@ -92,43 +97,37 @@
     </section>
 
     {{-- COMMUNITY JOURNEY --}}
-    <section class="bg-cream-100 py-14 overflow-hidden">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 lg:grid-cols-12 items-center gap-8 text-center">
+    <section class="relative bg-cream-100 py-16 overflow-hidden min-h-[260px] flex items-center justify-center">
+        <!-- Left: Cat Peek (pinned to left screen edge and bottom of cream section) -->
+        <div class="hidden md:flex flex-col items-start absolute left-0 bottom-0 z-10">
+            <p class="ml-6 sm:ml-10 -mb-4 z-20 text-sm font-extrabold text-gray-800 bg-white px-4 py-2 rounded-full border border-gray-300 shadow-lg tracking-wide whitespace-nowrap">
+                800 donors have contributed!
+            </p>
+            <img src="{{ asset('images/cat-peek.png') }}" alt="Cat peek" class="h-48 sm:h-56 lg:h-64 w-auto object-contain object-bottom">
+        </div>
 
-                <!-- Left: Cat Peek -->
-                <div class="lg:col-span-3 flex flex-col items-center lg:items-start relative">
-                    <p class="mb-2 text-xs font-bold text-gray-700 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm inline-block">
-                        800 donors have contributed!
-                    </p>
-                    <img src="{{ asset('images/cat-peek.png') }}" alt="Cat peek" class="max-h-44 w-auto object-contain">
-                </div>
+        <!-- Center: Donations Counter -->
+        <div class="mx-auto max-w-4xl px-4 text-center z-20 py-2">
+            <h2 class="section-title text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-gray-900">
+                Our Pets' Community Journey
+            </h2>
+            <p class="mt-3 text-sm sm:text-base lg:text-lg font-bold text-maroon-500 max-w-xl mx-auto leading-relaxed">
+                Every peso helps provide medical care, food and love. Track our progress and make a difference!
+            </p>
+            <a href="{{ route('community-impact') }}" class="mt-6 group inline-block cursor-pointer no-underline transition hover:scale-105">
+                <span class="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tight text-gray-900 group-hover:text-maroon-500 transition leading-none block">
+                    {{ number_format($impactTotal ?: 45500) }}
+                </span>
+                <p class="mt-2 text-sm sm:text-base lg:text-lg font-extrabold uppercase tracking-widest text-gray-800 group-hover:text-maroon-600 transition">
+                    TOTAL COMMUNITY DONATIONS
+                </p>
+                <p class="text-xs sm:text-sm text-gray-500 font-medium mt-1">Funds Record Since Launch</p>
+            </a>
+        </div>
 
-                <!-- Center: Donations Counter -->
-                <div class="lg:col-span-6 flex flex-col items-center">
-                    <h2 class="section-title text-2xl sm:text-3xl font-extrabold text-gray-900">
-                        Our Pets' Community Journey
-                    </h2>
-                    <p class="mt-2 text-xs sm:text-sm font-semibold text-maroon-500 max-w-md">
-                        Every peso helps provide medical care, food and love. Track our progress and make a difference!
-                    </p>
-                    <a href="{{ route('community-impact') }}" class="mt-6 group block cursor-pointer no-underline transition hover:scale-105">
-                        <span class="text-5xl sm:text-6xl font-black tracking-tight text-gray-900 group-hover:text-maroon-500 transition">
-                            {{ number_format($impactTotal ?: 600) }}
-                        </span>
-                        <p class="mt-1 text-xs sm:text-sm font-extrabold uppercase tracking-wider text-gray-700 group-hover:text-maroon-600 transition">
-                            TOTAL COMMUNITY DONATIONS
-                        </p>
-                        <p class="text-[11px] text-gray-500 font-medium mt-0.5">Funds Record Since Launch</p>
-                    </a>
-                </div>
-
-                <!-- Right: Dog Face Accent -->
-                <div class="lg:col-span-3 flex justify-center lg:justify-end">
-                    <img src="{{ asset('images/dog-face-accent.png') }}" alt="Dog accent" class="max-h-52 w-auto object-contain">
-                </div>
-
-            </div>
+        <!-- Right: Dog Face Accent (pinned to right screen edge and bottom of cream section) -->
+        <div class="hidden md:flex absolute right-0 bottom-0 z-10 items-end">
+            <img src="{{ asset('images/dog-face-accent.png') }}" alt="Dog accent" class="h-48 sm:h-56 lg:h-64 w-auto object-contain object-bottom">
         </div>
     </section>
 

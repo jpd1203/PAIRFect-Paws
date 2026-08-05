@@ -86,7 +86,8 @@ function initFilterButtons() {
 
                 const filter = btn.dataset.filterBtn;
                 scope.querySelectorAll('[data-filter-row]').forEach((row) => {
-                    row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
+                    const statuses = (row.dataset.status || '').split(' ');
+                    row.style.display = (filter === 'all' || statuses.includes(filter)) ? '' : 'none';
                 });
             });
         });
