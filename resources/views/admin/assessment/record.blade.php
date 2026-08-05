@@ -9,7 +9,7 @@
         <p>A pet may be assessed a maximum of 3 times.</p>
     </div>
 
-    <div class="my-3">
+    <div class="my-5">
         <input type="text" data-search-input data-search-scope="assessmentTableBody"
                class="search-input w-full" placeholder="Search">
     </div>
@@ -26,7 +26,7 @@
                 <tbody id="assessmentTableBody">
                     @forelse ($pets as $pet)
                         <tr data-search-row data-search-text="{{ $pet->name }} {{ $pet->species }}">
-                            <td class="!text-left font-semibold">{{ $pet->name }} <span class="text-[#999] font-normal">({{ $pet->species }})</span></td>
+                            <td class="font-semibold">{{ $pet->name }} <span class="text-[#999] font-normal">({{ $pet->species }})</span></td>
                             <td>{{ $pet->last_assessed_by ?? '—' }}</td>
                             <td>{{ $pet->last_assessed_at?->format('M j, Y') ?? '—' }}</td>
                             <td>
@@ -46,7 +46,7 @@
                                 @if ($pet->assessment_count < 3)
                                     <a href="{{ route('admin.assessments.create', $pet) }}" class="btn btn-primary btn-sm">Assess</a>
                                 @else
-                                    <span class="text-[#bbb]">Complete</span>
+                                    <span class="badge badge-completed">Complete</span>
                                 @endif
                             </td>
                         </tr>

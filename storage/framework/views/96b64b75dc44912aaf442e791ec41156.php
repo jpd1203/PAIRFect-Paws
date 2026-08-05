@@ -7,7 +7,7 @@
         <p>Manage all shelter animal profiles</p>
     </div>
 
-    <div class="flex flex-wrap gap-3 items-center my-3">
+    <div class="flex flex-wrap gap-3 items-center my-5">
         <input type="text" data-search-input data-search-scope="animalTableBody"
                class="search-input flex-1 min-w-[220px]" placeholder="Search by name, species, breed…">
         <button class="btn btn-primary" onclick="openModal('addAnimalModal')">
@@ -15,29 +15,34 @@
         </button>
     </div>
 
-    <div class="filter-bar" data-filter-bar-multi data-filter-group="species">
-        <button class="filter-btn filter-all active" data-filter-btn="all">All Species</button>
-        <?php $__currentLoopData = $options::SPECIES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $s): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <button class="filter-btn" data-filter-btn="species:<?php echo e($s); ?>"><?php echo e($s); ?></button>
-        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-    </div>
-    <div class="filter-bar" data-filter-bar-multi data-filter-group="age">
-        <button class="filter-btn filter-all active" data-filter-btn="all">All Ages</button>
-        <?php $__currentLoopData = $options::AGE_GROUPS; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <button class="filter-btn" data-filter-btn="age:<?php echo e($a); ?>"><?php echo e($a); ?></button>
-        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-    </div>
-    <div class="filter-bar" data-filter-bar-multi data-filter-group="health">
-        <button class="filter-btn filter-all active" data-filter-btn="all">All Health</button>
-        <?php $__currentLoopData = $options::HEALTH_STATUSES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $h): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <button class="filter-btn" data-filter-btn="health:<?php echo e($h); ?>"><?php echo e($h); ?></button>
-        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-    </div>
-    <div class="filter-bar" data-filter-bar-multi data-filter-group="status">
-        <button class="filter-btn filter-all active" data-filter-btn="all">All Status</button>
-        <?php $__currentLoopData = $options::ADOPTION_STATUSES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $s): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <button class="filter-btn" data-filter-btn="status:<?php echo e($s); ?>"><?php echo e($s); ?></button>
-        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+    <div class="filter-section">
+        <select id="speciesFilter">
+            <option value="all">All Species</option>
+            <?php $__currentLoopData = $options::SPECIES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $s): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($s); ?>"><?php echo e($s); ?></option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </select>
+
+        <select id="ageFilter">
+            <option value="all">All Ages</option>
+            <?php $__currentLoopData = $options::AGE_GROUPS; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $a): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($a); ?>"><?php echo e($a); ?></option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </select>
+
+        <select id="healthFilter">
+            <option value="all">All Health</option>
+            <?php $__currentLoopData = $options::HEALTH_STATUSES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $h): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($h); ?>"><?php echo e($h); ?></option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </select>
+
+        <select id="statusFilter">
+            <option value="all">All Status</option>
+            <?php $__currentLoopData = $options::ADOPTION_STATUSES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $s): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($s); ?>"><?php echo e($s); ?></option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </select>
     </div>
 
     <div class="records-container mt-4">
@@ -55,7 +60,7 @@
                             data-search-text="<?php echo e($pet->name); ?> <?php echo e($pet->species); ?> <?php echo e($pet->breed); ?>"
                             data-filter-row
                             data-filters="species:<?php echo e($pet->species); ?>|age:<?php echo e($pet->age_group); ?>|health:<?php echo e($pet->health_status); ?>|status:<?php echo e($pet->status); ?>">
-                            <td class="!text-left font-semibold"><?php echo e($pet->name); ?></td>
+                            <td class="font-semibold"><?php echo e($pet->name); ?></td>
                             <td><?php echo e($pet->species); ?></td>
                             <td><?php echo e($pet->breed); ?></td>
                             <td><?php echo e($pet->age_display); ?></td>
@@ -85,7 +90,7 @@
     <script id="animalData" type="application/json">
         <?php echo $pets->map(fn ($p) => [
             'id' => $p->id, 'name' => $p->name, 'species' => $p->species, 'breed' => $p->breed,
-            'age_group' => $p->age_group, 'age_years' => $p->age_years, 'sex' => $p->sex,
+            'age_years' => $p->age_years, 'age_months' => $p->age_months, 'sex' => $p->sex,
             'intake' => optional($p->intake_date)->format('Y-m-d'), 'health' => $p->health_status,
             'status' => $p->status, 'vacc' => $p->vaccination_record_status, 'notes' => $p->notes,
             'physical_size' => $p->physical_size, 'assessment_status' => $p->assessment_status,
@@ -100,39 +105,36 @@
 
 <?php $__env->startPush('scripts'); ?>
     <script>
-        // filter-row uses a compound data-filters attr since a pet must match
-        // ALL 4 independent filter groups at once, not just the last clicked one.
-        (function () {
-            const rows = document.querySelectorAll('#animalTableBody [data-filter-row]');
-            const active = { species: 'all', age: 'all', health: 'all', status: 'all' };
+        const rows = document.querySelectorAll('#animalTableBody [data-filter-row]');
 
-            document.querySelectorAll('[data-filter-bar-multi]').forEach((bar) => {
-                bar.querySelectorAll('[data-filter-btn]').forEach((btn) => {
-                    btn.addEventListener('click', () => {
-                        bar.querySelectorAll('[data-filter-btn]').forEach((b) => b.classList.remove('active'));
-                        btn.classList.add('active');
+        const filters = {
+            species: document.getElementById('speciesFilter'),
+            age: document.getElementById('ageFilter'),
+            health: document.getElementById('healthFilter'),
+            status: document.getElementById('statusFilter'),
+        };
 
-                        const val = btn.dataset.filterBtn;
-                        const group = bar.dataset.filterGroup;
-                        const value = val === 'all' ? 'all' : val.split(':')[1];
-                        active[group] = value;
-                        applyFilters();
-                    });
-                });
+        Object.values(filters).forEach(select => {
+            select.addEventListener('change', applyFilters);
+        });
+
+        function applyFilters() {
+            rows.forEach(row => {
+                const data = row.dataset.filters.split('|').reduce((acc, item) => {
+                    const [key, value] = item.split(':');
+                    acc[key] = value;
+                    return acc;
+                }, {});
+
+                const visible =
+                    (filters.species.value === 'all' || data.species === filters.species.value) &&
+                    (filters.age.value === 'all' || data.age === filters.age.value) &&
+                    (filters.health.value === 'all' || data.health === filters.health.value) &&
+                    (filters.status.value === 'all' || data.status === filters.status.value);
+
+                row.style.display = visible ? '' : 'none';
             });
-
-            function applyFilters() {
-                rows.forEach((row) => {
-                    const filters = row.dataset.filters.split('|').reduce((acc, f) => {
-                        const [k, v] = f.split(':');
-                        acc[k] = v;
-                        return acc;
-                    }, {});
-                    const match = Object.entries(active).every(([k, v]) => v === 'all' || filters[k] === v);
-                    row.style.display = match ? '' : 'none';
-                });
-            }
-        })();
+        }
     </script>
     <script src="<?php echo e(asset('js/admin/animal.js')); ?>" defer></script>
 <?php $__env->stopPush(); ?>

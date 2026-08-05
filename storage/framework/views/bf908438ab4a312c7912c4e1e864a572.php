@@ -19,34 +19,94 @@
         <?php $__empty_1 = true; $__currentLoopData = $applications; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $app): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
             <?php
                 $overall = $app->compatibility_result['overall'] ?? 0;
-                $tier = $overall >= 80 ? 'high' : ($overall >= 60 ? 'good' : ($overall >= 40 ? 'fair' : 'low'));
+
+                $tier = $overall >= 80 ? 'high'
+                        : ($overall >= 60 ? 'good'
+                        : ($overall >= 40 ? 'fair'
+                        : 'low'));
+
                 $tierLabel = ucfirst($tier) . ' Match';
-                $color = $overall >= 60 ? '#295F51' : ($overall >= 40 ? '#614E34' : '#773E47');
+
+                $ringColor = match ($tier) {
+                    'high' => '#0F7B5A',
+                    'good' => '#2D8CFF',
+                    'fair' => '#E6A700',
+                    default => '#D9534F',
+                };
             ?>
-            <div class="pet-card-compat" data-filter-row data-status="<?php echo e($tier); ?>">
-                <img src="<?php echo e($app->pet?->image_url); ?>" alt="<?php echo e($app->pet?->name); ?>" class="pet-photo-compat">
-                <div class="flex-1 min-w-0">
-                    <div class="flex justify-between items-start gap-3">
-                        <div>
-                            <strong><?php echo e($app->first_name); ?> <?php echo e($app->last_name); ?></strong>
-                            <span class="text-[#888] text-[.85rem]"> applied for <?php echo e($app->pet?->name); ?></span>
-                        </div>
-                        <div class="text-right shrink-0">
-                            <div class="score-num" style="color: <?php echo e($color); ?>"><?php echo e($overall); ?>/100</div>
-                            <div class="score-tag"><?php echo e($tierLabel); ?></div>
-                        </div>
-                    </div>
-                    <div class="mt-2">
-                        <button type="button" class="btn btn-secondary btn-sm" onclick='openBreakdown(<?php echo json_encode($app->compatibility_result, 15, 512) ?>, <?php echo json_encode("{$app->first_name} {$app->last_name} · {$app->pet?->name}", 15, 512) ?>)'>
-                            View Breakdown
-                        </button>
-                    </div>
+            <div class="pet-card-compat" data-filter-row data-status="<?php echo e(strtolower(explode(' ', $tier)[0])); ?>">
+
+    <div class="compat-card-top">
+
+        <img src="<?php echo e($app->pet?->image_url); ?>"
+             alt="<?php echo e($app->pet?->name); ?>"
+             class="pet-photo-compat">
+
+        <div class="compat-info">
+
+            <div class="pet-title">
+                <h3><?php echo e($app->pet?->name); ?></h3>
+
+                <span>
+                    <?php echo e($app->pet?->species); ?>
+
+                    •
+                    <?php echo e($app->pet?->age_group); ?>
+
+                    •
+                    <?php echo e($app->pet?->sex); ?>
+
+                </span>
+            </div>
+
+            <p class="matched-user">
+                Matched with
+                <strong><?php echo e($app->first_name); ?> <?php echo e($app->last_name); ?></strong>
+            </p>
+
+            <p class="applied-date">
+                <i class="fa-regular fa-calendar"></i>
+                Applied <?php echo e($app->created_at->format('M d, Y')); ?>
+
+            </p>
+
+        </div>
+
+        <div class="compat-score">
+
+            <div class="score-circle"
+                 style="--ring: <?php echo e($ringColor); ?>">
+                <div class="score-value">
+                    <strong><?php echo e($overall); ?></strong>
+                    <small>/100</small>
                 </div>
             </div>
+
+            <span class="score-badge">
+                <?php echo e($tier); ?>
+
+            </span>
+
+        </div>
+
+    </div>
+
+    <div class="compat-card-footer">
+
+        <button
+            class="btn btn-primary"
+            onclick='openBreakdown(<?php echo json_encode($app->compatibility_result, 15, 512) ?>, <?php echo json_encode("{$app->pet?->name} · {$app->first_name} {$app->last_name}", 15, 512) ?>)'>
+            View Breakdown
+        </button>
+
+    </div>
+
+</div>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-            <div class="empty-state text-center py-16 text-[#888]">
-                <i class="fa-solid fa-percent text-4xl mb-3 block text-[#c9c2b8]"></i>
-                No applicants have used Pet Recommendation yet.
+            <div class="empty-state">
+                <i class="fa-solid fa-circle-check"></i>
+                <h3>No Compatibility Result</h3>
+                <p>No applicants have used Pet Recommendation yet.</p>
             </div>
         <?php endif; ?>
     </div>

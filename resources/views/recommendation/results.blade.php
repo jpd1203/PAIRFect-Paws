@@ -106,7 +106,7 @@
             </div>
 
             <!-- RIGHT: Compatibility results -->
-            <div class="reco-panel flex flex-col h-[565px] max-h-[calc(100vh-185px)] overflow-hidden">
+            <div class="reco-panel flex flex-col h-[565px] max-h-[calc(100vh-185px)] overflow-hidden" id="recoPanel">
                 <h3 class="font-primary text-xl mb-4 shrink-0">Compatibility results</h3>
 
                 <div id="matchResults" class="flex flex-col gap-4 flex-1 overflow-y-auto pr-2">

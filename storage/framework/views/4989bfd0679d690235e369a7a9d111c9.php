@@ -3,11 +3,11 @@
 <?php $__env->startSection('content'); ?>
 
     <div class="heading-text">
-        <h2>Monitoring</h2>
-        <p>Post-adoption 3-3-3 check-in schedule across all adopters.</p>
+        <h2>Post-Adoption Monitoring</h2>
+        <p>Track all welfare check-ins for adopted animals</p>
     </div>
 
-    <div class="my-3">
+    <div class="my-5">
         <input type="text" data-search-input data-search-scope="monitoringTableBody" class="search-input w-full" placeholder="Search by adopter or pet name…">
     </div>
 
@@ -30,7 +30,7 @@
                     <?php $__empty_1 = true; $__currentLoopData = $checkIns; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <tr data-search-row data-search-text="<?php echo e($c->user?->full_name); ?> <?php echo e($c->pet?->name); ?>"
                             data-filter-row data-status="<?php echo e($c->status_slug); ?>">
-                            <td class="!text-left font-semibold"><?php echo e($c->user?->full_name); ?></td>
+                            <td class="font-semibold"><?php echo e($c->user?->full_name); ?></td>
                             <td><?php echo e($c->pet?->name); ?></td>
                             <td><?php echo e($c->milestone_display); ?></td>
                             <td><?php echo e($c->due_date->format('M j, Y')); ?></td>

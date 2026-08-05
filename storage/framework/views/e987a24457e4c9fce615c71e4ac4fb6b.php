@@ -8,22 +8,24 @@
             <?php echo csrf_field(); ?>
             <input type="hidden" name="application_id" id="scheduleAppId">
             <div class="custom-modal-body">
-                <div class="form-group">
-                    <label class="form-label">Interview Date</label>
-                    <input type="date" name="interview_date" class="form-control" min="<?php echo e(now()->format('Y-m-d')); ?>" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Interview Time</label>
-                    <input type="time" name="interview_time" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Conducted By</label>
-                    <select name="conducted_by" class="form-select" required>
-                        <option value="">Select Interviewer</option>
-                        <?php $__currentLoopData = $volunteers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $v): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                            <option><?php echo e($v->full_name); ?></option>
-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                    </select>
+                <div class="grid grid-cols-1 gap-4 max-[768px]:grid-cols-1">
+                    <div class="form-group">
+                        <label class="form-label">Interview Date</label>
+                        <input type="date" name="interview_date" class="form-control" min="<?php echo e(now()->format('Y-m-d')); ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Interview Time</label>
+                        <input type="time" name="interview_time" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Conducted By</label>
+                        <select name="conducted_by" class="form-select" required>
+                            <option value="">Select Interviewer</option>
+                            <?php $__currentLoopData = $volunteers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $v): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option><?php echo e($v->full_name); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="custom-modal-footer-1">

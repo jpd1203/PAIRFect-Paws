@@ -9,7 +9,7 @@
         <p>Manage staff and volunteer accounts.</p>
     </div>
 
-    <div class="flex flex-wrap gap-3 items-center my-3">
+    <div class="flex flex-wrap gap-3 items-center my-5">
         <input type="text" data-search-input data-search-scope="volunteerTableBody" class="search-input flex-1 min-w-[220px]" placeholder="Search by name or email…">
         <button class="btn btn-primary" onclick="openModal('addVolunteerModal')"><i class="fa-solid fa-plus"></i> Add Volunteer</button>
     </div>
@@ -18,14 +18,13 @@
         <div class="table-responsive">
             <table class="w-full">
                 <thead>
-                    <tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+                    <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="volunteerTableBody">
                     @forelse ($volunteers as $v)
                         <tr data-search-row data-search-text="{{ $v->full_name }} {{ $v->email }}">
                             <td class="!text-left font-semibold">{{ $v->full_name }}</td>
                             <td>{{ $v->email }}</td>
-                            <td>{{ $v->phone_number ?? '—' }}</td>
                             <td><span class="badge {{ $v->role === 'Admin' ? 'badge-approved' : 'badge-scheduled' }}">{{ $v->role }}</span></td>
                             <td><span class="badge {{ $v->is_active ? 'badge-active' : 'badge-inactive' }}">{{ $v->is_active ? 'Active' : 'Inactive' }}</span></td>
                             <td>
@@ -34,7 +33,6 @@
                                     onclick="openEditVolunteerModal({
                                         id: {{ $v->id }},
                                         full_name: @js($v->full_name),
-                                        phone_number: @js($v->phone_number),
                                         role: @js($v->role),
                                         is_active: {{ $v->is_active ? 'true' : 'false' }},
                                         update_url: @js(route('admin.volunteers.update', $v))
@@ -58,17 +56,18 @@
             <form action="{{ route('admin.volunteers.store') }}" method="POST">
                 @csrf
                 <div class="custom-modal-body">
-                    <div class="form-group"><label class="form-label">Full Name</label><input name="full_name" class="form-control" required></div>
-                    <div class="form-group"><label class="form-label">Email</label><input name="email" type="email" class="form-control" required></div>
-                    <div class="form-group"><label class="form-label">Phone Number</label><input name="phone_number" class="form-control"></div>
-                    <div class="form-group">
-                        <label class="form-label">Role</label>
-                        <select name="role" class="form-select" required>
-                            <option>Volunteer</option>
-                            <option>Admin</option>
-                        </select>
+                    <div class="grid grid-cols-2 gap-4 max-[768px]:grid-cols-1">
+
+                        <div class="form-group"><label class="form-label ml-1">Full Name</label><input name="full_name" class="form-control" required></div>
+                        <div class="form-group"><label class="form-label ml-1">Email</label><input name="email" type="email" class="form-control" required></div>
+                        <div class="form-group"><label class="form-label ml-1">Role</label>
+                            <select name="role" class="form-select" required>
+                                <option>Volunteer</option>
+                                <option>Admin</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label class="form-label ml-1">Temporary Password</label><input name="password" type="password" class="form-control" minlength="10" required></div>
                     </div>
-                    <div class="form-group"><label class="form-label">Temporary Password</label><input name="password" type="password" class="form-control" minlength="10" required></div>
                 </div>
                 <div class="custom-modal-footer-1">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('addVolunteerModal')">Cancel</button>
@@ -77,7 +76,7 @@
             </form>
         </div>
     </div>
-
+                
     <!-- Edit Volunteer -->
     <div class="custom-modal-backdrop" id="editVolunteerModal">
         <div class="custom-modal">
@@ -86,22 +85,24 @@
                 @csrf
                 @method('POST')
                 <div class="custom-modal-body">
-                    <div class="form-group"><label class="form-label">Full Name</label><input id="evName" name="full_name" class="form-control" required></div>
-                    <div class="form-group"><label class="form-label">Phone Number</label><input id="evPhone" name="phone_number" class="form-control"></div>
-                    <div class="form-group">
-                        <label class="form-label">Role</label>
-                        <select id="evRole" name="role" class="form-select" required>
-                            <option>Volunteer</option>
-                            <option>Admin</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Status</label>
-                        <div class="status-options">
-                            <input type="radio" name="is_active" id="statusActivate" value="1">
-                            <label for="statusActivate" class="status-box activate-box">Active</label>
-                            <input type="radio" name="is_active" id="statusDeactivate" value="0">
-                            <label for="statusDeactivate" class="status-box deactivate-box">Inactive</label>
+                    <div class="grid grid-cols-2 gap-4 max-[768px]:grid-cols-1">
+                        <div class="form-group"><label class="form-label">Full Name</label><input id="evName" name="full_name" class="form-control" required></div>
+                        <!-- <div class="form-group"><label class="form-label">Phone Number</label><input id="evPhone" name="phone_number" class="form-control"></div> -->
+                        <div class="form-group">
+                            <label class="form-label">Role</label>
+                            <select id="evRole" name="role" class="form-select" required>
+                                <option>Volunteer</option>
+                                <option>Admin</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <div class="status-options">
+                                <input type="radio" name="is_active" id="statusActivate" value="1">
+                                <label for="statusActivate" class="status-box activate-box">Active</label>
+                                <input type="radio" name="is_active" id="statusDeactivate" value="0">
+                                <label for="statusDeactivate" class="status-box deactivate-box">Inactive</label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -120,7 +121,7 @@
         function openEditVolunteerModal(v) {
             document.getElementById('editVolunteerForm').action = v.update_url;
             document.getElementById('evName').value = v.full_name;
-            document.getElementById('evPhone').value = v.phone_number ?? '';
+            // document.getElementById('evPhone').value = v.phone_number ?? '';
             document.getElementById('evRole').value = v.role;
             document.getElementById(v.is_active ? 'statusActivate' : 'statusDeactivate').checked = true;
             openModal('editVolunteerModal');

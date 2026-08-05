@@ -25,6 +25,10 @@
                 <i class="fa-solid fa-paw fa-lg"></i> Animal Records
             </a>
 
+            <a href="<?php echo e(route('admin.assessments.record')); ?>" class="menu-item <?php echo e($isActive('admin.assessments.record') ? 'active' : ''); ?>">
+                <i class="fa-solid fa-pen-to-square fa-lg"></i> Assessment Record
+            </a>
+
             <a href="<?php echo e(route('admin.assessments.record')); ?>" class="menu-item <?php echo e($isActive('admin.assessments.create', 'admin.assessments.store') ? 'active' : ''); ?>">
                 <i class="fa-solid fa-heart fa-lg"></i> Pet Assessment
             </a>
@@ -39,10 +43,6 @@
 
             <a href="<?php echo e(route('admin.adopter-profiles.index')); ?>" class="menu-item <?php echo e($isActive('admin.adopter-profiles.index') ? 'active' : ''); ?>">
                 <i class="fa-solid fa-circle-user fa-lg"></i> Adoption Profile
-            </a>
-
-            <a href="<?php echo e(route('admin.assessments.record')); ?>" class="menu-item <?php echo e($isActive('admin.assessments.record') ? 'active' : ''); ?>">
-                <i class="fa-solid fa-pen-to-square fa-lg"></i> Assessment Record
             </a>
 
         </div>
@@ -94,7 +94,6 @@
             </button>
         </form>
     </div>
-
 </div>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
