@@ -7,15 +7,7 @@
                 class="h-12 w-auto"
             >   
             <span class="hidden text-white/60 sm:inline">&bull;</span>
-            <span class="hidden text-m font-bold text-white sm:inline">PAIRfect Paws</span> 
-            
-            <!-- <x-logo-mark class="h-11 w-11" /> -->
-            <!-- <span class="leading-tight">
-                <span class="block text-[13px] font-extrabold uppercase tracking-wide text-white">Red Cubs Pet Patrol</span>
-                <span class="block text-[10px] font-medium uppercase tracking-widest text-white/80">Compassion Make Us Human</span>
-            </span>
-            <span class="hidden text-white/60 sm:inline">&bull;</span>
-            <span class="hidden text-sm font-bold text-white sm:inline">PAIRfect Paws</span> -->
+            <span class="hidden text-base font-bold text-white sm:inline">PAIRfect Paws</span>
         </a>
 
         <div class="hidden items-center gap-8 md:flex">

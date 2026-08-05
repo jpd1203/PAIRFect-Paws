@@ -17,7 +17,7 @@ function openReviewModal(id) {
     document.getElementById('reviewSubheading').textContent = `Applicant: ${a.full_name} · Pet: ${a.pet ?? '—'} · Submitted: ${a.submitted}`;
 
     const badge = document.getElementById('reviewStatusBadge');
-    badge.textContent = a.status.charAt(0).toUpperCase() + a.status.slice(1);
+    badge.textContent = a.status === 'underreview' ? 'Under Review' : (a.status.charAt(0).toUpperCase() + a.status.slice(1));
     badge.className = `badge ${statusBadgeClass(a.status)}`;
 
     document.getElementById('rFullName').textContent = a.full_name;
@@ -74,30 +74,35 @@ function openReviewModal(id) {
 
     if (a.status === 'pending') {
         approveBtn.style.display = 'none';
+        rejectBtn.style.display = 'inline-flex';
         rejectBtn.textContent = 'Schedule Interview';
         rejectBtn.className = 'btn btn-primary';
         rejectBtn.onclick = () => { closeModal('applicationReviewModal'); openScheduleModal(a); };
     } else if (a.status === 'underreview') {
         approveBtn.style.display = 'inline-flex';
+        rejectBtn.style.display = 'inline-flex';
         rejectBtn.textContent = 'Reject';
         rejectBtn.className = 'btn btn-danger';
         approveBtn.onclick = () => submitDecision(decisionForm, 'approved');
         rejectBtn.onclick = () => submitDecision(decisionForm, 'rejected');
     } else {
-        actionsRow.querySelectorAll('.btn-danger, .btn-sucess').forEach((el) => el.style.display = 'none');
+        approveBtn.style.display = 'none';
+        rejectBtn.style.display = 'none';
     }
 
     openModal('applicationReviewModal');
 }
 
 function submitDecision(form, decision) {
-    let remarks = '';
-    if (decision === 'rejected') {
-        remarks = prompt('Optional: add a reason for rejection') || '';
-    }
     document.getElementById('rDecisionInput').value = decision;
-    document.getElementById('rDecisionRemarksInput').value = remarks;
+    document.getElementById('rDecisionRemarksInput').value = '';
     form.submit();
+}
+
+function openScheduleModalFromTop() {
+    document.getElementById('scheduleSubheading').textContent = 'Select an application below to schedule an interview.';
+    document.getElementById('scheduleAppId').value = '';
+    openModal('scheduleInterviewModal');
 }
 
 function openScheduleModal(a) {

@@ -11,7 +11,7 @@
 
     <div class="flex flex-wrap gap-3 items-center my-5">
         <input type="text" data-search-input data-search-scope="applicationTableBody" class="search-input flex-1 min-w-[220px]" placeholder="Search by applicant or pet name…">
-        <button class="btn btn-primary" onclick="openModal('addVolunteerModal')"> Schedule Interview</button>
+        <button class="btn btn-primary" onclick="openModal('scheduleNewInterviewTopModal')">Schedule Interview</button>
     </div>
 
     <div class="filter-bar" data-filter-bar data-filter-scope="applicationTableBody">
