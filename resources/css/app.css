@@ -23,6 +23,10 @@
   .sticky-header {
     @apply shrink-0 bg-background px-10 pt-8 pb-0.5;
   }
+  .btn,
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-maroon-600 hover:bg-maroon-700 text-white font-bold px-6 py-3 shadow-md transition duration-200 text-base border-0 no-underline cursor-pointer;
+  }
   .content-area {
     @apply flex-1 overflow-y-auto px-8 pb-6 pt-0.5;
   }
