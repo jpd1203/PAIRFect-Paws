@@ -2,11 +2,28 @@
 
     {{-- HERO --}}
     <section class="relative overflow-hidden bg-white min-h-[calc(100vh-68px)] pt-14 sm:pt-20 pb-20">
-        <!-- Background Image All Over Hero Section -->
-        <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-            <img src="{{ asset('images/hero-collage.jpg') }}" alt="Hero background"
-                 class="h-full w-full object-cover object-center blur-[2px] opacity-85">
-            <div class="absolute inset-0 bg-white/10"></div>
+        <!-- Background Images -->
+        <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            <div class="grid h-full w-full grid-cols-3 grid-rows-2">
+                <div class="overflow-hidden">
+                    <img src="{{ asset('images/hero/cat1.png') }}" class="h-full w-full object-cover">
+                </div>
+                <div class="overflow-hidden">
+                    <img src="{{ asset('images/hero/dog1.png') }}" class="h-full w-full object-cover">
+                </div>
+                <div class="overflow-hidden">
+                    <img src="{{ asset('images/hero/dog2.png') }}" class="h-full w-full object-cover">
+                </div>
+                <div class="overflow-hidden">
+                    <img src="{{ asset('images/hero/cat2.png') }}" class="h-full w-full object-cover">
+                </div>
+                <div class="overflow-hidden">
+                    <img src="{{ asset('images/hero/cat3.png') }}" class="h-full w-full object-cover">
+                </div>
+                <div class="overflow-hidden">
+                    <img src="{{ asset('images/hero/dog3.png') }}" class="h-full w-full object-cover">
+                </div>
+            </div>
         </div>
 
         <!-- Telephone Number in Drawn Position (far right side under DONATE/Login) -->
@@ -17,24 +34,38 @@
             </div>
         </div>
 
-        <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="relative z-10 flex h-full items-start pt-25 sm:pt-28 lg:pt-32">
 
-            <div class="max-w-2xl text-left pl-2 sm:pl-8 lg:pl-12">
-                <p class="text-sm font-[900] uppercase tracking-widest text-maroon-500">Compassion in Action</p>
-                <h1 class="mt-3 text-4xl font-[900] leading-tight text-gray-900 sm:text-5xl tracking-tight">
-                    Welcome to<br>
-                    <span class="text-maroon-500 font-[900]">Red Cubs Pet Patrol</span>
-                </h1>
+    <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
 
-                <h2 class="mt-20 sm:mt-24 text-2xl font-[900] text-maroon-500 sm:text-3xl tracking-tight">
-                    Together, We Make Every Pet Safe &amp; Loved
-                </h2>
-                <p class="mt-4 max-w-xl text-lg font-bold leading-relaxed text-gray-900">
-                    We rescue, protect, and care for pets in need. Together, we make every pet safe
-                    and loved &mdash; find your perfect match today.
-                </p>
-            </div>
+        <div class="max-w-3xl">
+
+            <p class="text-lg font-black uppercase tracking-[0.25em] text-maroon-500">
+                Compassion in Action
+            </p>
+
+            <h1 class="mt-4 text-5xl font-black leading-tight tracking-tight text-gray-900 sm:text-6xl lg:text-7xl">
+                Welcome to
+                <br>
+                <span class="text-maroon-500">
+                    Red Cubs Pet Patrol
+                </span>
+            </h1>
+
+            <h2 class="mt-10 text-3xl font-black tracking-tight text-maroon-500 sm:text-4xl">
+                Together, We Make Every Pet Safe &amp; Loved
+            </h2>
+
+            <p class="mt-6 max-w-2xl text-xl font-semibold leading-relaxed text-gray-900">
+                We rescue, protect, and care for pets in need. Together, we make every pet safe
+                and loved &mdash; find your perfect match today.
+            </p>
+
         </div>
+
+    </div>
+
+</div> 
     </section>
 
     {{-- LOVE & PROTECTION --}}

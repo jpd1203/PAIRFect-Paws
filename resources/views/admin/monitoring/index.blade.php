@@ -22,7 +22,7 @@
         <button class="filter-btn badge-flagged" data-filter-btn="flagged">Flagged</button>
     </div>
 
-    <div class="records-container">
+    <div class="records-container custom-scrollbar">
         <div class="table-responsive">
             <table class="w-full">
                 <thead>
@@ -44,7 +44,7 @@
                                     @elseif ($c->status_slug === 'overdue')
                                         <button type="button" class="btn btn-danger btn-sm" onclick="openMonitoringFlagModal({{ $c->id }}, '{{ addslashes($c->user?->full_name ?? '') }}', '{{ addslashes($c->pet?->name ?? '') }}', '{{ addslashes($c->milestone_display ?? '') }}')">Flag</button>
                                     @elseif ($c->status_slug === 'flagged' || $c->status_slug === 'completed')
-                                        <button type="button" class="btn btn-outline-primary btn-sm flex items-center gap-1" onclick="openMonitoringViewModal({{ json_encode([
+                                        <button type="button" class="btn btn-secondary btn-sm flex items-center gap-1" onclick="openMonitoringViewModal({{ json_encode([
                                             'id' => $c->id,
                                             'adopter' => $c->user?->full_name ?? 'Adopter',
                                             'pet' => $c->pet?->name ?? 'Pet',
@@ -59,7 +59,7 @@
                                             'vet' => $c->report?->vet_visit ? 'Yes' : 'No',
                                             'concerns' => $c->report?->concerns ?? $c->flaggedCase?->description ?? 'No specific concerns reported.'
                                         ]) }})">
-                                            <i class="fa-solid fa-eye"></i> View
+                                            View
                                         </button>
                                     @else
                                         <span class="text-[#bbb]">—</span>

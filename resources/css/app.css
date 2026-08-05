@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -122,12 +122,24 @@
   }
 
   /* ---------- Buttons ---------- */
-  .btn { @apply inline-flex items-center justify-center gap-1.5 px-5 py-1.5 cursor-pointer border-0 no-underline font-sans text-sm font-semibold rounded-btn transition whitespace-nowrap; }
-  .btn-primary { @apply inline-flex items-center justify-center rounded-full bg-maroon-500 px-7 py-3 font-primary text-sm font-semibold text-white transition hover:bg-maroon-600 focus:outline-none focus:ring-4 focus:ring-maroon-500 shadow-sm hover:scale-[1.02]; }
-  .btn-secondary { @apply bg-background text-text-dark border border-[#bbb] h-[38px] hover:bg-accent-light hover:border-text-light; }
-  .btn-adoptMe { @apply bg-accent-light text-text-light border border-text-light hover:bg-[#dcc27c]; }
-  .btn-apply { @apply bg-status-success-bg text-status-success-text border border-status-success-text hover:bg-status-success-text hover:text-white; }
-  .btn-submitOverdue { @apply bg-neutral-light text-text-dark border border-text-dark hover:bg-accent-light; }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 px-5 py-1.5 cursor-pointer border-0 no-underline font-sans text-sm font-semibold rounded-btn transition whitespace-nowrap;
+  }
+  .btn-primary {
+    @apply bg-primary text-white h-[42px] hover:bg-primary-hover focus:outline-none focus:ring-4 focus:ring-primary/20;
+  }
+  .btn-secondary {
+    @apply bg-background text-text-dark border border-[#bbb] h-[38px] hover:bg-accent-light hover:border-text-light;
+  }
+  .btn-adoptMe {
+    @apply bg-accent-light text-text-light border border-text-light hover:bg-[#dcc27c];
+  }
+  .btn-apply {
+    @apply bg-status-success-bg text-status-success-text border border-status-success-text hover:bg-status-success-text hover:text-white;
+  }
+  .btn-submitOverdue {
+    @apply bg-neutral-light text-text-dark border border-text-dark hover:bg-accent-light;
+  }
   .btn-outline {
     @apply inline-flex items-center justify-center rounded-full border-2 border-maroon-500 px-6 py-3 text-sm font-semibold text-maroon-500 transition hover:bg-maroon-500 hover:text-white;
   }
@@ -223,17 +235,39 @@
   .modal-overlay {
     @apply fixed inset-0 bg-black bg-opacity-45 flex justify-center items-center z-[9999] opacity-0 invisible transition-all duration-200;
   }
-  .modal-overlay.show { @apply opacity-100 visible; }
-  .pet-modal { @apply w-[860px] max-w-[94vw] bg-white rounded-2xl p-8 shadow-modal max-h-[90vh] overflow-y-auto; }
-  .modal-header h2 { @apply m-0 text-text-dark text-3xl font-bold; }
-  .modal-header p { @apply m-0 text-[#777] text-base; }
-  .modal-image { @apply flex justify-center my-3 mb-6; }
-  .modal-image img { @apply w-[180px] h-[180px] object-cover rounded-xl border border-[#444]; }
-  .profile-table { @apply w-full; }
-  .profile-row { @apply flex justify-between px-1 py-2 border-b border-[#8a8a8a] text-sm; }
-  .profile-row span:first-child { @apply font-medium text-[#333]; }
-  .profile-row span:last-child { @apply text-text-dark text-right; }
-  .modal-actions { @apply mt-6 flex justify-end gap-4; }
+  .modal-overlay.show {
+    @apply opacity-100 visible;
+  }
+  .pet-modal {
+    @apply w-[860px] max-w-[94vw] bg-white rounded-2xl p-8 shadow-modal max-h-[90vh] overflow-y-auto;
+  }
+  .modal-header h2 {
+    @apply m-0 text-text-dark text-3xl font-bold;
+  }
+  .modal-header p {
+    @apply m-0 text-[#777] text-base;
+  }
+  .modal-image {
+    @apply flex justify-center my-3 mb-6;
+  }
+  .modal-image img {
+    @apply w-[180px] h-[180px] object-cover rounded-xl border border-[#444];
+  }
+  .profile-table {
+    @apply w-full;
+  }
+  .profile-row {
+    @apply flex justify-between px-1 py-2 border-b border-[#8a8a8a] text-sm;
+  }
+  .profile-row span:first-child {
+    @apply font-medium text-[#333];
+  }
+  .profile-row span:last-child {
+    @apply text-text-dark text-right;
+  }
+  .modal-actions {
+    @apply mt-6 flex justify-end gap-4;
+  }
 
   /* ---------- Report modal add-ons ---------- */
   .report-modal {
@@ -260,7 +294,7 @@
     @apply mt-10 first:mt-0;
   }
   .form-section h3 {
-    @apply mb-5;
+    @apply mb-5 font-semibold;
   }
   .form-grid {
     @apply grid gap-x-10 gap-y-4;
@@ -347,46 +381,122 @@
   }
 
   /* ---------- Alert / info cards (overdue & flagged notices) ---------- */
-  .alert-card { @apply mt-6 bg-status-processing-bg rounded-lg p-6 font-primary w-full; }
-  .alert-card h3 { @apply text-[#5d4a2b] mb-2.5 mt-1 text-xl font-bold; }
-  .alert-card p { @apply text-[#6b5737] leading-relaxed mb-2.5 text-sm; }
-  .info-card { @apply mt-6 bg-secondary-bg border border-[#d9d9d9] rounded-lg p-6 w-full; }
-  .info-card h3 { @apply mt-0 mb-[1rem] text-[#2f2327] text-xl font-bold; }
-  .action-list { @apply list-none p-0 mb-4; }
-  .action-list li { @apply flex items-start gap-2 mb-3 leading-relaxed text-sm; }
-  .dot { @apply w-2 h-2 rounded-full mt-2 shrink-0; }
-  .dot.red { @apply bg-[#b71c1c]; }
-  .dot.yellow { @apply bg-[#f0b429]; }
-  .dot.green { @apply bg-[#2e9d42]; }
-  .warning-list { @apply list-none p-0 m-0; }
-  .warning-list li { @apply mb-[1rem] leading-relaxed text-sm; }
-  .icon-list { @apply list-none p-0 m-0; }
-  .icon-list li { @apply flex items-start gap-2.5 mb-[1rem] leading-relaxed text-sm; }
-  .icon-list i { @apply w-[18px] mt-0.5 shrink-0; }
-  .contact-card { @apply mt-6 bg-[#dfeaf8] rounded-lg p-5 w-full; }
-  .contact-card p { @apply m-0 text-[#35527a] leading-relaxed text-sm; }
-  .report-preview-card { @apply bg-secondary-bg border border-[#d8d8d8] rounded-[10px] px-[1.375rem] py-[1.125rem] my-6 mx-auto max-w-[620px] shadow-card; }
-  .report-preview-card h3 { @apply m-0 text-[#2f2327]; }
-  .report-preview-card small { @apply block mt-1 mb-4 text-[#666]; }
-  .report-row { @apply flex justify-between py-1.5 border-b border-[#cfcfcf] text-sm last:border-b-0; }
+  .alert-card {
+    @apply mt-6 bg-status-processing-bg rounded-lg p-6 font-primary w-full;
+  }
+  .alert-card h3 {
+    @apply text-[#5d4a2b] mb-2.5 mt-1 text-xl font-bold;
+  }
+  .alert-card p {
+    @apply text-[#6b5737] leading-relaxed mb-2.5 text-sm;
+  }
+  .info-card {
+    @apply mt-6 bg-secondary-bg border border-[#d9d9d9] rounded-lg p-6 w-full;
+  }
+  .info-card h3 {
+    @apply mt-0 mb-[1rem] text-[#2f2327] text-xl font-bold;
+  }
+  .action-list {
+    @apply list-none p-0 mb-4;
+  }
+  .action-list li {
+    @apply flex items-start gap-2 mb-3 leading-relaxed text-sm;
+  }
+  .dot {
+    @apply w-2 h-2 rounded-full mt-2 shrink-0;
+  }
+  .dot.red {
+    @apply bg-[#b71c1c];
+  }
+  .dot.yellow {
+    @apply bg-[#f0b429];
+  }
+  .dot.green {
+    @apply bg-[#2e9d42];
+  }
+  .warning-list {
+    @apply list-none p-0 m-0;
+  }
+  .warning-list li {
+    @apply mb-[1rem] leading-relaxed text-sm;
+  }
+  .icon-list {
+    @apply list-none p-0 m-0;
+  }
+  .icon-list li {
+    @apply flex items-start gap-2.5 mb-[1rem] leading-relaxed text-sm;
+  }
+  .icon-list i {
+    @apply w-[18px] mt-0.5 shrink-0;
+  }
+  .contact-card {
+    @apply mt-6 bg-[#dfeaf8] rounded-lg p-5 w-full;
+  }
+  .contact-card p {
+    @apply m-0 text-[#35527a] leading-relaxed text-sm;
+  }
+  .report-preview-card {
+    @apply bg-secondary-bg border border-[#d8d8d8] rounded-[10px] px-[1.375rem] py-[1.125rem] my-6 mx-auto max-w-[620px] shadow-card;
+  }
+  .report-preview-card h3 {
+    @apply m-0 text-[#2f2327];
+  }
+  .report-preview-card small {
+    @apply block mt-1 mb-4 text-[#666];
+  }
+  .report-row {
+    @apply flex justify-between py-1.5 border-b border-[#cfcfcf] text-sm last:border-b-0;
+  }
 
   /* ---------- Check-ins / schedule ---------- */
-  .schedule-card { @apply mt-6; }
-  .schedule-card h2 { @apply mt-0 mb-6 font-primary; }
-  .schedule-item { @apply flex justify-between items-center mb-[1.125rem] flex-wrap gap-2.5; }
-  .schedule-info { @apply flex items-center gap-2 text-lg font-primary; }
-  .status-dot { @apply w-2 h-2 rounded-full; }
-  .status-dot.completed { @apply bg-[#2f6f5b]; }
-  .status-dot.pending { @apply bg-[#8a6235]; }
-  .status-dot.upcoming { @apply bg-[#b5b5b5]; }
-  .schedule-actions { @apply flex items-center gap-3; }
-  .schedule-actions .btn { @apply min-w-[120px] justify-center text-center px-4 h-[38px]; }
-  .reports-card { @apply mt-6 max-w-[500px] mx-auto; }
-  .reports-card h2 { @apply mt-0 mb-4 font-primary; }
-  .reports-table { @apply w-full border-collapse; }
-  .reports-table th { @apply text-center p-2.5 border-b border-[#999] font-semibold font-primary; }
-  .reports-table td { @apply text-center font-primary py-3 px-2.5; }
-  .reports-table tbody tr:hover { @apply bg-[#fafafa]; }
+  .schedule-card {
+    @apply mt-6;
+  }
+  .schedule-card h2 {
+    @apply mt-0 mb-6 font-primary;
+  }
+  .schedule-item {
+    @apply flex justify-between items-center mb-[1.125rem] flex-wrap gap-2.5;
+  }
+  .schedule-info {
+    @apply flex items-center gap-2 text-lg font-primary;
+  }
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+  .status-dot.completed {
+    @apply bg-[#2f6f5b];
+  }
+  .status-dot.pending {
+    @apply bg-[#8a6235];
+  }
+  .status-dot.upcoming {
+    @apply bg-[#b5b5b5];
+  }
+  .schedule-actions {
+    @apply flex items-center gap-3;
+  }
+  .schedule-actions .btn {
+    @apply min-w-[120px] justify-center text-center px-4 h-[38px];
+  }
+  .reports-card {
+    @apply mt-6 max-w-[500px] mx-auto;
+  }
+  .reports-card h2 {
+    @apply mt-0 mb-4 font-primary;
+  }
+  .reports-table {
+    @apply w-full border-collapse;
+  }
+  .reports-table th {
+    @apply text-center p-2.5 border-b border-[#999] font-semibold font-primary;
+  }
+  .reports-table td {
+    @apply text-center font-primary py-3 px-2.5;
+  }
+  .reports-table tbody tr:hover {
+    @apply bg-[#fafafa];
+  }
 
   /* ---------- Toasts ---------- */
   .toast-host {
@@ -407,7 +517,7 @@
     @apply bg-secondary-bg border border-[#e1ded7] rounded-card p-7 mb-7;
   }
   .settings-card h3 {
-    @apply font-primary text-xl mb-[1.375rem];
+    @apply font-primary text-xl mb-[1.375rem] font-semibold;
   }
   .settings-grid {
     @apply grid gap-x-8 gap-y-5;
@@ -517,4 +627,3 @@
     height: calc(100vh - 56px);
   }
 }
-

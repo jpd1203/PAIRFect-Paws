@@ -14,7 +14,7 @@
                class="search-input w-full" placeholder="Search">
     </div>
 
-    <div class="records-container">
+    <div class="records-container custom-scrollbar">
         <div class="table-responsive">
             <table class="w-full">
                 <thead>

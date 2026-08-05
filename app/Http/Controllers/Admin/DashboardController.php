@@ -31,7 +31,7 @@ class DashboardController extends Controller
         $overdueCheckIns = CheckIn::with('pet')->where('status', CheckIn::STATUS_OVERDUE)->take(5)->get();
         $unresolvedFlags = FlaggedCase::with('checkIn.pet')->where('resolved', false)->take(5)->get();
 
-        $recentActivity = AuditLog::latest('timestamp')->take(8)->get();
+        $recentActivity = AuditLog::latest('timestamp')->take(3)->get();
 
         return view('admin.dashboard.index', compact(
             'totalPets', 'availablePets', 'pendingApplications', 'activeAdoptions',

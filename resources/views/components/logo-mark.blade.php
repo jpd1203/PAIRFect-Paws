@@ -1,4 +1,4 @@
-@props(['class' => 'h-16 w-16'])
+<!-- @props(['class' => 'h-16 w-16'])
 
 <div {{ $attributes->merge(['class' => $class.' rounded-full bg-gray-800 flex items-center justify-center overflow-hidden shrink-0']) }}>
     <svg viewBox="0 0 100 100" class="h-[70%] w-[70%]" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -8,4 +8,4 @@
         <path d="M46 48c1.5 1.5 6.5 1.5 8 0" stroke="#2b2b2b" stroke-width="1.5" stroke-linecap="round"/>
         <path d="M30 62c8-6 32-6 40 0 4 3 4 12-2 15-9 5-27 5-36 0-6-3-6-12-2-15z" fill="#a6242c"/>
     </svg>
-</div>
+</div> -->

@@ -56,7 +56,7 @@
             <form action="{{ route('admin.volunteers.store') }}" method="POST">
                 @csrf
                 <div class="custom-modal-body">
-                    <div class="grid grid-cols-2 gap-4 max-[768px]:grid-cols-1">
+                    <div class="grid grid-cols-1 gap-4 max-[768px]:grid-cols-1">
 
                         <div class="form-group"><label class="form-label ml-1">Full Name</label><input name="full_name" class="form-control" required></div>
                         <div class="form-group"><label class="form-label ml-1">Email</label><input name="email" type="email" class="form-control" required></div>
@@ -85,7 +85,7 @@
                 @csrf
                 @method('POST')
                 <div class="custom-modal-body">
-                    <div class="grid grid-cols-2 gap-4 max-[768px]:grid-cols-1">
+                    <div class="grid grid-cols-1 gap-4 max-[768px]:grid-cols-1">
                         <div class="form-group"><label class="form-label">Full Name</label><input id="evName" name="full_name" class="form-control" required></div>
                         <!-- <div class="form-group"><label class="form-label">Phone Number</label><input id="evPhone" name="phone_number" class="form-control"></div> -->
                         <div class="form-group">

@@ -51,7 +51,7 @@
 
     <!-- Record Funds Modal -->
     <div class="custom-modal-backdrop" id="recordFundsModal">
-        <div class="custom-modal">
+        <div class="custom-modal custom-scrollbar">
             <div class="custom-modal-header"><h2>Record Funds</h2></div>
             <form action="{{ route('admin.funds.store') }}" method="POST">
                 @csrf
