@@ -9,9 +9,10 @@ return new class extends Migration {
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('action'); // login, failed_login, administrative_change
-            $table->text('details')->nullable();
-            $table->string('ip_address')->nullable();
+            $table->string('action');
+            $table->string('entity_name')->nullable();
+            $table->unsignedBigInteger('entity_id')->nullable();
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }
@@ -19,3 +20,4 @@ return new class extends Migration {
         Schema::dropIfExists('audit_logs');
     }
 };
+

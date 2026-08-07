@@ -6,17 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void {
-        Schema::create('applications', function (Blueprint $table) {
+        Schema::create('adoption_applications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('pet_id')->constrained()->cascadeOnDelete();
-            $table->string('status')->default('Pending'); // Pending, Interview, Approved, Rejected, Withdrawn
-            $table->float('knn_compatibility_score')->nullable();
+            $table->string('status')->default('Pending'); // Pending, UnderReview, InterviewScheduled, Approved, Rejected
+            $table->text('motivation_statement')->nullable();
+            $table->string('housing_type')->nullable();
+            $table->string('income_range')->nullable();
+            $table->string('document_path')->nullable();
             $table->timestamp('interview_date')->nullable();
-            $table->timestamps(); // Created_at is used for conflict resolution
+            $table->unsignedInteger('version')->default(1);
+            $table->timestamps();
         });
     }
     public function down(): void {
-        Schema::dropIfExists('applications');
+        Schema::dropIfExists('adoption_applications');
     }
 };
+
