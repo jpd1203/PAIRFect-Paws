@@ -1,29 +1,43 @@
-@extends('layouts.app')
-@section('title', 'Audit Logs')
+@extends('admin.layouts.app')
+
+@section('title', 'Audit Logs - PAIRfect Paws Admin')
 
 @section('content')
-<div class="page-header">
-    <h1>Audit Logs</h1>
-    <p>Chronological, immutable record of all system actions</p>
-</div>
 
-<div class="card">
-    <table>
-        <thead>
-            <tr><th>Timestamp</th><th>User</th><th>Action</th><th>Entity</th><th>Notes</th></tr>
-        </thead>
-        <tbody>
-            @foreach($logs as $log)
-            <tr>
-                <td style="white-space:nowrap;font-size:0.8rem;color:var(--muted)">{{ $log->created_at->format('M d, Y H:i') }}</td>
-                <td style="font-size:0.875rem">{{ $log->user ? $log->user->first_name . ' ' . $log->user->last_name : 'System' }}</td>
-                <td style="font-size:0.875rem"><strong>{{ $log->action }}</strong></td>
-                <td style="font-size:0.8rem;color:var(--muted)">{{ $log->entity_name ? $log->entity_name . ' #' . $log->entity_id : '—' }}</td>
-                <td style="font-size:0.8rem;color:var(--muted);max-width:300px">{{ $log->notes ?? '—' }}</td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-</div>
-<div class="pagination">{{ $logs->links() }}</div>
+    <div class="flex justify-between items-start flex-wrap gap-3">
+        <div class="heading-text">
+            <h2>Audit Logs</h2>
+            <p>A record of every meaningful staff action across the system.</p>
+        </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 items-center my-5">
+        <input type="text" data-search-input data-search-scope="auditTableBody" class="search-input flex-1 min-w-[220px]" placeholder="Search by user or action…">
+        <a href="{{ route('admin.audit-logs.export') }}" class="btn btn-primary"><i class="fa-solid fa-download"></i> Export CSV</a>
+    </div>
+
+    <div class="records-container custom-scrollbar">
+        <div class="table-responsive">
+            <table class="w-full">
+                <thead>
+                    <tr><th>Date / Time</th><th>User</th><th>Role</th><th>Action</th></tr>
+                </thead>
+                <tbody id="auditTableBody">
+                    @forelse ($logs as $log)
+                        <tr data-search-row data-search-text="{{ $log->user_name }} {{ $log->action }}">
+                            <td>{{ $log->timestamp->format('M j, Y g:i A') }}</td>
+                            <td class="font-semibold">{{ $log->user_name }}</td>
+                            <td><span class="badge {{ $log->role === 'Admin' ? 'badge-approved' : ($log->role === 'Volunteer' ? 'badge-scheduled' : 'badge-pending') }}">{{ $log->role }}</span></td>
+                            <td class="">{{ $log->action }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="4" class="text-[#888] py-6">No activity recorded yet.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-4">{{ $logs->links() }}</div>
+
 @endsection
