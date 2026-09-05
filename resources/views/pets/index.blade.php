@@ -23,6 +23,7 @@
     <select name="status" onchange="this.form.submit()" style="width:auto">
         <option value="">All Statuses</option>
         <option value="Available"  {{ request('status') === 'Available'  ? 'selected' : '' }}>Available</option>
+        <option value="Soft-Reserved" {{ request('status') === 'Soft-Reserved' ? 'selected' : '' }}>Processing - Under Evaluation</option>
         <option value="Processing" {{ request('status') === 'Processing' ? 'selected' : '' }}>Processing</option>
         <option value="Adopted"    {{ request('status') === 'Adopted'    ? 'selected' : '' }}>Adopted</option>
     </select>
@@ -38,7 +39,7 @@
     @foreach($pets as $pet)
     <div class="card" style="display:flex;flex-direction:column;gap:0.75rem;padding:0;overflow:hidden">
         @if($pet->photo_path)
-            <img src="{{ Storage::disk('public')->url($pet->photo_path) }}" alt="{{ $pet->name }}" style="width:100%;height:180px;object-fit:cover">
+            <img src="{{ asset('storage/' . $pet->photo_path) }}" alt="{{ $pet->name }}" style="width:100%;height:180px;object-fit:cover">
         @else
             <div style="width:100%;height:180px;background:linear-gradient(135deg,#ede9fe,#dbeafe);display:flex;align-items:center;justify-content:center;font-size:3rem">
                 {{ $pet->species->value === 'Cat' ? '🐱' : '🐶' }}
@@ -50,6 +51,7 @@
                 @php
                     $badgeClass = match($pet->availability_status->value) {
                         'Available'  => 'badge-green',
+                        'Soft-Reserved' => 'badge-yellow',
                         'Processing' => 'badge-yellow',
                         'Adopted'    => 'badge-gray',
                         default      => 'badge-gray',
@@ -58,6 +60,9 @@
                 <span class="badge {{ $badgeClass }}">{{ $pet->availability_status->value }}</span>
             </div>
             <p style="color:var(--muted);font-size:0.85rem">{{ $pet->breed ?? $pet->species->value }} &bull; {{ $pet->age ? $pet->age . ' yrs' : 'Age unknown' }}</p>
+            @if($pet->availability_status->value === 'Soft-Reserved')
+                <p style="color:#92400e;font-size:0.8rem;font-weight:700;margin-top:0.35rem">Processing - Under Evaluation. New applications are paused.</p>
+            @endif
             @if($pet->branch)
                 <p style="color:var(--muted);font-size:0.8rem;margin-top:0.25rem">📍 {{ $pet->branch->name }}</p>
             @endif

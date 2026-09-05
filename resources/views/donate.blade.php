@@ -27,7 +27,7 @@
             <h2 class="text-center text-3xl font-extrabold text-gray-900">Official Donation Channels</h2>
 
             <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <!-- @foreach ($channels as $channel)
+                {{-- @foreach ($channels as $channel)
                     <x-donation-channel-card
                         :name="$channel['name']"
                         :account-name="$channel['account_name']"
@@ -35,7 +35,7 @@
                         :qr="$channel['qr']"
                         :accent="$channel['accent']"
                     />
-                @endforeach -->
+                @endforeach --}}
                 <x-donation-channel-card
                     name="GCash" accountName="Red Cubs Pet Patrol" accountNumber="0918 985 2149" qr="images/qr/gcash.png" accent="border-blue-500"
                 />

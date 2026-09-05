@@ -9,7 +9,7 @@
         {{-- Photo --}}
         <div>
             @if($pet->photo_path)
-                <img src="{{ Storage::disk('public')->url($pet->photo_path) }}" alt="{{ $pet->name }}" style="width:100%;height:100%;object-fit:cover;min-height:300px">
+                <img src="{{ asset('storage/' . $pet->photo_path) }}" alt="{{ $pet->name }}" style="width:100%;height:100%;object-fit:cover;min-height:300px">
             @else
                 <div style="width:100%;height:300px;background:linear-gradient(135deg,#ede9fe,#dbeafe);display:flex;align-items:center;justify-content:center;font-size:5rem">
                     {{ $pet->species->value === 'Cat' ? '🐱' : '🐶' }}
@@ -21,11 +21,18 @@
         <div style="padding:2rem">
             <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem">
                 <h1 style="font-size:2rem;font-weight:700">{{ $pet->name }}</h1>
-                @php $badgeClass = match($pet->availability_status->value) { 'Available'=>'badge-green','Processing'=>'badge-yellow','Adopted'=>'badge-gray',default=>'badge-gray' }; @endphp
+                @php $badgeClass = match($pet->availability_status->value) { 'Available'=>'badge-green','Soft-Reserved','Processing'=>'badge-yellow','Adopted'=>'badge-gray',default=>'badge-gray' }; @endphp
                 <span class="badge {{ $badgeClass }}">{{ $pet->availability_status->value }}</span>
             </div>
 
             <p style="color:var(--muted);margin-bottom:1.5rem">{{ $pet->breed ?? $pet->species->value }}</p>
+
+            @if($pet->availability_status->value === 'Soft-Reserved')
+                <div style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;padding:0.75rem;border-radius:0.5rem;margin-bottom:1rem">
+                    <strong>Processing - Under Evaluation</strong><br>
+                    This pet remains visible, but new applications are paused while the active candidate is evaluated.
+                </div>
+            @endif
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.5rem;font-size:0.9rem">
                 <div><strong>Species</strong><br>{{ $pet->species->value }}</div>

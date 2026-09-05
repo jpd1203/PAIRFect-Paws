@@ -35,17 +35,20 @@
                     @php
                         $badge = match($app->status->value) {
                             'Pending'             => 'badge-yellow',
+                            'PrimaryCandidate'    => 'badge-blue',
+                            'Waitlisted'           => 'badge-yellow',
                             'UnderReview'         => 'badge-blue',
                             'InterviewScheduled'  => 'badge-purple',
                             'Approved'            => 'badge-green',
                             'Rejected'            => 'badge-red',
+                            'Withdrawn', 'NoShow'  => 'badge-red',
                             default               => 'badge-gray',
                         };
                     @endphp
-                    <span class="badge {{ $badge }}">{{ $app->status->value }}</span>
+                    <span class="badge {{ $badge }}">{{ $app->status_display }}</span>
                 </td>
-                <td>{{ $app->interview_date ? $app->interview_date->format('M d, Y g:i A') : '—' }}</td>
-                <td style="color:var(--muted);font-size:0.85rem">{{ $app->created_at->format('M d, Y') }}</td>
+                <td>{{ $app->interview_date ? \App\Support\ManilaTime::format($app->interview_date, 'M d, Y g:i A') : '—' }}</td>
+                <td style="color:var(--muted);font-size:0.85rem">{{ \App\Support\ManilaTime::format($app->created_at, 'M d, Y') }}</td>
             </tr>
             @endforeach
         </tbody>

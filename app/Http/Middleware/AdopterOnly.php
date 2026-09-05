@@ -14,7 +14,11 @@ class AdopterOnly
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user() || $request->user()->role !== Role::Adopter) {
+        if (
+            ! $request->user()
+            || ! $request->user()->is_active
+            || $request->user()->role !== Role::Adopter
+        ) {
             return redirect()->route('access-denied');
         }
 

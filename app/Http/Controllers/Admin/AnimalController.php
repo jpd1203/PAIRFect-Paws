@@ -15,9 +15,24 @@ class AnimalController extends Controller
         // withoutGlobalScope reveals archived pets too — here we show all
         $pets = Pet::withoutGlobalScope('notArchived')
             ->with('branch')
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->withCount('assessmentRecords')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get();
 
-        return view('admin.animal.index', compact('pets'));
+        $options = new class
+        {
+            const SPECIES = ['Cat', 'Dog'];
+
+            const SIZES = ['Small', 'Medium', 'Large'];
+
+            const AGE_GROUPS = ['Baby', 'Young', 'Adult', 'Senior'];
+
+            const HEALTH_STATUSES = ['Healthy', 'Needs Vet', 'Under Treatment', 'Critical'];
+
+            const ADOPTION_STATUSES = ['Available', 'Soft-Reserved', 'Adopted', 'Under Review', 'On Hold', 'Assessing'];
+        };
+
+        return view('admin.animal.index', compact('pets', 'options'));
     }
 }

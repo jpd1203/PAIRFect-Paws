@@ -37,12 +37,12 @@
 
                     <div class="form-group">
                         <label for="first_name">First Name *</label>
-                        <input id="first_name" name="first_name" type="text" value="{{ old('first_name') }}" required>
+                        <input id="first_name" name="first_name" type="text" value="{{ old('first_name', auth()->user()->first_name) }}" required>
                     </div>
 
                     <div class="form-group">
                         <label for="last_name">Last Name *</label>
-                        <input id="last_name" name="last_name" type="text" value="{{ old('last_name') }}" required>
+                        <input id="last_name" name="last_name" type="text" value="{{ old('last_name', auth()->user()->last_name) }}" required>
                     </div>
 
                     <div class="form-group">
@@ -55,10 +55,10 @@
                         <input id="phone_number" name="phone_number" type="text" value="{{ old('phone_number') }}" required>
                     </div>
 
-                    <div class="form-group full-width">
-                        <label for="address">Address *</label>
-                        <input id="address" name="address" type="text" value="{{ old('address') }}" required>
-                    </div>
+                    <x-philippine-address-fields
+                        :address="auth()->user()->address_components"
+                        id-prefix="application_address"
+                    />
 
                 </div>
 
@@ -135,8 +135,13 @@
 
             </div>
 
-            <!-- DOCUMENT -->
+            <!-- DOCUMENT & STATEMENT -->
             <div class="form-section">
+
+                <div class="form-group full-width mb-4">
+                    <label for="motivation_statement">Why do you want to adopt this pet? (Motivation Statement) *</label>
+                    <textarea id="motivation_statement" name="motivation_statement" rows="4" required>{{ old('motivation_statement') }}</textarea>
+                </div>
 
                 <div class="form-group">
                     <label>
@@ -144,7 +149,8 @@
                     </label>
 
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
-                    <small class="text-[.72rem] text-[#999]">PDF, JPG, or PNG — max 5MB.</small>
+                    <small class="text-[.72rem] text-[#777]">PDF, JPG, or PNG — max 10MB. OCR extracts text only; PAIRfect Paws does not use facial recognition or biometric matching.</small>
+                    <p class="mt-2 text-[.72rem] text-[#777]">Your document and extracted text are stored privately and are accessible only to authorized shelter personnel.</p>
                 </div>
 
                 <div class="checkbox-group">

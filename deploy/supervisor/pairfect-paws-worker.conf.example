@@ -1,0 +1,13 @@
+[program:pairfect-paws-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=/usr/bin/php /var/www/pairfect-paws/artisan queue:work database --queue=emails,default --sleep=3 --tries=3 --backoff=60 --timeout=60 --max-time=3600
+directory=/var/www/pairfect-paws
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/var/www/pairfect-paws/storage/logs/queue-worker.log
+stopwaitsecs=3600

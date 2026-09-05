@@ -132,7 +132,7 @@
         <!-- Left: Cat Peek (pinned to left screen edge and bottom of cream section) -->
         <div class="hidden md:flex flex-col items-start absolute left-0 bottom-0 z-10">
             <p class="ml-6 sm:ml-10 -mb-4 z-20 text-sm font-extrabold text-gray-800 bg-white px-4 py-2 rounded-full border border-gray-300 shadow-lg tracking-wide whitespace-nowrap">
-                800 donors have contributed!
+                {{ number_format($donorCount ?? 0) }} donations recorded!
             </p>
             <img src="{{ asset('images/cat-peek.png') }}" alt="Cat peek" class="h-48 sm:h-56 lg:h-64 w-auto object-contain object-bottom">
         </div>

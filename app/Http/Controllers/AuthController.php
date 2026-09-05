@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Enums\Role;
 use App\Models\User;
+use App\Services\PhilippineLocationService;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    public function __construct(private PhilippineLocationService $locations) {}
+
     // ─── Login ───────────────────────────────────────────────────────────────
 
     public function showLogin()
@@ -17,26 +21,27 @@ class AuthController extends Controller
         if (Auth::check()) {
             return $this->redirectByRole(Auth::user());
         }
+
         return view('auth.login');
     }
 
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email'    => 'required|email',
+            'email' => 'required|email',
             'password' => 'required',
         ]);
 
         // Find user first to check is_active before Auth::attempt
         $user = User::where('email', $credentials['email'])->first();
 
-        if ($user && !$user->is_active) {
+        if ($user && ! $user->is_active) {
             return back()->withErrors([
                 'email' => 'This account has been deactivated. Please contact an administrator.',
             ])->onlyInput('email');
         }
 
-        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             return back()->withErrors([
                 'email' => 'The provided credentials do not match our records.',
             ])->onlyInput('email');
@@ -44,7 +49,7 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return $this->redirectByRole(Auth::user());
+        return redirect()->intended($this->routeForRole(Auth::user()));
     }
 
     // ─── Register ─────────────────────────────────────────────────────────────
@@ -58,24 +63,29 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
-            'last_name'  => 'required|string|max:255',
-            'email'      => 'required|email|max:255|unique:users,email',
-            'password'   => 'required|string|min:8|confirmed',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            ...PhilippineLocationService::validationRules(),
         ]);
+        $address = $this->locations->resolveAddress($validated);
 
         $user = User::create([
             'first_name' => $validated['first_name'],
-            'last_name'  => $validated['last_name'],
-            'email'      => $validated['email'],
-            'password'   => Hash::make($validated['password']),
-            'role'       => Role::Adopter->value,
-            'is_active'  => true,
+            'last_name' => $validated['last_name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => Role::Adopter->value,
+            'is_active' => true,
+            ...$address,
         ]);
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('monitoring.my-checkins');
+        event(new Registered($user));
+
+        return redirect()->route('verification.notice');
     }
 
     // ─── Logout ───────────────────────────────────────────────────────────────
@@ -85,6 +95,7 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('login');
     }
 
@@ -99,9 +110,14 @@ class AuthController extends Controller
 
     private function redirectByRole(User $user)
     {
+        return redirect()->to($this->routeForRole($user));
+    }
+
+    private function routeForRole(User $user): string
+    {
         return match ($user->role) {
-            Role::Administrator, Role::Volunteer => redirect()->route('admin.dashboard'),
-            Role::Adopter                        => redirect()->route('monitoring.my-checkins'),
+            Role::Administrator, Role::Volunteer => route('admin.dashboard'),
+            Role::Adopter => route('animal.index'),
         };
     }
 }

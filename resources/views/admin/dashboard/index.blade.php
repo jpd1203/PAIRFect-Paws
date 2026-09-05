@@ -31,7 +31,7 @@
                 <i class="fa-solid fa-heart-circle-check stat-icon text-[#EC4899]"></i>
                 <h6>Adopted this month</h6>
             </div>
-            <h1>0</h1>
+            <h1>{{ $adoptedThisMonth }}</h1>
         </div>
 
         <div class="stat-card">
@@ -39,7 +39,7 @@
                 <i class="fa-solid fa-file stat-icon text-status-processing-text"></i>
                 <h6>Pending Applications</h6>
             </div>
-            <h1>0</h1>
+            <h1>{{ $pendingApplications }}</h1>
         </div>
 
         <div class="stat-card">
@@ -47,7 +47,7 @@
                 <i class="fa-solid fa-clipboard-list stat-icon text-blue-600"></i>
                 <h6>Active monitoring cases</h6>
             </div>
-            <h1>0</h1>
+            <h1>{{ $activeMonitoring }}</h1>
         </div>
 
         <div class="stat-card">
@@ -55,7 +55,7 @@
                 <i class="fa-solid fa-triangle-exclamation stat-icon text-primary"></i>
                 <h6>Flagged cases</h6>
             </div>
-            <h1>0</h1>
+            <h1>{{ $flaggedMonitoring }}</h1>
         </div>
         
     </div>
@@ -99,7 +99,7 @@
                                     <td>{{ $app->first_name }} {{ $app->last_name }}</td>
                                     <td>{{ $app->pet?->name }}</td>
                                     <td><span class="badge {{ $app->status_badge_class }}">{{ $app->status_display }}</span></td>
-                                    <td>{{ $app->created_at->format('M j, Y') }}</td>
+                                    <td>{{ \App\Support\ManilaTime::format($app->created_at, 'M j, Y') }}</td>
                                 </tr>
                             @empty
                                 <tr><td colspan="4" class="text-[#888] py-6">No applications yet.</td></tr>
@@ -118,24 +118,24 @@
                 <div class="alert-list">
 
                     @foreach ($overdueCheckIns as $checkIn)
-                        <div class="alert-item alert-overdue">
+                        <a href="{{ route('admin.monitoring.index') }}" class="alert-item alert-overdue">
                             <i class="fa-solid fa-circle-exclamation alert-icon text-status-danger-text"></i>
                             <span>
                                 <strong>{{ $checkIn->pet?->name }}</strong>
-                                — {{ $checkIn->milestone_display }} overdue since
+                                &mdash; {{ $checkIn->milestone_display }} overdue since
                                 {{ $checkIn->due_date->format('M j') }}
                             </span>
-                        </div>
+                        </a>
                     @endforeach
 
                     @foreach ($unresolvedFlags as $flag)
-                        <div class="alert-item alert-flag">
+                        <a href="{{ route('admin.monitoring.flagged') }}" class="alert-item alert-flag">
                             <i class="fa-solid fa-flag alert-icon text-status-flagged-text"></i>
                             <span>
-                                <strong>{{ $flag->checkIn?->pet?->name }}</strong>
-                                — unresolved flagged case
+                                <strong>{{ $flag->pet?->name }}</strong>
+                                &mdash; {{ $flag->milestone_display }} has an unresolved flag
                             </span>
-                        </div>
+                        </a>
                     @endforeach
 
                     @if ($overdueCheckIns->isEmpty() && $unresolvedFlags->isEmpty())

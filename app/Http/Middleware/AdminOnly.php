@@ -14,7 +14,11 @@ class AdminOnly
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user() || $request->user()->role !== Role::Administrator) {
+        if (
+            ! $request->user()
+            || ! $request->user()->is_active
+            || $request->user()->role !== Role::Administrator
+        ) {
             return redirect()->route('access-denied');
         }
 

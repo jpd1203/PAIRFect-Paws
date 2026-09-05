@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\AdminOnly;
+use App\Http\Middleware\AdopterOnly;
+use App\Http\Middleware\StaffOnly;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -11,13 +14,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // ngrok connects to the local development server through loopback.
+        // Trust only loopback so Laravel honors its forwarded HTTPS host and
+        // scheme without accepting spoofed proxy headers from other clients.
+        $middleware->trustProxies(at: ['127.0.0.1', '::1']);
+
         $middleware->alias([
-            'admin'   => \App\Http\Middleware\AdminOnly::class,
-            'staff'   => \App\Http\Middleware\StaffOnly::class,
-            'adopter' => \App\Http\Middleware\AdopterOnly::class,
+            'admin' => AdminOnly::class,
+            'staff' => StaffOnly::class,
+            'adopter' => AdopterOnly::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
-

@@ -3,7 +3,7 @@
 @section('meta_description', 'Register for a PAIRfect Paws adopter account')
 
 @section('content')
-<div style="max-width:480px;margin:3rem auto">
+<div style="max-width:720px;margin:3rem auto">
     <div class="card">
         <div style="text-align:center;margin-bottom:1.75rem">
             <div style="font-size:2.5rem;margin-bottom:0.5rem">🐾</div>
@@ -30,6 +30,7 @@
                 <input id="email" type="email" name="email" value="{{ old('email') }}" required>
                 @error('email') <div class="field-error">{{ $message }}</div> @enderror
             </div>
+            <x-philippine-address-fields id-prefix="register_address" />
             <div class="form-group">
                 <label for="password">Password <span style="color:var(--muted);font-weight:400">(min. 8 characters)</span></label>
                 <input id="password" type="password" name="password" required>

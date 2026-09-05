@@ -28,26 +28,29 @@
             @foreach($logs as $log)
             <tr>
                 <td><strong>{{ $log->adoptionApplication->pet->name }}</strong></td>
-                <td>{{ match($log->milestone->value) { 'ThreeDays' => '3-Day', 'ThreeWeeks' => '3-Week', 'ThreeMonths' => '3-Month' } }}</td>
+                <td>{{ $log->milestone->shortLabel() }}</td>
                 <td>{{ $log->scheduled_date->format('M d, Y') }}</td>
                 <td>
                     @php
                         $badge = match($log->display_status) {
-                            'Submitted' => 'badge-green',
-                            'Overdue'   => 'badge-red',
-                            default     => 'badge-yellow',
+                            'Submitted' => 'badge-completed',
+                            'Overdue'   => 'badge-overdue',
+                            'Upcoming'  => 'badge-upcoming',
+                            default     => 'badge-pending',
                         };
                     @endphp
                     <span class="badge {{ $badge }}">{{ $log->display_status }}</span>
-                    @if($log->flagged_for_review && !$log->resolved_at)
-                        <span class="badge badge-red" style="margin-left:0.25rem">⚠ Flagged</span>
+                    @if($log->is_flagged && !$log->resolved_at)
+                        <span class="badge badge-flagged" style="margin-left:0.25rem">⚠ Flagged</span>
                     @endif
                 </td>
                 <td>
-                    @if($log->display_status !== 'Submitted')
+                    @if(in_array($log->display_status, ['Pending', 'Overdue'], true))
                         <a href="{{ route('monitoring.create', $log) }}" class="btn btn-primary btn-sm">Submit Report</a>
+                    @elseif($log->display_status === 'Upcoming')
+                        <span style="color:var(--muted);font-size:0.85rem">Opens {{ $log->scheduled_date->format('M d') }}</span>
                     @else
-                        <span style="color:var(--muted);font-size:0.85rem">Submitted {{ $log->submitted_date->format('M d') }}</span>
+                        <span style="color:var(--muted);font-size:0.85rem">Submitted {{ \App\Support\ManilaTime::format($log->submitted_date, 'M d') }}</span>
                     @endif
                 </td>
             </tr>

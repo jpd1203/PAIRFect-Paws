@@ -1,6 +1,10 @@
 @php
     $isActive = fn (string ...$routeNames) => collect($routeNames)->contains(fn ($r) => request()->routeIs($r));
     $staff = auth()->user();
+    $unresolvedMonitoringFlags = \App\Models\PostAdoptionLog::query()
+        ->where('is_flagged', true)
+        ->whereNull('resolved_at')
+        ->count();
 @endphp
 
 <div class="sidebar" id="appSidebar">
@@ -25,12 +29,8 @@
                 <i class="fa-solid fa-paw fa-lg"></i> Animal Records
             </a>
 
-            <a href="{{ route('admin.assessments.record') }}" class="menu-item {{ $isActive('admin.assessments.record') ? 'active' : '' }}">
+            <a href="{{ route('admin.assessments.record') }}" class="menu-item {{ $isActive('admin.assessments.record', 'admin.assessments.create', 'admin.assessments.store') ? 'active' : '' }}">
                 <i class="fa-solid fa-pen-to-square fa-lg"></i> Assessment Record
-            </a>
-
-            <a href="{{ route('admin.assessments.record') }}" class="menu-item {{ $isActive('admin.assessments.create', 'admin.assessments.store') ? 'active' : '' }}">
-                <i class="fa-solid fa-heart fa-lg"></i> Pet Assessment
             </a>
 
             <a href="{{ route('admin.applications.index') }}" class="menu-item {{ $isActive('admin.applications.index') ? 'active' : '' }}">
@@ -55,8 +55,13 @@
                 <i class="fa-solid fa-magnifying-glass fa-lg"></i> Monitoring
             </a>
 
-            <a href="{{ route('admin.flagged-cases.index') }}" class="menu-item {{ $isActive('admin.flagged-cases.index') ? 'active' : '' }}">
+            <a href="{{ route('admin.monitoring.flagged') }}" class="menu-item {{ $isActive('admin.monitoring.flagged') ? 'active' : '' }}">
                 <i class="fa-solid fa-triangle-exclamation fa-lg"></i> Flagged Cases
+                @if ($unresolvedMonitoringFlags > 0)
+                    <span class="ml-auto min-w-5 rounded-full bg-status-danger-text px-1.5 py-0.5 text-center text-[.7rem] font-bold leading-none text-white">
+                        {{ $unresolvedMonitoringFlags > 99 ? '99+' : $unresolvedMonitoringFlags }}
+                    </span>
+                @endif
             </a>
 
         </div>
@@ -76,6 +81,15 @@
             <a href="{{ route('admin.funds.index') }}" class="menu-item {{ $isActive('admin.funds.index') ? 'active' : '' }}">
                 <i class="fa-solid fa-sack-dollar fa-lg"></i> Manage Funds
             </a>
+
+            @if (config('post_adoption.time_travel.enabled'))
+                <a href="{{ route('time-travel.index') }}" class="menu-item {{ $isActive('time-travel.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-clock-rotate-left fa-lg"></i> Test Time Travel
+                    @if (app(\App\Services\PostAdoptionClock::class)->isActive())
+                        <span class="ml-auto rounded bg-amber-500 px-1.5 py-0.5 text-[.65rem] font-bold text-white">ACTIVE</span>
+                    @endif
+                </a>
+            @endif
 
         </div>
 

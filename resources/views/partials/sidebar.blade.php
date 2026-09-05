@@ -32,7 +32,7 @@
 
             <a href="{{ route('application.index') }}"
                class="menu-item {{ $isActive('application.index', 'application.apply', 'application.submit') ? 'active' : '' }}">
-                <i class="fa-solid fa-file fa-lg"></i> My Application
+                <i class="fa-solid fa-file fa-lg"></i> My Applications
             </a>
 
         </div>
@@ -41,23 +41,23 @@
 
         <div class="menu-section">
 
-            <a href="{{ route('monitoring.index') }}"
-               class="menu-item {{ $isActive('monitoring.index', 'monitoring.report.show') ? 'active' : '' }}">
+            <a href="{{ route('monitoring.my-checkins') }}"
+               class="menu-item {{ $isActive('monitoring.my-checkins', 'monitoring.index') ? 'active' : '' }}">
                 <i class="fa-solid fa-circle-check fa-lg"></i> My Check-ins
             </a>
 
-            <a href="{{ route('flagged.submitReport') }}"
-               class="menu-item {{ $isActive('flagged.submitReport', 'flagged.previewReport', 'flagged.confirmSubmit') ? 'active' : '' }}">
+            <a href="{{ route('monitoring.submit-report') }}"
+               class="menu-item {{ $isActive('monitoring.submit-report', 'monitoring.create', 'monitoring.capture-challenge', 'monitoring.submit') ? 'active' : '' }}">
                 <i class="fa-solid fa-pen fa-lg"></i> Submit Report
             </a>
 
-            <a href="{{ route('flagged.overdueNotice') }}"
-               class="menu-item {{ $isActive('flagged.overdueNotice') ? 'active' : '' }}">
+            <a href="{{ route('monitoring.overdue-notice') }}"
+               class="menu-item {{ $isActive('monitoring.overdue-notice') ? 'active' : '' }}">
                 <i class="fa-solid fa-circle-exclamation fa-lg"></i> Overdue Notice
             </a>
 
-            <a href="{{ route('flagged.flaggedNotice') }}"
-               class="menu-item {{ $isActive('flagged.flaggedNotice') ? 'active' : '' }}">
+            <a href="{{ route('monitoring.flagged-notice') }}"
+               class="menu-item {{ $isActive('monitoring.flagged-notice') ? 'active' : '' }}">
                 <i class="fa-solid fa-triangle-exclamation fa-lg"></i> Flagged Notice
             </a>
 

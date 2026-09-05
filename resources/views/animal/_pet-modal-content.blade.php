@@ -28,10 +28,10 @@
         5 => 'Very Calm & Adaptable',
     ];
 
-    $energyVal = is_numeric($pet->energy_level) ? ($energyLabels[(int)$pet->energy_level] ?? $pet->energy_level) : ($pet->energy_level ?: 'Moderate Energy');
-    $independenceVal = is_numeric($pet->independence_level) ? ($independenceLabels[(int)$pet->independence_level] ?? $pet->independence_level) : ($pet->independence_level ?: 'Mostly Independent');
-    $trainabilityVal = is_numeric($pet->trainability) ? ($trainabilityLabels[(int)$pet->trainability] ?? $pet->trainability) : ($pet->trainability ?: 'Highly Trainable');
-    $temperamentVal = is_numeric($pet->temperament) ? ($temperamentLabels[(int)$pet->temperament] ?? $pet->temperament) : ($pet->temperament ?: 'Generally calm');
+    $energyVal = ($pet->energy_level > 0) ? ($energyLabels[(int)$pet->energy_level] ?? $pet->energy_level) : 'N/A';
+    $independenceVal = ($pet->independence > 0) ? ($independenceLabels[(int)$pet->independence] ?? $pet->independence) : 'N/A';
+    $trainabilityVal = ($pet->trainability > 0) ? ($trainabilityLabels[(int)$pet->trainability] ?? $pet->trainability) : 'N/A';
+    $temperamentVal = ($pet->temperament > 0) ? ($temperamentLabels[(int)$pet->temperament] ?? $pet->temperament) : 'N/A';
 @endphp
 
 <!-- Modal Header & Center Image -->
@@ -76,7 +76,7 @@
         </div>
         <div class="profile-row">
             <span>Vaccination Records</span>
-            <span>{{ $pet->vaccination_records ?: 'Anti-Rabies, 5in1' }}</span>
+            <span>{{ $pet->vaccination_record_status ?: 'Unknown' }}</span>
         </div>
     </div>
 
@@ -100,7 +100,7 @@
         </div>
         <div class="profile-row">
             <span>Physical Size</span>
-            <span>{{ $pet->physical_size ?: 'Medium' }}</span>
+            <span>{{ $pet->physical_size ?: 'Unknown' }}</span>
         </div>
         <div class="profile-row">
             <span>Temperament</span>
@@ -115,7 +115,13 @@
     <button type="button" class="btn btn-secondary rounded-xl px-6 py-2" onclick="closePetModal()">
         Close
     </button>
-    <a class="btn btn-apply rounded-xl px-6 py-2" href="{{ route('application.apply', $pet) }}">
-        Adopt Me!
-    </a>
+    @if ($pet->availability_status->value === 'Available')
+        <a class="btn btn-apply rounded-xl px-6 py-2" href="{{ route('application.apply', $pet) }}">
+            Adopt Me!
+        </a>
+    @else
+        <span class="btn btn-secondary rounded-xl px-6 py-2" aria-disabled="true">
+            Processing - Under Evaluation
+        </span>
+    @endif
 </div>

@@ -41,7 +41,7 @@
                             </span>
 
                             @if (in_array($checkIn->status, [CheckIn::STATUS_PENDING, CheckIn::STATUS_OVERDUE]))
-                                <a class="btn btn-primary" href="{{ route('flagged.submitReport') }}">
+                                <a class="btn btn-primary" href="{{ route('monitoring.my-checkins') }}">
                                     Submit Now
                                 </a>
                             @endif

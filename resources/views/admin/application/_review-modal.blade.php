@@ -20,6 +20,13 @@
             </div>
 
             <div class="review-section">
+                <h6>Reservation Queue</h6>
+                <div class="review-row"><span>Queue position</span><span id="rQueuePosition"></span></div>
+                <div class="review-row"><span>Candidate role</span><span id="rCandidateRole"></span></div>
+                <div class="review-row" id="rTimeoutRow"><span>72-hour timeout</span><span class="text-amber-700 font-semibold">Flagged for administrative review</span></div>
+            </div>
+
+            <div class="review-section">
                 <h6>Adopter Profile</h6>
                 <div class="review-row"><span>Physical Activity Level</span><span id="rActivity"></span></div>
                 <div class="review-row"><span>Time Availability</span><span id="rTime"></span></div>
@@ -36,6 +43,13 @@
                 <div class="review-row">
                     <span>Document upload (valid ID, proof of residence)</span>
                     <a class="btn btn-secondary btn-sm" id="rDocumentLink" href="#" target="_blank">View</a>
+                </div>
+                <div class="review-row">
+                    <span>OCR Verification</span>
+                    <span>
+                        <strong id="rDocumentStatus"></strong>
+                        <a class="btn btn-secondary btn-sm ml-2" id="rVerificationLink" href="#" target="_blank">Details</a>
+                    </span>
                 </div>
 
                 <div class="review-row" id="rCompatRow">
@@ -66,13 +80,28 @@
         <div class="custom-modal-footer" id="rActionsRow">
             <button type="button" class="btn btn-secondary" onclick="closeModal('applicationReviewModal')">Close</button>
             <button type="button" class="btn btn-danger" id="rRejectBtn">Reject</button>
+            <button type="button" class="btn btn-blue" id="rScheduleBtn">Schedule Interview</button>
             <button type="button" class="btn btn-sucess" id="rApproveBtn">Approve</button>
+            <button type="button" class="btn btn-yellow" id="rNoShowBtn">Mark No Show</button>
+            <button type="button" class="btn btn-secondary" id="rWithdrawBtn">Mark Withdrawn</button>
+            <button type="button" class="btn btn-primary" id="rOverrideBtn">Administrative Override</button>
         </div>
 
         <form id="rDecisionForm" method="POST" class="hidden">
             @csrf
             <input type="hidden" name="decision" id="rDecisionInput">
             <input type="hidden" name="decision_remarks" id="rDecisionRemarksInput">
+        </form>
+
+        <form id="rQueueOutcomeForm" method="POST" class="hidden">
+            @csrf
+            <input type="hidden" name="outcome" id="rQueueOutcomeInput">
+            <input type="hidden" name="reason" id="rQueueReasonInput">
+        </form>
+
+        <form id="rOverrideForm" method="POST" class="hidden">
+            @csrf
+            <input type="hidden" name="override_reason" id="rOverrideReasonInput">
         </form>
 
     </div>

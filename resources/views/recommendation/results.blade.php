@@ -110,9 +110,16 @@
                 <h3 class="font-primary text-xl mb-4 shrink-0">Compatibility results</h3>
 
                 <div id="matchResults" class="flex flex-col gap-4 flex-1 overflow-y-auto pr-2">
-                    @foreach ($matches as $match)
-                        @include('recommendation._match-card', ['pet' => $match['pet'], 'result' => $match['result'], 'matcher' => $matcher])
-                    @endforeach
+                    @if ($matches->isEmpty())
+                        <div class="empty-state" style="padding:2rem 1rem;text-align:center;color:var(--muted)">
+                            <i class="fa-solid fa-paw" style="font-size:2rem;opacity:.4"></i>
+                            <p style="margin-top:0.75rem;font-size:.9rem">No fully assessed pets currently match your profile.<br>Pets only appear here after three recorded assessments and completion of all matching fields.</p>
+                        </div>
+                    @else
+                        @foreach ($matches as $match)
+                            @include('recommendation._match-card', ['pet' => $match['pet'], 'result' => $match['result'], 'matcher' => $matcher])
+                        @endforeach
+                    @endif
                 </div>
             </div>
 

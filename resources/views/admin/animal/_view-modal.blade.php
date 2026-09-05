@@ -6,6 +6,8 @@
         </div>
         <form id="viewAnimalForm" method="POST" enctype="multipart/form-data">
             @csrf
+            @method('PUT')
+            <input type="hidden" name="version" id="vVersion">
             <div class="custom-modal-body">
                 <div class="grid grid-cols-3 gap-4 max-[768px]:grid-cols-1">
 
@@ -85,13 +87,26 @@
                     </div>
 
                     <div class="form-group">
+                        <label class="form-label">Medical Needs Level</label>
+                        <select id="vMedical" name="medical_needs" class="form-select">
+                            <option value="">Not recorded</option>
+                            <option value="1">1 - Routine care only</option>
+                            <option value="2">2 - Minor medical care</option>
+                            <option value="3">3 - Regular medication/checkups</option>
+                            <option value="4">4 - Frequent veterinary care</option>
+                            <option value="5">5 - Intensive ongoing care</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label">Replace Photo (optional)</label>
+                        <img id="vPhotoPreview" src="" style="height:80px;border-radius:6px;margin-bottom:0.5rem;display:none">
                         <input type="file" name="photo" class="form-control" accept="image/*">
                     </div>
 
                     <div class="form-group col-span-3">
                         <label class="form-label">Notes</label>
-                        <textarea id="vNotes" name="notes" class="form-control" rows="1"></textarea>
+                        <textarea id="vNotes" name="behavioral_notes" class="form-control" rows="1"></textarea>
                     </div>
 
                     <div class="form-group col-span-3">

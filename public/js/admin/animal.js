@@ -16,8 +16,19 @@ function openViewAnimalModal(id) {
     document.getElementById('vHealth').value = a.health;
     document.getElementById('vStatus').value = a.status;
     document.getElementById('vSize').value = a.physical_size;
+    document.getElementById('vMedical').value = a.medical_needs ?? '';
     document.getElementById('vVacc').value = a.vacc;
     document.getElementById('vNotes').value = a.notes ?? '';
+    document.getElementById('vVersion').value = a.version;
+
+    const photoPreview = document.getElementById('vPhotoPreview');
+    if (a.image_url && !a.image_url.includes('rcpp-logo.png')) {
+        photoPreview.src = a.image_url;
+        photoPreview.style.display = 'block';
+    } else {
+        photoPreview.style.display = 'none';
+        photoPreview.src = '';
+    }
 
     const badge = document.getElementById('vAssessBadge');
     badge.textContent = a.assessment_status === 'complete' ? 'Complete' : 'Pending';

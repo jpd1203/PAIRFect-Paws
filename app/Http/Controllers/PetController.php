@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AvailabilityStatus;
+use App\Models\AdoptionApplication;
 use App\Models\Branch;
 use App\Models\Pet;
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class PetController extends Controller
 {
@@ -37,7 +38,18 @@ class PetController extends Controller
     public function show(Pet $pet)
     {
         $pet->load('branch');
+
         return view('pets.show', compact('pet'));
+    }
+
+    /**
+     * GET /pets/{pet}/modal — fetch pet modal content (AJAX)
+     */
+    public function modal(Pet $pet)
+    {
+        $pet->load('branch');
+
+        return view('animal._pet-modal-content', compact('pet'));
     }
 
     // ─── Staff Management ─────────────────────────────────────────────────────
@@ -48,6 +60,7 @@ class PetController extends Controller
     public function create()
     {
         $branches = Branch::all();
+
         return view('pets.create', compact('branches'));
     }
 
@@ -57,16 +70,21 @@ class PetController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'              => 'required|string|max:255',
-            'species'           => 'required|in:Cat,Dog',
-            'breed'             => 'nullable|string|max:255',
-            'age'               => 'nullable|integer|min:0',
-            'sex'               => 'nullable|in:Male,Female',
-            'health_status'     => 'nullable|string|max:255',
-            'behavioral_notes'  => 'nullable|string',
-            'branch_id'         => 'nullable|exists:branches,id',
-            'intake_date'       => 'nullable|date',
-            'photo'             => 'nullable|image|mimes:jpg,jpeg,png,webp|max:40960',
+            'name' => 'required|string|max:255',
+            'species' => 'required|in:Cat,Dog',
+            'breed' => 'nullable|string|max:255',
+            'age_years' => 'nullable|integer|min:0',
+            'age_months' => 'nullable|integer|min:0|max:11',
+            'sex' => 'nullable|in:Male,Female',
+            'health_status' => 'nullable|string|max:255',
+            'behavioral_notes' => 'nullable|string',
+            'status' => 'required|string|max:255',
+            'branch_id' => 'nullable|exists:branches,id',
+            'physical_size' => 'nullable|string|max:255',
+            'medical_needs' => 'nullable|numeric|min:1|max:5',
+            'vaccination_record_status' => 'nullable|string|max:255',
+            'intake_date' => 'nullable|date',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:102400',
         ]);
 
         $photoPath = null;
@@ -74,21 +92,34 @@ class PetController extends Controller
             $photoPath = $request->file('photo')->store('pets', 'public');
         }
 
-        Pet::create([
-            'name'                => $validated['name'],
-            'species'             => $validated['species'],
-            'breed'               => $validated['breed'] ?? null,
-            'age'                 => $validated['age'] ?? null,
-            'sex'                 => $validated['sex'] ?? null,
-            'health_status'       => $validated['health_status'] ?? null,
-            'behavioral_notes'    => $validated['behavioral_notes'] ?? null,
-            'availability_status' => AvailabilityStatus::Available->value,
-            'branch_id'           => $validated['branch_id'] ?? null,
-            'intake_date'         => $validated['intake_date'] ?? now()->toDateString(),
-            'photo_path'          => $photoPath,
-            'is_archived'         => false,
-            'version'             => 1,
+        $age = ((int) ($validated['age_years'] ?? 0)) * 12 + ((int) ($validated['age_months'] ?? 0));
+
+        $pet = Pet::create([
+            'name' => $validated['name'],
+            'species' => $validated['species'],
+            'breed' => $validated['breed'] ?? null,
+            'age' => $age > 0 ? $age : null,
+            'sex' => $validated['sex'] ?? null,
+            'health_status' => $validated['health_status'] ?? null,
+            'behavioral_notes' => $validated['behavioral_notes'] ?? null,
+            'availability_status' => $validated['status'],
+            'branch_id' => $validated['branch_id'] ?? null,
+            'physical_size' => $validated['physical_size'] ?? null,
+            'medical_needs' => $validated['medical_needs'] ?? null,
+            'vaccination_record_status' => $validated['vaccination_record_status'] ?? null,
+            'intake_date' => $validated['intake_date'] ?? now()->toDateString(),
+            'photo_path' => $photoPath,
+            'is_archived' => false,
+            'version' => 1,
         ]);
+
+        AuditLogService::log(
+            auth()->id(),
+            'Added New Animal',
+            'Pet',
+            $pet->id,
+            "Added animal: {$pet->name} ({$pet->species->value})"
+        );
 
         return redirect()->route('admin.animals.index')
             ->with('success', 'Pet added successfully.');
@@ -100,6 +131,7 @@ class PetController extends Controller
     public function edit(Pet $pet)
     {
         $branches = Branch::all();
+
         return view('pets.edit', compact('pet', 'branches'));
     }
 
@@ -109,42 +141,74 @@ class PetController extends Controller
     public function update(Request $request, Pet $pet)
     {
         $validated = $request->validate([
-            'name'              => 'required|string|max:255',
-            'species'           => 'required|in:Cat,Dog',
-            'breed'             => 'nullable|string|max:255',
-            'age'               => 'nullable|integer|min:0',
-            'sex'               => 'nullable|in:Male,Female',
-            'health_status'     => 'nullable|string|max:255',
-            'behavioral_notes'  => 'nullable|string',
-            'branch_id'         => 'nullable|exists:branches,id',
-            'photo'             => 'nullable|image|mimes:jpg,jpeg,png,webp|max:40960',
-            'version'           => 'required|integer',
+            'name' => 'required|string|max:255',
+            'species' => 'required|in:Cat,Dog',
+            'breed' => 'nullable|string|max:255',
+            'age_years' => 'nullable|integer|min:0',
+            'age_months' => 'nullable|integer|min:0|max:11',
+            'sex' => 'nullable|in:Male,Female',
+            'health_status' => 'nullable|string|max:255',
+            'behavioral_notes' => 'nullable|string',
+            'status' => 'required|string|max:255',
+            'branch_id' => 'nullable|exists:branches,id',
+            'physical_size' => 'nullable|string|max:255',
+            'medical_needs' => 'nullable|numeric|min:1|max:5',
+            'vaccination_record_status' => 'nullable|string|max:255',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:102400',
+            'version' => 'required|integer',
         ]);
 
         $submittedVersion = (int) $validated['version'];
+        $age = ((int) ($validated['age_years'] ?? 0)) * 12 + ((int) ($validated['age_months'] ?? 0));
+
+        $hasActivePrimary = AdoptionApplication::where('pet_id', $pet->id)
+            ->where('is_primary_candidate', true)
+            ->exists();
+        if ($hasActivePrimary && $validated['status'] !== AvailabilityStatus::SoftReserved->value) {
+            return back()->withErrors([
+                'status' => 'This pet has an active primary candidate and must remain Soft-Reserved. Manage the application queue instead.',
+            ])->withInput();
+        }
+        if (! $hasActivePrimary && $validated['status'] === AvailabilityStatus::SoftReserved->value) {
+            return back()->withErrors([
+                'status' => 'Soft-Reserved is controlled automatically by the application queue.',
+            ])->withInput();
+        }
 
         // Optimistic concurrency check
         $updated = Pet::withoutGlobalScope('notArchived')
             ->where('id', $pet->id)
             ->where('version', $submittedVersion)
             ->update(array_filter([
-                'name'             => $validated['name'],
-                'species'          => $validated['species'],
-                'breed'            => $validated['breed'],
-                'age'              => $validated['age'],
-                'sex'              => $validated['sex'],
-                'health_status'    => $validated['health_status'],
-                'behavioral_notes' => $validated['behavioral_notes'],
-                'branch_id'        => $validated['branch_id'],
-                'photo_path'       => $this->handlePhotoUpload($request, $pet->photo_path),
-                'version'          => $submittedVersion + 1,
-            ], fn($v) => $v !== null));
+                'name' => $validated['name'],
+                'species' => $validated['species'],
+                'breed' => $validated['breed'] ?? null,
+                'age' => $age > 0 ? $age : null,
+                'sex' => $validated['sex'] ?? null,
+                'health_status' => $validated['health_status'] ?? null,
+                'behavioral_notes' => $validated['behavioral_notes'] ?? null,
+                'availability_status' => $validated['status'],
+                'branch_id' => $validated['branch_id'] ?? null,
+                'physical_size' => $validated['physical_size'] ?? null,
+                'medical_needs' => $validated['medical_needs'] ?? null,
+                'vaccination_record_status' => $validated['vaccination_record_status'] ?? null,
+                'photo_path' => $this->handlePhotoUpload($request, $pet->photo_path),
+                'version' => $submittedVersion + 1,
+            ], fn ($v) => $v !== null));
 
         if ($updated === 0) {
             return back()->withErrors([
                 'concurrency' => 'This record was changed by someone else while you were editing it. Please reload and try again.',
             ])->withInput();
         }
+
+        AuditLogService::log(
+            auth()->id(),
+            'Updated Animal Profile',
+            'Pet',
+            $pet->id,
+            "Updated animal: {$pet->name}"
+        );
 
         return redirect()->route('admin.animals.index')
             ->with('success', 'Pet updated successfully.');
@@ -155,12 +219,54 @@ class PetController extends Controller
      */
     public function archive(Pet $pet)
     {
+        if (AdoptionApplication::where('pet_id', $pet->id)->where('is_primary_candidate', true)->exists()) {
+            return back()->withErrors([
+                'pet' => 'This pet cannot be archived while its reservation queue has an active primary candidate.',
+            ]);
+        }
+
         Pet::withoutGlobalScope('notArchived')
             ->where('id', $pet->id)
             ->update(['is_archived' => true]);
 
+        AuditLogService::log(
+            auth()->id(),
+            'Archived Animal Profile',
+            'Pet',
+            $pet->id,
+            "Archived animal: {$pet->name}"
+        );
+
         return redirect()->route('admin.animals.index')
             ->with('success', 'Pet archived successfully.');
+    }
+
+    /**
+     * DELETE /pets/{pet} — delete pet and log to audit logs
+     */
+    public function destroy(Pet $pet)
+    {
+        if (AdoptionApplication::where('pet_id', $pet->id)->where('is_primary_candidate', true)->exists()) {
+            return back()->withErrors([
+                'pet' => 'This pet cannot be deleted while its reservation queue has an active primary candidate.',
+            ]);
+        }
+
+        $petId = $pet->id;
+        $petName = $pet->name;
+
+        $pet->delete();
+
+        AuditLogService::log(
+            auth()->id(),
+            'Deleted Animal Profile',
+            'Pet',
+            $petId,
+            "Deleted animal: {$petName}"
+        );
+
+        return redirect()->route('admin.animals.index')
+            ->with('success', 'Pet deleted successfully.');
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────
@@ -170,6 +276,7 @@ class PetController extends Controller
         if ($request->hasFile('photo')) {
             return $request->file('photo')->store('pets', 'public');
         }
+
         return $existingPath ?? '';
     }
 }

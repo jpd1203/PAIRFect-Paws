@@ -60,6 +60,15 @@
                     <label for="intake_date">Intake Date</label>
                     <input id="intake_date" type="date" name="intake_date" value="{{ old('intake_date', now()->toDateString()) }}">
                 </div>
+                <div class="form-group">
+                    <label for="status">Status *</label>
+                    <select id="status" name="status" required>
+                        <option value="Available" {{ old('status') === 'Available' ? 'selected' : '' }}>Available</option>
+                        <option value="Processing" {{ old('status') === 'Processing' ? 'selected' : '' }}>Processing</option>
+                        <option value="Adopted" {{ old('status') === 'Adopted' ? 'selected' : '' }}>Adopted</option>
+                    </select>
+                    @error('status') <div class="field-error">{{ $message }}</div> @enderror
+                </div>
             </div>
 
             <div class="form-group">

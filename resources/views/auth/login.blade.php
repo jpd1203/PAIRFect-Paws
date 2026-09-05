@@ -35,6 +35,12 @@
                 </button>
             </div>
 
+            @if (session('status'))
+                <div class="mb-4 rounded-xl border border-green-300 bg-green-50 p-3.5 text-xs font-medium leading-relaxed text-green-800" role="status">
+                    {{ session('status') }}
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="mb-4 rounded-xl border border-red-300 bg-red-50 p-3.5 text-xs text-red-700 leading-relaxed font-medium">
                     <ul class="list-disc pl-4 space-y-1">
@@ -59,7 +65,7 @@
                     <label for="signin_password" class="block text-xs font-bold text-gray-700 mb-1">Password*</label>
                     <input id="signin_password" name="password" type="password" required
                            class="w-full bg-white border border-gray-400 rounded-lg px-3.5 py-2 text-sm text-gray-900 focus:outline-none focus:border-maroon-600 focus:ring-1 focus:ring-maroon-600">
-                    <a href="javascript:void(0)" onclick="alert('Please contact shelter staff or reset password via administrator.')"
+                    <a href="{{ route('password.request') }}"
                        class="text-[11px] text-gray-600 hover:underline block text-right mt-1 font-medium">
                         Forgot password?
                     </a>
@@ -93,19 +99,14 @@
                     </div>
                 </div>
 
-                <!-- Email & Phone Number -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Email*</label>
-                        <input name="email" type="email" value="{{ old('email') }}" required
-                               class="w-full bg-white border border-gray-400 rounded-lg px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:border-maroon-600 focus:ring-1 focus:ring-maroon-600">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Phone Number*</label>
-                        <input name="phone_number" type="text" value="{{ old('phone_number') }}" required
-                               class="w-full bg-white border border-gray-400 rounded-lg px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:border-maroon-600 focus:ring-1 focus:ring-maroon-600">
-                    </div>
+                <!-- Email -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Email*</label>
+                    <input name="email" type="email" value="{{ old('email') }}" required
+                           class="w-full bg-white border border-gray-400 rounded-lg px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:border-maroon-600 focus:ring-1 focus:ring-maroon-600">
                 </div>
+
+                <x-philippine-address-fields id-prefix="login_register_address" compact />
 
                 <!-- Password & Confirm Password -->
                 <div class="grid grid-cols-2 gap-3">

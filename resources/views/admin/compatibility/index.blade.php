@@ -65,7 +65,7 @@
 
             <p class="applied-date">
                 <i class="fa-regular fa-calendar"></i>
-                Applied {{ $app->created_at->format('M d, Y') }}
+                Applied {{ \App\Support\ManilaTime::format($app->created_at, 'M d, Y') }}
             </p>
 
         </div>

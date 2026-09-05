@@ -170,10 +170,12 @@
     @apply bg-status-success-bg text-status-success-text border-status-success-text;
   }
   .badge-pending,
+  .badge-waitlisted,
   .badge-fair {
     @apply bg-status-processing-bg text-status-processing-text border-status-processing-text;
   }
   .badge-scheduled,
+  .badge-primarycandidate,
   .badge-good {
     @apply bg-status-adopted-bg text-status-adopted-text border-status-adopted-text;
   }
@@ -186,6 +188,9 @@
   }
   .badge-poor,
   .badge-rejected,
+  .badge-documentflagged,
+  .badge-withdrawn,
+  .badge-noshow,
   .badge-overdue {
     @apply bg-status-danger-bg text-status-danger-text border-status-danger-text;
   }
@@ -321,8 +326,76 @@
   .form-group input:disabled {
     @apply bg-neutral-light text-[#777] cursor-not-allowed;
   }
+  .psgc-address {
+    @apply col-span-2 my-3 min-w-0 border-0 p-0;
+  }
+  .psgc-address legend {
+    @apply mb-3 text-sm font-semibold text-[#382f31];
+  }
+  .psgc-address-grid {
+    @apply grid grid-cols-2 gap-x-5 gap-y-3;
+  }
+  .psgc-field {
+    @apply flex min-w-0 flex-col;
+  }
+  .psgc-field--wide {
+    @apply col-span-2;
+  }
+  .psgc-field label {
+    @apply mb-1.5 text-[13px] font-semibold;
+  }
+  .psgc-field input,
+  .psgc-field select {
+    @apply h-[42px] w-full rounded-md border border-[#777] bg-white px-3 text-sm text-[#272323];
+  }
+  .psgc-field input:focus,
+  .psgc-field select:focus {
+    @apply border-maroon-600 outline-none ring-1 ring-maroon-600;
+  }
+  .psgc-field select:disabled {
+    @apply cursor-not-allowed bg-neutral-light text-[#777];
+  }
+  .psgc-address-status,
+  .psgc-address-source {
+    @apply mt-2 text-[11px] leading-relaxed text-[#6b6563];
+  }
+  .psgc-address-source a {
+    @apply font-medium text-maroon-600 underline hover:text-maroon-700;
+  }
+  .psgc-address-status:empty {
+    @apply hidden;
+  }
+  .psgc-address-status.is-error {
+    @apply text-status-danger-text;
+  }
+  .psgc-address--compact legend {
+    @apply text-xs text-gray-700;
+  }
+  .psgc-address--compact .psgc-address-grid {
+    @apply gap-x-3 gap-y-2.5;
+  }
+  .psgc-address--compact .psgc-field label {
+    @apply text-xs text-gray-700;
+  }
+  .psgc-address--compact .psgc-field input,
+  .psgc-address--compact .psgc-field select {
+    @apply h-[38px] rounded-lg border-gray-400 px-3 text-xs;
+  }
   .full-width {
     @apply col-span-2 max-[1024px]:col-span-1;
+  }
+
+  @media (max-width: 640px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    .psgc-address-grid {
+      @apply grid-cols-1;
+    }
+    .psgc-field--wide,
+    .psgc-address {
+      @apply col-span-1;
+    }
   }
   .checkbox-group {
     @apply mt-5 flex items-start gap-2.5;
@@ -589,6 +662,103 @@
   .compat-score-sub {
     @apply text-[.68rem] text-[#888] mt-0.5;
   }
+
+  /* ---------- Post-adoption live camera ---------- */
+  .post-adoption-report-page {
+    @apply flex-1 overflow-y-auto px-8 py-8;
+  }
+  .post-adoption-report-page .page-header,
+  .post-adoption-report-card {
+    @apply max-w-[760px] mx-auto;
+  }
+  .post-adoption-report-page .page-header {
+    @apply mb-5;
+  }
+  .post-adoption-report-page .page-header h1 {
+    @apply font-primary text-3xl font-bold text-text-dark mb-1;
+  }
+  .post-adoption-report-page .page-header p {
+    @apply text-[#6f6865];
+  }
+  .post-adoption-report-card {
+    @apply bg-white border border-[#ded9d1] rounded-2xl p-7 shadow-card;
+  }
+  .post-adoption-report-card form {
+    @apply flex flex-col gap-5;
+  }
+  .post-adoption-report-page .field-error {
+    @apply mt-1.5 text-xs font-semibold text-status-danger-text;
+  }
+  .post-adoption-report-page .field-error:empty {
+    display: none;
+  }
+  .post-adoption-camera {
+    @apply mt-1 rounded-2xl border border-[#c9bcae] bg-[#fbfaf8] p-5;
+  }
+  .post-adoption-camera [hidden] {
+    display: none !important;
+  }
+  .post-adoption-camera__heading {
+    @apply flex items-start justify-between gap-4;
+  }
+  .post-adoption-camera__heading h2 {
+    @apply font-primary text-xl font-bold text-text-dark;
+  }
+  .post-adoption-camera__heading p {
+    @apply mt-1 text-sm leading-relaxed text-[#6f6865];
+  }
+  .post-adoption-camera__badge {
+    @apply shrink-0 rounded-full border border-status-success-text bg-status-success-bg px-3 py-1 text-xs font-bold text-status-success-text;
+  }
+  .post-adoption-camera__notice {
+    @apply mt-4 flex items-start gap-3 rounded-xl border border-[#bfd0e7] bg-[#edf4fb] px-4 py-3 text-sm leading-relaxed text-[#2a4877];
+  }
+  .post-adoption-camera__notice i {
+    @apply mt-0.5 shrink-0 text-base;
+  }
+  .post-adoption-camera__notice p {
+    @apply m-0;
+  }
+    .post-adoption-camera__viewport {
+      @apply relative mt-4 flex w-full items-center justify-center overflow-hidden rounded-xl border border-[#bcb4ac] bg-[#211f20];
+      aspect-ratio: 16 / 9;
+    }
+  .post-adoption-camera__viewport video,
+  .post-adoption-camera__viewport img {
+    @apply h-full w-full object-cover;
+  }
+  .post-adoption-camera__placeholder {
+    @apply flex flex-col items-center justify-center gap-3 px-5 text-center text-sm text-[#ddd5cd];
+  }
+  .post-adoption-camera__placeholder i {
+    @apply text-4xl text-[#c7bdb3];
+  }
+  .post-adoption-camera__status {
+    @apply mt-3 min-h-5 text-sm font-semibold text-[#625c59];
+  }
+  .post-adoption-camera[data-camera-state="ready"] .post-adoption-camera__status,
+  .post-adoption-camera[data-camera-state="captured"] .post-adoption-camera__status {
+    @apply text-status-success-text;
+  }
+  .post-adoption-camera[data-camera-state="error"] .post-adoption-camera__status {
+    @apply text-status-danger-text;
+  }
+  .post-adoption-camera__actions {
+    @apply mt-3 flex flex-wrap gap-3;
+  }
+  .post-adoption-camera__security-note {
+    @apply mt-3 text-xs leading-relaxed text-[#77716e];
+  }
+  .post-adoption-report-actions {
+    @apply flex flex-wrap items-center justify-between gap-3 border-t border-[#e3dfd9] pt-5;
+  }
+  .post-adoption-report-actions p {
+    @apply text-xs font-medium text-[#77716e];
+  }
+  .post-adoption-report-actions .btn:disabled,
+  .post-adoption-camera__actions .btn:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
 }
 
 /* Custom scrollbar for match results container */
@@ -629,5 +799,27 @@
   .main-content {
     margin-top: 56px;
     height: calc(100vh - 56px);
+  }
+
+  .post-adoption-report-page {
+    padding: 1.25rem;
+  }
+
+  .post-adoption-report-card {
+    padding: 1.25rem;
+  }
+
+  .post-adoption-camera__heading,
+  .post-adoption-report-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .post-adoption-camera__badge {
+    align-self: flex-start;
+  }
+
+  .post-adoption-report-actions .btn {
+    width: 100%;
   }
 }

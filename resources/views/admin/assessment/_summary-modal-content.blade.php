@@ -1,10 +1,20 @@
 @php
-    use App\Models\PetAssessment;
+    function getLabel($value, $type) {
+        if (empty($value) || $value <= 0) return 'Unknown';
+        $labels = [
+            'energy' => [1 => 'Calm', 2 => 'Low', 3 => 'Moderate', 4 => 'High', 5 => 'Very High'],
+            'trainability' => [1 => 'Stubborn', 2 => 'Independent', 3 => 'Average', 4 => 'Eager', 5 => 'Highly Trainable'],
+            'independence' => [1 => 'Clingy', 2 => 'Affectionate', 3 => 'Balanced', 4 => 'Independent', 5 => 'Solitary'],
+            'temperament' => [1 => 'Fearful', 2 => 'Cautious', 3 => 'Stable', 4 => 'Confident', 5 => 'Fearless'],
+        ];
+        return $labels[$type][round($value)] ?? 'Unknown';
+    }
+
     $rows = [
-        ['label' => 'Energy Level', 'value' => $summary['energy_level'], 'tag' => PetAssessment::energyLabel($summary['energy_level'])],
-        ['label' => 'Trainability', 'value' => $summary['trainability'], 'tag' => PetAssessment::trainabilityLabel($summary['trainability'])],
-        ['label' => 'Independence', 'value' => $summary['independence'], 'tag' => PetAssessment::independenceLabel($summary['independence'])],
-        ['label' => 'Temperament (Fearfulness)', 'value' => $summary['temperament'], 'tag' => PetAssessment::temperamentLabel($summary['temperament'])],
+        ['label' => 'Energy Level', 'value' => $summary['energy_level'], 'tag' => getLabel($summary['energy_level'], 'energy')],
+        ['label' => 'Trainability', 'value' => $summary['trainability'], 'tag' => getLabel($summary['trainability'], 'trainability')],
+        ['label' => 'Independence', 'value' => $summary['independence'], 'tag' => getLabel($summary['independence'], 'independence')],
+        ['label' => 'Temperament (Calmness / Safety)', 'value' => $summary['temperament'], 'tag' => getLabel($summary['temperament'], 'temperament')],
     ];
 @endphp
 
@@ -28,10 +38,10 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="flex-1 h-2.5 rounded-full bg-[#e6e2da] overflow-hidden">
-                        <div class="h-full rounded-full bg-primary" style="width: {{ ($row['value'] / 4) * 100 }}%"></div>
+                        <div class="h-full rounded-full bg-primary" style="width: {{ ($row['value'] / 5) * 100 }}%"></div>
                     </div>
                     <span class="text-[#777] text-[.85rem] w-[110px] shrink-0">{{ $row['tag'] }}</span>
-                    <span class="font-bold text-[1.05rem] shrink-0">{{ number_format($row['value'], 1) }}<span class="text-[#999] font-normal text-[.85rem]">/4</span></span>
+                    <span class="font-bold text-[1.05rem] shrink-0">{{ number_format($row['value'], 1) }}<span class="text-[#999] font-normal text-[.85rem]">/5</span></span>
                 </div>
             </div>
         @endforeach

@@ -28,12 +28,12 @@
                         <tr data-search-row data-search-text="{{ $pet->name }} {{ $pet->species }}">
                             <td class="font-semibold">{{ $pet->name }} <span class="text-[#999] font-normal">({{ $pet->species }})</span></td>
                             <td>{{ $pet->last_assessed_by ?? '—' }}</td>
-                            <td>{{ $pet->last_assessed_at?->format('M j, Y') ?? '—' }}</td>
+                            <td>{{ $pet->last_assessed_at ? \App\Support\ManilaTime::format($pet->last_assessed_at, 'M j, Y') : '—' }}</td>
                             <td>
                                 <span class="badge {{ $pet->assessment_status === 'complete' ? 'badge-completed' : 'badge-pending' }}">
                                     {{ ucfirst($pet->assessment_status) }}
                                 </span>
-                                <div class="text-[#999] text-[.75rem] mt-1">{{ $pet->assessment_count }}/3</div>
+                                <div class="text-[#999] text-[.75rem] mt-1">{{ $pet->assessment_records_count }}/3</div>
                             </td>
                             <td>
                                 @if ($pet->assessment_status === 'complete')
@@ -43,7 +43,7 @@
                                 @endif
                             </td>
                             <td>
-                                @if ($pet->assessment_count < 3)
+                                @if ($pet->assessment_records_count < 3)
                                     <a href="{{ route('admin.assessments.create', $pet) }}" class="btn btn-primary btn-sm">Assess</a>
                                 @else
                                     <span class="badge badge-completed">Complete</span>

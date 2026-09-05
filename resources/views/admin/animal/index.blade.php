@@ -9,6 +9,22 @@
         <p>Manage all shelter animal profiles</p>
     </div>
 
+    @if (session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative my-3">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if ($errors->any())
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-3">
+            <ul class="list-disc pl-5">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <div class="flex flex-wrap gap-3 items-center my-5">
         <input type="text" data-search-input data-search-scope="animalTableBody"
                class="search-input flex-1 min-w-[220px]" placeholder="Search by name, species, breed…">
@@ -59,11 +75,11 @@
                 <tbody id="animalTableBody">
                     @forelse ($pets as $pet)
                         <tr data-search-row
-                            data-search-text="{{ $pet->name }} {{ $pet->species }} {{ $pet->breed }}"
+                            data-search-text="{{ $pet->name }} {{ $pet->species_display }} {{ $pet->breed }}"
                             data-filter-row
-                            data-filters="species:{{ $pet->species }}|age:{{ $pet->age_group }}|health:{{ $pet->health_status }}|status:{{ $pet->status }}">
+                            data-filters="species:{{ $pet->species_display }}|age:{{ $pet->age_group }}|health:{{ $pet->health_status }}|status:{{ $pet->status }}">
                             <td class="font-semibold">{{ $pet->name }}</td>
-                            <td>{{ $pet->species }}</td>
+                            <td>{{ $pet->species_display }}</td>
                             <td>{{ $pet->breed }}</td>
                             <td>{{ $pet->age_display }}</td>
                             <td>{{ $pet->sex }}</td>
@@ -74,6 +90,7 @@
                                 <form action="{{ route('admin.animals.destroy', $pet) }}" method="POST" class="inline-block"
                                       onsubmit="return confirm('Delete {{ $pet->name }}? This cannot be undone.')">
                                     @csrf
+                                    @method('DELETE')
                                     <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                                 </form>
                             </td>
@@ -91,12 +108,14 @@
 
     <script id="animalData" type="application/json">
         {!! $pets->map(fn ($p) => [
-            'id' => $p->id, 'name' => $p->name, 'species' => $p->species, 'breed' => $p->breed,
+            'id' => $p->id, 'name' => $p->name, 'species' => $p->species?->value ?? $p->species, 'breed' => $p->breed,
             'age_years' => $p->age_years, 'age_months' => $p->age_months, 'sex' => $p->sex,
             'intake' => optional($p->intake_date)->format('Y-m-d'), 'health' => $p->health_status,
-            'status' => $p->status, 'vacc' => $p->vaccination_record_status, 'notes' => $p->notes,
-            'physical_size' => $p->physical_size, 'assessment_status' => $p->assessment_status,
-            'assessment_count' => $p->assessment_count,
+            'status' => $p->status, 'vacc' => $p->vaccination_record_status, 'notes' => $p->behavioral_notes,
+            'physical_size' => $p->physical_size, 'medical_needs' => $p->medical_needs,
+            'assessment_status' => $p->assessment_status,
+            'assessment_count' => $p->assessment_records_count, 'version' => $p->version,
+            'image_url' => $p->image_url,
             'assess_url' => route('admin.assessments.create', $p),
             'update_url' => route('admin.animals.update', $p),
         ])->toJson() !!}

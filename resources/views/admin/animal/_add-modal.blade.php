@@ -70,7 +70,7 @@
                             name="intake_date"
                             type="date"
                             class="form-control"
-                            value="{{ now()->format('Y-m-d') }}"
+                            value="{{ \App\Support\ManilaTime::now()->format('Y-m-d') }}"
                             required>
                     </div>
 

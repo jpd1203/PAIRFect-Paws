@@ -27,6 +27,7 @@
             <div class="form-group">
                 <label for="email">Email Address *</label>
                 <input id="email" type="email" name="email" value="{{ old('email') }}" required>
+                <p class="text-muted">Volunteers receive a verification email. Administrator accounts are verified automatically.</p>
                 @error('email') <div class="field-error">{{ $message }}</div> @enderror
             </div>
 

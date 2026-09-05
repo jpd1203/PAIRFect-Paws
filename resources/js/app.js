@@ -1,4 +1,6 @@
 import '../css/app.css';
+import './philippine-address';
+import './post-adoption-camera';
 
 /**
  * Global site behavior: mobile sidebar toggle, profile dropdown, toast

@@ -65,7 +65,12 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Persist timestamps against a UTC application clock. User-facing
+    // timestamps are converted to the shelter's local timezone at the
+    // presentation boundary so stored instants remain unambiguous.
+    'timezone' => env('APP_TIMEZONE', 'UTC'),
+
+    'display_timezone' => env('APP_DISPLAY_TIMEZONE', 'Asia/Manila'),
 
     /*
     |--------------------------------------------------------------------------

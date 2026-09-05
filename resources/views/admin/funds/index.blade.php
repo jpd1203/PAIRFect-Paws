@@ -16,7 +16,7 @@
         <button class="btn btn-primary" onclick="openModal('recordFundsModal')"><i class="fa-solid fa-wallet"></i>Record Funds</button>
     </div>
 
-    <div class="stats-grid !grid-cols-2 my-5 max-[576px]:!grid-cols-1">
+    <div class="stats-grid !grid-cols-3 my-5 max-[768px]:!grid-cols-1">
         <div class="stat-card">
             <h6>Total Donations</h6>
             <h1 class="text-status-success-text">₱{{ number_format($totalDonations, 2) }}</h1>
@@ -24,6 +24,10 @@
         <div class="stat-card">
             <h6>Total Shelter Spent</h6>
             <h1 class="text-status-danger-text">₱{{ number_format($totalSpent, 2) }}</h1>
+        </div>
+        <div class="stat-card">
+            <h6>Available Funds</h6>
+            <h1 class="text-status-info-text">&#8369;{{ number_format($availableFunds, 2) }}</h1>
         </div>
     </div>
 
@@ -59,7 +63,7 @@
                     <div class="grid grid-cols-2 gap-4 max-[768px]:grid-cols-1">
                         <div class="form-group">
                             <label class="form-label">Date</label>
-                            <input type="date" name="recorded_date" class="form-control" value="{{ now()->format('Y-m-d') }}" required>
+                            <input type="date" name="recorded_date" class="form-control" value="{{ \App\Support\ManilaTime::now()->format('Y-m-d') }}" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Entry Type</label>

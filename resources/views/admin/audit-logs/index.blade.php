@@ -24,11 +24,16 @@
                 </thead>
                 <tbody id="auditTableBody">
                     @forelse ($logs as $log)
-                        <tr data-search-row data-search-text="{{ $log->user_name }} {{ $log->action }}">
+                        <tr data-search-row data-search-text="{{ $log->user_name }} {{ $log->display_action }} {{ $log->notes }}">
                             <td>{{ $log->timestamp->format('M j, Y g:i A') }}</td>
                             <td class="font-semibold">{{ $log->user_name }}</td>
                             <td><span class="badge {{ $log->role === 'Admin' ? 'badge-approved' : ($log->role === 'Volunteer' ? 'badge-scheduled' : 'badge-pending') }}">{{ $log->role }}</span></td>
-                            <td class="">{{ $log->action }}</td>
+                            <td>
+                                <strong class="block">{{ $log->display_action }}</strong>
+                                @if (filled($log->notes))
+                                    <small class="mt-1 block max-w-[48rem] text-[#6f6865]">{{ $log->notes }}</small>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr><td colspan="4" class="text-[#888] py-6">No activity recorded yet.</td></tr>

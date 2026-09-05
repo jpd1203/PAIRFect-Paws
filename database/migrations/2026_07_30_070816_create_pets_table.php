@@ -4,8 +4,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-    public function up(): void {
+return new class extends Migration
+{
+    public function up(): void
+    {
         Schema::create('pets', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -19,13 +21,25 @@ return new class extends Migration {
             $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
             $table->date('intake_date')->nullable();
             $table->string('photo_path')->nullable();
+
+            // C-BARQ / Fe-BARQ Variables
+            $table->tinyInteger('energy_level')->nullable();
+            $table->tinyInteger('trainability')->nullable();
+            $table->tinyInteger('independence')->nullable();
+            $table->tinyInteger('temperament')->nullable();
+
+            // Assessment metadata
+            $table->dateTime('last_assessed_at')->nullable();
+            $table->integer('assessment_count')->default(0);
+
             $table->boolean('is_archived')->default(false);
             $table->unsignedInteger('version')->default(1);
             $table->timestamps();
         });
     }
-    public function down(): void {
+
+    public function down(): void
+    {
         Schema::dropIfExists('pets');
     }
 };
-

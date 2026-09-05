@@ -18,7 +18,7 @@
         });
 
         try {
-            const res = await fetch(`/pets?${params.toString()}`, {
+            const res = await fetch(`/animal?${params.toString()}`, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             if (!res.ok) throw new Error('Failed to filter pets');

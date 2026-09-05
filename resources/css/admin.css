@@ -268,10 +268,12 @@
   .filter-all:hover {
     @apply bg-text-dark text-white border-text-dark;
   }
-  .badge-pending.active {
+  .badge-pending.active,
+  .badge-waitlisted.active {
     @apply !bg-status-processing-text !text-white !border-status-processing-text;
   }
-  .badge-scheduled.active {
+  .badge-scheduled.active,
+  .badge-primarycandidate.active {
     @apply !bg-status-adopted-text !text-white !border-status-adopted-text;
   }
   .badge-underreview.active {
@@ -282,6 +284,7 @@
     @apply !bg-status-success-text !text-white !border-status-success-text;
   }
   .badge-rejected.active,
+  .badge-documentflagged.active,
   .badge-overdue.active {
     @apply !bg-status-danger-text !text-white !border-status-danger-text;
   }
@@ -312,17 +315,22 @@
   }
   .badge-critical,
   .badge-rejected,
+  .badge-documentflagged,
+  .badge-withdrawn,
+  .badge-noshow,
   .badge-overdue,
   .badge-inactive,
   .badge-marked {
     @apply bg-status-danger-bg text-status-danger-text border-status-danger-text;
   }
   .badge-processing,
-  .badge-pending {
+  .badge-pending,
+  .badge-waitlisted {
     @apply bg-status-processing-bg text-status-processing-text border-status-processing-text;
   }
   .badge-adopted,
-  .badge-scheduled {
+  .badge-scheduled,
+  .badge-primarycandidate {
     @apply bg-status-adopted-bg text-status-adopted-text border-status-adopted-text;
   }
   .badge-upcoming {
@@ -341,6 +349,9 @@
   }
   .custom-modal-wide {
     @apply max-w-[720px];
+  }
+  .adoption-history-modal {
+    @apply max-w-[860px];
   }
   .custom-modal-header {
     @apply pb-0 p-[1.2rem_1.5rem_1rem] shrink-0;
@@ -381,6 +392,29 @@
   }
   .remarks-textarea {
     @apply resize-y min-h-[80px];
+  }
+
+  .applicant-search-results {
+    @apply absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-[#d8d2ca] bg-white p-1.5 shadow-modal;
+  }
+  .applicant-search-option {
+    @apply block w-full rounded-lg border-0 bg-white px-3 py-2.5 text-left transition hover:bg-neutral-light focus:bg-neutral-light focus:outline-none;
+  }
+  .applicant-search-option strong {
+    @apply block text-sm text-text-dark;
+  }
+  .applicant-search-option small,
+  .selected-applicant small {
+    @apply mt-0.5 block text-xs text-[#777];
+  }
+  .applicant-search-empty {
+    @apply px-3 py-4 text-center text-sm text-[#777];
+  }
+  .selected-applicant {
+    @apply mt-2 items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary-muted px-3 py-2.5;
+  }
+  .selected-applicant:not([hidden]) {
+    @apply flex;
   }
 
   .modal-note {
