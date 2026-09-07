@@ -16,9 +16,9 @@
         <strong>1</strong> = Never &nbsp; <strong>2</strong> = Seldom &nbsp; <strong>3</strong> = Sometimes &nbsp; <strong>4</strong> = Usually &nbsp; <strong>5</strong> = Always
     </div>
 
-    <form action="{{ route('admin.assessments.store', $animal) }}" method="POST" id="assessmentForm" class="flex-1 flex flex-col min-h-0">
+    <form action="{{ route('admin.assessments.store', $animal) }}" method="POST" id="assessmentForm">
         @csrf
-        <div class="assessment-scroll">
+        <div class="assessment-scroll custom-scrollbar">
             <div class="assessment-body">
                 <div class="assessment-container !p-0 max-[991px]:!p-0">
 
@@ -96,13 +96,6 @@
                         </div>
                     @endforeach
 
-                </div>
-            </div>
-        </div>
-
-        <div class="assessment-scroll" style="margin-top:1rem">
-            <div class="assessment-body">
-                <div class="assessment-container !p-0">
                     <div class="assessment-card">
                         <h4>KNN Matching Flags</h4>
                         <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">
@@ -110,7 +103,6 @@
                         </p>
 
                         <div class="question-grid">
-
                             <div class="question">
                                 <label>Medical Needs Level (1–5)</label>
                                 <div class="slider-row">
@@ -142,13 +134,15 @@
 
                         </div>
                     </div>
+                    
                 </div>
             </div>
+            
         </div>
-
+        
         <div class="button-group sticky bottom-0 pt-2">
             <a href="{{ route('admin.assessments.record') }}" class="btn btn-secondary">Back</a>
-            <button type="submit" class="btn btn-primary">Save Assessment</button>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i>Save Assessment</button>
         </div>
 
     </form>

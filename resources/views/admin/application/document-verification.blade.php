@@ -72,27 +72,28 @@
         </div>
 
         <div class="flex flex-wrap gap-3 mt-5">
-            <a href="{{ route('admin.applications.document', $application) }}" target="_blank" class="btn btn-secondary">View Private Document</a>
+            <a href="{{ route('admin.applications.document', $application) }}" target="_blank" class="btn btn-secondary"><i class="fa-solid fa-eye"></i>View Private Document</a>
             @if($canRetryOcr)
                 <form method="POST" action="{{ route('admin.applications.document-ocr-retry', $application) }}">
                     @csrf
-                    <button type="submit" class="btn btn-primary">Retry Google OCR</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-rotate-right"></i>Retry Google OCR</button>
                 </form>
             @endif
-            <a href="{{ route('admin.applications.index') }}" class="btn btn-secondary">Back to Applications</a>
+            <a href="{{ route('admin.applications.index') }}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i>Back to Applications</a>
         </div>
 
         @if(!$application->is_primary_candidate && !in_array($application->status->value, ['Approved', 'Rejected', 'Withdrawn', 'NoShow', 'Closed'], true))
             <form method="POST" action="{{ route('admin.applications.document-decision', $application) }}" class="mt-6 border-t border-[#ddd] pt-5">
                 @csrf
                 <div class="form-group">
-                    <label for="document_reason">Manual review reason *</label>
-                    <textarea id="document_reason" name="document_reason" rows="3" required minlength="10"></textarea>
+                    <label for="document_reason" class="font-semibold">Manual review reason*</label>
+                    <textarea id="document_reason" name="document_reason" rows="3" required minlength="10"
+                        class="border border-gray-300 rounded-md p-3 w-full"></textarea>
                 </div>
                 <div class="flex flex-wrap gap-3 mt-3">
-                    <button class="btn btn-primary" name="document_decision" value="Verified">Mark Verified</button>
+                    <button class="btn btn-primary" name="document_decision" value="Verified"><i class="fa-solid fa-circle-check"></i>Mark Verified</button>
                     @if(!$followUpLimitReached)
-                        <button class="btn btn-danger" name="document_decision" value="NeedsResubmission">Request Follow-up Document</button>
+                        <button class="btn btn-danger" name="document_decision" value="NeedsResubmission"><i class="fa-solid fa-comment-dots"></i>Request Follow-up Document</button>
                     @else
                         <span class="text-sm text-amber-800 self-center">The adopter’s one follow-up upload has already been used.</span>
                     @endif

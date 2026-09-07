@@ -14,9 +14,9 @@
         <section class="w-full rounded-2xl border-2 border-[#d8d1c5] bg-[#f5f1ea] p-6 shadow-md sm:p-8" aria-labelledby="forgot-password-heading">
             <div class="mb-5 flex justify-center">
                 <img
-                    src="{{ asset('images/superhero-cat-avatar.png') }}"
+                    src="{{ asset('images/rcpp-logo-2.png') }}"
                     alt=""
-                    class="h-20 w-20 rounded-full border-4 border-white object-cover shadow-md"
+                    class="h-20 w-20 rounded-full object-cover shadow-md"
                 >
             </div>
 
@@ -28,7 +28,7 @@
             </div>
 
             @if (session('status'))
-                <div class="mt-5 rounded-xl border border-green-300 bg-green-50 p-4 text-sm font-medium text-green-800" role="status">
+                <div class="mt-5 rounded-xl border border-green-800 bg-green-50 p-3 text-sm font-medium text-green-800" role="status">
                     {{ session('status') }}
                 </div>
             @endif
@@ -51,7 +51,7 @@
                         class="w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-1 @error('email') border-red-500 focus:border-red-500 focus:ring-red-500 @else border-gray-400 focus:border-maroon-600 focus:ring-maroon-600 @enderror"
                     >
                     @error('email')
-                        <p id="email-error" class="mt-1.5 text-xs font-medium text-red-700" role="alert">{{ $message }}</p>
+                        <p id="email-error" class="mt-1.5 text-xs font-medium text-red-800" role="alert">{{ $message }}</p>
                     @enderror
                 </div>
 

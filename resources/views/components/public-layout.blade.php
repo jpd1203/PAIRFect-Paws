@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
     <title>{{ $title ?? config('app.name') }}</title>
     <meta name="description" content="{{ $description ?? 'Red Cubs Pet Patrol - Compassion Make Us Human. Rescue, adopt, and support pets in need through PAIRfect Paws.' }}">

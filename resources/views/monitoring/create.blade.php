@@ -12,9 +12,9 @@
 @endphp
 
 @section('content')
-<div class="post-adoption-report-page">
-    <div class="page-header">
-        <h1>Submit Welfare Report</h1>
+<div class="post-adoption-report-page custom-scrollbar">
+    <div class="heading-text">
+        <h2>Submit Welfare Report</h1>
         <p>{{ $milestoneLabel }} check-in for <strong>{{ $log->adoptionApplication->pet->name }}</strong></p>
     </div>
 
@@ -31,38 +31,68 @@
             <input type="hidden" name="camera_captured_at" value="" data-camera-captured-at>
             <input type="hidden" name="recording_duration_ms" value="" data-camera-recording-duration>
 
+            <div class="form-grid">
             <div class="form-group">
-                <label for="pet_current_status">Current Status of {{ $log->adoptionApplication->pet->name }} *</label>
-                <select id="pet_current_status" name="pet_current_status" required>
-                    <option value="">Select&hellip;</option>
-                    <option value="Good" {{ old('pet_current_status') === 'Good' ? 'selected' : '' }}>Good</option>
-                    <option value="Fair" {{ old('pet_current_status') === 'Fair' ? 'selected' : '' }}>Fair</option>
-                    <option value="Poor" {{ old('pet_current_status') === 'Poor' ? 'selected' : '' }}>Poor</option>
-                </select>
+                <label for="pet_current_status">Current Status of {{ $log->adoptionApplication->pet->name }}*</label>
+                <div class="select-wrapper">
+                    <select id="pet_current_status" name="pet_current_status" required>
+                        <option value="">Select&hellip;</option>
+                        <option value="Good" {{ old('pet_current_status') === 'Excellent' ? 'selected' : '' }}>Excellent</option>
+                        <option value="Good" {{ old('pet_current_status') === 'Good' ? 'selected' : '' }}>Good</option>
+                        <option value="Fair" {{ old('pet_current_status') === 'Fair' ? 'selected' : '' }}>Fair</option>
+                        <option value="Poor" {{ old('pet_current_status') === 'Poor' ? 'selected' : '' }}>Poor</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-arrow"></i>
+                </div>
                 <div class="field-error" data-validation-for="pet_current_status">@error('pet_current_status'){{ $message }}@enderror</div>
             </div>
 
             <div class="form-group">
-                <label for="living_conditions">Living Conditions *</label>
-                <textarea id="living_conditions" name="living_conditions" rows="3" required placeholder="Describe where the pet sleeps and how much space they have.">{{ old('living_conditions') }}</textarea>
+                <label for="living_conditions">Living Conditions*</label>
+                <div class="select-wrapper">
+                    <select id="living_conditions" name="living_conditions" required>
+                        <option value="" disabled {{ old('living_conditions') ? '' : 'selected' }}>Select living conditions</option>
+                        <option value="Indoor Only" {{ old('living_conditions') === 'Indoor Only' ? 'selected' : '' }}>Indoor Only</option>
+                        <option value="Outdoor Only" {{ old('living_conditions') === 'Outdoor Only' ? 'selected' : '' }}>Outdoor Only</option>
+                        <option value="Indoor and Outdoor" {{ old('living_conditions') === 'Indoor and Outdoor' ? 'selected' : '' }}>Indoor and Outdoor</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-arrow"></i>
+                </div>
                 <div class="field-error" data-validation-for="living_conditions">@error('living_conditions'){{ $message }}@enderror</div>
             </div>
 
             <div class="form-group">
-                <label for="eating_habits">Eating Habits *</label>
-                <textarea id="eating_habits" name="eating_habits" rows="2" required placeholder="Describe their diet, appetite, and feeding schedule.">{{ old('eating_habits') }}</textarea>
+                <label for="eating_habits">Eating Habits*</label>
+                <div class="select-wrapper">
+                    <select id="eating_habits" name="eating_habits" required>
+                        <option value="" disabled {{ old('eating_habits') ? '' : 'selected' }}>Select eating habits</option>
+                        <option value="Normal" {{ old('eating_habits') === 'Normal' ? 'selected' : '' }}>Normal</option>
+                        <option value="Reduced Appetite" {{ old('eating_habits') === 'Reduced Appetite' ? 'selected' : '' }}>Reduced Appetite</option>
+                        <option value="Not Eating" {{ old('eating_habits') === 'Not Eating' ? 'selected' : '' }}>Not Eating</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-arrow"></i>
+                </div>
                 <div class="field-error" data-validation-for="eating_habits">@error('eating_habits'){{ $message }}@enderror</div>
             </div>
 
             <div class="form-group">
-                <label for="behavioral_observations">Behavioral Observations *</label>
-                <textarea id="behavioral_observations" name="behavioral_observations" rows="3" required placeholder="Describe any changes in behavior or social interaction.">{{ old('behavioral_observations') }}</textarea>
+                <label for="behavioral_observations">Behavioral Observations*</label>
+                <div class="select-wrapper">
+                    <select id="behavioral_observations" name="behavioral_observations" required>
+                        <option value="" disabled {{ old('behavioral_observations') ? '' : 'selected' }}>Select behavioral observation</option>
+                        <option value="Well-adjusted" {{ old('behavioral_observations') === 'Well-adjusted' ? 'selected' : '' }}>Well-adjusted</option>
+                        <option value="Still adjusting" {{ old('behavioral_observations') === 'Still adjusting' ? 'selected' : '' }}>Still adjusting</option>
+                        <option value="Anxious/Stressed" {{ old('behavioral_observations') === 'Anxious/Stressed' ? 'selected' : '' }}>Anxious/Stressed</option>
+                        <option value="Aggressive" {{ old('behavioral_observations') === 'Aggressive' ? 'selected' : '' }}>Aggressive</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-arrow"></i>
+                </div>
                 <div class="field-error" data-validation-for="behavioral_observations">@error('behavioral_observations'){{ $message }}@enderror</div>
             </div>
 
             <div class="form-group">
-                <label for="vet_visit_details">Vet Visit Details</label>
-                <textarea id="vet_visit_details" name="vet_visit_details" rows="2" placeholder="Share recent vet visits, vaccinations, or medications.">{{ old('vet_visit_details') }}</textarea>
+                <label for="vet_visit_details">Vet Visit Details*</label>
+                <textarea id="vet_visit_details" name="vet_visit_details" rows="2" placeholder="Share recent vet visits, vaccinations, or medications." required>{{ old('vet_visit_details') }}</textarea>
                 <div class="field-error" data-validation-for="vet_visit_details">@error('vet_visit_details'){{ $message }}@enderror</div>
             </div>
 
@@ -71,11 +101,12 @@
                 <textarea id="concerns" name="concerns" rows="2" placeholder="Tell the shelter anything else it should know.">{{ old('concerns') }}</textarea>
                 <div class="field-error" data-validation-for="concerns">@error('concerns'){{ $message }}@enderror</div>
             </div>
+            </div>
 
             <section class="post-adoption-camera" data-camera-capture aria-labelledby="liveVideoHeading">
                 <div class="post-adoption-camera__heading">
                     <div>
-                        <h2 id="liveVideoHeading">Live 3-second welfare video *</h2>
+                        <h2 id="liveVideoHeading">Live 3-second welfare video*</h2>
                         <p>Record a current video using this device's camera. Gallery uploads are not accepted.</p>
                     </div>
                     <span class="post-adoption-camera__badge">3-second live recording</span>
@@ -133,7 +164,7 @@
 
             <div class="post-adoption-report-actions">
                 <p data-camera-submit-hint>Record a live 3-second video to enable submission.</p>
-                <button type="submit" class="btn btn-primary" data-camera-submit disabled>
+                <button type="submit" class="btn btn-primary" data-camera-submit disabled><i class="fa-solid fa-paper-plane"></i>
                     Submit Report
                 </button>
             </div>

@@ -16,7 +16,7 @@ class AdoptionApplication extends Model
         'applicant_province', 'applicant_city_municipality', 'applicant_barangay',
         'applicant_street_address', 'applicant_zip_code',
         'status', 'motivation_statement',
-        'housing_type', 'income_range', 'knn_score', 'document_path',
+        'housing_type', 'income_range', 'knn_score', 'compatibility_result', 'document_path',
         'physical_activity_level', 'time_availability', 'prior_pet_experience',
         'household_composition', 'document_disk', 'document_original_name',
         'document_mime_type', 'document_verification_status', 'document_type',
@@ -34,6 +34,7 @@ class AdoptionApplication extends Model
             'status' => ApplicationStatus::class,
             'interview_date' => 'datetime',
             'knn_score' => 'float',
+            'compatibility_result' => 'array',
             'is_primary_candidate' => 'boolean',
             'queue_promoted_at' => 'datetime',
             'admin_review_flagged_at' => 'datetime',
@@ -177,10 +178,10 @@ class AdoptionApplication extends Model
         return $this->income_range;
     }
 
-    public function getCompatibilityResultAttribute()
-    {
-        return null;
-    }
+    // public function getCompatibilityResultAttribute()
+    // {
+    //     return null;
+    // }
 
     public function getPriorHistoryAttribute()
     {

@@ -92,7 +92,7 @@ class DashboardController extends Controller
         $recentActivity = AuditLog::with('user')
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->take(10)
+            ->take(5)
             ->get();
 
         return view('admin.dashboard.index', compact(

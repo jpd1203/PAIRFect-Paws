@@ -20,6 +20,9 @@
   .main-content {
     @apply flex-1 flex flex-col overflow-hidden bg-background;
   }
+  .nonsticky-header {
+    @apply flex-1 overflow-y-auto bg-background px-10 py-8;
+  }
   .sticky-header {
     @apply shrink-0 bg-background px-10 pt-8 pb-0.5;
   }
@@ -29,6 +32,9 @@
   }
   .content-area {
     @apply flex-1 overflow-y-auto px-8 pb-6 pt-0.5;
+  }
+  .content-area-nonsticky {
+    @apply flex-1 overflow-y-auto;
   }
   .heading-text h2 {
     @apply font-primary font-bold text-3xl mb-0.5 text-text-dark;
@@ -266,7 +272,7 @@
     @apply w-full;
   }
   .profile-row {
-    @apply flex justify-between px-1 py-2 border-b border-[#8a8a8a] text-sm;
+    @apply flex justify-between px-2 py-2 border-b border-[#8a8a8a] text-sm;
   }
   .profile-row span:first-child {
     @apply font-medium text-[#333];
@@ -299,8 +305,21 @@
   }
 
   /* ---------- Forms ---------- */
+  
   .form-section {
     @apply mt-10 first:mt-0;
+  }
+  .select-wrapper {
+    @apply relative;
+  }
+  .select-wrapper select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 40px;
+  }
+  .select-arrow {
+    @apply pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#777];
   }
   .form-section h3 {
     @apply mb-5 font-semibold;
@@ -318,7 +337,7 @@
   .form-group input,
   .form-group select,
   .form-group textarea {
-    @apply h-[42px] border border-[#777] rounded-md px-3 text-sm bg-white;
+    @apply h-[42px] border border-[#777] rounded-md px-3 text-sm bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none; width: 100%;
   }
   .form-group textarea {
     @apply h-auto py-2.5;
@@ -436,13 +455,13 @@
     @apply text-base;
   }
   .progress-section h3 {
-    @apply mb-4 text-lg;
+    @apply mb-4 text-base font-semibold;
   }
   .progress-flow {
     @apply flex items-center gap-2.5 flex-wrap;
   }
   .step {
-    @apply bg-[#bfbfbf] text-[#444] px-3 py-1.5 rounded text-sm;
+    @apply bg-[#bfbfbf] text-[#444] border border-[#444] px-3 py-1.5 rounded text-sm;
   }
   .step.completed {
     @apply bg-[#d7efe5] text-[#2f6f5b];
@@ -530,7 +549,7 @@
     @apply mt-6;
   }
   .schedule-card h2 {
-    @apply mt-0 mb-6 font-primary;
+    @apply mt-0 mb-6 font-primary font-semibold text-lg;
   }
   .schedule-item {
     @apply flex justify-between items-center mb-[1.125rem] flex-wrap gap-2.5;
@@ -560,7 +579,7 @@
     @apply mt-6 max-w-[500px] mx-auto;
   }
   .reports-card h2 {
-    @apply mt-0 mb-4 font-primary;
+    @apply mt-0 mb-4 font-primary font-semibold text-base;
   }
   .reports-table {
     @apply w-full border-collapse;
@@ -588,7 +607,7 @@
 
   /* ---------- Settings page ---------- */
   .settings-wrap {
-    @apply max-w-[760px] mx-auto;
+    @apply max-w-[760px] mx-auto mt-4;
   }
   .settings-card {
     @apply bg-secondary-bg border border-[#e1ded7] rounded-card p-7 mb-7;
@@ -610,7 +629,7 @@
     @apply font-medium text-[.78rem] text-primary no-underline cursor-pointer hover:underline;
   }
   .settings-field input {
-    @apply h-[42px] border border-[#999] rounded-md px-3 text-sm bg-white;
+    @apply h-[42px] border border-[#999] rounded-md px-3 text-sm bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none;
   }
   .settings-field input:disabled {
     @apply bg-neutral-light text-[#777] cursor-not-allowed;
@@ -669,7 +688,7 @@
   }
   .post-adoption-report-page .page-header,
   .post-adoption-report-card {
-    @apply max-w-[760px] mx-auto;
+    @apply max-w-full mx-auto;
   }
   .post-adoption-report-page .page-header {
     @apply mb-5;
@@ -681,7 +700,7 @@
     @apply text-[#6f6865];
   }
   .post-adoption-report-card {
-    @apply bg-white border border-[#ded9d1] rounded-2xl p-7 shadow-card;
+    @apply bg-white border border-[#ded9d1] rounded-2xl p-7 mt-7 shadow-card;
   }
   .post-adoption-report-card form {
     @apply flex flex-col gap-5;
@@ -762,6 +781,38 @@
 }
 
 /* Custom scrollbar for match results container */
+/* =========================================================
+     CUSTOM SCROLLABAR
+     ========================================================= */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #f3f4f6;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 9999px;
+  border: 2px solid #f3f4f6;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 #matchResults::-webkit-scrollbar,
 .reco-panel::-webkit-scrollbar {
   width: 7px;

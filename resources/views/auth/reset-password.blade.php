@@ -45,7 +45,7 @@
                         class="w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-1 @error('email') border-red-500 focus:border-red-500 focus:ring-red-500 @else border-gray-400 focus:border-maroon-600 focus:ring-maroon-600 @enderror"
                     >
                     @error('email')
-                        <p id="email-error" class="mt-1.5 text-xs font-medium text-red-700" role="alert">{{ $message }}</p>
+                        <p id="email-error" class="mt-1.5 text-xs font-medium text-red-800" role="alert">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -64,7 +64,7 @@
                     >
                     <p id="password-help" class="mt-1.5 text-xs text-gray-500">Use at least 8 characters.</p>
                     @error('password')
-                        <p id="password-error" class="mt-1 text-xs font-medium text-red-700" role="alert">{{ $message }}</p>
+                        <p id="password-error" class="mt-1 text-xs font-medium text-red-800" role="alert">{{ $message }}</p>
                     @enderror
                 </div>
 

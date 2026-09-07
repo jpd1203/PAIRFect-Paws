@@ -49,8 +49,8 @@
         <button class="filter-btn badge-flagged" data-filter-btn="flagged" type="button">Flagged ({{ $counts['flagged'] }})</button>
     </div>
 
-    <div class="records-container custom-scrollbar">
-        <div class="table-responsive">
+    <div class="records-container">
+        <div class="table-responsive custom-scrollbar">
             <table class="w-full">
                 <thead>
                     <tr>
@@ -153,18 +153,18 @@
                                         class="btn btn-secondary btn-sm"
                                         data-report="{{ json_encode($reportPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}"
                                         onclick="openMonitoringViewModal(this)"
-                                    >
+                                    ><i class="fa-solid fa-eye"></i>
                                         View
                                     </button>
 
                                     @if (!$checkIn->submitted_date && $checkIn->status_slug !== 'upcoming')
                                         <button
                                             type="button"
-                                            class="btn btn-secondary btn-sm"
+                                            class="btn btn-danger btn-sm"
                                             data-action="{{ route('admin.monitoring.reminder', $checkIn) }}"
                                             data-summary="{{ $summary }}"
                                             onclick="openMonitoringReminderModal(this)"
-                                        >
+                                        ><i class="fa-solid fa-bell"></i>
                                             Remind
                                         </button>
                                     @endif
@@ -176,11 +176,11 @@
                                             data-action="{{ route('admin.monitoring.flag', $checkIn) }}"
                                             data-summary="{{ $summary }}"
                                             onclick="openMonitoringFlagModal(this)"
-                                        >
+                                        ><i class="fa-solid fa-flag"></i>
                                             Flag
                                         </button>
                                     @else
-                                        <a class="btn btn-secondary btn-sm" href="{{ route('admin.monitoring.flagged') }}">Review Flag</a>
+                                        <a class="btn btn-secondary btn-sm" href="{{ route('admin.monitoring.flagged') }}"><i class="fa-solid fa-magnifying-glass"></i>Review Flag</a>
                                     @endif
                                 </div>
                             </td>

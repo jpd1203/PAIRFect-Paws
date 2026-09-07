@@ -16,8 +16,8 @@
         <a href="{{ route('admin.audit-logs.export') }}" class="btn btn-primary"><i class="fa-solid fa-download"></i> Export CSV</a>
     </div>
 
-    <div class="records-container custom-scrollbar">
-        <div class="table-responsive">
+    <div class="records-container">
+        <div class="table-responsive custom-scrollbar">
             <table class="w-full">
                 <thead>
                     <tr><th>Date / Time</th><th>User</th><th>Role</th><th>Action</th></tr>

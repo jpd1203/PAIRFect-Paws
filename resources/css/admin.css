@@ -18,7 +18,7 @@
     @apply flex h-screen overflow-hidden;
   }
   .main-content {
-    @apply flex-1 overflow-y-auto p-[2rem_2.5rem] bg-background min-w-0 max-[991px]:p-4;
+    @apply flex-1 overflow-y-auto p-[2rem_2.5rem] bg-background min-w-0 max-[991px]:p-4 overflow-x-hidden;
   }
   .heading-text {
     @apply mb-1;
@@ -129,7 +129,7 @@
     @apply bg-primary text-white h-[42px] hover:bg-primary-hover focus:outline-none focus:ring-4 focus:ring-primary/20;
   }
   .btn-secondary {
-    @apply bg-background text-text-dark border border-[#bbb] h-[38px] hover:bg-accent-light hover:border-text-light;
+    @apply bg-background text-text-dark border border-[#bbb] h-[38px] hover:bg-accent-light hover:border-text-light transition;
   }
   .btn-sm {
     @apply h-[34px] px-[.9rem] py-[.25rem] text-[.82rem];
@@ -250,7 +250,7 @@
     @apply flex gap-4 mt-6 mb-6 flex-wrap;
   }
   .filter-section select {
-    @apply py-2.5 px-3.5 border border-[#888] rounded-lg bg-status-processing-bg text-base cursor-pointer min-w-[130px];
+    @apply py-2.5 px-3.5 border border-[#888] rounded-lg bg-status-processing-bg text-base cursor-pointer min-w-[130px]; appearance: none;
   }
   .filter-section select.active-filter {
     @apply border-primary bg-primary-muted;
@@ -315,6 +315,7 @@
   }
   .badge-critical,
   .badge-rejected,
+  .badge-onhold,
   .badge-documentflagged,
   .badge-withdrawn,
   .badge-noshow,
@@ -386,9 +387,21 @@
   .form-label {
     @apply font-semibold mb-1.5 text-[.88rem] text-text-dark block;
   }
+  .form-select {
+    appearance: none;
+    -webkit-appearance: none;
+  }
   .form-control,
   .form-select {
     @apply w-full border border-[#ccc] rounded-lg py-2.5 px-3 text-[.9rem] transition-colors bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none;
+  }
+
+ .select-wrapper {
+    @apply relative;
+  }
+
+  .select-arrow {
+      @apply pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#777];
   }
   .remarks-textarea {
     @apply resize-y min-h-[80px];
@@ -582,26 +595,33 @@
   }
 
   .assessment-scroll {
-    @apply max-h-[60vh] overflow-y-auto pr-2;
+    @apply max-h-[60vh] overflow-y-auto overflow-x-hidden pr-2;
   }
 
   .assessment-body {
-    @apply flex-1;
+    @apply flex-1 min-w-0 w-full max-w-full;
   }
   .assessment-container {
-    @apply max-w-[1200px] mx-auto p-10 max-[991px]:p-5;
+    @apply max-w-[1200px] mx-auto p-10 max-[991px]:p-5 min-w-0 w-full max-w-full overflow-x-hidden;
   }
   .rating-guide {
     @apply bg-[#e8f2ff] border border-[#7da8e8] text-[#35507d] p-2.5 rounded-lg mb-5 text-[1.05rem];
   }
   .assessment-card {
-    @apply bg-background rounded-2xl p-[25px_30px] mb-[10px];
+    @apply bg-background rounded-2xl p-[25px_30px] mb-[10px] max-w-full min-w-0;
   }
   .assessment-card h4 {
     @apply font-secondary font-semibold mb-6 text-xl;
   }
   .question-grid {
-    @apply grid gap-[20px_60px] grid-cols-2 max-[900px]:grid-cols-1;
+    @apply grid gap-[25px_60px] grid-cols-2 max-[900px]:grid-cols-1 w-full min-w-0;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .question {
+      @apply min-w-0 max-w-full;
+  }
+  .rating-slider {
+    @apply min-w-0 max-w-full;
   }
   .temp-categ {
     @apply font-secondary font-semibold text-[17px] text-center mb-4;
@@ -650,19 +670,19 @@
   }
 
   .pet-title h3 {
-    @apply text-2xl font-bold font-primary;
+    @apply text-[1.3rem] font-bold font-primary;
   }
 
   .pet-title span {
-    @apply text-[#777] text-base text-[14px];
+    @apply text-[#777] text-base text-[13px];
   }
 
   .matched-user {
-    @apply mt-2 text-[1.25rem] font-semibold;
+    @apply mt-2 text-[1rem] font-semibold;
   }
 
   .applied-date {
-    @apply mt-2 text-[#777] flex items-center gap-2 text-base text-[14px];
+    @apply mt-2 text-[#777] flex items-center gap-2 text-base text-[13px];
   }
 
   .compat-score {
@@ -670,29 +690,49 @@
   }
 
   .score-circle {
-    width: 92px;
-    height: 92px;
-    border-radius: 9999px;
-    border: 7px solid var(--ring);
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+
+    background: conic-gradient(
+        var(--ring) calc(var(--score) * 1%),
+        var(--ring-bg) calc(var(--score) * 1%)
+    );
+
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+
+    position: relative;
+  }
+
+  .score-circle::before {
+      content: "";
+      position: absolute;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: white;
   }
 
   .score-value {
-    text-align: center;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     line-height: 1;
   }
 
   .score-value strong {
-    font-size: 2rem;
-    font-weight: 700;
+      font-size: 26px;
+      font-weight: 700;
   }
 
   .score-value small {
-    display: block;
-    color: #777;
-    font-size: 0.9rem;
+      font-size: 12px;
+      margin-top: 3px;
   }
 
   .score-badge {

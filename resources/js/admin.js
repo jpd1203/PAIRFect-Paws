@@ -11,7 +11,29 @@ function csrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 }
 
+// let toastTimer;
+// function showToast(message, type = 'success') {
+//     if (!message) return;
+
+//     let host = document.getElementById('toastHost');
+//     if (!host) return;
+
+//     let toast = host.querySelector('.toast-notification');
+//     if (!toast) {
+//         toast = document.createElement('div');
+//         toast.className = 'toast-notification';
+//         host.appendChild(toast);
+//     }
+
+//     toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i><span>${message}</span>`;
+//     toast.classList.toggle('bg-status-danger-text', type === 'error');
+//     toast.classList.add('show');
+
+//     clearTimeout(toastTimer);
+//     toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+// }
 let toastTimer;
+
 function showToast(message, type = 'success') {
     if (!message) return;
 
@@ -19,23 +41,44 @@ function showToast(message, type = 'success') {
     if (!host) return;
 
     let toast = host.querySelector('.toast-notification');
+
     if (!toast) {
         toast = document.createElement('div');
         toast.className = 'toast-notification';
         host.appendChild(toast);
     }
 
-    toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i><span>${message}</span>`;
-    toast.classList.toggle('bg-status-danger-text', type === 'error');
+    toast.innerHTML = `
+        <i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i>
+        <span>${message}</span>
+    `;
+
+    toast.classList.remove(
+        'bg-status-danger-text',
+        'bg-status-success-text'
+    );
+
+    toast.classList.add(
+        type === 'error'
+            ? 'bg-status-danger-text'
+            : 'bg-status-success-text'
+    );
+
     toast.classList.add('show');
 
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+
+    toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3500);
 }
+window.showToast = showToast;
 
 function openModal(id) {
     document.getElementById(id)?.classList.add('active');
 }
+
+window.openModal = openModal;
 
 function closeModal(id) {
     document.getElementById(id)?.classList.remove('active');

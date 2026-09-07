@@ -1,62 +1,148 @@
 @extends('layouts.app')
-@section('title', 'My Check-ins')
+
+@section('title', 'My Check-ins - PAIRfect Paws')
 
 @section('content')
-<div class="page-header">
-    <h1>My Post-Adoption Check-ins</h1>
-    <p>Complete your required welfare reports for each milestone</p>
-</div>
 
-@if($logs->isEmpty())
-    <div style="text-align:center;padding:4rem;color:var(--muted)">
-        <div style="font-size:3rem">✅</div>
-        <p style="margin-top:0.5rem">No check-ins scheduled yet. They appear after your adoption is approved.</p>
-    </div>
-@else
-<div class="card">
-    <table>
-        <thead>
-            <tr>
-                <th>Pet</th>
-                <th>Milestone</th>
-                <th>Due Date</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($logs as $log)
-            <tr>
-                <td><strong>{{ $log->adoptionApplication->pet->name }}</strong></td>
-                <td>{{ $log->milestone->shortLabel() }}</td>
-                <td>{{ $log->scheduled_date->format('M d, Y') }}</td>
-                <td>
+    <div class="nonsticky-header">
+        <div class="heading-text">
+            <h2>My Check-ins</h2>
+
+            {{-- Get the adopted pet name from the first check-in --}}
+            <p>
+                Your post-adoption reporting schedule
+                @if($logs->isNotEmpty())
+                    for {{ $logs->first()->adoptionApplication->pet->name }}.
+                @else
+                    .
+                @endif
+            </p>
+        </div>
+
+        <div class="content-area !p-0">
+
+            @if($logs->isEmpty())
+                <!-- EMPTY STATE -->
+                <div class="empty-state">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <h3>No check-ins scheduled yet</h3>
+                    <p>Once your adoption is finalized, your 3-day, 3-week, and 3-month check-ins will appear here.</p>
+                </div>
+            @else
+
+                <!-- CHECK-IN SCHEDULE -->
+                <div class="info-card schedule-card shadow-card">
+
+                    <h2>Check-in Schedule &mdash;
+                        {{ $logs->first()->adoptionApplication->pet->name }}
+                    </h2>
+
+                    @foreach($logs as $log)
+                        <div class="schedule-item">
+                            <div class="schedule-info">
+                                {{-- Status dot --}}
+                                <span class="status-dot
+                                    @if($log->display_status === 'Submitted')
+                                        completed
+                                    @elseif($log->display_status === 'Overdue')
+                                        overdue
+                                    @elseif($log->display_status === 'Upcoming')
+                                        upcoming
+                                    @else
+                                        pending
+                                    @endif
+                                "></span>
+
+                                <strong> {{ $log->milestone->shortLabel() }}</strong>&middot; Due:{{ $log->scheduled_date->format('F j, Y') }}
+                            </div>
+
+                            <div class="schedule-actions">
+                                @php
+                                    $badge = match($log->display_status) {
+                                        'Submitted' => 'badge-completed',
+                                        'Overdue'   => 'badge-overdue',
+                                        'Upcoming'  => 'badge-upcoming',
+                                        default     => 'badge-pending',
+                                    };
+                                @endphp
+
+                                <span class="badge {{ $badge }}">{{ $log->display_status }}</span>
+
+                                {{-- Flagged status --}}
+                                @if($log->is_flagged && !$log->resolved_at)
+                                    <span class="badge badge-flagged"><i class="fa-solid fa-warning mr-1"></i> Flagged</span>
+                                @endif
+
+                                {{-- Submit report --}}
+                                @if(in_array($log->display_status, ['Pending', 'Overdue'], true))
+                                    <a class="btn btn-primary" href="{{ route('monitoring.create', $log) }}"><i class="fa-solid fa-paper-plane"></i>
+                                        Submit Now
+                                    </a>
+                                @elseif($log->display_status === 'Upcoming')
+                                    <span class="text-[#888] text-sm">Opens {{ $log->scheduled_date->format('M d') }}</span>
+                                @else
+                                    <span class="text-[#888] text-sm">Submitted {{ \App\Support\ManilaTime::format($log->submitted_date, 'M d, Y') }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+
+                <!-- SUBMITTED REPORTS -->
+                <div class="info-card reports-card shadow-card">
+
+                    <h2>Submitted Reports</h2>
+
                     @php
-                        $badge = match($log->display_status) {
-                            'Submitted' => 'badge-completed',
-                            'Overdue'   => 'badge-overdue',
-                            'Upcoming'  => 'badge-upcoming',
-                            default     => 'badge-pending',
-                        };
+                        $submittedReports = $logs->filter(fn($log) => $log->display_status === 'Submitted');
                     @endphp
-                    <span class="badge {{ $badge }}">{{ $log->display_status }}</span>
-                    @if($log->is_flagged && !$log->resolved_at)
-                        <span class="badge badge-flagged" style="margin-left:0.25rem">⚠ Flagged</span>
-                    @endif
-                </td>
-                <td>
-                    @if(in_array($log->display_status, ['Pending', 'Overdue'], true))
-                        <a href="{{ route('monitoring.create', $log) }}" class="btn btn-primary btn-sm">Submit Report</a>
-                    @elseif($log->display_status === 'Upcoming')
-                        <span style="color:var(--muted);font-size:0.85rem">Opens {{ $log->scheduled_date->format('M d') }}</span>
+
+                    @if($submittedReports->isEmpty())
+                        <p class="text-[#888] text-center py-3">No reports submitted yet.</p>
                     @else
-                        <span style="color:var(--muted);font-size:0.85rem">Submitted {{ \App\Support\ManilaTime::format($log->submitted_date, 'M d') }}</span>
+
+                        <table class="reports-table">
+                            <thead>
+                                <tr>
+                                    <th>Milestone</th>
+                                    <th>Submitted</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                @foreach($submittedReports as $report)
+                                    <tr>
+                                        <td>{{ $report->milestone->shortLabel() }}</td>
+                                        <td>{{ \App\Support\ManilaTime::format($report->submitted_date,'F j, Y') }}</td>
+                                        <td><span class="badge badge-completed">Submitted</span></td>
+                                        <td><button type="button" class="btn btn-secondary" onclick="openReportViewModal({{ $report->id }})"><i class="fa-solid fa-eye"></i>View</button></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     @endif
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-</div>
-@endif
+                </div>
+            @endif
+        </div>
+    </div>
+
+
+    <!-- Report View Modal -->
+    <div class="modal-overlay" id="reportViewModal">
+        <div class="pet-modal report-modal" id="reportViewModalContent">
+            <!-- Filled dynamically via fetch() -->
+        </div>
+    </div>
+
 @endsection
+
+
+@push('scripts')
+
+    <script src="{{ asset('js/my-check-ins.js') }}"defer></script>
+
+@endpush

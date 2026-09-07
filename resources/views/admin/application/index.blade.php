@@ -22,10 +22,18 @@
         </div>
     @endif
 
-    @if (session('success'))
+    <!-- @if (session('success'))
         <div class="my-4 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
             <i class="fa-solid fa-circle-check mr-2"></i>{{ session('success') }}
         </div>
+    @endif -->
+
+    @if (session('success'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                showToast(@json(session('success')), 'success');
+            });
+        </script>
     @endif
 
     @if (session('warning'))
@@ -47,7 +55,7 @@
 
     <div class="flex flex-wrap gap-3 items-center my-5">
         <input type="text" data-search-input data-search-scope="applicationTableBody" class="search-input flex-1 min-w-[220px]" placeholder="Search by applicant or pet name…">
-        <button type="button" class="btn btn-primary" onclick="openTopScheduleModal()">Schedule Interview</button>
+        <button type="button" class="btn btn-primary" onclick="openTopScheduleModal()"><i class="fa-solid fa-calendar-check"></i>Schedule Interview</button>
     </div>
 
     <div class="filter-bar" data-filter-bar data-filter-scope="applicationTableBody">
@@ -64,8 +72,8 @@
         <button class="filter-btn" data-filter-btn="noshow">No Show</button>
     </div>
 
-    <div class="records-container custom-scrollbar">
-        <div class="table-responsive">
+    <div class="records-container">
+        <div class="table-responsive custom-scrollbar">
             <table class="w-full">
                 <thead>
                     <tr><th>Applicant</th><th>Pet</th><th>Submitted</th><th>Status</th><th>Actions</th></tr>
@@ -82,9 +90,9 @@
                             <td>{{ \App\Support\ManilaTime::format($app->created_at, 'M j, Y') }}</td>
                             <td><span class="badge {{ $app->status_badge_class }}">{{ $app->status_display }}</span></td>
                             <td>
-                                <button class="btn btn-secondary btn-sm" onclick="openReviewModal({{ $app->id }})">View</button>
+                                <button class="btn btn-secondary btn-sm" onclick="openReviewModal({{ $app->id }})"><i class="fa-solid fa-eye"></i>View</button>
                                 @if ($app->status_slug === 'scheduled')
-                                    <button class="btn btn-yellow btn-sm" onclick="openAddNoteModal({{ $app->id }})">Add Notes</button>
+                                    <button class="btn btn-yellow btn-sm" onclick="openAddNoteModal({{ $app->id }})"><i class="fa-solid fa-note-sticky"></i>Add Notes</button>
                                 @endif
                             </td>
                         </tr>
@@ -128,8 +136,8 @@
                 'document_url' => route('admin.applications.document', $app),
                 'document_verification_status' => $app->document_verification_status?->value ?? 'Pending',
                 'verification_url' => route('admin.applications.document-verification', $app),
-                'has_compatibility' => (bool) $app->compatibility_result,
-                'compatibility' => $app->compatibility_result,
+                'has_compatibility' => $app->knn_score !== null,
+                'compatibility' => ['overall' => $app->knn_score !== null ? (int) round($app->knn_score) : 0,],
                 'has_history' => (bool) $app->priorHistory,
                 'interview_notes' => $app->interview_notes,
                 'interview_date' => $app->interview_date_display,

@@ -36,18 +36,18 @@
         </button>
     </nav>
 
-    <div id="mobile-nav" class="hidden border-t border-white/10 bg-maroon-600 px-4 py-3 md:hidden">
-        <div class="flex flex-col gap-3">
-            <a href="{{ route('home') }}" class="text-sm font-semibold text-white">HOME</a>
-            <a href="{{ route('donate') }}" class="text-sm font-semibold text-white">DONATE</a>
+    <div id="mobile-nav" class="hidden border-t border-white/10 bg-primary-hover-600 px-4 py-3 md:hidden">
+        <div class="flex flex-col items-center gap-3">
+            <a href="{{ route('home') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">HOME</a>
+            <a href="{{ route('donate') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">DONATE</a>
             @auth
-                <a href="{{ route('animal.index') }}" class="text-sm font-semibold text-white">DASHBOARD</a>
+                <a href="{{ route('animal.index') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">DASHBOARD</a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="text-sm font-semibold text-white">LOGOUT</button>
+                    <button type="submit" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">LOGOUT</button>
                 </form>
             @else
-                <a href="{{ route('login') }}" class="text-sm font-semibold text-white">LOGIN</a>
+                <a href="{{ route('login') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">LOGIN</a>
             @endauth
         </div>
     </div>

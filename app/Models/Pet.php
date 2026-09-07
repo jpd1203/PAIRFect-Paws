@@ -149,10 +149,10 @@ class Pet extends Model
 
         return match ($status) {
             'Available' => 'active',
-            'Soft-Reserved' => 'scheduled',
-            'Adopted' => 'approved',
+            'Soft-Reserved' => 'upcoming',
+            'Adopted' => 'adopted',
             'Under Review' => 'underreview',
-            'On Hold' => 'scheduled',
+            'On Hold' => 'onhold',
             default => 'pending',
         };
     }

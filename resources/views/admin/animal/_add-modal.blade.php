@@ -17,55 +17,64 @@
                     </div> -->
 
                     <div class="form-group">
-                        <label class="form-label">Name *</label>
+                        <label class="form-label">Name*</label>
                         <input name="name" class="form-control" placeholder="e.g. Mochi" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Species *</label>
-                        <select name="species" class="form-select" required>
-                            <option value="">Select Species</option>
-                            @foreach ($options::SPECIES as $s)
-                                <option>{{ $s }}</option>
-                            @endforeach
-                        </select>
+                        <label class="form-label">Species*</label>
+                        <div class="select-wrapper">
+                            <select name="species" class="form-select" required>
+                                <option value="">Select Species</option>
+                                @foreach ($options::SPECIES as $s)
+                                    <option>{{ $s }}</option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Breed *</label>
+                        <label class="form-label">Breed*</label>
                         <input name="breed" class="form-control" placeholder="e.g. Mixed" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Age *</label>
+                        <label class="form-label">Age*</label>
 
                         <div class="flex gap-2">
-                            <input type="number" name="age_years" min="0" max="30" class="form-control flex-1" placeholder="Years">
-                            <input type="number" name="age_months" min="0" max="11" class="form-control flex-1" placeholder="Months">
+                            <input type="number" name="age_years" min="0" max="30" class="form-control flex-1" placeholder="Years" required>
+                            <input type="number" name="age_months" min="0" max="11" class="form-control flex-1" placeholder="Months" required>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Sex *</label>
-                        <select name="sex" class="form-select" required>
-                            <option value="">Select</option>
-                            <option>Male</option>
-                            <option>Female</option>
-                        </select>
+                        <label class="form-label">Sex*</label>
+                        <div class="select-wrapper">
+                            <select name="sex" class="form-select" required>
+                                <option value="">Select</option>
+                                <option>Male</option>
+                                <option>Female</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Physical Size *</label>
-                        <select name="physical_size" class="form-select" required>
-                            <option value="">Select</option>
-                            @foreach ($options::SIZES as $s)
-                                <option>{{ $s }}</option>
-                            @endforeach
-                        </select>
+                        <label class="form-label">Physical Size*</label>
+                        <div class="select-wrapper">
+                            <select name="physical_size" class="form-select" required>
+                                <option value="">Select</option>
+                                @foreach ($options::SIZES as $s)
+                                    <option>{{ $s }}</option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Intake Date *</label>
+                        <label class="form-label">Intake Date*</label>
                         <input
                             name="intake_date"
                             type="date"
@@ -82,42 +91,52 @@
                     </div> -->
 
                     <div class="form-group">
-                        <label class="form-label">Health Status *</label>
-                        <select name="health_status" class="form-select" required>
-                            <option value="">Select</option>
-                            @foreach ($options::HEALTH_STATUSES as $h)
-                                <option>{{ $h }}</option>
-                            @endforeach
-                        </select>
+                        <label class="form-label">Health Status*</label>
+                        <div class="select-wrapper">
+                            <select name="health_status" class="form-select" required>
+                                <option value="">Select</option>
+                                @foreach ($options::HEALTH_STATUSES as $h)
+                                    <option>{{ $h }}</option>
+                                @endforeach
+                            </select>
+                        <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Vaccination Status</label>
-                        <select name="vaccination_record_status" class="form-select">
-                            <option>Complete</option>
-                            <option>Incomplete</option>
-                        </select>
+                        <div class="select-wrapper">
+                            <select name="vaccination_record_status" class="form-select">
+                                <option>Complete</option>
+                                <option>Incomplete</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Adoption Status *</label>
-                        <select name="status" class="form-select" required>
-                            <option value="">Select</option>
-                            @foreach ($options::ADOPTION_STATUSES as $s)
-                                <option {{ $s === 'Assessing' ? 'selected' : '' }}>
-                                    {{ $s }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <label class="form-label">Adoption Status*</label>
+                        <div class="select-wrapper">
+                            <select name="status" class="form-select" required>
+                                <option value="">Select</option>
+                                @foreach ($options::ADOPTION_STATUSES as $s)
+                                    <option {{ $s === 'Assessing' ? 'selected' : '' }}>
+                                        {{ $s }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Pet Photo</label>
+                        <label class="form-label">Pet Photo*</label>
                         <input
                             type="file"
                             name="photo"
                             class="form-control"
-                            accept="image/*">
+                            accept="image/*"
+                            required>
                     </div>
 
                     <div class="form-group col-span-3">
@@ -134,7 +153,7 @@
             
             <div class="custom-modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('addAnimalModal')">Cancel</button>
-                <button type="submit" class="btn btn-primary">Add Animal</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i>Add Animal</button>
             </div>
         </form>
     </div>

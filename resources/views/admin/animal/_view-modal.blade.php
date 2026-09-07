@@ -18,11 +18,14 @@
 
                     <div class="form-group">
                         <label class="form-label">Species</label>
-                        <select id="vSpecies" name="species" class="form-select">
-                            @foreach ($options::SPECIES as $s)
-                                <option>{{ $s }}</option>
-                            @endforeach
-                        </select>
+                        <div class="select-wrapper">
+                            <select id="vSpecies" name="species" class="form-select">
+                                @foreach ($options::SPECIES as $s)
+                                    <option>{{ $s }}</option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                         </div>
                     </div>
 
                     <div class="form-group">
@@ -41,9 +44,12 @@
 
                     <div class="form-group">
                         <label class="form-label">Sex</label>
-                        <select id="vSex" name="sex" class="form-select">
-                            <option>Male</option><option>Female</option>
-                        </select>
+                        <div class="select-wrapper">
+                            <select id="vSex" name="sex" class="form-select">
+                                <option>Male</option><option>Female</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -53,49 +59,64 @@
 
                     <div class="form-group">
                         <label class="form-label">Health Status</label>
-                        <select id="vHealth" name="health_status" class="form-select">
-                            @foreach ($options::HEALTH_STATUSES as $h)
-                                <option>{{ $h }}</option>
-                            @endforeach
-                        </select>
+                        <div class="select-wrapper">
+                            <select id="vHealth" name="health_status" class="form-select">
+                                @foreach ($options::HEALTH_STATUSES as $h)
+                                    <option>{{ $h }}</option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Adoption Status</label>
-                        <select id="vStatus" name="status" class="form-select">
-                            @foreach ($options::ADOPTION_STATUSES as $s)
-                                <option>{{ $s }}</option>
-                            @endforeach
-                        </select>
+                        <div class="select-wrapper">
+                            <select id="vStatus" name="status" class="form-select">
+                                @foreach ($options::ADOPTION_STATUSES as $s)
+                                    <option>{{ $s }}</option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Physical Size</label>
-                        <select id="vSize" name="physical_size" class="form-select">
-                            @foreach ($options::SIZES as $s)
-                                <option>{{ $s }}</option>
-                            @endforeach
-                        </select>
+                        <div class="select-wrapper">
+                            <select id="vSize" name="physical_size" class="form-select">
+                                @foreach ($options::SIZES as $s)
+                                    <option>{{ $s }}</option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Vaccination Status</label>
-                        <select id="vVacc" name="vaccination_record_status" class="form-select">
-                            <option>Complete</option>
-                            <option>Incomplete</option>
-                        </select>
+                        <div class="select-wrapper">
+                            <select id="vVacc" name="vaccination_record_status" class="form-select">
+                                <option>Complete</option>
+                                <option>Incomplete</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Medical Needs Level</label>
-                        <select id="vMedical" name="medical_needs" class="form-select">
-                            <option value="">Not recorded</option>
-                            <option value="1">1 - Routine care only</option>
-                            <option value="2">2 - Minor medical care</option>
-                            <option value="3">3 - Regular medication/checkups</option>
-                            <option value="4">4 - Frequent veterinary care</option>
-                            <option value="5">5 - Intensive ongoing care</option>
-                        </select>
+                        <div class="select-wrapper">
+                            <select id="vMedical" name="medical_needs" class="form-select">
+                                <option value="">Not recorded</option>
+                                <option value="1">1 - Routine care only</option>
+                                <option value="2">2 - Minor medical care</option>
+                                <option value="3">3 - Regular medication/checkups</option>
+                                <option value="4">4 - Frequent veterinary care</option>
+                                <option value="5">5 - Intensive ongoing care</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -124,7 +145,7 @@
             </div>
             <div class="custom-modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('viewAnimalModal')">Close</button>
-                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i>Save Changes</button>
             </div>
         </form>
     </div>

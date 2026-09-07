@@ -3,19 +3,35 @@
 @section('title', 'Assessment Record - PAIRfect Paws Admin')
 
 @section('content')
-
     <div class="heading-text">
         <h2>Assessment Record</h2>
         <p>A pet may be assessed a maximum of 3 times.</p>
     </div>
+
+    @if (session('success'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                showToast(@json(session('success')), 'success');
+            });
+        </script>
+    @endif
+
+    @if ($errors->any())
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                showToast(@json($errors->first()), 'error');
+            });
+        </script>
+    @endif
+
 
     <div class="my-5">
         <input type="text" data-search-input data-search-scope="assessmentTableBody"
                class="search-input w-full" placeholder="Search">
     </div>
 
-    <div class="records-container custom-scrollbar">
-        <div class="table-responsive">
+    <div class="records-container">
+        <div class="table-responsive custom-scrollbar">
             <table class="w-full">
                 <thead>
                     <tr>
@@ -37,14 +53,14 @@
                             </td>
                             <td>
                                 @if ($pet->assessment_status === 'complete')
-                                    <button class="btn btn-secondary btn-sm" onclick="openAssessmentSummary({{ $pet->id }})">Summary</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="openAssessmentSummary({{ $pet->id }})"><i class="fa-solid fa-clipboard-list"></i>Summary</button>
                                 @else
                                     <span class="text-[#bbb]">—</span>
                                 @endif
                             </td>
                             <td>
                                 @if ($pet->assessment_records_count < 3)
-                                    <a href="{{ route('admin.assessments.create', $pet) }}" class="btn btn-primary btn-sm">Assess</a>
+                                    <a href="{{ route('admin.assessments.create', $pet) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-clipboard-check"></i>Assess</a>
                                 @else
                                     <span class="badge badge-completed">Complete</span>
                                 @endif

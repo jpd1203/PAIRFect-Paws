@@ -37,7 +37,7 @@
 <!-- Modal Header & Center Image -->
 <div class="relative flex flex-col items-center mb-4">
     <div class="w-full text-left mb-2">
-        <h2 class="text-3xl font-bold font-primary text-text-dark m-0">{{ $pet->name }}</h2>
+        <h2 class="text-2xl font-bold font-primary text-text-dark m-0">{{ $pet->name }}</h2>
         <p class="text-base text-[#777] m-0">Pet Profile</p>
     </div>
     <div class="modal-image -mt-10 mb-4">

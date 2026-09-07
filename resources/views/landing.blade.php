@@ -91,7 +91,7 @@
                     need a hero. Together, we can make every paw feel safe and loved.
                 </p>
 
-                <a href="{{ route('login') }}" class="btn-primary mt-8 inline-flex items-center justify-center rounded-lg bg-maroon-600 hover:bg-maroon-700 text-white font-bold px-6 py-3 shadow-md transition duration-200 text-base border-0 no-underline cursor-pointer">
+                <a href="{{ route('login') }}" class="btn-primary mt-8 inline-flex items-center justify-center rounded-lg bg-maroon-600 hover:bg-maroon-700 text-white font-bold px-6 py-3 shadow-md transition duration-200 text-base border-0 no-underline cursor-pointer"><i class="fa-solid fa-paw mr-1"></i>
                     Adopt a Pet
                 </a>
             </div>

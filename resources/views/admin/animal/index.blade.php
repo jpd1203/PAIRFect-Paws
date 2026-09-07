@@ -9,8 +9,8 @@
         <p>Manage all shelter animal profiles</p>
     </div>
 
-    @if (session('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative my-3">
+    <!-- @if (session('success'))
+        <div class="bg-green-800 border border-green-800 text-green-700 px-4 py-3 rounded relative my-3">
             {{ session('success') }}
         </div>
     @endif
@@ -23,6 +23,22 @@
                 @endforeach
             </ul>
         </div>
+    @endif -->
+
+    @if (session('success'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                showToast(@json(session('success')), 'success');
+            });
+        </script>
+    @endif
+
+    @if ($errors->any())
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                showToast(@json($errors->first()), 'error');
+            });
+        </script>
     @endif
 
     <div class="flex flex-wrap gap-3 items-center my-5">
@@ -34,37 +50,49 @@
     </div>
 
     <div class="filter-section">
-        <select id="speciesFilter">
-            <option value="all">All Species</option>
-            @foreach ($options::SPECIES as $s)
-                <option value="{{ $s }}">{{ $s }}</option>
-            @endforeach
-        </select>
+        <div class="select-wrapper">
+            <select id="speciesFilter">
+                <option value="all">All Species</option>
+                @foreach ($options::SPECIES as $s)
+                    <option value="{{ $s }}">{{ $s }}</option>
+                @endforeach
+            </select>
+            <i class="fa-solid fa-chevron-down select-arrow"></i>
+        </div>
 
-        <select id="ageFilter">
-            <option value="all">All Ages</option>
-            @foreach ($options::AGE_GROUPS as $a)
-                <option value="{{ $a }}">{{ $a }}</option>
-            @endforeach
-        </select>
+        <div class="select-wrapper">
+            <select id="ageFilter">
+                <option value="all">All Ages</option>
+                @foreach ($options::AGE_GROUPS as $a)
+                    <option value="{{ $a }}">{{ $a }}</option>
+                @endforeach
+            </select>
+            <i class="fa-solid fa-chevron-down select-arrow"></i>
+        </div>
 
-        <select id="healthFilter">
-            <option value="all">All Health</option>
-            @foreach ($options::HEALTH_STATUSES as $h)
-                <option value="{{ $h }}">{{ $h }}</option>
-            @endforeach
-        </select>
+        <div class="select-wrapper">
+            <select id="healthFilter">
+                <option value="all">All Health</option>
+                @foreach ($options::HEALTH_STATUSES as $h)
+                    <option value="{{ $h }}">{{ $h }}</option>
+                @endforeach
+            </select>
+            <i class="fa-solid fa-chevron-down select-arrow"></i>
+        </div>
 
-        <select id="statusFilter">
-            <option value="all">All Status</option>
-            @foreach ($options::ADOPTION_STATUSES as $s)
-                <option value="{{ $s }}">{{ $s }}</option>
-            @endforeach
-        </select>
+        <div class="select-wrapper">
+            <select id="statusFilter">
+                <option value="all">All Status</option>
+                @foreach ($options::ADOPTION_STATUSES as $s)
+                    <option value="{{ $s }}">{{ $s }}</option>
+                @endforeach
+            </select>
+            <i class="fa-solid fa-chevron-down select-arrow"></i>
+        </div>
     </div>
 
     <div class="records-container mt-4">
-        <div class="table-responsive">
+        <div class="table-responsive custom-scrollbar">
             <table class="w-full">
                 <thead>
                     <tr>
@@ -86,12 +114,12 @@
                             <td><span class="badge badge-{{ $pet->health_status_class }}">{{ $pet->health_status }}</span></td>
                             <td><span class="badge badge-{{ $pet->adoption_status_class }}">{{ $pet->status }}</span></td>
                             <td>
-                                <button class="btn btn-secondary btn-sm" onclick="openViewAnimalModal({{ $pet->id }})">View</button>
+                                <button class="btn btn-secondary btn-sm" onclick="openViewAnimalModal({{ $pet->id }})"><i class="fa-solid fa-eye"></i>View</button>
                                 <form action="{{ route('admin.animals.destroy', $pet) }}" method="POST" class="inline-block"
                                       onsubmit="return confirm('Delete {{ $pet->name }}? This cannot be undone.')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i>Delete</button>
                                 </form>
                             </td>
                         </tr>

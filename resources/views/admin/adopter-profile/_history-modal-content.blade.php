@@ -23,17 +23,10 @@
         @else
             <span class="badge badge-upcoming">No placement</span>
         @endif
-        <button
-            type="button"
-            class="text-[#888] text-xl leading-none hover:text-text-dark"
-            data-history-close
-            onclick="closeProfileHistory()"
-            aria-label="Close adoption history"
-        >&times;</button>
     </div>
 </div>
 
-<div class="custom-modal-body">
+<div class="custom-modal-body custom-scrollbar">
     @if ($hasPlacement)
         <section
             data-selected-application-id="{{ $selectedPlacement->id }}"

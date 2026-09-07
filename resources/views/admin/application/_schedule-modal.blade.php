@@ -42,7 +42,7 @@
     <div class="custom-modal max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
         <div class="mb-4">
             <h2 class="text-xl font-bold text-gray-900">Schedule New Interview</h2>
-            <div class="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs leading-relaxed text-emerald-800">
+            <div class="mt-3 rounded-xl bg-emerald-50 border border-emerald-800 p-3 text-xs leading-relaxed text-emerald-800">
                 Scheduling an interview will move this application to &ldquo;Interview Scheduled&rdquo; status. An email notification will be sent to the applicant.
             </div>
         </div>
@@ -94,7 +94,9 @@
             </div>
 
             <div class="mt-6 flex justify-end gap-3">
-                <button type="button" class="rounded-xl border border-red-300 bg-white px-6 py-2 text-sm font-bold text-red-800 hover:bg-red-50 transition" onclick="closeModal('scheduleNewInterviewTopModal')">Cancel</button>
+                <button type="button" class="btn-secondary rounded-xl px-6 py-2 text-[.9rem] font-semibold" onclick="closeModal('scheduleNewInterviewTopModal')">
+                    Cancel
+                </button>
                 <button type="submit" id="topScheduleSubmit" disabled
                         class="rounded-xl border border-teal-600 bg-teal-100 px-6 py-2 text-sm font-bold text-teal-900 hover:bg-teal-200 transition disabled:cursor-not-allowed disabled:opacity-50">
                     Confirm

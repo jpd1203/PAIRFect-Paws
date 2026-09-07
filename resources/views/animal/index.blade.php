@@ -4,7 +4,7 @@
 
 @section('content')
 
-    <div class="sticky-header">
+    <div class="nonsticky-header custom-scrollbar">
         <div class="heading-text">
             <h2>Available Pets</h2>
             <p>Browse animals ready for adoption</p>
@@ -12,25 +12,33 @@
 
         <!-- Filters -->
         <div class="filter-section">
-            <select id="speciesFilter">
-                <option value="All Species" @selected($speciesFilter === 'All Species')>All Species</option>
-                <option value="Dog" @selected($speciesFilter === 'Dog')>Dog</option>
-                <option value="Cat" @selected($speciesFilter === 'Cat')>Cat</option>
-            </select>
+            <div class="select-wrapper">
+                <select id="speciesFilter">
+                    <option value="All Species" @selected($speciesFilter === 'All Species')>All Species</option>
+                    <option value="Dog" @selected($speciesFilter === 'Dog')>Dog</option>
+                    <option value="Cat" @selected($speciesFilter === 'Cat')>Cat</option>
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
 
-            <select id="ageFilter">
-                <option value="All Ages" @selected($ageFilter === 'All Ages')>All Ages</option>
-                <option value="Baby" @selected($ageFilter === 'Baby')>Baby</option>
-                <option value="Young" @selected($ageFilter === 'Young')>Young</option>
-                <option value="Adult" @selected($ageFilter === 'Adult')>Adult</option>
-                <option value="Senior" @selected($ageFilter === 'Senior')>Senior</option>
-            </select>
+            <div class="select-wrapper">
+                <select id="ageFilter">
+                    <option value="All Ages" @selected($ageFilter === 'All Ages')>All Ages</option>
+                    <option value="Baby" @selected($ageFilter === 'Baby')>Baby</option>
+                    <option value="Young" @selected($ageFilter === 'Young')>Young</option>
+                    <option value="Adult" @selected($ageFilter === 'Adult')>Adult</option>
+                    <option value="Senior" @selected($ageFilter === 'Senior')>Senior</option>
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
+            
         </div>
-    </div>
+    
 
-    <div class="content-area">
-        <div id="petGridContainer">
-            @include('animal._pet-grid', ['pets' => $pets])
+        <div class="content-area-nonsticky">
+            <div id="petGridContainer">
+                @include('animal._pet-grid', ['pets' => $pets])
+            </div>
         </div>
     </div>
 
@@ -40,6 +48,7 @@
             <!-- Filled in dynamically via fetch() -->
         </div>
     </div>
+    
 
 @endsection
 

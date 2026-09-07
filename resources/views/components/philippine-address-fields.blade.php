@@ -34,39 +34,51 @@
 
     <div class="psgc-address-grid">
         <div class="psgc-field">
-            <label for="{{ $idPrefix }}_region">Region *</label>
-            <select id="{{ $idPrefix }}_region" name="region_code" data-address-region required disabled>
-                <option value="">Loading regions...</option>
-            </select>
+            <label for="{{ $idPrefix }}_region">Region*</label>
+            <div class="select-wrapper">
+                <select id="{{ $idPrefix }}_region" name="region_code" data-address-region required disabled>
+                    <option value="">Loading regions...</option>
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
             @error('region_code') <p class="field-error">{{ $message }}</p> @enderror
         </div>
 
         <div class="psgc-field">
             <label for="{{ $idPrefix }}_province">Province</label>
-            <select id="{{ $idPrefix }}_province" name="province_code" data-address-province disabled>
-                <option value="">Select a region first</option>
-            </select>
+            <div class="select-wrapper">
+                <select id="{{ $idPrefix }}_province" name="province_code" data-address-province disabled>
+                    <option value="">Select a region first</option>
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
             @error('province_code') <p class="field-error">{{ $message }}</p> @enderror
         </div>
 
         <div class="psgc-field">
-            <label for="{{ $idPrefix }}_locality">City / Municipality *</label>
-            <select id="{{ $idPrefix }}_locality" name="city_municipality_code" data-address-locality required disabled>
-                <option value="">Select a province first</option>
-            </select>
+            <label for="{{ $idPrefix }}_locality">City / Municipality*</label>
+            <div class="select-wrapper">
+                <select id="{{ $idPrefix }}_locality" name="city_municipality_code" data-address-locality required disabled>
+                    <option value="">Select a province first</option>
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
             @error('city_municipality_code') <p class="field-error">{{ $message }}</p> @enderror
         </div>
 
         <div class="psgc-field">
-            <label for="{{ $idPrefix }}_barangay">Barangay *</label>
-            <select id="{{ $idPrefix }}_barangay" name="barangay_code" data-address-barangay required disabled>
-                <option value="">Select a city or municipality first</option>
-            </select>
+            <label for="{{ $idPrefix }}_barangay">Barangay*</label>
+            <div class="select-wrapper">
+                <select id="{{ $idPrefix }}_barangay" name="barangay_code" data-address-barangay required disabled>
+                    <option value="">Select a city or municipality first</option>
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+                </div>
             @error('barangay_code') <p class="field-error">{{ $message }}</p> @enderror
         </div>
 
         <div class="psgc-field psgc-field--wide">
-            <label for="{{ $idPrefix }}_street">House No., Street, Building, or Subdivision *</label>
+            <label for="{{ $idPrefix }}_street">House No., Street, Building, or Subdivision*</label>
             <input
                 id="{{ $idPrefix }}_street"
                 name="street_address"
@@ -80,7 +92,7 @@
         </div>
 
         <div class="psgc-field">
-            <label for="{{ $idPrefix }}_zip">ZIP Code *</label>
+            <label for="{{ $idPrefix }}_zip">ZIP Code</label>
             <input
                 id="{{ $idPrefix }}_zip"
                 name="zip_code"
@@ -91,7 +103,7 @@
                 maxlength="4"
                 autocomplete="postal-code"
                 placeholder="e.g. 1008"
-                required
+                
             >
             @error('zip_code') <p class="field-error">{{ $message }}</p> @enderror
         </div>

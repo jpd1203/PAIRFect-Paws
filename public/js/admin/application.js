@@ -54,15 +54,32 @@ function openReviewModal(id) {
     document.getElementById('rCompatBtn').onclick = () => openCompatibilityModal(a);
 
     const compatBanner = document.getElementById('rCompatBanner');
+
     if (a.has_compatibility) {
         const overall = a.compatibility.overall;
         const label = overall >= 80 ? 'High Match' : overall >= 60 ? 'Good Match' : overall >= 40 ? 'Fair Match' : 'Low Match';
         compatBanner.style.display = 'block';
-        compatBanner.style.background = overall >= 60 ? '#295F51' : overall >= 40 ? '#614E34' : '#773E47';
-        compatBanner.textContent = `${label} – ${overall}/100`;
-    } else {
-        compatBanner.style.display = 'none';
-    }
+        const filledColor =
+        overall >= 80 ? '#295F51' :
+        overall >= 60 ? '#2A4877' :
+        overall >= 40 ? '#614E34' :
+        '#773E47';
+
+    const lightColor =
+        overall >= 80 ? '#E5F0EC' :
+        overall >= 60 ? '#E8EDF5' :
+        overall >= 40 ? '#FAEEDA' :
+        '#FCEBEB';
+
+    compatBanner.style.background =
+        `linear-gradient(to right, ${filledColor} ${overall}%, ${lightColor} ${overall}%)`;
+
+    compatBanner.style.color = overall >= 60 ? '#FFFFFF' : '#614E34';
+            compatBanner.style.color = overall >= 80 ? '#E5F0EC' : overall >= 60 ? '#E8EDF5' : overall >= 40 ? '#FFFFFF' : '#773E47';
+            compatBanner.textContent = `${label} – ${overall}/100`;
+        } else {
+            compatBanner.style.display = 'none';
+        }
 
     // Interview section only shown once an interview has actually happened
     const interviewSection = document.getElementById('rInterviewSection');
@@ -106,23 +123,61 @@ function openReviewModal(id) {
     rejectBtn.textContent = 'Reject';
     rejectBtn.className = 'btn btn-danger';
 
-    if (a.status === 'primarycandidate' || (a.status === 'underreview' && !a.is_primary)) {
-        scheduleBtn.style.display = 'inline-flex';
-        scheduleBtn.onclick = () => { closeModal('applicationReviewModal'); openScheduleModal(a); };
-        rejectBtn.style.display = 'inline-flex';
-        rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
-    } else if (a.status === 'underreview' && a.is_primary) {
+    // if (a.status === 'primarycandidate' || (a.status === 'underreview' && !a.is_primary)) {
+    //     scheduleBtn.style.display = 'inline-flex';
+    //     scheduleBtn.onclick = () => { closeModal('applicationReviewModal'); openScheduleModal(a); };
+    //     rejectBtn.style.display = 'inline-flex';
+    //     rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
+    // } else if (a.status === 'underreview' && a.is_primary) {
+    //     approveBtn.style.display = 'inline-flex';
+    //     rejectBtn.style.display = 'inline-flex';
+    //     approveBtn.onclick = () => submitDecision(decisionForm, 'Approved');
+    //     rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
+    // } else if (a.status === 'documentflagged') {
+    //     rejectBtn.style.display = 'inline-flex';
+    //     rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
+    // } else if (a.status === 'scheduled' && a.is_primary) {
+    //     scheduleBtn.textContent = 'Reschedule Interview';
+    //     scheduleBtn.style.display = 'inline-flex';
+    //     scheduleBtn.onclick = () => { closeModal('applicationReviewModal'); openScheduleModal(a); };
+    // }
+    if (a.status === 'pending') {
+    // Pending application
+    scheduleBtn.innerHTML = '<i class="fa-solid fa-calendar-check"></i> Schedule Interview';
+    scheduleBtn.style.display = 'inline-flex';
+    scheduleBtn.onclick = () => {
+        closeModal('applicationReviewModal');
+        openScheduleModal(a);
+    };
+
+    rejectBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Reject';
+    rejectBtn.style.display = 'inline-flex';
+    rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
+
+    } else if (a.status === 'underreview') {
+        // Under Review application
+        approveBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Approve';
         approveBtn.style.display = 'inline-flex';
-        rejectBtn.style.display = 'inline-flex';
         approveBtn.onclick = () => submitDecision(decisionForm, 'Approved');
-        rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
-    } else if (a.status === 'documentflagged') {
+
+        rejectBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Reject';
         rejectBtn.style.display = 'inline-flex';
         rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
+
+    } else if (a.status === 'documentflagged') {
+
+        rejectBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Reject';
+        rejectBtn.style.display = 'inline-flex';
+        rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
+
     } else if (a.status === 'scheduled' && a.is_primary) {
-        scheduleBtn.textContent = 'Reschedule Interview';
+
+        scheduleBtn.innerHTML = '<i class="fa-solid fa-calendar-check"></i> Reschedule Interview';
         scheduleBtn.style.display = 'inline-flex';
-        scheduleBtn.onclick = () => { closeModal('applicationReviewModal'); openScheduleModal(a); };
+        scheduleBtn.onclick = () => {
+            closeModal('applicationReviewModal');
+            openScheduleModal(a);
+        };
     }
 
     if (a.is_primary && (a.status === 'scheduled' || a.status === 'underreview')) {

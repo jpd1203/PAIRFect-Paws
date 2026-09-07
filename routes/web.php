@@ -17,6 +17,8 @@ use App\Models\FundRecord;
 use App\Models\Pet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Models\AdoptionApplication;
+
 
 // ─── Public Routes ────────────────────────────────────────────────────────────
 
@@ -229,7 +231,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/assessments/{pet}', [Admin\AssessmentController::class, 'store'])->name('assessments.store');
 
         // Compatibility (stub for sidebar)
-        Route::get('/compatibility', fn () => view('admin.compatibility.index', ['applications' => collect()]))->name('compatibility.index');
+        Route::get('/compatibility', function () {
+                $applications = AdoptionApplication::with('pet')
+                ->whereNotNull('knn_score')
+                ->orderByDesc('knn_score')
+                ->get();
+
+            return view('admin.compatibility.index', compact('applications'));
+        })->name('compatibility.index');
 
         // Applications queue
         Route::get('/applications', [Admin\ApplicationController::class, 'index'])->name('applications.index');

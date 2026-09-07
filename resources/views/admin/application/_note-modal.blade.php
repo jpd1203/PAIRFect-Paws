@@ -14,7 +14,7 @@
             </div>
             <div class="custom-modal-footer-1">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('addNoteModal')">Cancel</button>
-                <button type="submit" class="btn btn-sucess">Save Notes</button>
+                <button type="submit" class="btn btn-sucess"><i class="fa-solid fa-note-sticky"></i>Save Notes</button>
             </div>
         </form>
     </div>

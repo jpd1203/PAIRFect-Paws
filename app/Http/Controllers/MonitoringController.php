@@ -212,10 +212,10 @@ class MonitoringController extends Controller
         $maximumDurationMs = $requiredDurationMs + $durationToleranceMs;
 
         $validated = $request->validate([
-            'pet_current_status' => ['required', 'in:Good,Fair,Poor'],
-            'behavioral_observations' => ['required', 'string', 'max:2000'],
-            'living_conditions' => ['required', 'string', 'max:2000'],
-            'eating_habits' => ['required', 'string', 'max:2000'],
+            'pet_current_status' => ['required', 'in:Excellent, Good,Fair,Poor'],
+            'behavioral_observations' => ['required', 'in:Well-adjusted,Still adjusting,Anxious/Stressed,Aggressive'],
+            'living_conditions' => ['required', 'in:Indoor Only,Outdoor Only,Indoor and Outdoor'],
+            'eating_habits' => ['required', 'in:Normal,Reduced Appetite,Not Eating'],
             'vet_visit_details' => ['nullable', 'string', 'max:2000'],
             'concerns' => ['nullable', 'string', 'max:2000'],
             'camera_captured_at' => ['required', 'date'],

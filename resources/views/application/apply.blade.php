@@ -11,7 +11,7 @@
         </div>
     </div>
 
-    <div class="content-area">
+    <div class="content-area custom-scrollbar">
 
         @if ($errors->any())
             <div class="mb-5 rounded-lg border border-status-danger-text bg-status-danger-bg px-4 py-3 text-status-danger-text text-sm">
@@ -36,22 +36,22 @@
                 <div class="form-grid !gap-y-3">
 
                     <div class="form-group">
-                        <label for="first_name">First Name *</label>
+                        <label for="first_name">First Name*</label>
                         <input id="first_name" name="first_name" type="text" value="{{ old('first_name', auth()->user()->first_name) }}" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="last_name">Last Name *</label>
+                        <label for="last_name">Last Name*</label>
                         <input id="last_name" name="last_name" type="text" value="{{ old('last_name', auth()->user()->last_name) }}" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="email">Email *</label>
+                        <label for="email">Email*</label>
                         <input id="email" name="email" type="email" value="{{ old('email', auth()->user()->email) }}" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="phone_number">Phone Number *</label>
+                        <label for="phone_number">Phone Number*</label>
                         <input id="phone_number" name="phone_number" type="text" value="{{ old('phone_number') }}" required>
                     </div>
 
@@ -72,63 +72,81 @@
                 <div class="form-grid !gap-y-3">
 
                     <div class="form-group">
-                        <label for="physical_activity_level">Physical Activity Level *</label>
-                        <select id="physical_activity_level" name="physical_activity_level" required>
-                            <option value="">Select Activity Level</option>
-                            @foreach (\App\Support\ApplicationOptions::PHYSICAL_ACTIVITY_LEVELS as $option)
-                                <option value="{{ $option }}" @selected(old('physical_activity_level') === $option)>{{ $option }}</option>
-                            @endforeach
-                        </select>
+                        <label for="physical_activity_level">Physical Activity Level*</label>
+                        <div class="select-wrapper">
+                            <select id="physical_activity_level" name="physical_activity_level" required>
+                                <option value="">Select Activity Level</option>
+                                @foreach (\App\Support\ApplicationOptions::PHYSICAL_ACTIVITY_LEVELS as $option)
+                                    <option value="{{ $option }}" @selected(old('physical_activity_level') === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="time_availability">Time Availability *</label>
-                        <select id="time_availability" name="time_availability" required>
-                            <option value="">Select Time Availability</option>
-                            @foreach (\App\Support\ApplicationOptions::TIME_AVAILABILITY_OPTIONS as $option)
-                                <option value="{{ $option }}" @selected(old('time_availability') === $option)>{{ $option }}</option>
-                            @endforeach
-                        </select>
+                        <label for="time_availability">Time Availability*</label>
+                        <div class="select-wrapper">
+                            <select id="time_availability" name="time_availability" required>
+                                <option value="">Select Time Availability</option>
+                                @foreach (\App\Support\ApplicationOptions::TIME_AVAILABILITY_OPTIONS as $option)
+                                    <option value="{{ $option }}" @selected(old('time_availability') === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="prior_pet_experience">Prior Pet Experience? *</label>
-                        <select id="prior_pet_experience" name="prior_pet_experience" required>
-                            <option value="">Select Experience</option>
-                            @foreach (\App\Support\ApplicationOptions::PRIOR_EXPERIENCE_OPTIONS as $option)
-                                <option value="{{ $option }}" @selected(old('prior_pet_experience') === $option)>{{ $option }}</option>
-                            @endforeach
-                        </select>
+                        <label for="prior_pet_experience">Prior Pet Experience*</label>
+                        <div class="select-wrapper">
+                            <select id="prior_pet_experience" name="prior_pet_experience" required>
+                                <option value="">Select Experience</option>
+                                @foreach (\App\Support\ApplicationOptions::PRIOR_EXPERIENCE_OPTIONS as $option)
+                                    <option value="{{ $option }}" @selected(old('prior_pet_experience') === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="housing_type">Housing Type *</label>
-                        <select id="housing_type" name="housing_type" required>
-                            <option value="">Select Housing Type</option>
-                            @foreach (\App\Support\ApplicationOptions::HOUSING_TYPES as $option)
-                                <option value="{{ $option }}" @selected(old('housing_type') === $option)>{{ $option }}</option>
-                            @endforeach
-                        </select>
+                        <label for="housing_type">Housing Type*</label>
+                        <div class="select-wrapper">
+                            <select id="housing_type" name="housing_type" required>
+                                <option value="">Select Housing Type</option>
+                                @foreach (\App\Support\ApplicationOptions::HOUSING_TYPES as $option)
+                                    <option value="{{ $option }}" @selected(old('housing_type') === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="household_composition">Household Composition *</label>
-                        <select id="household_composition" name="household_composition" required>
-                            <option value="">Select Household Composition</option>
-                            @foreach (\App\Support\ApplicationOptions::HOUSEHOLD_COMPOSITIONS as $option)
-                                <option value="{{ $option }}" @selected(old('household_composition') === $option)>{{ $option }}</option>
-                            @endforeach
-                        </select>
+                        <label for="household_composition">Household Composition*</label>
+                        <div class="select-wrapper">
+                            <select id="household_composition" name="household_composition" required>
+                                <option value="">Select Household Composition</option>
+                                @foreach (\App\Support\ApplicationOptions::HOUSEHOLD_COMPOSITIONS as $option)
+                                    <option value="{{ $option }}" @selected(old('household_composition') === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="monthly_income_range">Monthly Income Range *</label>
-                        <select id="monthly_income_range" name="monthly_income_range" required>
-                            <option value="">Select Income Range</option>
-                            @foreach (\App\Support\ApplicationOptions::INCOME_RANGES as $option)
-                                <option value="{{ $option }}" @selected(old('monthly_income_range') === $option)>{{ $option }}</option>
-                            @endforeach
-                        </select>
+                        <label for="monthly_income_range">Monthly Income Range*</label>
+                        <div class="select-wrapper">
+                            <select id="monthly_income_range" name="monthly_income_range" required>
+                                <option value="">Select Income Range</option>
+                                @foreach (\App\Support\ApplicationOptions::INCOME_RANGES as $option)
+                                    <option value="{{ $option }}" @selected(old('monthly_income_range') === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
+                            <i class="fa-solid fa-chevron-down select-arrow"></i>
+                        </div>
                     </div>
 
                 </div>
@@ -145,7 +163,7 @@
 
                 <div class="form-group">
                     <label>
-                        Upload Valid ID / Proof of Residence *
+                        Upload Valid ID / Proof of Residence*
                     </label>
 
                     <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
@@ -166,7 +184,7 @@
             </div>
 
             <div class="submit-container">
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i>
                     Submit Application
                 </button>
             </div>

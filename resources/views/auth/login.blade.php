@@ -15,18 +15,18 @@
     {{-- MAIN CONTENT CONTAINER --}}
     <main class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
 
-        <div class="w-full max-w-[430px] bg-[#f5f1ea] border-2 border-[#d8d1c5] rounded-2xl p-5 sm:p-6 shadow-md relative">
+        <div class="w-full max-w-[490px] bg-[#f5f1ea] border-2 border-[#d8d1c5] rounded-2xl p-5 sm:p-6 shadow-md relative">
 
             <!-- Superhero Cat Badge Avatar -->
             <div class="flex justify-center mb-4">
-                <img src="{{ asset('images/superhero-cat-avatar.png') }}" alt="Superhero Cat"
-                     class="w-18 h-18 sm:w-20 sm:h-20 rounded-full border-4 border-white shadow-md object-cover">
+                <img src="{{ asset('images/rcpp-logo-2.png') }}" alt="RCPP Logo"
+                     class="w-18 h-18 sm:w-20 sm:h-20 rounded-full shadow-md object-cover">
             </div>
 
             <!-- Tab Switcher Header -->
             <div class="flex border-b-2 border-[#c5bcb0] mb-5">
                 <button type="button" id="tabSignInBtn" onclick="switchAuthTab('signin')"
-                        class="flex-1 py-1.5 text-center text-sm sm:text-base font-bold border-b-4 -mb-[2px] transition-all border-maroon-600 text-maroon-600">
+                        class="flex-1 py-1.5 text-center text-sm sm:text-base font-primary font-bold border-b-4 -mb-[2px] transition-all border-maroon-600 text-maroon-600">
                     Sign in
                 </button>
                 <button type="button" id="tabRegisterBtn" onclick="switchAuthTab('register')"
@@ -36,13 +36,13 @@
             </div>
 
             @if (session('status'))
-                <div class="mb-4 rounded-xl border border-green-300 bg-green-50 p-3.5 text-xs font-medium leading-relaxed text-green-800" role="status">
+                <div class="mb-4 rounded-xl border border-green-800 bg-green-50 p-3.5 text-xs font-medium leading-relaxed text-green-800" role="status">
                     {{ session('status') }}
                 </div>
             @endif
 
             @if ($errors->any())
-                <div class="mb-4 rounded-xl border border-red-300 bg-red-50 p-3.5 text-xs text-red-700 leading-relaxed font-medium">
+                <div class="mb-4 rounded-xl border border-red-800 bg-red-50 p-3.5 text-xs text-red-800 leading-relaxed font-medium">
                     <ul class="list-disc pl-4 space-y-1">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
