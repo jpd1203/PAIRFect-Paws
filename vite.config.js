@@ -13,4 +13,9 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    server: {
+        watch: {
+            ignored: ['**/storage/**'],
+        },
+    },
 });

@@ -94,9 +94,12 @@
             </div>
 
             {{-- CARD FOOTER --}}
-            <div class="compat-card-footer">
+            <div class="compat-card-footer flex flex-wrap items-center gap-3">
                 <button type="button" class="btn btn-primary" onclick='openBreakdown( @json($app->compatibility_result), @json("{$app->pet?->name} · {$app->first_name} {$app->last_name}"))'><i class="fa-solid fa-chart-pie"></i>
                     View Breakdown
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="openCompatAppModal({{ $app->id }})">
+                    <i class="fa-solid fa-file-lines"></i> View Application
                 </button>
             </div>
         </div>
@@ -138,11 +141,100 @@
 
 </div>
 
+{{-- DETAILED APPLICATION MODAL --}}
+<div class="custom-modal-backdrop" id="compatAppModal">
+    <div class="custom-modal review-modal">
+        <div class="review-header">
+            <div>
+                <h4 id="camTitle" class="text-xl font-bold font-primary">Application Details</h4>
+                <small id="camSubheading" class="text-xs text-[#777]"></small>
+            </div>
+            <span id="camStatusBadge" class="badge"></span>
+        </div>
+
+        <div class="custom-modal-body custom-scrollbar">
+            <div class="review-section">
+                <h6>Personal Information</h6>
+                <div class="review-row"><span>Full Name</span><span id="camFullName" class="font-semibold"></span></div>
+                <div class="review-row"><span>Contact</span><span id="camContact"></span></div>
+                <div class="review-row"><span>Email</span><span id="camEmail"></span></div>
+                <div class="review-row"><span>Address</span><span id="camAddress"></span></div>
+            </div>
+
+            <div class="review-section">
+                <h6>Adopter Profile</h6>
+                <div class="review-row"><span>Physical Activity Level</span><span id="camActivity"></span></div>
+                <div class="review-row"><span>Time Availability</span><span id="camTime"></span></div>
+                <div class="review-row"><span>Prior Pet Experience</span><span id="camExperience"></span></div>
+                <div class="review-row"><span>Housing Type</span><span id="camHousing"></span></div>
+                <div class="review-row"><span>Household Composition</span><span id="camHousehold"></span></div>
+                <div class="review-row"><span>Monthly Income Range</span><span id="camIncome"></span></div>
+                <div class="review-row flex-col items-start gap-1 py-2">
+                    <span class="font-semibold text-text-dark">Motivation Statement</span>
+                    <p id="camMotivation" class="text-sm text-[#444] bg-[#f8f6f2] border border-[#e8e3dc] p-3 rounded-md w-full whitespace-pre-line m-0 font-normal leading-relaxed"></p>
+                </div>
+                <div class="review-row">
+                    <span>Document Upload</span>
+                    <a class="btn btn-secondary btn-sm" id="camDocLink" href="#" target="_blank"><i class="fa-solid fa-file-arrow-down"></i> View Document</a>
+                </div>
+                <div class="review-row">
+                    <span>OCR Verification</span>
+                    <span>
+                        <strong id="camDocStatus"></strong>
+                        <a class="btn btn-secondary btn-sm ml-2" id="camVerifLink" href="#" target="_blank">Details</a>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="custom-modal-footer flex items-center justify-between">
+            <a id="camQueueLink" href="#" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in Applications
+            </a>
+            <button type="button" class="btn btn-primary btn-sm" onclick="closeModal('compatAppModal')">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script id="compatAppData" type="application/json">
+    {!! $applications->keyBy('id')->map(function ($app) {
+        return [
+            'id' => $app->id,
+            'applicant' => "{$app->first_name} {$app->last_name}",
+            'email' => $app->email,
+            'phone' => $app->phone_number,
+            'address' => $app->address,
+            'pet' => $app->pet?->name,
+            'pet_info' => $app->pet ? "{$app->pet->species_display} · {$app->pet->breed} · {$app->pet->age_display}" : '',
+            'submitted' => \App\Support\ManilaTime::format($app->created_at, 'F j, Y g:i A'),
+            'status' => $app->status_display,
+            'status_class' => $app->status_badge_class,
+            'motivation' => $app->motivation_statement,
+            'activity' => $app->physical_activity_level,
+            'time' => $app->time_availability,
+            'experience' => $app->prior_pet_experience,
+            'housing' => $app->housing_type,
+            'household' => $app->household_composition,
+            'income' => $app->monthly_income_range,
+            'queue_position' => $app->queue_position,
+            'is_primary' => $app->is_primary_candidate,
+            'document_url' => route('admin.applications.document', $app),
+            'document_status' => $app->document_verification_status?->value ?? 'Pending',
+            'verification_url' => route('admin.applications.document-verification', $app),
+            'applications_url' => route('admin.applications.index', ['search' => $app->first_name]),
+        ];
+    })->toJson(JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}
+</script>
+
 @endsection
 
 @push('scripts')
 
 <script>
+
+    const COMPAT_APPS = JSON.parse(document.getElementById('compatAppData')?.textContent || '{}');
 
     function openBreakdown(result, subheading) {
 
@@ -181,6 +273,36 @@
         });
 
         openModal('breakdownModal');
+    }
+
+    function openCompatAppModal(id) {
+        const app = COMPAT_APPS[id];
+        if (!app) return;
+
+        document.getElementById('camTitle').textContent = `Application — ${app.pet || 'Pet'}`;
+        document.getElementById('camSubheading').textContent = `Applicant: ${app.applicant} · Submitted: ${app.submitted}`;
+        
+        const badge = document.getElementById('camStatusBadge');
+        badge.textContent = app.status;
+        badge.className = `badge ${app.status_class || 'badge-pending'}`;
+
+        document.getElementById('camFullName').textContent = app.applicant;
+        document.getElementById('camContact').textContent = app.phone || '—';
+        document.getElementById('camEmail').textContent = app.email || '—';
+        document.getElementById('camAddress').textContent = app.address || '—';
+        document.getElementById('camActivity').textContent = app.activity || '—';
+        document.getElementById('camTime').textContent = app.time || '—';
+        document.getElementById('camExperience').textContent = app.experience || '—';
+        document.getElementById('camHousing').textContent = app.housing || '—';
+        document.getElementById('camHousehold').textContent = app.household || '—';
+        document.getElementById('camIncome').textContent = app.income || '—';
+        document.getElementById('camMotivation').textContent = app.motivation || 'No statement provided.';
+        document.getElementById('camDocLink').href = app.document_url;
+        document.getElementById('camDocStatus').textContent = app.document_status;
+        document.getElementById('camVerifLink').href = app.verification_url;
+        document.getElementById('camQueueLink').href = app.applications_url;
+
+        openModal('compatAppModal');
     }
 
 </script>

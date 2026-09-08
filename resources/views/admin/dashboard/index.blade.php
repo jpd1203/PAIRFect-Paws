@@ -88,24 +88,31 @@
 
             <div class="dashboard-box">
                 <h3>Recent Applications</h3>
-                <div class="records-container records-container-full">
-                    <table class="w-full dashboard-table">
-                        <thead>
-                            <tr><th>Applicant</th><th>Pet</th><th>Status</th><th>Submitted</th></tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($recentApplications as $app)
+                <div class="records-container">
+                    <div class="table-responsive max-h-[340px] overflow-y-auto overflow-x-auto w-full custom-scrollbar">
+                        <table class="w-full dashboard-table min-w-[480px]">
+                            <thead>
                                 <tr>
-                                    <td>{{ $app->first_name }} {{ $app->last_name }}</td>
-                                    <td>{{ $app->pet?->name }}</td>
-                                    <td><span class="badge {{ $app->status_badge_class }}">{{ $app->status_display }}</span></td>
-                                    <td>{{ \App\Support\ManilaTime::format($app->created_at, 'M j, Y') }}</td>
+                                    <th class="whitespace-nowrap">Applicant</th>
+                                    <th class="whitespace-nowrap">Pet</th>
+                                    <th class="whitespace-nowrap">Status</th>
+                                    <th class="whitespace-nowrap">Submitted</th>
                                 </tr>
-                            @empty
-                                <tr><td colspan="4" class="text-[#888] py-6">No applications yet.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @forelse ($recentApplications as $app)
+                                    <tr>
+                                        <td class="whitespace-nowrap font-medium">{{ $app->first_name }} {{ $app->last_name }}</td>
+                                        <td class="whitespace-nowrap">{{ $app->pet?->name }}</td>
+                                        <td class="whitespace-nowrap"><span class="badge {{ $app->status_badge_class }}">{{ $app->status_display }}</span></td>
+                                        <td class="whitespace-nowrap text-sm text-[#666]">{{ \App\Support\ManilaTime::format($app->created_at, 'M j, Y') }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="4" class="text-[#888] py-6 text-center">No applications yet.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 

@@ -19,7 +19,7 @@
                 @error('motivation_statement') <div class="field-error">{{ $message }}</div> @enderror
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="form-group">
                     <label for="housing_type">Housing Type*</label>
                     <div class="select-wrapper">

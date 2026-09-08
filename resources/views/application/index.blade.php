@@ -137,7 +137,7 @@
 
                             <div class="progress-section">
                                 <h3>Application Progress</h3>
-                                <div class="progress-flow flex items-center gap-2">
+                                <div class="progress-flow">
                                     <!-- SUBMITTED -->
                                     <span class="step submitted-step border border-status-success-text bg-status-success-bg text-status-success-text">
                                         Submitted
@@ -188,7 +188,7 @@
                                             : ($status === 'Approved'
                                                 ? 'border border-status-success-text bg-status-success-bg text-status-success-text font-semibold'
                                                 : ($progressStage === 3
-                                                    ? 'border bborder-status-success-text bg-status-success-bg text-status-success-text'
+                                                    ? 'border border-status-success-text bg-status-success-bg text-status-success-text'
                                                     : '')) }}">
                                         Decision
                                     </span>

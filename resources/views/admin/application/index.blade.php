@@ -68,8 +68,8 @@
         <button class="filter-btn badge-underreview" data-filter-btn="underreview">Under Review</button>
         <button class="filter-btn badge-approved" data-filter-btn="approved">Approved</button>
         <button class="filter-btn badge-rejected" data-filter-btn="rejected">Rejected</button>
-        <button class="filter-btn" data-filter-btn="withdrawn">Withdrawn</button>
-        <button class="filter-btn" data-filter-btn="noshow">No Show</button>
+        <button class="filter-btn badge-withdrawn" data-filter-btn="withdrawn">Withdrawn</button>
+        <button class="filter-btn badge-noshow" data-filter-btn="noshow">No Show</button>
     </div>
 
     <div class="records-container">
@@ -109,6 +109,7 @@
     @include('admin.application._note-modal')
     @include('admin.application._history-modal')
     @include('admin.application._compatibility-modal')
+    @include('admin.application._decision-modal')
 
     <script id="applicationData" type="application/json">
         {!! $applications->map(function ($app) {
@@ -127,6 +128,7 @@
                 'contact' => $app->phone_number,
                 'email' => $app->email,
                 'address' => $app->address,
+                'motivation_statement' => $app->motivation_statement,
                 'physical_activity_level' => $app->physical_activity_level,
                 'time_availability' => $app->time_availability,
                 'prior_pet_experience' => $app->prior_pet_experience,

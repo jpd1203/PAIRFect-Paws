@@ -35,6 +35,10 @@
                 <i class="fa-solid fa-file fa-lg"></i> My Applications
             </a>
 
+            <a href="{{ route('adopter.handover.my') }}"
+               class="menu-item {{ $isActive('adopter.handover.my', 'adopter.handover.status', 'adopter.confirm', 'adopter.handover.notifications') ? 'active' : '' }}">
+                <i class="fa-solid fa-truck-ramp-box fa-lg"></i> Handover Status
+            </a>
         </div>
 
         <div class="menu-title">POST-ADOPTION</div>

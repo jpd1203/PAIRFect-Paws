@@ -50,7 +50,7 @@
 
   /* ---------- Sidebar ---------- */
   .sidebar {
-    @apply w-sidebar shrink-0 h-screen bg-white border-r border-[#e2ddd7] flex flex-col overflow-y-auto overflow-x-hidden z-[1100] transition-transform duration-200;
+    @apply w-sidebar shrink-0 h-screen h-[100dvh] bg-white border-r border-[#e2ddd7] flex flex-col overflow-y-auto overflow-x-hidden z-[1100] transition-transform duration-200;
   }
   .sidebar.open {
     @apply translate-x-0;
@@ -83,38 +83,22 @@
 
   /* ---------- Profile card ---------- */
   .user-card {
-    @apply relative cursor-pointer select-none border-t border-[#e8e3dc] px-4 py-3.5 flex gap-3 items-center shrink-0 bg-[#faf8f5];
+    @apply relative border-t border-[#e8e3dc] px-4 py-3 flex gap-3 items-center shrink-0 bg-[#faf8f5];
+  }
+  .user-info {
+    @apply min-w-0 flex-1 leading-tight;
+  }
+  .user-info strong {
+    @apply block text-[13.5px] font-bold text-text-dark leading-tight truncate;
+  }
+  .user-info small {
+    @apply block text-[11.5px] text-[#777] leading-tight truncate mt-0.5;
   }
   .avatar {
-    @apply w-[38px] h-[38px] bg-primary text-white rounded-full flex items-center justify-center font-bold text-base shrink-0;
+    @apply w-[36px] h-[36px] bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm shrink-0;
   }
-  .profile-caret {
-    @apply ml-auto text-xs text-[#9e9e9e] transition-transform duration-200;
-  }
-  .user-card.open .profile-caret {
-    @apply rotate-180;
-  }
-  .profile-dropdown {
-    @apply absolute left-3 right-3 bottom-full mb-2 bg-white border border-[#e2ddd7] rounded-card shadow-modal p-1.5 opacity-0 invisible translate-y-1.5 transition-all duration-200 z-[1200];
-  }
-  .user-card.open .profile-dropdown {
-    @apply opacity-100 visible translate-y-0;
-  }
-  .profile-dropdown-header {
-    @apply px-3 pt-2.5 pb-2 text-[.78rem] text-[#8a8a8a] border-b border-[#efece6] mb-1;
-  }
-  .profile-dropdown-header strong {
-    @apply text-text-dark text-[.88rem];
-  }
-  .profile-dropdown-item {
-    @apply flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-text-muted no-underline text-sm font-medium transition hover:bg-neutral-light hover:text-primary;
-  }
-  .profile-dropdown-item-danger:hover {
-    @apply bg-status-danger-bg text-status-danger-text;
-  }
-  .logout-button {
-    @apply w-full bg-transparent border-0 cursor-pointer text-left;
-    font: inherit;
+  .logout-btn {
+    @apply bg-transparent border-0 cursor-pointer text-text-muted hover:text-primary transition p-2 text-base flex items-center justify-center shrink-0;
   }
 
   /* ---------- Search / buttons ---------- */
@@ -152,10 +136,11 @@
 
   /* ---------- Records table ---------- */
   .records-container {
-    @apply bg-white border border-[#e2ddd7] rounded-card overflow-hidden shadow-card;
+    @apply bg-white border border-[#e2ddd7] rounded-card overflow-hidden shadow-card w-full min-w-0;
   }
   .records-container .table-responsive {
-    @apply max-h-[480px] overflow-y-auto max-[991px]:max-h-[360px];
+    @apply max-h-[520px] overflow-y-auto overflow-x-auto w-full min-w-0;
+    -webkit-overflow-scrolling: touch;
   }
   .records-container-full .table-responsive {
     @apply max-h-none;
@@ -164,10 +149,10 @@
     @apply sticky top-0 z-10;
   }
   .records-container table thead th {
-    @apply bg-neutral-light font-primary font-semibold text-base uppercase text-center tracking-wide text-text-muted px-4 py-3.5 border-b-2 border-[#ddd] whitespace-nowrap;
+    @apply bg-neutral-light font-primary font-semibold text-[13.5px] uppercase text-center tracking-wide text-text-muted px-4 py-3 border-b-2 border-[#ddd] whitespace-nowrap;
   }
   .records-container table tbody td {
-    @apply px-4 py-3.5 text-base border-b border-[#f0ece5] align-middle text-center;
+    @apply px-4 py-3 text-[14px] border-b border-[#f0ece5] align-middle text-center;
   }
   .records-container table tbody tr:hover {
     @apply bg-[#fdf8f5];
@@ -268,12 +253,10 @@
   .filter-all:hover {
     @apply bg-text-dark text-white border-text-dark;
   }
-  .badge-pending.active,
-  .badge-waitlisted.active {
+  .badge-pending.active {
     @apply !bg-status-processing-text !text-white !border-status-processing-text;
   }
-  .badge-scheduled.active,
-  .badge-primarycandidate.active {
+  .badge-scheduled.active {
     @apply !bg-status-adopted-text !text-white !border-status-adopted-text;
   }
   .badge-underreview.active {
@@ -284,7 +267,6 @@
     @apply !bg-status-success-text !text-white !border-status-success-text;
   }
   .badge-rejected.active,
-  .badge-documentflagged.active,
   .badge-overdue.active {
     @apply !bg-status-danger-text !text-white !border-status-danger-text;
   }
@@ -293,6 +275,31 @@
   }
   .badge-upcoming.active {
     @apply !bg-status-upcoming-text !text-white !border-status-upcoming-text;
+  }
+  .badge-documentflagged.active {
+    background-color: #701A75 !important;
+    border-color: #701A75 !important;
+    color: #FFFFFF !important;
+  }
+  .badge-primarycandidate.active {
+    background-color: #042C53 !important;
+    border-color: #042C53 !important;
+    color: #FFFFFF !important;
+  }
+  .badge-waitlisted.active {
+    background-color: #4A1B0C !important;
+    border-color: #4A1B0C !important;
+    color: #FFFFFF !important;
+  }
+  .badge-withdrawn.active {
+    background-color: #2C2C2A !important;
+    border-color: #2C2C2A !important;
+    color: #FFFFFF !important;
+  }
+  .badge-noshow.active {
+    background-color: #4A2E1D !important;
+    border-color: #4A2E1D !important;
+    color: #FFFFFF !important;
   }
 
   /* ---------- Badges ---------- */
@@ -316,26 +323,48 @@
   .badge-critical,
   .badge-rejected,
   .badge-onhold,
-  .badge-documentflagged,
-  .badge-withdrawn,
-  .badge-noshow,
   .badge-overdue,
   .badge-inactive,
   .badge-marked {
     @apply bg-status-danger-bg text-status-danger-text border-status-danger-text;
   }
   .badge-processing,
-  .badge-pending,
-  .badge-waitlisted {
+  .badge-pending {
     @apply bg-status-processing-bg text-status-processing-text border-status-processing-text;
   }
   .badge-adopted,
-  .badge-scheduled,
-  .badge-primarycandidate {
+  .badge-scheduled {
     @apply bg-status-adopted-bg text-status-adopted-text border-status-adopted-text;
   }
   .badge-upcoming {
     @apply bg-status-upcoming-bg text-status-upcoming-text border-[#b0b0a8];
+  }
+
+  /* Application status color customizations */
+  .badge-documentflagged {
+    background-color: #FAE8FF;
+    border-color: #E879F9;
+    color: #701A75;
+  }
+  .badge-primarycandidate {
+    background-color: #E6F1FB;
+    border-color: #B5D4F4;
+    color: #042C53;
+  }
+  .badge-waitlisted {
+    background-color: #FAECE7;
+    border-color: #F0997B;
+    color: #4A1B0C;
+  }
+  .badge-withdrawn {
+    background-color: #F1EFE8;
+    border-color: #B4B2A9;
+    color: #2C2C2A;
+  }
+  .badge-noshow {
+    background-color: #EFE6DD;
+    border-color: #B08968;
+    color: #4A2E1D;
   }
 
   /* ---------- Modals ---------- */
@@ -405,6 +434,33 @@
   }
   .remarks-textarea {
     @apply resize-y min-h-[80px];
+  }
+
+  /* Make Decision Modal (Action PopUps - Under Review) */
+  #makeDecisionModal {
+    z-index: 1250;
+  }
+  .decision-modal {
+    @apply max-w-[490px] rounded-[16px];
+  }
+  .decision-info-banner {
+    background-color: #ebf5fb;
+    border: 1px solid #d4e8f8;
+    color: #2b5876;
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-size: 0.83rem;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .btn-decision-close {
+    @apply px-6 py-2 rounded-lg text-sm font-semibold border border-[#8F8F87] text-[#2C2C2A] bg-white transition hover:bg-neutral-light cursor-pointer;
+  }
+  .btn-decision-reject {
+    @apply px-6 py-2 rounded-lg text-sm font-semibold border border-[#F0997B] bg-[#FAECE7] text-[#A61D24] transition hover:bg-[#FADBD2] cursor-pointer;
+  }
+  .btn-decision-approve {
+    @apply px-6 py-2 rounded-lg text-sm font-semibold border border-[#86EFAC] bg-[#ECFDF5] text-[#166534] transition hover:bg-[#D1FAE5] cursor-pointer;
   }
 
   .applicant-search-results {
@@ -608,14 +664,13 @@
     @apply bg-[#e8f2ff] border border-[#7da8e8] text-[#35507d] p-2.5 rounded-lg mb-5 text-[1.05rem];
   }
   .assessment-card {
-    @apply bg-background rounded-2xl p-[25px_30px] mb-[10px] max-w-full min-w-0;
+    @apply bg-background rounded-2xl p-4 sm:p-[25px_30px] mb-3 max-w-full min-w-0;
   }
   .assessment-card h4 {
     @apply font-secondary font-semibold mb-6 text-xl;
   }
   .question-grid {
-    @apply grid gap-[25px_60px] grid-cols-2 max-[900px]:grid-cols-1 w-full min-w-0;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    @apply grid gap-5 md:gap-[25px_60px] grid-cols-1 md:grid-cols-2 w-full min-w-0;
   }
   .question {
       @apply min-w-0 max-w-full;
@@ -630,7 +685,7 @@
     @apply font-secondary font-medium block ml-[3px] mb-[3px] text-[15px] leading-relaxed;
   }
   .slider-row {
-    @apply flex items-center gap-2.5 px-[20px];
+    @apply flex items-center gap-2 px-1 sm:px-5;
   }
   .slider-row span {
     @apply font-bold;
@@ -654,39 +709,39 @@
   }
 
   .compat-card-top {
-    @apply flex items-start gap-5 pb-0 p-6;
+    @apply flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 pb-0 p-4 sm:p-6 text-center sm:text-left;
   }
 
   .pet-photo-compat {
-    @apply w-[110px] h-[110px] object-cover rounded-lg shrink-0 bg-neutral-light max-[576px]:w-full max-[576px]:h-[150px];
+    @apply w-[110px] h-[110px] object-cover rounded-lg shrink-0 bg-neutral-light mx-auto sm:mx-0;
   }
 
   .compat-info {
-    @apply flex-1;
+    @apply flex-1 w-full min-w-0;
   }
 
   .pet-title {
-    @apply flex items-center gap-2 flex-wrap;
+    @apply flex items-center justify-center sm:justify-start gap-2 flex-wrap;
   }
 
   .pet-title h3 {
-    @apply text-[1.3rem] font-bold font-primary;
+    @apply text-[1.2rem] sm:text-[1.3rem] font-bold font-primary;
   }
 
   .pet-title span {
-    @apply text-[#777] text-base text-[13px];
+    @apply text-[#777] text-[13px];
   }
 
   .matched-user {
-    @apply mt-2 text-[1rem] font-semibold;
+    @apply mt-2 text-[0.95rem] sm:text-[1rem] font-semibold;
   }
 
   .applied-date {
-    @apply mt-2 text-[#777] flex items-center gap-2 text-base text-[13px];
+    @apply mt-2 text-[#777] flex items-center justify-center sm:justify-start gap-2 text-[13px];
   }
 
   .compat-score {
-    @apply flex flex-col items-center gap-4 shrink-0;
+    @apply flex flex-col items-center gap-3 shrink-0 mt-3 sm:mt-0 w-full sm:w-auto;
   }
 
   .score-circle {
@@ -858,6 +913,7 @@
       top: 0;
       left: 0;
       height: 100vh;
+      height: 100dvh;
       transform: translateX(-100%);
       box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
     }
@@ -872,6 +928,41 @@
       grid-template-columns: 1fr;
     }
   }
+
+  @media (max-width: 768px) {
+    /* Filter bar horizontal scrolling (1-2 lines on phone) */
+    .filter-bar {
+      @apply flex-nowrap overflow-x-auto gap-2 my-3 pb-2 w-full max-w-full;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .filter-bar::-webkit-scrollbar {
+      display: none;
+    }
+    .filter-btn {
+      @apply shrink-0 whitespace-nowrap py-1.5 px-3 text-xs rounded-lg;
+    }
+
+    /* Animal records filters (single line on phone) */
+    .filter-section {
+      @apply flex-nowrap overflow-x-auto gap-2 my-3 pb-1.5 w-full;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .filter-section::-webkit-scrollbar {
+      display: none;
+    }
+    .filter-section .select-wrapper {
+      @apply shrink-0;
+    }
+    .filter-section select {
+      @apply py-1.5 pl-2.5 pr-7 text-xs min-w-[95px] h-[34px] rounded-md;
+    }
+    .filter-section .select-arrow {
+      @apply right-2 text-[10px];
+    }
+  }
+
   @media (max-width: 576px) {
     .stats-grid {
       grid-template-columns: 1fr 1fr;
@@ -879,6 +970,9 @@
     }
     .stat-card h1 {
       font-size: 2rem;
+    }
+    .records-container .table-responsive {
+      max-height: none;
     }
   }
 }

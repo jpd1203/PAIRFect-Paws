@@ -61,39 +61,41 @@
                 @if ($submittedReports->isEmpty())
                     <p class="text-[#888] text-center py-3">No reports submitted yet.</p>
                 @else
-                    <table class="reports-table">
+                    <div class="table-responsive overflow-x-auto w-full">
+                        <table class="reports-table w-full min-w-[480px]">
 
-                        <thead>
-                            <tr>
-                                <th>Milestone</th>
-                                <th>Submitted</th>
-                                <th>Health Status</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-
-                            @foreach ($submittedReports as $report)
+                            <thead>
                                 <tr>
-                                    <td>{{ str_replace(' Check-in', '', $report->milestone_report_label) }}</td>
-                                    <td>{{ $report->report_date->format('F j, Y') }}</td>
-                                    <td>
-                                        <span class="badge {{ $report->health_badge_class }}">
-                                            {{ $report->health_status }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-secondary" onclick="openReportViewModal({{ $report->id }})">
-                                            View
-                                        </button>
-                                    </td>
+                                    <th>Milestone</th>
+                                    <th>Submitted</th>
+                                    <th>Health Status</th>
+                                    <th></th>
                                 </tr>
-                            @endforeach
+                            </thead>
 
-                        </tbody>
+                            <tbody>
 
-                    </table>
+                                @foreach ($submittedReports as $report)
+                                    <tr>
+                                        <td>{{ str_replace(' Check-in', '', $report->milestone_report_label) }}</td>
+                                        <td class="whitespace-nowrap">{{ $report->report_date->format('F j, Y') }}</td>
+                                        <td>
+                                            <span class="badge {{ $report->health_badge_class }}">
+                                                {{ $report->health_status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-secondary" onclick="openReportViewModal({{ $report->id }})">
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+
+                            </tbody>
+
+                        </table>
+                    </div>
                 @endif
 
             </div>

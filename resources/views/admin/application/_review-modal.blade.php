@@ -34,6 +34,10 @@
                 <div class="review-row"><span>Housing Type</span><span id="rHousing"></span></div>
                 <div class="review-row"><span>Household Composition</span><span id="rHousehold"></span></div>
                 <div class="review-row"><span>Monthly Income Range</span><span id="rIncome"></span></div>
+                <div class="review-row flex-col items-start gap-1 py-2">
+                    <span class="font-semibold text-text-dark">Motivation Statement</span>
+                    <p id="rMotivation" class="text-sm text-[#444] bg-[#f8f6f2] border border-[#e8e3dc] p-3 rounded-md w-full whitespace-pre-line m-0 font-normal leading-relaxed"></p>
+                </div>
 
                 <div class="review-row" id="rHistoryRow">
                     <span>Adoption Record History</span>

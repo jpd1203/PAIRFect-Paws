@@ -40,6 +40,7 @@ function openReviewModal(id) {
     document.getElementById('rHousing').textContent = a.housing_type ?? '—';
     document.getElementById('rHousehold').textContent = a.household_composition ?? '—';
     document.getElementById('rIncome').textContent = a.monthly_income_range ?? '—';
+    document.getElementById('rMotivation').textContent = a.motivation_statement || 'No statement provided.';
     document.getElementById('rDocumentLink').href = a.document_url;
     document.getElementById('rDocumentStatus').textContent = a.document_verification_status;
     document.getElementById('rVerificationLink').href = a.verification_url;
@@ -152,23 +153,23 @@ function openReviewModal(id) {
 
     rejectBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Reject';
     rejectBtn.style.display = 'inline-flex';
-    rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
+    rejectBtn.onclick = () => openDecisionModal(a, 'Rejected');
 
     } else if (a.status === 'underreview') {
         // Under Review application
         approveBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Approve';
         approveBtn.style.display = 'inline-flex';
-        approveBtn.onclick = () => submitDecision(decisionForm, 'Approved');
+        approveBtn.onclick = () => openDecisionModal(a, 'Approved');
 
         rejectBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Reject';
         rejectBtn.style.display = 'inline-flex';
-        rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
+        rejectBtn.onclick = () => openDecisionModal(a, 'Rejected');
 
     } else if (a.status === 'documentflagged') {
 
         rejectBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Reject';
         rejectBtn.style.display = 'inline-flex';
-        rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
+        rejectBtn.onclick = () => openDecisionModal(a, 'Rejected');
 
     } else if (a.status === 'scheduled' && a.is_primary) {
 
@@ -220,20 +221,68 @@ function submitOverride(form) {
     form.submit();
 }
 
-function submitDecision(form, decision) {
-    let remarks = '';
-    if (decision === 'Rejected') {
-        remarks = window.prompt("Reason for rejection (optional):");
-        if (remarks === null) return; // Cancelled
-    } else if (decision === 'Approved') {
-        remarks = window.prompt("Approval remarks (optional):");
-        if (remarks === null) return; // Cancelled
+let currentDecisionApp = null;
+let currentDecisionType = null;
+
+function openDecisionModal(appOrId, decisionType = 'Approved') {
+    const a = typeof appOrId === 'object' ? appOrId : findApp(appOrId);
+    if (!a) return;
+
+    currentDecisionApp = a;
+    currentDecisionType = decisionType;
+
+    const subheading = document.getElementById('decisionSubheading');
+    if (subheading) {
+        subheading.textContent = `Applicant: ${a.full_name} · Pet: ${a.pet ?? '—'} · Submitted: ${a.submitted}`;
     }
 
-    document.getElementById('rDecisionInput').value = decision;
-    document.getElementById('rDecisionRemarksInput').value = remarks || '';
-    form.submit();
+    const title = document.getElementById('decisionModalTitle');
+    const banner = document.getElementById('decisionInfoBanner');
+    const remarksLabel = document.getElementById('decisionRemarksLabel');
+    const remarksInput = document.getElementById('decisionRemarksInput');
+    const approveBtn = document.getElementById('decisionModalApproveBtn');
+    const rejectBtn = document.getElementById('decisionModalRejectBtn');
+    const form = document.getElementById('makeDecisionForm');
+
+    if (form) {
+        form.action = a.decide_action;
+    }
+    if (remarksInput) {
+        remarksInput.value = '';
+    }
+
+    if (decisionType === 'Approved') {
+        if (title) title.textContent = 'Approve Application';
+        if (banner) banner.textContent = "This applicant's profile has been reviewed. Please confirm approval below.";
+        if (remarksLabel) remarksLabel.textContent = 'Approval Remarks (Optional)';
+        if (approveBtn) approveBtn.style.display = 'inline-block';
+        if (rejectBtn) rejectBtn.style.display = 'none';
+        setTimeout(() => approveBtn?.focus(), 100);
+    } else {
+        if (title) title.textContent = 'Reject Application';
+        if (banner) banner.textContent = 'Please provide any remarks or reasons for rejecting this application below.';
+        if (remarksLabel) remarksLabel.textContent = 'Reason for Rejection (Optional)';
+        if (rejectBtn) rejectBtn.style.display = 'inline-block';
+        if (approveBtn) approveBtn.style.display = 'none';
+        setTimeout(() => rejectBtn?.focus(), 100);
+    }
+
+    openModal('makeDecisionModal');
 }
+
+function handleDecisionSubmit(decision) {
+    if (!currentDecisionApp) return;
+
+    const form = document.getElementById('makeDecisionForm');
+    const valueInput = document.getElementById('makeDecisionValue');
+    if (form && valueInput) {
+        valueInput.value = decision || currentDecisionType || 'Approved';
+        form.submit();
+    }
+}
+
+window.openDecisionModal = openDecisionModal;
+window.handleDecisionSubmit = handleDecisionSubmit;
 
 function openScheduleModal(a) {
     document.getElementById('scheduleSubheading').textContent = `Applicant: ${a.full_name} · Pet: ${a.pet ?? '—'} · Submitted: ${a.submitted}`;

@@ -10,7 +10,7 @@
     if (!speciesFilter || !ageFilter || !gridContainer) return;
 
     async function refreshGrid() {
-        gridContainer.classList.add('pet-grid', 'is-loading');
+        gridContainer.classList.add('is-loading');
 
         const params = new URLSearchParams({
             species: speciesFilter.value,

@@ -45,6 +45,10 @@
                 <i class="fa-solid fa-circle-user fa-lg"></i> Adoption Profile
             </a>
 
+            <a href="{{ route('admin.handover.index') }}" class="menu-item {{ $isActive('admin.handover.index', 'admin.handover.show') ? 'active' : '' }}">
+                <i class="fa-solid fa-truck-ramp-box fa-lg"></i> Handover &amp; Release
+            </a>
+
         </div>
 
         <div class="menu-title">POST-ADOPTIONS</div>
@@ -95,40 +99,30 @@
 
     </div>
 
-    <div class="user-card" id="profileCardToggle">
+    @php $user = auth()->user(); @endphp
+    <div class="user-card">
 
         <div class="avatar">
             {{ $user?->avatar_initial ?? '?' }}
         </div>
 
-        <div class="min-w-0">
-            <strong class="block truncate">{{ $user?->full_name ?? 'Guest' }}</strong>
-            <span class="block truncate">{{ $user?->email ?? '' }}</span>
+        <div class="user-info">
+            <strong>{{ $user?->full_name ?? 'Staff' }}</strong>
+            <small>{{ $user?->email ?? '' }}</small>
         </div>
-        
-        <span class="inline-flex flex-col leading-none text-xs text-[#777]"><i class="fa-solid fa-chevron-up"></i><i class="fa-solid fa-chevron-down"></i></span>    <div class="profile-dropdown" id="profileDropdown">
 
-            <div class="profile-dropdown-header">
-                Signed in as<br>
-                <strong class="block truncate">{{ $user?->email ?? '' }}</strong>
-            </div>
-
-            <a href="{{ route('landing') }}" class="profile-dropdown-item">
-                <i class="fa-solid fa-house"></i> Home
-            </a>
-
-            <a href="{{ route('account.settings') }}" class="profile-dropdown-item">
-                <i class="fa-solid fa-gear"></i> Settings
-            </a>
-
-            <form action="{{ route('logout') }}" method="POST" class="m-0">
+        @if (auth()->check())
+            <form action="{{ route('admin.logout') }}" method="POST" class="m-0">
                 @csrf
-                <button type="submit" class="profile-dropdown-item profile-dropdown-item-danger logout-button font-semibold">
-                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                <button type="submit" class="logout-btn" title="Log out" aria-label="Log out">
+                    <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
             </form>
-
-        </div>
+        @else
+            <a href="{{ route('login') }}" class="logout-btn" title="Sign in" aria-label="Sign in">
+                <i class="fa-solid fa-right-to-bracket"></i>
+            </a>
+        @endif
 
     </div>
 </div>

@@ -6,6 +6,7 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DonationController;
 use App\Http\Controllers\EmailVerificationController;
+use App\Http\Controllers\HandoverConfirmationController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\PasswordResetController;
@@ -262,6 +263,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/adoption-profiles/{user}/history', [Admin\AdoptionProfileController::class, 'history'])->name('adoption-profiles.history');
         Route::get('/adoption-profiles/{application}/document', [Admin\AdoptionProfileController::class, 'document'])->name('adoption-profiles.document');
 
+        // Handover & Release
+        Route::get('/handover', [Admin\HandoverController::class, 'index'])->name('handover.index');
+        Route::get('/handover/{handover}', [Admin\HandoverController::class, 'show'])->name('handover.show');
+        Route::post('/handover/{handover}/mark-released', [Admin\HandoverController::class, 'markReleased'])->name('handover.release');
+        Route::post('/handover/{handover}/reminder', [Admin\HandoverController::class, 'sendReminder'])->name('handover.reminder');
+        Route::post('/handover/{handover}/reopen', [Admin\HandoverController::class, 'reopen'])->name('handover.reopen');
+
         // Monitoring
         Route::get('/monitoring', [Admin\MonitoringController::class, 'index'])->name('monitoring.index');
         Route::get('/monitoring/flagged', [Admin\MonitoringController::class, 'flagged'])->name('monitoring.flagged');
@@ -298,3 +306,16 @@ Route::middleware('auth')->group(function () {
         });
     });
 });
+
+// ─── Handover & Adopter Confirmation Link Routes ──────────────────────────────
+Route::middleware('auth')->group(function () {
+    Route::get('/adopter', [HandoverConfirmationController::class, 'userHandoverRedirect'])->name('adopter.handover.my');
+});
+
+Route::get('/confirm/{handover}', [HandoverConfirmationController::class, 'confirmView'])->name('adopter.confirm');
+Route::post('/confirm/{handover}', [HandoverConfirmationController::class, 'submitConfirmation'])->name('adopter.confirm.submit');
+Route::get('/adopter/{handover}', [HandoverConfirmationController::class, 'statusView'])->name('adopter.handover.status');
+Route::get('/adopter/{handover}/notifications', [HandoverConfirmationController::class, 'notificationsView'])->name('adopter.handover.notifications');
+Route::post('/adopter/notifications/{notification}/read', [HandoverConfirmationController::class, 'markRead'])->name('adopter.handover.notification.read');
+Route::post('/adopter/{handover}/notifications/read-all', [HandoverConfirmationController::class, 'markAllRead'])->name('adopter.handover.notifications.read-all');
+

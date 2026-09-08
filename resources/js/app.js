@@ -42,18 +42,6 @@ function initSidebar() {
     });
 }
 
-function initProfileDropdown() {
-    const card = document.getElementById('profileCardToggle');
-    if (!card) return;
-
-    card.addEventListener('click', (e) => {
-        e.stopPropagation();
-        card.classList.toggle('open');
-    });
-
-    document.addEventListener('click', () => card.classList.remove('open'));
-}
-
 async function openPetModal(petId) {
     const overlay = document.getElementById('petModal');
     const content = document.getElementById('petModalContent');
@@ -77,7 +65,6 @@ function closePetModal() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
-    initProfileDropdown();
 
     document.getElementById('petModal')?.addEventListener('click', (e) => {
         if (e.target.id === 'petModal') closePetModal();

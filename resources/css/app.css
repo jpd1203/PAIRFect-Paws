@@ -64,7 +64,7 @@
 
   /* ---------- Sidebar ---------- */
   .sidebar {
-    @apply w-sidebar shrink-0 h-screen bg-white border-r border-[#e2ddd7] flex flex-col overflow-y-auto overflow-x-hidden z-[1100] transition-transform duration-200;
+    @apply w-sidebar shrink-0 h-screen h-[100dvh] bg-white border-r border-[#e2ddd7] flex flex-col overflow-y-auto overflow-x-hidden z-[1100] transition-transform duration-200;
   }
   .sidebar.open {
     @apply translate-x-0;
@@ -79,13 +79,13 @@
     @apply font-primary text-[22px] tracking-wide m-0;
   }
   .menu-title {
-    @apply font-secondary px-5 pt-3.5 pb-1 text-sm font-bold tracking-widest text-[#9e9e9e] uppercase;
+    @apply font-secondary px-5 pt-3.5 pb-1 text-[12px] font-bold tracking-widest text-[#9e9e9e] uppercase;
   }
   .menu-section {
     @apply py-0.5;
   }
   .menu-item {
-    @apply flex items-center gap-3 px-6 py-3 no-underline text-text-muted text-[17px] font-medium border-l-[3px] border-transparent transition hover:bg-neutral-light hover:text-primary;
+    @apply flex items-center gap-3 px-6 py-2 no-underline text-text-muted text-[14.5px] font-medium border-l-[3px] border-transparent transition hover:bg-neutral-light hover:text-primary;
   }
   .menu-item i,
   .menu-item .menu-icon {
@@ -97,38 +97,22 @@
 
   /* ---------- Profile card ---------- */
   .user-card {
-    @apply relative cursor-pointer select-none border-t border-[#e8e3dc] px-4 py-3.5 flex gap-3 items-center shrink-0 bg-[#faf8f5];
+    @apply relative border-t border-[#e8e3dc] px-4 py-3 flex gap-3 items-center shrink-0 bg-[#faf8f5];
+  }
+  .user-info {
+    @apply min-w-0 flex-1 leading-tight;
+  }
+  .user-info strong {
+    @apply block text-[13.5px] font-bold text-text-dark leading-tight truncate;
+  }
+  .user-info small {
+    @apply block text-[11.5px] text-[#777] leading-tight truncate mt-0.5;
   }
   .avatar {
-    @apply w-[38px] h-[38px] bg-primary text-white rounded-full flex items-center justify-center font-bold text-base shrink-0;
+    @apply w-[36px] h-[36px] bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm shrink-0;
   }
-  .profile-caret {
-    @apply ml-auto text-xs text-[#9e9e9e] transition-transform duration-200;
-  }
-  .user-card.open .profile-caret {
-    @apply rotate-180;
-  }
-  .profile-dropdown {
-    @apply absolute left-3 right-3 bottom-full mb-2 bg-white border border-[#e2ddd7] rounded-card shadow-modal p-1.5 opacity-0 invisible translate-y-1.5 transition-all duration-200 z-[1200];
-  }
-  .user-card.open .profile-dropdown {
-    @apply opacity-100 visible translate-y-0;
-  }
-  .profile-dropdown-header {
-    @apply px-3 pt-2.5 pb-2 text-[.78rem] text-[#8a8a8a] border-b border-[#efece6] mb-1;
-  }
-  .profile-dropdown-header strong {
-    @apply text-text-dark text-[.88rem];
-  }
-  .profile-dropdown-item {
-    @apply flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-text-muted no-underline text-sm font-medium transition hover:bg-neutral-light hover:text-primary;
-  }
-  .profile-dropdown-item-danger:hover {
-    @apply bg-status-danger-bg text-status-danger-text;
-  }
-  .logout-button {
-    @apply w-full bg-transparent border-0 cursor-pointer text-left;
-    font: inherit;
+  .logout-btn {
+    @apply bg-transparent border-0 cursor-pointer text-text-muted hover:text-primary transition p-2 text-base flex items-center justify-center shrink-0;
   }
 
   /* ---------- Buttons ---------- */
@@ -176,12 +160,10 @@
     @apply bg-status-success-bg text-status-success-text border-status-success-text;
   }
   .badge-pending,
-  .badge-waitlisted,
   .badge-fair {
     @apply bg-status-processing-bg text-status-processing-text border-status-processing-text;
   }
   .badge-scheduled,
-  .badge-primarycandidate,
   .badge-good {
     @apply bg-status-adopted-bg text-status-adopted-text border-status-adopted-text;
   }
@@ -194,11 +176,35 @@
   }
   .badge-poor,
   .badge-rejected,
-  .badge-documentflagged,
-  .badge-withdrawn,
-  .badge-noshow,
   .badge-overdue {
     @apply bg-status-danger-bg text-status-danger-text border-status-danger-text;
+  }
+
+  /* Application status color customizations */
+  .badge-documentflagged {
+    background-color: #FAE8FF;
+    border-color: #E879F9;
+    color: #701A75;
+  }
+  .badge-primarycandidate {
+    background-color: #E6F1FB;
+    border-color: #B5D4F4;
+    color: #042C53;
+  }
+  .badge-waitlisted {
+    background-color: #FAECE7;
+    border-color: #F0997B;
+    color: #4A1B0C;
+  }
+  .badge-withdrawn {
+    background-color: #F1EFE8;
+    border-color: #B4B2A9;
+    color: #2C2C2A;
+  }
+  .badge-noshow {
+    background-color: #EFE6DD;
+    border-color: #B08968;
+    color: #4A2E1D;
   }
 
   /* ---------- Filters ---------- */
@@ -216,7 +222,8 @@
     @apply grid gap-5;
     grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   }
-  .pet-grid.is-loading {
+  .pet-grid.is-loading,
+  #petGridContainer.is-loading {
     @apply opacity-50 pointer-events-none;
   }
   .pet-card {
@@ -341,6 +348,9 @@
   }
   .form-group textarea {
     @apply h-auto py-2.5;
+  }
+  .form-group input[type="file"] {
+    @apply h-[46px] py-1.5 px-3 flex items-center cursor-pointer text-sm file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-hover;
   }
   .form-group input:disabled {
     @apply bg-neutral-light text-[#777] cursor-not-allowed;
@@ -872,5 +882,62 @@
 
   .post-adoption-report-actions .btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Progress Flow (My Application) */
+  .progress-flow {
+    @apply flex-col items-stretch gap-2 w-full;
+  }
+  .progress-flow .step {
+    @apply text-center w-full;
+  }
+  .progress-flow .arrow {
+    transform: rotate(90deg);
+    margin: 0.25rem 0;
+    align-self: center;
+    display: inline-block;
+  }
+
+  /* Settings Page */
+  .settings-wrap {
+    @apply px-2 mt-2;
+  }
+  .settings-card {
+    @apply p-4 mb-4;
+  }
+  .settings-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.875rem 0;
+  }
+  .settings-field.full-width {
+    grid-column: auto;
+  }
+  .settings-field:empty {
+    display: none;
+  }
+  .settings-actions {
+    @apply mt-4 justify-stretch;
+  }
+  .settings-actions .btn {
+    @apply w-full;
+  }
+
+  /* My Check-ins */
+  .schedule-item {
+    @apply flex-col items-start gap-3 p-3.5 bg-neutral-light/40 rounded-xl border border-[#e8e3dc];
+  }
+  .schedule-info {
+    @apply text-sm flex-wrap leading-snug;
+  }
+  .schedule-actions {
+    @apply w-full flex-wrap justify-between gap-2;
+  }
+  .schedule-actions .btn {
+    @apply w-full;
+  }
+  .reports-card {
+    @apply max-w-full;
   }
 }

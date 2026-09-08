@@ -102,28 +102,30 @@
                         <p class="text-[#888] text-center py-3">No reports submitted yet.</p>
                     @else
 
-                        <table class="reports-table">
-                            <thead>
-                                <tr>
-                                    <th>Milestone</th>
-                                    <th>Submitted</th>
-                                    <th>Status</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-
-                                @foreach($submittedReports as $report)
+                        <div class="w-full overflow-x-auto custom-scrollbar">
+                            <table class="reports-table min-w-[360px]">
+                                <thead>
                                     <tr>
-                                        <td>{{ $report->milestone->shortLabel() }}</td>
-                                        <td>{{ \App\Support\ManilaTime::format($report->submitted_date,'F j, Y') }}</td>
-                                        <td><span class="badge badge-completed">Submitted</span></td>
-                                        <td><button type="button" class="btn btn-secondary" onclick="openReportViewModal({{ $report->id }})"><i class="fa-solid fa-eye"></i>View</button></td>
+                                        <th>Milestone</th>
+                                        <th>Submitted</th>
+                                        <th>Status</th>
+                                        <th></th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                </thead>
+
+                                <tbody>
+
+                                    @foreach($submittedReports as $report)
+                                        <tr>
+                                            <td>{{ $report->milestone->shortLabel() }}</td>
+                                            <td>{{ \App\Support\ManilaTime::format($report->submitted_date,'F j, Y') }}</td>
+                                            <td><span class="badge badge-completed">Submitted</span></td>
+                                            <td><button type="button" class="btn btn-secondary" onclick="openReportViewModal({{ $report->id }})"><i class="fa-solid fa-eye"></i>View</button></td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     @endif
                 </div>
             @endif
