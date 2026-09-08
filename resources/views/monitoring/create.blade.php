@@ -36,7 +36,7 @@
                 <label for="pet_current_status">Current Status of {{ $log->adoptionApplication->pet->name }}*</label>
                 <div class="select-wrapper">
                     <select id="pet_current_status" name="pet_current_status" required>
-                        <option value="">Select&hellip;</option>
+                        <option value="">Select current status</option>
                         <option value="Good" {{ old('pet_current_status') === 'Excellent' ? 'selected' : '' }}>Excellent</option>
                         <option value="Good" {{ old('pet_current_status') === 'Good' ? 'selected' : '' }}>Good</option>
                         <option value="Fair" {{ old('pet_current_status') === 'Fair' ? 'selected' : '' }}>Fair</option>
