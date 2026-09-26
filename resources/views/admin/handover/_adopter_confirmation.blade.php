@@ -79,17 +79,9 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <form method="POST" action="{{ route('admin.handover.reminder', $record) }}">
                             @csrf
-                            <input type="hidden" name="channel" value="SMS">
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                <i class="fa-solid fa-comment-sms mr-1"></i> Send SMS Reminder
-                            </button>
-                        </form>
-
-                        <form method="POST" action="{{ route('admin.handover.reminder', $record) }}">
-                            @csrf
                             <input type="hidden" name="channel" value="Email">
-                            <button type="submit" class="btn btn-secondary btn-sm">
-                                <i class="fa-solid fa-envelope mr-1"></i> Email
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fa-solid fa-envelope mr-1"></i> Send Email Reminder
                             </button>
                         </form>
                     </div>

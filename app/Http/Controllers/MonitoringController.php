@@ -73,14 +73,16 @@ class MonitoringController extends Controller
                 $query->where('user_id', $request->user()->id)
                     ->where('status', ApplicationStatus::Approved->value);
             })
-            ->orderBy('scheduled_date')
-            ->orderBy('id')
+            ->orderByDesc('scheduled_date')
+            ->orderByDesc('id')
             ->get()
             ->each(function (PostAdoptionLog $log): void {
                 $log->setAttribute('display_status', $this->computeDisplayStatus($log));
             });
 
-        return view('monitoring.my-checkins', compact('logs'));
+        $groupedLogs = $logs->groupBy('application_id');
+
+        return view('monitoring.my-checkins', compact('groupedLogs', 'logs'));
     }
 
     /**
@@ -93,8 +95,8 @@ class MonitoringController extends Controller
         $logs = $this->ownedApprovedLogs($request)
             ->whereNull('submitted_date')
             ->whereDate('scheduled_date', '<=', $today)
-            ->orderBy('scheduled_date')
-            ->orderBy('id')
+            ->orderByDesc('scheduled_date')
+            ->orderByDesc('id')
             ->get()
             ->each(fn (PostAdoptionLog $log) => $this->setDisplayStatus($log));
 
@@ -108,8 +110,8 @@ class MonitoringController extends Controller
         $overdueLogs = $this->ownedApprovedLogs($request)
             ->whereNull('submitted_date')
             ->whereDate('scheduled_date', '<', $today)
-            ->orderBy('scheduled_date')
-            ->orderBy('id')
+            ->orderByDesc('scheduled_date')
+            ->orderByDesc('id')
             ->get()
             ->each(fn (PostAdoptionLog $log) => $this->setDisplayStatus($log));
 
@@ -131,6 +133,19 @@ class MonitoringController extends Controller
             ->each(fn (PostAdoptionLog $log) => $this->setDisplayStatus($log));
 
         return view('monitoring.flagged-notice', compact('flaggedLogs'));
+    }
+
+    public function showModal(Request $request, PostAdoptionLog $log): View
+    {
+        $this->authorizeOwnedApprovedLog($request, $log);
+
+        abort_if(
+            $log->submitted_date === null,
+            422,
+            'This report has not been submitted yet.'
+        );
+
+        return view('monitoring._report-view-modal-content', ['report' => $log]);
     }
 
     public function createReport(Request $request, PostAdoptionLog $log): View
@@ -212,10 +227,13 @@ class MonitoringController extends Controller
         $maximumDurationMs = $requiredDurationMs + $durationToleranceMs;
 
         $validated = $request->validate([
-            'pet_current_status' => ['required', 'in:Excellent, Good,Fair,Poor'],
-            'behavioral_observations' => ['required', 'in:Well-adjusted,Still adjusting,Anxious/Stressed,Aggressive'],
-            'living_conditions' => ['required', 'in:Indoor Only,Outdoor Only,Indoor and Outdoor'],
-            'eating_habits' => ['required', 'in:Normal,Reduced Appetite,Not Eating'],
+            // Keep these as bounded free-text answers. The form offers clear
+            // choices, but the stored survey must also support a descriptive
+            // welfare response so the keyword flagging rules can evaluate it.
+            'pet_current_status' => ['required', 'string', 'max:2000'],
+            'behavioral_observations' => ['required', 'string', 'max:2000'],
+            'living_conditions' => ['required', 'string', 'max:2000'],
+            'eating_habits' => ['required', 'string', 'max:2000'],
             'vet_visit_details' => ['nullable', 'string', 'max:2000'],
             'concerns' => ['nullable', 'string', 'max:2000'],
             'camera_captured_at' => ['required', 'date'],

@@ -117,7 +117,7 @@ class AssessmentKnnIntegrationTest extends TestCase
             'zip_code' => '1016',
             'motivation_statement' => 'I can provide a safe and permanent home.',
             ...$this->profileInputs(),
-            'agreed_to_animal_welfare_act' => '1',
+            'agreed_to_terms' => '1',
             'document' => UploadedFile::fake()->image('identity.jpg'),
         ])->assertRedirect(route('application.index'));
 
@@ -192,3 +192,5 @@ class AssessmentKnnIntegrationTest extends TestCase
         return $pet;
     }
 }
+
+

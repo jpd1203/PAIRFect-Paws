@@ -14,7 +14,7 @@
 @section('content')
 <div class="post-adoption-report-page custom-scrollbar">
     <div class="heading-text">
-        <h2>Submit Welfare Report</h1>
+        <h2>Submit Welfare Report</h2>
         <p>{{ $milestoneLabel }} check-in for <strong>{{ $log->adoptionApplication->pet->name }}</strong></p>
     </div>
 
@@ -37,7 +37,7 @@
                 <div class="select-wrapper">
                     <select id="pet_current_status" name="pet_current_status" required>
                         <option value="">Select current status</option>
-                        <option value="Good" {{ old('pet_current_status') === 'Excellent' ? 'selected' : '' }}>Excellent</option>
+                        <option value="Excellent" {{ old('pet_current_status') === 'Excellent' ? 'selected' : '' }}>Excellent</option>
                         <option value="Good" {{ old('pet_current_status') === 'Good' ? 'selected' : '' }}>Good</option>
                         <option value="Fair" {{ old('pet_current_status') === 'Fair' ? 'selected' : '' }}>Fair</option>
                         <option value="Poor" {{ old('pet_current_status') === 'Poor' ? 'selected' : '' }}>Poor</option>
@@ -91,8 +91,8 @@
             </div>
 
             <div class="form-group">
-                <label for="vet_visit_details">Vet Visit Details*</label>
-                <textarea id="vet_visit_details" name="vet_visit_details" rows="2" placeholder="Share recent vet visits, vaccinations, or medications." required>{{ old('vet_visit_details') }}</textarea>
+                <label for="vet_visit_details">Vet Visit Details</label>
+                <textarea id="vet_visit_details" name="vet_visit_details" rows="2" placeholder="Share recent vet visits, vaccinations, or medications.">{{ old('vet_visit_details') }}</textarea>
                 <div class="field-error" data-validation-for="vet_visit_details">@error('vet_visit_details'){{ $message }}@enderror</div>
             </div>
 

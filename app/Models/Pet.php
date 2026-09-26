@@ -119,6 +119,9 @@ class Pet extends Model
 
     public function getStatusAttribute(): string
     {
+        if ($this->is_archived) {
+            return 'Archived';
+        }
         return $this->availability_status?->value ?? 'Available';
     }
 
@@ -186,3 +189,4 @@ class Pet extends Model
         return ($this->breed ?? $this->species->value).' • '.$this->age_display;
     }
 }
+

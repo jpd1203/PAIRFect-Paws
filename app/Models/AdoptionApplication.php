@@ -76,6 +76,11 @@ class AdoptionApplication extends Model
         return $this->hasMany(PostAdoptionLog::class, 'application_id');
     }
 
+    public function handover()
+    {
+        return $this->hasOne(Handover::class, 'application_id');
+    }
+
     // ─── Constants used by frontend Blade templates ────────────────────────
 
     const STATUS_PENDING = 0;
@@ -185,7 +190,11 @@ class AdoptionApplication extends Model
 
     public function getPriorHistoryAttribute()
     {
-        return null;
+        if (!$this->user_id) return 0;
+        return $this->user->adoptionApplications()
+            ->where('status', \App\Enums\ApplicationStatus::Approved->value)
+            ->where('id', '!=', $this->id)
+            ->count();
     }
 
     public function getInterviewDateDisplayAttribute(): ?string

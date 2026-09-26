@@ -115,12 +115,21 @@
                             <td><span class="badge badge-{{ $pet->adoption_status_class }}">{{ $pet->status }}</span></td>
                             <td>
                                 <button class="btn btn-secondary btn-sm" onclick="openViewAnimalModal({{ $pet->id }})"><i class="fa-solid fa-eye"></i>View</button>
-                                <form action="{{ route('admin.animals.destroy', $pet) }}" method="POST" class="inline-block"
-                                      onsubmit="return confirm('Delete {{ $pet->name }}? This cannot be undone.')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i>Delete</button>
-                                </form>
+                                                              @if(auth()->user()->isAdmin())
+                                    @if($pet->is_archived)
+                                        <form action="{{ route('admin.animals.restore', $pet) }}" method="POST" class="inline-block"
+                                              onsubmit="return confirm('Restore {{ $pet->name }}? This will return them to the active catalog.')">
+                                            @csrf
+                                            <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-arrow-rotate-left"></i> Restore</button>
+                                        </form>
+                                    @else
+                                        <form action="{{ route('admin.animals.archive', $pet) }}" method="POST" class="inline-block"
+                                              onsubmit="return confirm('Archive {{ $pet->name }}? This will hide them from the public catalog.')">
+                                            @csrf
+                                            <button type="submit" class="btn btn-warning btn-sm"><i class="fa-solid fa-box-archive"></i> Archive</button>
+                                        </form>
+                                    @endif
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -186,3 +195,5 @@
     </script>
     <script src="{{ asset('js/admin/animal.js') }}" defer></script>
 @endpush
+
+

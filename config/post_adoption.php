@@ -81,6 +81,9 @@ return [
         ],
         'negative_answers' => [
             'pet_current_status' => ['poor'],
+            'behavioral_observations' => ['anxious/stressed', 'aggressive'],
+            'living_conditions' => ['outdoor only'],
+            'eating_habits' => ['reduced appetite', 'not eating'],
             'has_clean_water' => ['no'],
             'receives_regular_meals' => ['no'],
             'living_environment_safe' => ['no'],

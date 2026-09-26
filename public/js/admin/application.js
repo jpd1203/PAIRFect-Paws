@@ -155,8 +155,8 @@ function openReviewModal(id) {
     rejectBtn.style.display = 'inline-flex';
     rejectBtn.onclick = () => openDecisionModal(a, 'Rejected');
 
-    } else if (a.status === 'underreview') {
-        // Under Review application
+    } else if (a.status === 'underreview' && a.is_primary) {
+        // Under Review — primary candidate (post-interview): can approve or reject
         approveBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Approve';
         approveBtn.style.display = 'inline-flex';
         approveBtn.onclick = () => openDecisionModal(a, 'Approved');
@@ -164,6 +164,28 @@ function openReviewModal(id) {
         rejectBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Reject';
         rejectBtn.style.display = 'inline-flex';
         rejectBtn.onclick = () => openDecisionModal(a, 'Rejected');
+
+    } else if (a.status === 'underreview' && !a.is_primary) {
+        // Under Review — not primary: can schedule interview or reject
+        scheduleBtn.innerHTML = '<i class="fa-solid fa-calendar-check"></i> Schedule Interview';
+        scheduleBtn.style.display = 'inline-flex';
+        scheduleBtn.onclick = () => {
+            closeModal('applicationReviewModal');
+            openScheduleModal(a);
+        };
+
+        rejectBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Reject';
+        rejectBtn.style.display = 'inline-flex';
+        rejectBtn.onclick = () => openDecisionModal(a, 'Rejected');
+
+    } else if (a.status === 'primarycandidate') {
+        // Promoted primary candidate: can schedule interview
+        scheduleBtn.innerHTML = '<i class="fa-solid fa-calendar-check"></i> Schedule Interview';
+        scheduleBtn.style.display = 'inline-flex';
+        scheduleBtn.onclick = () => {
+            closeModal('applicationReviewModal');
+            openScheduleModal(a);
+        };
 
     } else if (a.status === 'documentflagged') {
 
@@ -481,4 +503,8 @@ function openCompatibilityModal(a) {
     });
 
     openModal('compatibilityResultModal');
+}
+
+function closeProfileHistory() {
+    closeModal('adoptionHistoryModal');
 }

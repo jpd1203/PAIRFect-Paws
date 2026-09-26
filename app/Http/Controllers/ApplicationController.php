@@ -50,7 +50,9 @@ class ApplicationController extends Controller
             'This pet is processing an active application and is not accepting new applications.'
         );
 
-        return view('application.apply', compact('pet'));
+        $profile = auth()->check() ? auth()->user()->adopterProfile : null;
+
+        return view('application.apply', compact('pet', 'profile'));
     }
 
     public function store(Request $request)
@@ -70,7 +72,7 @@ class ApplicationController extends Controller
             'monthly_income_range' => 'nullable|required_without:income_range|string|max:255',
             'income_range' => 'nullable|required_without:monthly_income_range|string|max:255',
             'document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'agreed_to_animal_welfare_act' => 'accepted',
+            'agreed_to_terms' => 'accepted',
             ...PhilippineLocationService::validationRules(),
         ]);
 
@@ -116,10 +118,13 @@ class ApplicationController extends Controller
         $knnScore = $isRecommendationEligible
             ? $this->knn->distanceFor($pet, $knnInputs)
             : null;
+        $compatibilityResult = $isRecommendationEligible
+            ? $this->knn->resultFor($pet, $knnInputs)
+            : null;
 
         try {
             $application = DB::transaction(function () use (
-                $validated, $user, $knnScore, $document, $documentDisk,
+                $validated, $user, $knnScore, $compatibilityResult, $document, $documentDisk,
                 $documentPath, $incomeRange, $verification, $address, $knnInputs
             ) {
                 // This row lock makes the availability check and insert one atomic operation.
@@ -176,6 +181,7 @@ class ApplicationController extends Controller
                     'prior_pet_experience' => $validated['prior_pet_experience'],
                     'household_composition' => $validated['household_composition'],
                     'knn_score' => $knnScore,
+                    'compatibility_result' => $compatibilityResult,
                     'document_path' => $documentPath,
                     'document_disk' => $documentDisk,
                     'document_original_name' => $this->safeOriginalName($document->getClientOriginalName()),
@@ -388,9 +394,6 @@ class ApplicationController extends Controller
         if ($status === DocumentVerificationStatus::NeedsResubmission) {
             return ApplicationStatus::DocumentFlagged->value;
         }
-        if ($status !== DocumentVerificationStatus::Verified) {
-            return ApplicationStatus::Pending->value;
-        }
 
         $hasPrimary = AdoptionApplication::where('pet_id', $pet->id)
             ->where('is_primary_candidate', true)
@@ -398,7 +401,7 @@ class ApplicationController extends Controller
 
         return $hasPrimary || $pet->availability_status === AvailabilityStatus::SoftReserved
             ? ApplicationStatus::Waitlisted->value
-            : ApplicationStatus::UnderReview->value;
+            : ApplicationStatus::Pending->value;
     }
 
     private function safeOriginalName(string $name): string
@@ -408,3 +411,5 @@ class ApplicationController extends Controller
         return mb_substr((string) preg_replace('/[^\pL\pN._ -]+/u', '_', $basename), 0, 255);
     }
 }
+
+

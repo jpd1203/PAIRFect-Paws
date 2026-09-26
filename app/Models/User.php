@@ -97,6 +97,11 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->hasMany(AdoptionApplication::class);
     }
 
+    public function handovers()
+    {
+        return $this->hasMany(Handover::class);
+    }
+
     public function adopterProfile()
     {
         return $this->hasOne(AdopterProfile::class);

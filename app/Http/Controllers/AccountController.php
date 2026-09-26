@@ -30,7 +30,7 @@ class AccountController extends Controller
                 'string',
                 'confirmed',
                 'different:current_password',
-                Password::min(10),
+                Password::defaults(),
             ],
         ]);
 

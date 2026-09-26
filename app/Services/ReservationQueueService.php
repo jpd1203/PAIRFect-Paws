@@ -26,6 +26,7 @@ class ReservationQueueService
     public function __construct(
         private readonly PostAdoptionScheduleService $postAdoptionSchedule,
         private readonly EmailNotificationService $emailNotifications,
+        private readonly HandoverService $handovers,
     ) {}
 
     public function schedule(
@@ -46,9 +47,9 @@ class ReservationQueueService
             $isReschedule = $candidate->status === ApplicationStatus::InterviewScheduled
                 && $candidate->is_primary_candidate;
 
-            if (! $isReschedule && ! in_array($candidate->status, [ApplicationStatus::UnderReview, ApplicationStatus::PrimaryCandidate], true)) {
+            if (! $isReschedule && ! in_array($candidate->status, [ApplicationStatus::Pending, ApplicationStatus::PrimaryCandidate, ApplicationStatus::UnderReview], true)) {
                 throw ValidationException::withMessages([
-                    'application_id' => 'Only a document-verified application under review, a promoted primary candidate, or the currently scheduled candidate can be scheduled.',
+                    'application_id' => 'Only a document-verified pending application, an application under review, a promoted primary candidate, or the currently scheduled candidate can be scheduled.',
                 ]);
             }
 
@@ -63,20 +64,21 @@ class ReservationQueueService
 
             if (! $isReschedule) {
                 $firstEligible = AdoptionApplication::where('pet_id', $pet->id)
-                    ->whereIn('status', [ApplicationStatus::UnderReview->value, ApplicationStatus::PrimaryCandidate->value])
+                    ->whereIn('status', [ApplicationStatus::Pending->value, ApplicationStatus::UnderReview->value, ApplicationStatus::PrimaryCandidate->value])
                     ->whereIn('document_verification_status', [
                         DocumentVerificationStatus::Verified->value,
                         DocumentVerificationStatus::LegacyReview->value,
                     ])
                     ->whereNotIn('status', self::TERMINAL_STATUSES)
+                    ->orderByRaw('knn_score IS NULL, knn_score ASC')
                     ->orderBy('created_at')
                     ->orderBy('id')
                     ->lockForUpdate()
                     ->first();
 
-                if ($candidate->status === ApplicationStatus::UnderReview && $firstEligible?->id !== $candidate->id) {
+                if (($candidate->status === ApplicationStatus::Pending || $candidate->status === ApplicationStatus::UnderReview) && $firstEligible?->id !== $candidate->id) {
                     throw ValidationException::withMessages([
-                        'application_id' => 'The oldest eligible application must be scheduled first. Use an administrative override after the queue is active if required.',
+                        'application_id' => 'The highest scoring eligible application must be scheduled first. Use an administrative override after the queue is active if required.',
                     ]);
                 }
             }
@@ -106,7 +108,7 @@ class ReservationQueueService
 
             $newlyWaitlisted = AdoptionApplication::where('pet_id', $pet->id)
                 ->where('id', '!=', $candidate->id)
-                ->where('status', ApplicationStatus::UnderReview->value)
+                ->whereIn('status', [ApplicationStatus::Pending->value, ApplicationStatus::UnderReview->value])
                 ->where('document_verification_status', DocumentVerificationStatus::Verified->value)
                 ->lockForUpdate()
                 ->get();
@@ -248,7 +250,7 @@ class ReservationQueueService
                 ->firstOrFail();
 
             $isPreInterviewReview = ! $candidate->is_primary_candidate
-                && $candidate->status === ApplicationStatus::UnderReview;
+                && in_array($candidate->status, [ApplicationStatus::Pending, ApplicationStatus::UnderReview], true);
             $isAwaitingDocumentUpdate = ! $candidate->is_primary_candidate
                 && $candidate->status === ApplicationStatus::DocumentFlagged
                 && $candidate->document_verification_status === DocumentVerificationStatus::NeedsResubmission;
@@ -391,6 +393,7 @@ class ReservationQueueService
             }
 
             $this->postAdoptionSchedule->ensureForApplication($candidate);
+            $this->handovers->forApprovedApplication($candidate);
 
             AuditLogService::log(
                 $actorId,
@@ -536,6 +539,7 @@ class ReservationQueueService
         $next = AdoptionApplication::where('pet_id', $pet->id)
             ->where('status', ApplicationStatus::Waitlisted->value)
             ->where('document_verification_status', DocumentVerificationStatus::Verified->value)
+            ->orderByRaw('knn_score IS NULL, knn_score ASC')
             ->orderBy('created_at')
             ->orderBy('id')
             ->lockForUpdate()

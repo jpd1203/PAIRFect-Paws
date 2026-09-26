@@ -105,16 +105,10 @@ class Handover extends Model
 
     public function getPhotoUrlAttribute(): string
     {
-        if ($this->pet && $this->pet->image_path) {
-            return asset('storage/' . $this->pet->image_path);
+        if ($this->pet) {
+            return $this->pet->image_url;
         }
-        return match (strtolower($this->pet?->name ?? '')) {
-            'icy' => 'https://cdn.magicpatterns.com/patterns/generated-images/46ad49ab-b279-4bcd-a56f-09b9638a8b92.jpg',
-            'mimi' => 'https://cdn.magicpatterns.com/patterns/generated-images/e28600dc-a1e7-46e6-86bf-d7d3abb8357c.jpg',
-            'bruno' => 'https://cdn.magicpatterns.com/patterns/generated-images/4bc5c9b0-5f94-4a1e-9bf9-67d3a4349fb3.jpg',
-            'mochi' => 'https://cdn.magicpatterns.com/patterns/generated-images/cc73ddf7-0cf0-46af-91f5-3ea9a1efa62d.jpg',
-            default => asset('images/service-adoption.jpg'),
-        };
+        return asset('images/service-adoption.jpg');
     }
 
     public function getMonitoringLockedAttribute(): bool

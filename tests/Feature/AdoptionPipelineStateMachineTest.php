@@ -9,6 +9,7 @@ use App\Enums\Role;
 use App\Mail\StatusUpdateMail;
 use App\Mail\TransactionalMail;
 use App\Models\AdoptionApplication;
+use App\Models\Handover;
 use App\Models\Pet;
 use App\Models\User;
 use App\Services\ReservationQueueService;
@@ -139,6 +140,12 @@ class AdoptionPipelineStateMachineTest extends TestCase
         $this->assertTrue($application->adopted_at->equalTo($application->queue_closed_at));
         $this->assertSame(AvailabilityStatus::Adopted, $pet->refresh()->availability_status);
         $this->assertCount(3, $application->postAdoptionLogs()->get());
+        $this->assertDatabaseHas('handovers', [
+            'application_id' => $application->id,
+            'pet_id' => $pet->id,
+            'user_id' => $adopter->id,
+        ]);
+        $this->assertSame($application->id, Handover::where('application_id', $application->id)->value('application_id'));
         Mail::assertQueued(
             StatusUpdateMail::class,
             fn (StatusUpdateMail $mail): bool => $mail->hasTo($adopter->email)

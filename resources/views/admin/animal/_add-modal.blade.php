@@ -80,6 +80,7 @@
                             type="date"
                             class="form-control"
                             value="{{ \App\Support\ManilaTime::now()->format('Y-m-d') }}"
+                            max="{{ \App\Support\ManilaTime::now()->format('Y-m-d') }}"
                             required>
                     </div>
 

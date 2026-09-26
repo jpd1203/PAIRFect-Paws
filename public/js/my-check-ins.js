@@ -8,7 +8,7 @@ async function openReportViewModal(reportId) {
     if (!overlay || !content) return;
 
     try {
-        const res = await fetch(`/post-adoption/reports/${reportId}/modal`, {
+        const res = await fetch(`/monitoring/reports/${reportId}/modal`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         });
         if (!res.ok) throw new Error('Failed to load report');

@@ -77,7 +77,7 @@
                             <select id="physical_activity_level" name="physical_activity_level" required>
                                 <option value="">Select Activity Level</option>
                                 @foreach (\App\Support\ApplicationOptions::PHYSICAL_ACTIVITY_LEVELS as $option)
-                                    <option value="{{ $option }}" @selected(old('physical_activity_level') === $option)>{{ $option }}</option>
+                                    <option value="{{ $option }}" @selected(old('physical_activity_level', $profile?->physical_activity_level) === $option)>{{ $option }}</option>
                                 @endforeach
                             </select>
                             <i class="fa-solid fa-chevron-down select-arrow"></i>
@@ -90,7 +90,7 @@
                             <select id="time_availability" name="time_availability" required>
                                 <option value="">Select Time Availability</option>
                                 @foreach (\App\Support\ApplicationOptions::TIME_AVAILABILITY_OPTIONS as $option)
-                                    <option value="{{ $option }}" @selected(old('time_availability') === $option)>{{ $option }}</option>
+                                    <option value="{{ $option }}" @selected(old('time_availability', $profile?->time_availability) === $option)>{{ $option }}</option>
                                 @endforeach
                             </select>
                             <i class="fa-solid fa-chevron-down select-arrow"></i>
@@ -103,7 +103,7 @@
                             <select id="prior_pet_experience" name="prior_pet_experience" required>
                                 <option value="">Select Experience</option>
                                 @foreach (\App\Support\ApplicationOptions::PRIOR_EXPERIENCE_OPTIONS as $option)
-                                    <option value="{{ $option }}" @selected(old('prior_pet_experience') === $option)>{{ $option }}</option>
+                                    <option value="{{ $option }}" @selected(old('prior_pet_experience', $profile?->prior_pet_experience) === $option)>{{ $option }}</option>
                                 @endforeach
                             </select>
                             <i class="fa-solid fa-chevron-down select-arrow"></i>
@@ -116,7 +116,7 @@
                             <select id="housing_type" name="housing_type" required>
                                 <option value="">Select Housing Type</option>
                                 @foreach (\App\Support\ApplicationOptions::HOUSING_TYPES as $option)
-                                    <option value="{{ $option }}" @selected(old('housing_type') === $option)>{{ $option }}</option>
+                                    <option value="{{ $option }}" @selected(old('housing_type', $profile?->housing_type) === $option)>{{ $option }}</option>
                                 @endforeach
                             </select>
                             <i class="fa-solid fa-chevron-down select-arrow"></i>
@@ -129,7 +129,7 @@
                             <select id="household_composition" name="household_composition" required>
                                 <option value="">Select Household Composition</option>
                                 @foreach (\App\Support\ApplicationOptions::HOUSEHOLD_COMPOSITIONS as $option)
-                                    <option value="{{ $option }}" @selected(old('household_composition') === $option)>{{ $option }}</option>
+                                    <option value="{{ $option }}" @selected(old('household_composition', $profile?->household_composition) === $option)>{{ $option }}</option>
                                 @endforeach
                             </select>
                             <i class="fa-solid fa-chevron-down select-arrow"></i>
@@ -142,7 +142,7 @@
                             <select id="monthly_income_range" name="monthly_income_range" required>
                                 <option value="">Select Income Range</option>
                                 @foreach (\App\Support\ApplicationOptions::INCOME_RANGES as $option)
-                                    <option value="{{ $option }}" @selected(old('monthly_income_range') === $option)>{{ $option }}</option>
+                                    <option value="{{ $option }}" @selected(old('monthly_income_range', $profile?->monthly_income_range) === $option)>{{ $option }}</option>
                                 @endforeach
                             </select>
                             <i class="fa-solid fa-chevron-down select-arrow"></i>
@@ -172,12 +172,10 @@
                 </div>
 
                 <div class="checkbox-group">
-                    <input type="checkbox" id="agreement" name="agreed_to_animal_welfare_act" value="1" required>
-
-                    <label for="agreement">
-                        I agree to comply with Republic Act No. 8485
-                        (Animal Welfare Act) and provide proper care
-                        for the adopted pet.
+                    <input type="checkbox" id="agreement_terms" name="agreed_to_terms" value="1" required>
+                    <label for="agreement_terms">
+                        I have read, understood, and agree to the terms of the 
+                        <a href="javascript:void(0)" onclick="openTermsModal()" style="color: var(--primary-color); text-decoration: underline;">Adoption and Data Processing Agreement</a>.
                     </label>
                 </div>
 
@@ -193,4 +191,55 @@
 
     </div>
 
+
+    <div class="modal-overlay" id="termsModal">
+        <div class="pet-modal report-modal" style="max-width: 600px; padding: 30px; text-align: left; background: #fff; border-radius: 8px;">
+            <div class="modal-header" style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: #333;">Adoption and Data Processing Agreement</h3>
+            </div>
+            <div class="modal-body custom-scrollbar" style="max-height: 50vh; overflow-y: auto; font-size: 0.95rem; line-height: 1.6; color: #555; padding-right: 10px;">
+                <p>By submitting this application, you are making a formal commitment to the welfare of the animal and agreeing to our shelter protocols. Please read and agree to the following terms:</p>
+                <br>
+                <p><strong>1. Commitment to Animal Welfare</strong><br>
+                I agree to comply with Republic Act No. 8485 (The Animal Welfare Act of 1998) and provide humane treatment, proper nutrition, clean water, and a safe living environment for the adopted pet throughout its life.</p>
+                <br>
+                <p><strong>2. Veterinary and Medical Care</strong><br>
+                I agree to take full responsibility for all routine and emergency veterinary care, including keeping vaccinations up to date and providing preventative treatments as recommended by a licensed veterinarian.</p>
+                <br>
+                <p><strong>3. Post-Adoption Monitoring</strong><br>
+                I understand that adoption is a continuing responsibility. I agree to fully comply with the shelter's post-adoption monitoring requirements and will submit accurate digital welfare reports, including current photos or videos of the pet, at the scheduled 3-day, 3-week, and 3-month milestones.</p>
+                <br>
+                <p><strong>4. Right of Return</strong><br>
+                I agree that if I can no longer care for the adopted pet for any reason, I will return the animal directly to the shelter. I will not sell, give away, abandon, or surrender the pet to any other facility or individual.</p>
+                <br>
+                <p><strong>5. Liability Waiver</strong><br>
+                I acknowledge that animal behavior can be unpredictable. I release the shelter, its administrators, and its volunteers from any legal or financial liability for any property damage, medical costs, or injuries caused by the pet after the adoption is finalized.</p>
+                <br>
+                <p><strong>6. Right of Confiscation</strong><br>
+                I understand that the shelter reserves the right to reclaim the pet if there is clear evidence of neglect, abuse, or a direct violation of this agreement or local animal welfare laws.</p>
+                <br>
+                <p><strong>7. Data Privacy and Algorithmic Matching</strong><br>
+                In compliance with Republic Act No. 10173 (Data Privacy Act of 2012), I consent to the collection and secure storage of my personal information, lifestyle details, and submitted identification documents. I explicitly agree to let the system use my adopter profile data in an automated pet matching calculation to help shelter staff find the most compatible animal for my household.</p>
+            </div>
+            <div class="modal-actions" style="margin-top: 25px; text-align: right;">
+                <button type="button" class="btn btn-secondary" onclick="closeTermsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openTermsModal() {
+            document.getElementById("termsModal").classList.add("show");
+        }
+        function closeTermsModal() {
+            document.getElementById("termsModal").classList.remove("show");
+        }
+        document.getElementById("termsModal")?.addEventListener("click", (e) => {
+            if (e.target.id === "termsModal") closeTermsModal();
+        });
+    </script>
+
 @endsection
+
+
+

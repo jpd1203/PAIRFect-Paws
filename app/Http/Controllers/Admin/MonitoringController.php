@@ -132,7 +132,7 @@ class MonitoringController extends Controller
 
         $log->refresh()->loadMissing('adoptionApplication.user');
         $adopter = $log->adoptionApplication?->user;
-        $now = CarbonImmutable::now(PostAdoptionScheduleService::TIMEZONE);
+        $now = app(\App\Services\PostAdoptionClock::class)->now();
         $scheduledDate = CarbonImmutable::parse(
             $log->scheduled_date->toDateString(),
             PostAdoptionScheduleService::TIMEZONE,
@@ -212,7 +212,7 @@ class MonitoringController extends Controller
             'reason' => ['required', 'string', 'max:2000'],
         ]);
 
-        $now = CarbonImmutable::now(PostAdoptionScheduleService::TIMEZONE);
+        $now = app(\App\Services\PostAdoptionClock::class)->now();
         $reason = trim($validated['reason']);
 
         DB::transaction(function () use ($log, $reason, $now, $request): void {
@@ -339,3 +339,5 @@ class MonitoringController extends Controller
             && preg_match('~^[A-Za-z]:[\\\\/]~', $path) !== 1;
     }
 }
+
+

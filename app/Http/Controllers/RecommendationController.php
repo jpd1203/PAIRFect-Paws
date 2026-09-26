@@ -70,6 +70,7 @@ class RecommendationController extends Controller
             'matches' => $matches,
             'sliders' => $sliders,
             'matcher' => $this->knn,
+            'profile' => $validated,
         ]);
     }
 
@@ -91,7 +92,9 @@ class RecommendationController extends Controller
             'temperament' => (int) ($raw['temperament'] ?? 3),
         ];
 
-        $matches = $this->knn->recompute($sliders);
+        $profile = $raw['profile'] ?? [];
+
+        $matches = $this->knn->recompute($sliders, $profile);
 
         $payload = $matches->map(fn ($m) => [
             'id' => $m['pet']->id,

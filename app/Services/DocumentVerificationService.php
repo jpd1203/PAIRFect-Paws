@@ -387,7 +387,8 @@ class DocumentVerificationService
             $streetConsistent = $applicationStructure['street_core'] === []
                 || array_intersect($applicationStructure['street_core'], $documentStreetTokens) !== [];
             $localityConsistent = $applicationStructure['locality'] === null
-                || $applicationStructure['locality'] === $documentStructure['locality'];
+                || $applicationStructure['locality'] === $documentStructure['locality']
+                || in_array($applicationStructure['locality'], $documentTokens, true);
             $districtConsistent = true;
             if ($applicationStructure['district'] !== [] && $documentStructure['has_street_marker']) {
                 // An omitted district is acceptable, but a different named district is a hard conflict.

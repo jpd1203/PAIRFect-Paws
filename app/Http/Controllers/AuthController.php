@@ -32,6 +32,15 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+        $throttleKey = strtolower($credentials['email']) . '|' . $request->ip();
+
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+            return back()->withErrors([
+                'email' => "Too many login attempts. Please try again in {$seconds} seconds.",
+            ])->onlyInput('email');
+        }
+
         // Find user first to check is_active before Auth::attempt
         $user = User::where('email', $credentials['email'])->first();
 
@@ -42,11 +51,13 @@ class AuthController extends Controller
         }
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            \Illuminate\Support\Facades\RateLimiter::hit($throttleKey);
             return back()->withErrors([
                 'email' => 'The provided credentials do not match our records.',
             ])->onlyInput('email');
         }
 
+        \Illuminate\Support\Facades\RateLimiter::clear($throttleKey);
         $request->session()->regenerate();
 
         return redirect()->intended($this->routeForRole(Auth::user()));
@@ -65,7 +76,7 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
             ...PhilippineLocationService::validationRules(),
         ]);
         $address = $this->locations->resolveAddress($validated);
@@ -121,3 +132,4 @@ class AuthController extends Controller
         };
     }
 }
+

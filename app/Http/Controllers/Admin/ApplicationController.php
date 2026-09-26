@@ -51,9 +51,16 @@ class ApplicationController extends Controller
 
         $applications->groupBy('pet_id')->each(function ($petApplications) use ($terminalStatuses) {
             $position = 0;
-            $petApplications->sortBy([['created_at', 'asc'], ['id', 'asc']])->each(
+            $petApplications->sort(function ($a, $b) {
+                if ($a->knn_score === null && $b->knn_score !== null) return 1;
+                if ($a->knn_score !== null && $b->knn_score === null) return -1;
+                if ($a->knn_score !== $b->knn_score) return $a->knn_score <=> $b->knn_score;
+                if ($a->created_at !== $b->created_at) return $a->created_at <=> $b->created_at;
+                return $a->id <=> $b->id;
+            })->values()->each(
                 function ($application) use (&$position, $terminalStatuses) {
                     $qualified = in_array($application->status, [
+                        ApplicationStatus::Pending,
                         ApplicationStatus::UnderReview,
                         ApplicationStatus::InterviewScheduled,
                         ApplicationStatus::PrimaryCandidate,
@@ -71,6 +78,34 @@ class ApplicationController extends Controller
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();
+
+        // Backfill compatibility_result for legacy applications that only have knn_score
+        $knn = app(\App\Services\KnnRecommendationService::class);
+        $applications->each(function (AdoptionApplication $app) use ($knn) {
+            if ($app->compatibility_result !== null || $app->knn_score === null || !$app->pet) {
+                return;
+            }
+
+            $inputs = [
+                'physical_activity_level' => $app->physical_activity_level ?? '',
+                'time_availability' => $app->time_availability ?? '',
+                'prior_pet_experience' => $app->prior_pet_experience ?? '',
+                'housing_type' => $app->housing_type ?? '',
+                'household_composition' => $app->household_composition ?? '',
+                'monthly_income_range' => $app->income_range ?? '',
+                'has_existing_pets' => in_array($app->prior_pet_experience, [
+                    'Currently own pets',
+                    'Experienced with rescue/special needs animals',
+                ], true) ? 'yes' : 'no',
+            ];
+
+            try {
+                $result = $knn->resultFor($app->pet, $inputs);
+                $app->update(['compatibility_result' => $result]);
+            } catch (\Throwable) {
+                // Pet may have invalid physical_size; skip gracefully
+            }
+        });
 
         return view('admin.application.index', compact('applications', 'volunteers'));
     }
@@ -286,7 +321,7 @@ class ApplicationController extends Controller
             $applicationStatus = match ($verification->status) {
                 DocumentVerificationStatus::Verified => $hasPrimary || $pet->availability_status === AvailabilityStatus::SoftReserved
                         ? ApplicationStatus::Waitlisted
-                        : ApplicationStatus::UnderReview,
+                        : ApplicationStatus::Pending,
                 DocumentVerificationStatus::NeedsResubmission => ApplicationStatus::DocumentFlagged,
                 default => ApplicationStatus::Pending,
             };
@@ -366,7 +401,7 @@ class ApplicationController extends Controller
                 'status' => $decision === DocumentVerificationStatus::Verified
                     ? ($hasPrimary || $pet->availability_status === AvailabilityStatus::SoftReserved
                         ? ApplicationStatus::Waitlisted->value
-                        : ApplicationStatus::UnderReview->value)
+                        : ApplicationStatus::Pending->value)
                     : ApplicationStatus::DocumentFlagged->value,
             ]);
 

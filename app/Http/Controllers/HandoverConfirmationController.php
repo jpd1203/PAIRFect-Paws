@@ -2,16 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CheckIn;
+use App\Enums\ApplicationStatus;
+use App\Models\AdoptionApplication;
 use App\Models\Handover;
 use App\Models\HandoverNotification;
+use App\Services\HandoverService;
+use App\Services\PostAdoptionScheduleService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class HandoverConfirmationController extends Controller
 {
+    public function __construct(
+        private readonly HandoverService $handovers,
+        private readonly PostAdoptionScheduleService $postAdoptionSchedule,
+    ) {}
+
     public function confirmView(Request $request, Handover $handover)
     {
+        $this->authorizeOwnedHandover($request, $handover);
         $handover->load(['pet', 'notifications']);
 
         $unreadCount = $handover->notifications()->where('read', false)->count();
@@ -24,14 +32,16 @@ class HandoverConfirmationController extends Controller
 
     public function submitConfirmation(Request $request, Handover $handover)
     {
+        $this->authorizeOwnedHandover($request, $handover);
+
         $validated = $request->validate([
             'outcome' => 'required|in:received,not_received',
             'note' => 'nullable|string|max:1000',
         ]);
 
         $outcome = $validated['outcome'];
-        $note = $validated['note'] ? trim($validated['note']) : null;
-        $adopterName = $handover->adopter_name ?: (Auth::user()?->full_name ?? 'Adopter');
+        $note = filled($validated['note'] ?? null) ? trim($validated['note']) : null;
+        $adopterName = $handover->adopter_name ?: ($request->user()?->full_name ?? 'Adopter');
 
         $handover->update([
             'adopter_outcome' => $outcome,
@@ -46,31 +56,9 @@ class HandoverConfirmationController extends Controller
 
             $handover->createNotification('completed');
 
-            // Activate pet & ensure monitoring schedule is active
-            if ($handover->pet) {
-                $handover->pet->update(['status' => 'Adopted']);
-            }
-
-            // Create check-in schedules if they don't already exist
-            if ($handover->application_id && $handover->user_id) {
-                $existingCheckins = CheckIn::where('application_id', $handover->application_id)->count();
-                if ($existingCheckins === 0) {
-                    $adoptedOn = now();
-                    foreach ([
-                        ['ThreeDay', $adoptedOn->copy()->addDays(3)],
-                        ['ThreeWeek', $adoptedOn->copy()->addWeeks(3)],
-                        ['ThreeMonth', $adoptedOn->copy()->addMonths(3)],
-                    ] as [$milestone, $dueDate]) {
-                        CheckIn::create([
-                            'user_id' => $handover->user_id,
-                            'pet_id' => $handover->pet_id,
-                            'application_id' => $handover->application_id,
-                            'milestone' => $milestone,
-                            'due_date' => $dueDate,
-                            'status' => CheckIn::STATUS_UPCOMING,
-                        ]);
-                    }
-                }
+            $application = $handover->application;
+            if ($application?->status === ApplicationStatus::Approved) {
+                $this->postAdoptionSchedule->ensureForApplication($application);
             }
 
             return back()->with('toast', [
@@ -92,6 +80,7 @@ class HandoverConfirmationController extends Controller
 
     public function statusView(Request $request, Handover $handover)
     {
+        $this->authorizeOwnedHandover($request, $handover);
         $handover->load(['pet', 'notifications']);
 
         $unreadCount = $handover->notifications()->where('read', false)->count();
@@ -106,6 +95,7 @@ class HandoverConfirmationController extends Controller
 
     public function notificationsView(Request $request, Handover $handover)
     {
+        $this->authorizeOwnedHandover($request, $handover);
         $handover->load(['pet', 'notifications']);
 
         $notifications = $handover->notifications()->get();
@@ -120,6 +110,8 @@ class HandoverConfirmationController extends Controller
 
     public function markRead(Request $request, HandoverNotification $notification)
     {
+        abort_unless((int) $notification->user_id === (int) $request->user()->id, 403);
+
         $notification->update(['read' => true]);
 
         if ($request->wantsJson()) {
@@ -131,6 +123,7 @@ class HandoverConfirmationController extends Controller
 
     public function markAllRead(Request $request, Handover $handover)
     {
+        $this->authorizeOwnedHandover($request, $handover);
         $handover->notifications()->where('read', false)->update(['read' => true]);
 
         if ($request->wantsJson()) {
@@ -142,21 +135,38 @@ class HandoverConfirmationController extends Controller
 
     public function userHandoverRedirect(Request $request)
     {
-        $user = Auth::user();
-        $handover = null;
+        $user = $request->user();
+        $handover = Handover::query()
+            ->where('user_id', $user->id)
+            ->latest('approved_at')
+            ->latest('id')
+            ->first();
 
-        if ($user) {
-            $handover = Handover::where('user_id', $user->id)->latest()->first();
-        }
+        if (! $handover) {
+            $application = AdoptionApplication::query()
+                ->where('user_id', $user->id)
+                ->where('status', ApplicationStatus::Approved->value)
+                ->latest('adopted_at')
+                ->latest('id')
+                ->first();
 
-        if (!$handover) {
-            $handover = Handover::first();
+            if ($application) {
+                $handover = $this->handovers->forApprovedApplication($application);
+            }
         }
 
         if ($handover) {
             return redirect()->route('adopter.handover.status', $handover);
         }
 
-        return redirect()->route('application.index');
+        return redirect()->route('application.index')->with(
+            'info',
+            'Handover Status becomes available after an adoption has been approved.'
+        );
+    }
+
+    private function authorizeOwnedHandover(Request $request, Handover $handover): void
+    {
+        abort_unless((int) $handover->user_id === (int) $request->user()->id, 403);
     }
 }

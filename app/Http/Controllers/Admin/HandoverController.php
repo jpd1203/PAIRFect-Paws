@@ -103,15 +103,15 @@ class HandoverController extends Controller
 
         $handover->createNotification('released');
 
-        AuditLog::record(Auth::user(), "Marked {$handover->pet?->name} ({$handover->code}) as released via {$methodLabel}");
+        \App\Services\AuditLogService::log(Auth::id(), "Marked {$handover->pet?->name} ({$handover->code}) as released via {$methodLabel}", "Handover", $handover->id);
 
         return back()->with('toast', ['type' => 'success', 'message' => "{$handover->pet?->name} marked as released. Adopter notified to confirm receipt."]);
     }
 
-    public function sendReminder(Request $request, Handover $handover)
+    public function sendReminder(Request $request, Handover $handover, \App\Services\EmailNotificationService $emailNotifications)
     {
         $validated = $request->validate([
-            'channel' => 'required|in:SMS,Email',
+            'channel' => 'required|in:Email',
         ]);
 
         $channel = $validated['channel'];
@@ -130,7 +130,22 @@ class HandoverController extends Controller
             'channels' => ['In-app', $channel],
         ]);
 
-        AuditLog::record(Auth::user(), "Sent {$channel} reminder to {$handover->adopter_name} for {$handover->pet?->name}");
+        \App\Services\AuditLogService::log(Auth::id(), "Sent {$channel} reminder to {$handover->adopter_name} for {$handover->pet?->name}", "Handover", $handover->id);
+
+        $petName = $handover->pet?->name ?? 'your pet';
+        $emailNotifications->user(
+            $handover->user,
+            "Reminder: Please confirm receipt of {$petName}",
+            "Confirm {$petName}'s arrival",
+            [
+                "It has been several days since {$petName} was released.",
+                "Please confirm receipt so your post-adoption check-ins can begin."
+            ],
+            'Confirm receipt',
+            route('adopter.confirm', $handover),
+            'handover_reminder',
+            $handover->id
+        );
 
         return back()->with('toast', ['type' => 'success', 'message' => "{$channel} reminder sent to adopter."]);
     }
@@ -162,7 +177,7 @@ class HandoverController extends Controller
 
         $handover->createNotification('reopened');
 
-        AuditLog::record(Auth::user(), "Reopened handover for {$handover->pet?->name} ({$handover->code}): {$reason}");
+        \App\Services\AuditLogService::log(Auth::id(), "Reopened handover for {$handover->pet?->name} ({$handover->code}): {$reason}", "Handover", $handover->id);
 
         return back()->with('toast', ['type' => 'success', 'message' => 'Handover reopened. Release details have been reset for a new attempt.']);
     }

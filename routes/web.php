@@ -14,12 +14,11 @@ use App\Http\Controllers\PetController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\TimeTravelController;
 use App\Http\Middleware\EnsureVerificationLinkMatchesUser;
+use App\Models\AdoptionApplication;
 use App\Models\FundRecord;
 use App\Models\Pet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Models\AdoptionApplication;
-
 
 // ─── Public Routes ────────────────────────────────────────────────────────────
 
@@ -153,7 +152,7 @@ Route::middleware('auth')->group(function () {
                 }
             }
 
-            $pets = $query->get();
+            $pets = $query->latest()->get();
 
             if ($request->ajax()) {
                 return view('animal._pet-grid', compact('pets'));
@@ -186,6 +185,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/monitoring/submit-report', [MonitoringController::class, 'reportDue'])->name('monitoring.submit-report');
             Route::get('/monitoring/overdue-notice', [MonitoringController::class, 'overdueNotice'])->name('monitoring.overdue-notice');
             Route::get('/monitoring/flagged-notice', [MonitoringController::class, 'flaggedNotice'])->name('monitoring.flagged-notice');
+            Route::get('/monitoring/reports/{log}/modal', [MonitoringController::class, 'showModal'])->name('monitoring.modal');
             Route::get('/monitoring/reports/{log}/create', [MonitoringController::class, 'createReport'])->name('monitoring.create');
             Route::post('/monitoring/reports/{log}/capture-challenge', [MonitoringController::class, 'issueCaptureChallenge'])
                 ->middleware('throttle:10,1')
@@ -211,7 +211,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/animals', [Admin\AnimalController::class, 'index'])->name('animals.index');
         Route::post('/animals', [PetController::class, 'store'])->name('animals.store');
         Route::put('/animals/{pet}', [PetController::class, 'update'])->name('animals.update');
-        Route::delete('/animals/{pet}', [PetController::class, 'destroy'])->name('animals.destroy');
+        Route::post('/animals/{pet}/archive', [PetController::class, 'archive'])->name('animals.archive');
+        Route::post('/animals/{pet}/restore', [PetController::class, 'restore'])->name('animals.restore');
 
         // Pet CRUD (staff-only part)
         Route::get('/pets/create', [PetController::class, 'create'])->name('pets.create');
@@ -231,12 +232,45 @@ Route::middleware('auth')->group(function () {
         Route::get('/assessments/create/{pet}', [Admin\AssessmentController::class, 'create'])->name('assessments.create');
         Route::post('/assessments/{pet}', [Admin\AssessmentController::class, 'store'])->name('assessments.store');
 
-        // Compatibility (stub for sidebar)
+        // Compatibility
         Route::get('/compatibility', function () {
-                $applications = AdoptionApplication::with('pet')
+            $knn = app(\App\Services\KnnRecommendationService::class);
+
+            $applications = AdoptionApplication::with('pet')
                 ->whereNotNull('knn_score')
-                ->orderByDesc('knn_score')
                 ->get();
+
+            // Backfill any applications that have a knn_score but no stored compatibility_result
+            $applications->each(function (AdoptionApplication $app) use ($knn) {
+                if ($app->compatibility_result !== null || !$app->pet) {
+                    return;
+                }
+
+                $inputs = [
+                    'physical_activity_level' => $app->physical_activity_level ?? '',
+                    'time_availability' => $app->time_availability ?? '',
+                    'prior_pet_experience' => $app->prior_pet_experience ?? '',
+                    'housing_type' => $app->housing_type ?? '',
+                    'household_composition' => $app->household_composition ?? '',
+                    'monthly_income_range' => $app->income_range ?? '',
+                    'has_existing_pets' => in_array($app->prior_pet_experience, [
+                        'Currently own pets',
+                        'Experienced with rescue/special needs animals',
+                    ], true) ? 'yes' : 'no',
+                ];
+
+                try {
+                    $result = $knn->resultFor($app->pet, $inputs);
+                    $app->update(['compatibility_result' => $result]);
+                } catch (\Throwable) {
+                    // Pet may have invalid physical_size; skip gracefully
+                }
+            });
+
+            // Sort by overall compatibility score descending
+            $applications = $applications->sortByDesc(
+                fn ($app) => $app->compatibility_result['overall'] ?? 0
+            )->values();
 
             return view('admin.compatibility.index', compact('applications'));
         })->name('compatibility.index');
@@ -251,7 +285,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/applications/{application}/document-verification', [Admin\AdoptionProfileController::class, 'verification'])->name('applications.document-verification');
         Route::post('/applications/{application}/document-ocr-retry', [Admin\ApplicationController::class, 'retryDocumentOcr'])->name('applications.document-ocr-retry');
         Route::post('/applications/{application}/document-decision', [Admin\ApplicationController::class, 'documentDecision'])->name('applications.document-decision');
-        Route::get('/applications/{application}/history', fn () => response('<p>No history.</p>'))->name('applications.history');
+        
         Route::post('/applications/schedule', [Admin\ApplicationController::class, 'scheduleSelectedInterview'])->name('applications.schedule');
 
         // Adoption Profiles
@@ -285,7 +319,7 @@ Route::middleware('auth')->group(function () {
 
         // Audit Logs
         Route::get('/audit-logs', [Admin\AuditLogController::class, 'index'])->name('audit-logs.index');
-        Route::get('/audit-logs/export', fn () => back()->with('info', 'Export not implemented yet.'))->name('audit-logs.export');
+        Route::get('/audit-logs/export', [Admin\AuditLogController::class, 'export'])->name('audit-logs.export');
 
         // ─── Admin-only routes ────────────────────────────────────────────────
         Route::middleware('admin')->group(function () {
@@ -308,14 +342,15 @@ Route::middleware('auth')->group(function () {
 });
 
 // ─── Handover & Adopter Confirmation Link Routes ──────────────────────────────
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'adopter', 'verified'])->group(function () {
     Route::get('/adopter', [HandoverConfirmationController::class, 'userHandoverRedirect'])->name('adopter.handover.my');
+    Route::get('/confirm/{handover}', [HandoverConfirmationController::class, 'confirmView'])->name('adopter.confirm');
+    Route::post('/confirm/{handover}', [HandoverConfirmationController::class, 'submitConfirmation'])->name('adopter.confirm.submit');
+    Route::get('/adopter/{handover}', [HandoverConfirmationController::class, 'statusView'])->name('adopter.handover.status');
+    Route::get('/adopter/{handover}/notifications', [HandoverConfirmationController::class, 'notificationsView'])->name('adopter.handover.notifications');
+    Route::post('/adopter/notifications/{notification}/read', [HandoverConfirmationController::class, 'markRead'])->name('adopter.handover.notification.read');
+    Route::post('/adopter/{handover}/notifications/read-all', [HandoverConfirmationController::class, 'markAllRead'])->name('adopter.handover.notifications.read-all');
 });
 
-Route::get('/confirm/{handover}', [HandoverConfirmationController::class, 'confirmView'])->name('adopter.confirm');
-Route::post('/confirm/{handover}', [HandoverConfirmationController::class, 'submitConfirmation'])->name('adopter.confirm.submit');
-Route::get('/adopter/{handover}', [HandoverConfirmationController::class, 'statusView'])->name('adopter.handover.status');
-Route::get('/adopter/{handover}/notifications', [HandoverConfirmationController::class, 'notificationsView'])->name('adopter.handover.notifications');
-Route::post('/adopter/notifications/{notification}/read', [HandoverConfirmationController::class, 'markRead'])->name('adopter.handover.notification.read');
-Route::post('/adopter/{handover}/notifications/read-all', [HandoverConfirmationController::class, 'markAllRead'])->name('adopter.handover.notifications.read-all');
+
 

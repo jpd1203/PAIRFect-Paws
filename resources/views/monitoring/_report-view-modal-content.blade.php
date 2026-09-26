@@ -2,7 +2,7 @@
     <div>
         <h2>Post-Adoption Report</h2>
         <p>
-            Applicant: You &middot; Pet: {{ $report->pet?->name ?? '—' }} &middot; {{ $report->milestone_report_label }}
+            Applicant: You &middot; Pet: {{ $report->pet?->name ?? '—' }} &middot; {{ $report->milestone_display }}
         </p>
     </div>
 </div>
@@ -11,27 +11,27 @@
 
     <div class="profile-row">
         <span>Health Status</span>
-        <span>{{ $report->health_status }}</span>
+        <span>{{ $report->pet_current_status?->value ?? '—' }}</span>
     </div>
 
     <div class="profile-row">
         <span>Eating &amp; Drinking</span>
-        <span>{{ $report->eating_and_drinking }}</span>
+        <span>{{ $report->eating_habits ?? '—' }}</span>
     </div>
 
     <div class="profile-row">
         <span>Behavior</span>
-        <span>{{ $report->behavior }}</span>
+        <span>{{ $report->behavioral_observations ?? '—' }}</span>
     </div>
 
     <div class="profile-row">
         <span>Vet Visit</span>
-        <span>{{ $report->vet_visit_display }}</span>
+        <span>{{ $report->vet_visit_details ?? '—' }}</span>
     </div>
 
     <div class="profile-row">
         <span>Living Conditions</span>
-        <span>{{ $report->living_conditions }}</span>
+        <span>{{ $report->living_conditions ?? '—' }}</span>
     </div>
 
 </div>

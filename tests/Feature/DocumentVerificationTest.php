@@ -338,7 +338,7 @@ class DocumentVerificationTest extends TestCase
             'prior_pet_experience' => 'Have owned pets in the past',
             'household_composition' => 'Living with adults only',
             'monthly_income_range' => 'Above ₱80,000',
-            'agreed_to_animal_welfare_act' => '1',
+            'agreed_to_terms' => '1',
             'document' => UploadedFile::fake()->image('identity.jpg'),
         ])->assertRedirect(route('application.index'));
 
@@ -613,3 +613,5 @@ class DocumentVerificationTest extends TestCase
         ];
     }
 }
+
+

@@ -139,6 +139,7 @@
 @push('scripts')
     <script>
         window.RECO_RECOMPUTE_URL = @json(route('recommendation.recompute'));
+        window.RECO_PROFILE = @json($profile);
     </script>
     <script src="{{ asset('js/recommendation.js') }}" defer></script>
 @endpush

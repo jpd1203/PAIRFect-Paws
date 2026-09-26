@@ -26,6 +26,43 @@ class AuditLogController extends Controller
 
         return view('admin.audit-logs.index', compact('logs'));
     }
+    public function export()
+    {
+        $filename = "audit-logs-" . now()->format("Y-m-d_H-i-s") . ".csv";
+
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0",
+        ];
+
+        $callback = function () {
+            $file = fopen("php://output", "w");
+            fputcsv($file, ["Date/Time", "User", "Role", "Action", "Notes"]);
+
+            AuditLog::with("user")
+                ->orderByDesc("created_at")
+                ->orderByDesc("id")
+                ->chunk(500, function ($logs) use ($file) {
+                    $this->addActionContext($logs);
+                    foreach ($logs as $log) {
+                        fputcsv($file, [
+                            $log->created_at?->format("Y-m-d H:i:s"),
+                            $log->user ? $log->user->full_name : "System",
+                            $log->user ? $log->user->role : "",
+                            $log->display_action,
+                            $log->notes,
+                        ]);
+                    }
+                });
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
 
     /**
      * Resolve audit subjects in batches so the action column is useful without
@@ -138,3 +175,4 @@ class AuditLogController extends Controller
             : null;
     }
 }
+

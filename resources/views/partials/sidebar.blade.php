@@ -41,6 +41,14 @@
             </a>
         </div>
 
+        @php
+    $hasReceivedPet = auth()->check() && auth()->user()->adoptionApplications()
+        ->whereHas('handover', function ($query) {
+            $query->where('adopter_outcome', 'received');
+        })->exists();
+@endphp
+
+@if ($hasReceivedPet)
         <div class="menu-title">POST-ADOPTION</div>
 
         <div class="menu-section">
@@ -64,13 +72,13 @@
                class="menu-item {{ $isActive('monitoring.flagged-notice') ? 'active' : '' }}">
                 <i class="fa-solid fa-triangle-exclamation fa-lg"></i> Flagged Notice
             </a>
-
         </div>
+@endif
 
     </div>
-
+    
     @include('partials.profile-card')
-
+    
 </div>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>

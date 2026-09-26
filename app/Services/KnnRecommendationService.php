@@ -79,25 +79,66 @@ class KnnRecommendationService
     }
 
     /**
+     * Compute the full compatibility breakdown for a single pet.
+     *
+     * Returns the same structure as each item's 'result' in run():
+     * ['overall' => int, 'rows' => [['label' => string, 'percent' => int], ...]]
+     *
+     * @param  array<string, mixed>  $inputs
+     * @return array<string, mixed>
+     */
+    public function resultFor(Pet $pet, array $inputs): array
+    {
+        $adopter = $this->encodeAdopter($inputs);
+        $maxDistance = sqrt(6 * (4 ** 2));
+
+        $petEnergy = (float) $pet->energy_level;
+        $petIndependence = (float) $pet->independence;
+        $petTrainability = (float) $pet->trainability;
+        $petSize = $this->encodeSize($pet->physical_size);
+        $petTemperament = (float) $pet->temperament;
+        $petMedical = (float) $pet->medical_needs;
+        $distance = $this->distance($pet, $adopter);
+        $overall = max(0, (int) round((1 - $distance / ($maxDistance + 2.0)) * 100));
+
+        return [
+            'overall' => $overall,
+            'rows' => [
+                ['label' => 'Energy Match', 'percent' => $this->dimensionScore($adopter->activity, $petEnergy)],
+                ['label' => 'Time Fit', 'percent' => $this->dimensionScore($adopter->time, $petIndependence)],
+                ['label' => 'Experience Fit', 'percent' => $this->dimensionScore($adopter->experience, $petTrainability)],
+                ['label' => 'Space Fit', 'percent' => $this->dimensionScore($adopter->housing, $petSize)],
+                ['label' => 'Temperament Fit', 'percent' => $this->dimensionScore($adopter->composition, $petTemperament)],
+                ['label' => 'Care Capacity', 'percent' => $this->dimensionScore($adopter->income, $petMedical)],
+            ],
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $sliders
      * @return Collection<int, array{pet: Pet, distance: float, result: array<string, mixed>}>
      */
-    public function recompute(array $sliders): Collection
+    public function recompute(array $sliders, array $profile = []): Collection
     {
-        $pets = Pet::recommendationEligible()->get();
+        $housingType = (string) ($profile['housing_type'] ?? '');
+        $householdComposition = (string) ($profile['household_composition'] ?? '');
+        $incomeRange = (string) ($profile['monthly_income_range'] ?? '');
+
         $adopter = (object) [
             'activity' => $this->normalizedSlider($sliders['energy'] ?? 3),
             'time' => $this->normalizedSlider($sliders['independence'] ?? 3),
             'experience' => $this->normalizedSlider($sliders['trainability'] ?? 3),
-            'housing' => 3,
+            'housing' => self::HOUSING_MAP[$housingType] ?? 3,
             'composition' => $this->normalizedSlider($sliders['temperament'] ?? 3),
             'income' => $this->normalizedSlider($sliders['medical'] ?? 3),
-            'housing_type' => null,
-            'has_existing_pets' => false,
-            'has_young_children' => false,
-            'is_low_income' => false,
-            'is_apartment' => false,
+            'housing_type' => $housingType,
+            'has_existing_pets' => ($profile['has_existing_pets'] ?? 'no') === 'yes',
+            'has_young_children' => $householdComposition === 'Living with children (under 12)',
+            'is_low_income' => $incomeRange === 'Below ₱15,000',
+            'is_apartment' => $housingType === 'Apartment / Condo',
         ];
+
+        $pets = $this->fetchAndFilter($adopter);
 
         return $this->rankAndFormat($pets, $adopter);
     }

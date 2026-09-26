@@ -8,6 +8,7 @@ use App\Models\Branch;
 use App\Models\Pet;
 use App\Services\AuditLogService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class PetController extends Controller
 {
@@ -27,7 +28,7 @@ class PetController extends Controller
             $query->where('availability_status', $request->status);
         }
 
-        $pets = $query->paginate(12);
+        $pets = $query->latest()->paginate(12);
 
         return view('pets.index', compact('pets'));
     }
@@ -83,7 +84,7 @@ class PetController extends Controller
             'physical_size' => 'nullable|string|max:255',
             'medical_needs' => 'nullable|numeric|min:1|max:5',
             'vaccination_record_status' => 'nullable|string|max:255',
-            'intake_date' => 'nullable|date',
+            'intake_date' => 'nullable|date|before_or_equal:today',
             'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:102400',
         ]);
 
@@ -219,6 +220,8 @@ class PetController extends Controller
      */
     public function archive(Pet $pet)
     {
+        Gate::authorize('archive', $pet);
+
         if (AdoptionApplication::where('pet_id', $pet->id)->where('is_primary_candidate', true)->exists()) {
             return back()->withErrors([
                 'pet' => 'This pet cannot be archived while its reservation queue has an active primary candidate.',
@@ -237,36 +240,29 @@ class PetController extends Controller
             "Archived animal: {$pet->name}"
         );
 
-        return redirect()->route('admin.animals.index')
-            ->with('success', 'Pet archived successfully.');
+        return back()->with('success', 'Pet archived successfully.');
     }
 
     /**
      * DELETE /pets/{pet} — delete pet and log to audit logs
      */
-    public function destroy(Pet $pet)
+    public function restore(Pet $pet)
     {
-        if (AdoptionApplication::where('pet_id', $pet->id)->where('is_primary_candidate', true)->exists()) {
-            return back()->withErrors([
-                'pet' => 'This pet cannot be deleted while its reservation queue has an active primary candidate.',
-            ]);
-        }
+        Gate::authorize('restore', $pet);
 
-        $petId = $pet->id;
-        $petName = $pet->name;
-
-        $pet->delete();
+        Pet::withoutGlobalScope('notArchived')
+            ->where('id', $pet->id)
+            ->update(['is_archived' => false]);
 
         AuditLogService::log(
             auth()->id(),
-            'Deleted Animal Profile',
+            'Restored Animal Profile',
             'Pet',
-            $petId,
-            "Deleted animal: {$petName}"
+            $pet->id,
+            "Restored animal: {$pet->name}"
         );
 
-        return redirect()->route('admin.animals.index')
-            ->with('success', 'Pet deleted successfully.');
+        return back()->with('success', 'Pet restored successfully.');
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────
@@ -280,3 +276,4 @@ class PetController extends Controller
         return $existingPath ?? '';
     }
 }
+

@@ -12,9 +12,7 @@
                 <img src="{{ $pet->image_url }}" alt="{{ $pet->name }}">
                 <h3>{{ $pet->name }}</h3>
                 <p>{{ $pet->card_subtitle }}</p>
-                @if ($pet->availability_status->value === 'Soft-Reserved')
-                    <p class="text-sm font-semibold text-amber-700">Processing - Under Evaluation</p>
-                @endif
+
                 <div class="card-actions">
                     <button type="button" class="btn btn-adoptMe" data-pet-id="{{ $pet->id }}" onclick="openPetModal({{ $pet->id }})">
                         {{ $pet->availability_status->value === 'Soft-Reserved' ? 'View Processing Status' : 'Adopt Me!' }}

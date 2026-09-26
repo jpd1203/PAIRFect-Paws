@@ -76,7 +76,7 @@
         <div class="table-responsive custom-scrollbar">
             <table class="w-full">
                 <thead>
-                    <tr><th>Applicant</th><th>Pet</th><th>Submitted</th><th>Status</th><th>Actions</th></tr>
+                    <tr><th>Applicant</th><th>Pet</th><th>Queue Rank</th><th>Submitted</th><th>Status</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="applicationTableBody">
                     @forelse ($applications as $app)
@@ -85,8 +85,17 @@
                             <td class="font-semibold">
                                 {{ $app->first_name }} {{ $app->last_name }}
                                 @if($app->is_primary_candidate)<span class="badge badge-primarycandidate ml-1">Primary</span>@endif
+
                             </td>
                             <td>{{ $app->pet?->name }}</td>
+                            <td>
+                                @if($app->queue_position)
+                                    <span class="badge" style="background:#f3f4f6;color:#374151">#{{ $app->queue_position }}</span><br>
+                                    <span style="font-size:0.75rem;color:var(--muted)">Score: {{ isset($app->compatibility_result['overall']) ? $app->compatibility_result['overall'].'%' : 'N/A' }}</span>
+                                @else
+                                    <span style="font-size:0.75rem;color:var(--muted)">N/A</span>
+                                @endif
+                            </td>
                             <td>{{ \App\Support\ManilaTime::format($app->created_at, 'M j, Y') }}</td>
                             <td><span class="badge {{ $app->status_badge_class }}">{{ $app->status_display }}</span></td>
                             <td>
@@ -119,6 +128,7 @@
                 'status_display' => $app->status_display,
                 'is_primary' => $app->is_primary_candidate,
                 'queue_position' => $app->queue_position,
+                'knn_score' => $app->knn_score,
                 'admin_review_flagged' => (bool) $app->admin_review_flagged_at,
                 'full_name' => "{$app->first_name} {$app->last_name}",
                 'pet' => $app->pet?->name,
@@ -138,8 +148,8 @@
                 'document_url' => route('admin.applications.document', $app),
                 'document_verification_status' => $app->document_verification_status?->value ?? 'Pending',
                 'verification_url' => route('admin.applications.document-verification', $app),
-                'has_compatibility' => $app->knn_score !== null,
-                'compatibility' => ['overall' => $app->knn_score !== null ? (int) round($app->knn_score) : 0,],
+                'has_compatibility' => $app->compatibility_result !== null,
+                'compatibility' => $app->compatibility_result ?? ['overall' => 0, 'rows' => []],
                 'has_history' => (bool) $app->priorHistory,
                 'interview_notes' => $app->interview_notes,
                 'interview_date' => $app->interview_date_display,
@@ -154,7 +164,7 @@
                 'queue_outcome_action' => route('admin.applications.queue-outcome', $app),
                 'override_action' => route('admin.applications.override', $app),
                 'can_override' => auth()->user()->isAdmin(),
-                'history_url' => route('admin.applications.history', $app),
+                'history_url' => $app->user_id ? route('admin.adopter-profiles.history', $app->user_id) : null,
             ];
         })->toJson(JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}
     </script>

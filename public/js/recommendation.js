@@ -62,7 +62,10 @@
                     'X-CSRF-TOKEN': csrfToken(),
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                body: JSON.stringify(currentValues()),
+                body: JSON.stringify({
+                    ...currentValues(),
+                    profile: window.RECO_PROFILE || {}
+                }),
             });
 
             if (!res.ok) throw new Error('Recompute failed');

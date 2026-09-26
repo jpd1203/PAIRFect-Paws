@@ -16,12 +16,18 @@
         @endif
     </table>
 
-    @if($status === 'Approved')
+    @if($status === 'InterviewScheduled')
+        <p>Great news! An interview has been scheduled for your application. Please ensure you are available at the time listed above.</p>
+    @elseif($status === 'UnderReview')
+        <p>Your application is currently under final review by our shelter staff. We are carefully considering your application and will notify you of our decision soon.</p>
+    @elseif($status === 'Pending')
+        <p>Your application is currently in the queue and pending review by our shelter staff.</p>
+    @elseif($status === 'Approved')
         <p>Congratulations! Your application has been approved. Shelter staff will contact you with the next steps.</p>
     @elseif($status === 'Rejected')
         <p>Your application was not approved at this time. Please contact the shelter if you have questions.</p>
     @elseif($status === 'Waitlisted')
-        <p>Your application remains active on the first-come, first-served waitlist. We will notify you if it is promoted.</p>
+        <p>Your application remains active on the priority waitlist. We will notify you if it is promoted.</p>
     @elseif($status === 'PrimaryCandidate')
         <p>Your application has been promoted to primary candidate. Shelter staff will contact you to schedule an interview.</p>
     @elseif($status === 'NoShow')
