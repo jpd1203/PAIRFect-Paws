@@ -15,10 +15,14 @@
             <x-nav-link :href="route('donate')" :active="request()->routeIs('donate')">DONATE</x-nav-link>
 
             @auth
-                <x-nav-link :href="route('animal.index')" :active="request()->routeIs('dashboard')">DASHBOARD</x-nav-link>
+                @if (auth()->user()->isStaff())
+                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')">DASHBOARD</x-nav-link>
+                @else
+                    <x-nav-link :href="route('animal.index')" :active="request()->routeIs('animal.*') || request()->routeIs('recommendation.*') || request()->routeIs('application.*') || request()->routeIs('adopter.*') || request()->routeIs('monitoring.*')">BROWSE PETS</x-nav-link>
+                @endif
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="text-sm font-bold text-white transition hover:text-white/80">
+                    <button type="submit" class="text-sm font-bold text-white transition hover:text-white/80 cursor-pointer">
                         LOGOUT
                     </button>
                 </form>
@@ -29,7 +33,7 @@
             @endauth
         </div>
 
-        <button type="button" class="text-white md:hidden" onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" aria-label="Toggle navigation">
+        <button type="button" id="mobileNavToggle" class="text-white md:hidden p-1 rounded-lg hover:bg-white/10 transition cursor-pointer" aria-label="Toggle navigation">
             <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -41,7 +45,11 @@
             <a href="{{ route('home') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">HOME</a>
             <a href="{{ route('donate') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">DONATE</a>
             @auth
-                <a href="{{ route('animal.index') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">DASHBOARD</a>
+                @if (auth()->user()->isStaff())
+                    <a href="{{ route('admin.dashboard') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">DASHBOARD</a>
+                @else
+                    <a href="{{ route('animal.index') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">BROWSE PETS</a>
+                @endif
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">LOGOUT</button>

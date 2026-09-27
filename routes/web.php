@@ -28,7 +28,17 @@ Route::get('/', function () {
         ->sum('amount');
     $donorCount = FundRecord::where('transaction_type', 'Donation')->count();
 
-    return view('landing', compact('impactTotal', 'donorCount'));
+    $featuredPets = Pet::where('availability_status', 'Available')
+        ->where('is_archived', false)
+        ->latest('id')
+        ->take(12)
+        ->get();
+
+    $availablePetsCount = Pet::where('availability_status', 'Available')
+        ->where('is_archived', false)
+        ->count();
+
+    return view('landing', compact('impactTotal', 'donorCount', 'featuredPets', 'availablePetsCount'));
 })->name('landing');
 
 Route::get('/home', function () {
@@ -37,7 +47,17 @@ Route::get('/home', function () {
         ->sum('amount');
     $donorCount = FundRecord::where('transaction_type', 'Donation')->count();
 
-    return view('landing', compact('impactTotal', 'donorCount'));
+    $featuredPets = Pet::where('availability_status', 'Available')
+        ->where('is_archived', false)
+        ->latest('id')
+        ->take(12)
+        ->get();
+
+    $availablePetsCount = Pet::where('availability_status', 'Available')
+        ->where('is_archived', false)
+        ->count();
+
+    return view('landing', compact('impactTotal', 'donorCount', 'featuredPets', 'availablePetsCount'));
 })->name('home');
 
 Route::get('/donate', fn () => view('donate'))->name('donate');

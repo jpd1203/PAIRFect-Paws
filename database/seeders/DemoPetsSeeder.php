@@ -78,6 +78,7 @@ class DemoPetsSeeder extends Seeder
                 'age' => rand(2, 60),
                 'sex' => $sex,
                 'health_status' => 'Healthy',
+                'description' => "Meet $name! A friendly $breed who was brought into our care and has been winning the hearts of all shelter volunteers. Friendly, playful, and ready for a warm forever home.",
                 'behavioral_notes' => 'A sweet and loving companion looking for a forever home.',
                 'availability_status' => $statuses[array_rand($statuses)],
                 'intake_date' => now()->subDays(rand(1, 30)),

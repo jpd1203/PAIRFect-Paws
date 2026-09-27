@@ -7,7 +7,7 @@
 @layer base {
   html,
   body {
-    @apply h-full bg-background text-text-dark font-secondary;
+    @apply h-full bg-white text-text-dark font-secondary;
     font-size: 15px;
   }
 }
@@ -18,7 +18,7 @@
     @apply flex h-screen overflow-hidden;
   }
   .main-content {
-    @apply flex-1 overflow-y-auto p-[2rem_2.5rem] bg-background min-w-0 max-[991px]:p-4 overflow-x-hidden;
+    @apply flex-1 overflow-y-auto p-[2rem_2.5rem] bg-white min-w-0 max-[991px]:p-4 overflow-x-hidden;
   }
   .heading-text {
     @apply mb-1;
@@ -244,10 +244,15 @@
   /* ---------- Filter bar ---------- */
 
   .filter-bar {
-    @apply flex gap-2.5 my-5 flex-wrap;
+    @apply flex items-center gap-1.5 my-4 flex-nowrap overflow-x-auto max-w-full pb-1;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .filter-bar::-webkit-scrollbar {
+    display: none;
   }
   .filter-btn {
-    @apply py-[.38rem] px-[1.1rem] rounded-[10px] text-[.85rem] font-semibold cursor-pointer border border-[#ccc] bg-white transition hover:-translate-y-px hover:shadow;
+    @apply py-1 px-2.5 rounded-lg text-xs font-semibold cursor-pointer border border-[#ccc] bg-white transition hover:-translate-y-px hover:shadow shrink-0 whitespace-nowrap leading-relaxed;
   }
   .filter-all.active,
   .filter-all:hover {
@@ -1042,3 +1047,66 @@
 .toast-notification.bg-status-danger-text {
   background-color: #773e47;
 }
+
+/* =========================================================
+   POST-ADOPTION MONITORING (MAGIC PATTERNS AESTHETIC)
+   ========================================================= */
+.text-ink { color: #231D19; }
+.bg-ink { background-color: #231D19; }
+.text-muted { color: #6E655D; }
+.border-line { border-color: #E7E0D5; }
+.ring-line { --tw-ring-color: #E7E0D5; }
+.bg-surface { background-color: #F6F2EB; }
+.bg-brand { background-color: #A91E2C; }
+.text-brand { color: #A91E2C; }
+
+.bg-completed-bg { background-color: #DDF3EA; }
+.text-completed-fg { color: #1F6B52; }
+.bg-completed-solid { background-color: #2F7D63; }
+
+.bg-pending-bg { background-color: #F8E9D2; }
+.text-pending-fg { color: #86561B; }
+.bg-pending-solid { background-color: #5C4128; }
+.bg-pending-bar { background-color: #D9A55B; }
+
+.bg-overdue-bg { background-color: #F9DEDF; }
+.text-overdue-fg { color: #8E2A35; }
+.bg-overdue-solid { background-color: #7A2B38; }
+.bg-overdue-bar { background-color: #C4505C; }
+
+.bg-flagged-bg { background-color: #E9E2F8; }
+.text-flagged-fg { color: #5B3FA0; }
+.bg-flagged-solid { background-color: #4B3496; }
+
+.bg-upcoming-bg { background-color: #EEEAE3; }
+.text-upcoming-fg { color: #8A8178; }
+.bg-upcoming-solid { background-color: #6E655D; }
+
+@media (min-width: 1024px) {
+  .monitoring-row-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.4fr) 140px minmax(0, 1.1fr) minmax(0, 1fr) 96px 140px 28px;
+    align-items: center;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+.cursor-grabbing {
+  cursor: grabbing !important;
+  user-select: none;
+}
+

@@ -149,6 +149,7 @@
             'age_years' => $p->age_years, 'age_months' => $p->age_months, 'sex' => $p->sex,
             'intake' => optional($p->intake_date)->format('Y-m-d'), 'health' => $p->health_status,
             'status' => $p->status, 'vacc' => $p->vaccination_record_status, 'notes' => $p->behavioral_notes,
+            'description' => $p->description,
             'physical_size' => $p->physical_size, 'medical_needs' => $p->medical_needs,
             'assessment_status' => $p->assessment_status,
             'assessment_count' => $p->assessment_records_count, 'version' => $p->version,

@@ -17,8 +17,10 @@
             age: ageFilter.value,
         });
 
+        const endpoint = window.location.pathname.includes('pets') ? '/pets' : '/animal';
+
         try {
-            const res = await fetch(`/animal?${params.toString()}`, {
+            const res = await fetch(`${endpoint}?${params.toString()}`, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             if (!res.ok) throw new Error('Failed to filter pets');

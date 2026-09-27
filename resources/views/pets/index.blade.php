@@ -1,82 +1,92 @@
-@extends('layouts.app')
-@section('title', 'Browse Pets')
-@section('meta_description', 'Browse available cats and dogs for adoption at PAIRfect Paws.')
+<x-public-layout :title="'Available Pets - '.config('app.name')">
+    <div class="bg-white min-h-[calc(100vh-140px)]">
+        <main class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
+            <!-- Page Title & Subtitle -->
+            <h1 class="font-heading text-3xl font-bold text-gray-900">Available Pets</h1>
+            <p class="mt-1 text-sm text-gray-500">Browse animals ready for adoption</p>
 
-@section('content')
-<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-end">
-    <div>
-        <h1>Browse Pets</h1>
-        <p>Find your perfect companion</p>
-    </div>
-    @auth @if(auth()->user()->isStaff())
-        <a href="{{ route('admin.pets.create') }}" class="btn btn-primary">+ Add Pet</a>
-    @endif @endauth
-</div>
-
-{{-- Filters --}}
-<form method="GET" style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
-    <select name="species" onchange="this.form.submit()" style="width:auto">
-        <option value="">All Species</option>
-        <option value="Cat" {{ request('species') === 'Cat' ? 'selected' : '' }}>🐱 Cats</option>
-        <option value="Dog" {{ request('species') === 'Dog' ? 'selected' : '' }}>🐶 Dogs</option>
-    </select>
-    <select name="status" onchange="this.form.submit()" style="width:auto">
-        <option value="">All Statuses</option>
-        <option value="Available"  {{ request('status') === 'Available'  ? 'selected' : '' }}>Available</option>
-        <option value="Soft-Reserved" {{ request('status') === 'Soft-Reserved' ? 'selected' : '' }}>Processing - Under Evaluation</option>
-        <option value="Processing" {{ request('status') === 'Processing' ? 'selected' : '' }}>Processing</option>
-        <option value="Adopted"    {{ request('status') === 'Adopted'    ? 'selected' : '' }}>Adopted</option>
-    </select>
-</form>
-
-@if($pets->isEmpty())
-    <div style="text-align:center;padding:4rem;color:var(--muted)">
-        <div style="font-size:3rem">🐾</div>
-        <p style="margin-top:0.5rem">No pets found matching your filters.</p>
-    </div>
-@else
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.25rem">
-    @foreach($pets as $pet)
-    <div class="card" style="display:flex;flex-direction:column;gap:0.75rem;padding:0;overflow:hidden">
-        @if($pet->photo_path)
-            <img src="{{ asset('storage/' . $pet->photo_path) }}" alt="{{ $pet->name }}" style="width:100%;height:180px;object-fit:cover">
-        @else
-            <div style="width:100%;height:180px;background:linear-gradient(135deg,#ede9fe,#dbeafe);display:flex;align-items:center;justify-content:center;font-size:3rem">
-                {{ $pet->species->value === 'Cat' ? '🐱' : '🐶' }}
+            <!-- Find Your Match Button -->
+            <div class="mt-4">
+                <a href="{{ route('recommendation.intake') }}" 
+                   class="inline-flex items-center rounded-full bg-maroon-600 hover:bg-maroon-700 text-white px-5 py-2 text-xs sm:text-sm font-semibold shadow-sm transition-all duration-150 hover:shadow no-underline cursor-pointer">
+                    <span>Not sure who fits? Find your match</span>
+                </a>
             </div>
-        @endif
-        <div style="padding:1rem">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
-                <h2 style="font-size:1.1rem;font-weight:700">{{ $pet->name }}</h2>
-                @php
-                    $badgeClass = match($pet->availability_status->value) {
-                        'Available'  => 'badge-green',
-                        'Soft-Reserved' => 'badge-yellow',
-                        'Processing' => 'badge-yellow',
-                        'Adopted'    => 'badge-gray',
-                        default      => 'badge-gray',
-                    };
-                @endphp
-                <span class="badge {{ $badgeClass }}">{{ $pet->availability_status->value }}</span>
-            </div>
-            <p style="color:var(--muted);font-size:0.85rem">{{ $pet->breed ?? $pet->species->value }} &bull; {{ $pet->age ? $pet->age . ' yrs' : 'Age unknown' }}</p>
-            @if($pet->availability_status->value === 'Soft-Reserved')
-                <p style="color:#92400e;font-size:0.8rem;font-weight:700;margin-top:0.35rem">Processing - Under Evaluation. New applications are paused.</p>
+
+            <!-- Filters Bar -->
+            <form method="GET" action="{{ route('pets.index') }}" class="mt-6 flex flex-wrap items-center gap-3">
+                <label class="relative">
+                    <span class="sr-only">Species</span>
+                    <select name="species" onchange="this.form.submit()" 
+                            class="h-9 rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-900 focus:border-maroon-600 focus:outline-none focus:ring-2 focus:ring-maroon-600/15 cursor-pointer">
+                        <option value="all" @selected(($speciesFilter ?? 'all') === 'all')>All Species</option>
+                        <option value="Dog" @selected(($speciesFilter ?? '') === 'Dog')>Dogs</option>
+                        <option value="Cat" @selected(($speciesFilter ?? '') === 'Cat')>Cats</option>
+                    </select>
+                </label>
+
+                <label class="relative">
+                    <span class="sr-only">Age</span>
+                    <select name="age" onchange="this.form.submit()" 
+                            class="h-9 rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-900 focus:border-maroon-600 focus:outline-none focus:ring-2 focus:ring-maroon-600/15 cursor-pointer">
+                        <option value="all" @selected(($ageFilter ?? 'all') === 'all')>All Ages</option>
+                        <option value="Baby" @selected(($ageFilter ?? '') === 'Baby')>Baby</option>
+                        <option value="Young" @selected(($ageFilter ?? '') === 'Young')>Young</option>
+                        <option value="Adult" @selected(($ageFilter ?? '') === 'Adult')>Adult</option>
+                        <option value="Senior" @selected(($ageFilter ?? '') === 'Senior')>Senior</option>
+                    </select>
+                </label>
+
+                @if (($speciesFilter ?? 'all') !== 'all' || ($ageFilter ?? 'all') !== 'all')
+                    <a href="{{ route('pets.index') }}" class="text-xs font-semibold text-maroon-600 hover:underline ml-2">
+                        Reset filters
+                    </a>
+                @endif
+
+                <p class="ml-auto text-sm text-gray-500" aria-live="polite">
+                    {{ $pets->total() }} {{ $pets->total() === 1 ? 'pet' : 'pets' }}
+                </p>
+            </form>
+
+            <!-- Pet Grid or Empty State -->
+            @if ($pets->isEmpty())
+                <div class="mt-8 flex flex-col items-center rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-16 text-center">
+                    <i class="fa-solid fa-magnifying-glass text-2xl text-gray-400"></i>
+                    <p class="mt-3 text-sm font-medium text-gray-900">No pets match these filters</p>
+                    <a href="{{ route('pets.index') }}" class="mt-3 text-sm font-semibold text-maroon-600 hover:underline">
+                        Clear filters
+                    </a>
+                </div>
+            @else
+                <div class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                    @foreach ($pets as $pet)
+                        <article class="flex flex-col rounded-xl border border-gray-200 bg-white p-3 shadow-sm hover:shadow-md transition-all duration-200">
+                            <a href="{{ route('pets.show', $pet) }}" class="overflow-hidden rounded-lg aspect-square bg-gray-100 block no-underline">
+                                <img src="{{ $pet->image_url }}" alt="{{ $pet->name }}, {{ $pet->breed }}" 
+                                     class="aspect-square w-full h-full object-cover transition-transform duration-300 hover:scale-105">
+                            </a>
+                            <h3 class="mt-3 font-semibold text-gray-900 text-base leading-snug">
+                                <a href="{{ route('pets.show', $pet) }}" class="hover:text-maroon-600 transition-colors no-underline text-gray-900">
+                                    {{ $pet->name }}
+                                </a>
+                            </h3>
+                            <p class="mt-0.5 text-xs text-gray-500 truncate">
+                                {{ $pet->species_display }} &middot; {{ $pet->breed ?? 'Mix' }} &middot; {{ $pet->age_years ? $pet->age_years . ' yrs' : ($pet->age_months ? $pet->age_months . ' mos' : $pet->age_group) }} &middot; {{ $pet->sex === 'Female' ? 'F' : 'M' }}
+                            </p>
+                            <div class="mt-auto flex justify-end pt-3">
+                                <a href="{{ route('pets.show', $pet) }}" aria-label="Adopt Me: {{ $pet->name }}"
+                                   class="whitespace-nowrap rounded-md border border-[#c9ae72] bg-[#f1dfb4] px-3 py-1.5 text-xs font-semibold text-[#4a3520] transition-colors duration-150 hover:bg-[#e8d197] shadow-sm no-underline">
+                                    Adopt Me!
+                                </a>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+
+                <div class="mt-8 flex justify-center">
+                    {{ $pets->links() }}
+                </div>
             @endif
-            @if($pet->branch)
-                <p style="color:var(--muted);font-size:0.8rem;margin-top:0.25rem">📍 {{ $pet->branch->name }}</p>
-            @endif
-            <div style="margin-top:0.75rem;display:flex;gap:0.5rem">
-                <a href="{{ route('pets.show', $pet) }}" class="btn btn-secondary btn-sm">View Details</a>
-                @auth @if(auth()->user()->isAdopter() && $pet->availability_status->value === 'Available')
-                    <a href="{{ route('applications.create', $pet) }}" class="btn btn-primary btn-sm">Adopt</a>
-                @endif @endauth
-            </div>
-        </div>
+        </main>
     </div>
-    @endforeach
-</div>
-
-<div class="pagination">{{ $pets->withQueryString()->links() }}</div>
-@endif
-@endsection
+</x-public-layout>

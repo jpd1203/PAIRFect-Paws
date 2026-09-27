@@ -9,12 +9,31 @@
     <p>Pet Recommendation match results for applicants who used the feature.</p>
 </div>
 
+@php
+    $compatCounts = [
+        'all' => $applications->count(),
+        'high' => 0,
+        'good' => 0,
+        'fair' => 0,
+        'low' => 0,
+    ];
+
+    foreach ($applications as $appItem) {
+        $score = $appItem->compatibility_result['overall'] ?? 0;
+        $tierKey = $score >= 80 ? 'high'
+                : ($score >= 60 ? 'good'
+                : ($score >= 40 ? 'fair'
+                : 'low'));
+        $compatCounts[$tierKey]++;
+    }
+@endphp
+
 <div class="filter-bar" data-filter-bar data-filter-scope="compatList">
-    <button class="filter-btn filter-all active" data-filter-btn="all">All</button>
-    <button class="filter-btn badge-approved" data-filter-btn="high">High Match</button>
-    <button class="filter-btn badge-scheduled" data-filter-btn="good">Good Match</button>
-    <button class="filter-btn badge-pending" data-filter-btn="fair">Fair Match</button>
-    <button class="filter-btn badge-rejected" data-filter-btn="low">Low Match</button>
+    <button class="filter-btn filter-all active" data-filter-btn="all">All ({{ $compatCounts['all'] }})</button>
+    <button class="filter-btn badge-approved" data-filter-btn="high">High Match ({{ $compatCounts['high'] }})</button>
+    <button class="filter-btn badge-scheduled" data-filter-btn="good">Good Match ({{ $compatCounts['good'] }})</button>
+    <button class="filter-btn badge-pending" data-filter-btn="fair">Fair Match ({{ $compatCounts['fair'] }})</button>
+    <button class="filter-btn badge-rejected" data-filter-btn="low">Low Match ({{ $compatCounts['low'] }})</button>
 </div>
 
 <div id="compatList" class="flex flex-col gap-2 mt-4">

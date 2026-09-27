@@ -14,10 +14,11 @@
 <body class="flex min-h-screen flex-col bg-white text-gray-900 font-secondary antialiased">
     <x-navbar />
 
-    <main class="flex-1">
+    <main class="flex-1 bg-white">
         {{ $slot }}
     </main>
 
     <x-footer />
+    @stack('scripts')
 </body>
 </html>

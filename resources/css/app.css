@@ -7,7 +7,7 @@
 @layer base {
   html,
   body {
-    @apply h-full bg-background text-text-dark font-secondary;
+    @apply h-full bg-white text-text-dark font-secondary;
     font-size: 15px;
   }
 }
@@ -18,29 +18,29 @@
     @apply flex h-screen overflow-hidden;
   }
   .main-content {
-    @apply flex-1 flex flex-col overflow-hidden bg-background;
+    @apply flex-1 flex flex-col overflow-hidden bg-white;
   }
   .nonsticky-header {
-    @apply flex-1 overflow-y-auto bg-background px-10 py-8;
+    @apply flex-1 overflow-y-auto bg-white px-10 py-8 max-[991px]:px-4 max-[991px]:py-5;
   }
   .sticky-header {
-    @apply shrink-0 bg-background px-10 pt-8 pb-0.5;
+    @apply shrink-0 bg-white px-10 pt-8 pb-0.5 max-[991px]:px-4 max-[991px]:pt-5;
   }
   .btn,
   .btn-primary {
     @apply inline-flex items-center justify-center rounded-lg bg-maroon-600 hover:bg-maroon-700 text-white font-bold px-6 py-3 shadow-md transition duration-200 text-base border-0 no-underline cursor-pointer;
   }
   .content-area {
-    @apply flex-1 overflow-y-auto px-8 pb-6 pt-0.5;
+    @apply flex-1 overflow-y-auto px-8 pb-6 pt-0.5 max-[991px]:px-4;
   }
   .content-area-nonsticky {
     @apply flex-1 overflow-y-auto;
   }
   .heading-text h2 {
-    @apply font-primary font-bold text-3xl mb-0.5 text-text-dark;
+    @apply font-primary font-bold text-3xl mb-0.5 text-text-dark max-[991px]:text-2xl;
   }
   .heading-text p {
-    @apply text-[#777] text-base m-0;
+    @apply text-[#777] text-base m-0 max-[991px]:text-sm;
   }
 
   /* ---------- Topbar (mobile) ---------- */
@@ -212,10 +212,10 @@
     @apply flex gap-4 mt-6 mb-6 flex-wrap;
   }
   .filter-section select {
-    @apply py-2.5 px-3.5 border border-[#888] rounded-lg bg-status-processing-bg text-base cursor-pointer min-w-[130px];
+    @apply py-2.5 px-3.5 border border-gray-300 rounded-lg bg-white text-base cursor-pointer min-w-[130px] shadow-sm focus:border-maroon-600 focus:outline-none focus:ring-2 focus:ring-maroon-600/15;
   }
   .filter-section select.active-filter {
-    @apply border-primary bg-primary-muted;
+    @apply border-maroon-600 bg-white;
   }
 
   .pet-grid {
@@ -261,7 +261,7 @@
     @apply opacity-100 visible;
   }
   .pet-modal {
-    @apply w-[860px] max-w-[94vw] bg-white rounded-2xl p-8 shadow-modal max-h-[90vh] overflow-y-auto;
+    @apply w-[860px] max-w-[94vw] bg-white rounded-2xl p-8 shadow-modal max-h-[90vh] overflow-y-auto max-[640px]:p-4 max-[640px]:rounded-xl;
   }
   .modal-header h2 {
     @apply m-0 text-text-dark text-3xl font-bold;
@@ -940,4 +940,23 @@
   .reports-card {
     @apply max-w-full;
   }
+}
+
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+.cursor-grabbing {
+  cursor: grabbing !important;
+  user-select: none;
 }

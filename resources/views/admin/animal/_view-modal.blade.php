@@ -126,6 +126,11 @@
                     </div>
 
                     <div class="form-group col-span-3">
+                        <label class="form-label">Story / Description</label>
+                        <textarea id="vDescription" name="description" class="form-control" rows="3" placeholder="Tell the pet's story, background, and personality..."></textarea>
+                    </div>
+
+                    <div class="form-group col-span-3">
                         <label class="form-label">Notes</label>
                         <textarea id="vNotes" name="behavioral_notes" class="form-control" rows="1"></textarea>
                     </div>

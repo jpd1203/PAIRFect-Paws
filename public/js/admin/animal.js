@@ -18,6 +18,7 @@ function openViewAnimalModal(id) {
     document.getElementById('vSize').value = a.physical_size;
     document.getElementById('vMedical').value = a.medical_needs ?? '';
     document.getElementById('vVacc').value = a.vacc;
+    document.getElementById('vDescription').value = a.description ?? '';
     document.getElementById('vNotes').value = a.notes ?? '';
     document.getElementById('vVersion').value = a.version;
 

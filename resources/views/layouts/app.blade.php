@@ -11,10 +11,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-<body>
+<body class="bg-white text-gray-900 font-secondary antialiased">
 
+@auth
     <!-- Mobile-only top bar with hamburger toggle -->
-    <div class="topbar">
+    <div class="topbar max-[991px]:flex hidden">
         <button class="topbar-toggle" id="sidebarToggle" aria-label="Open menu">
             <i class="fa-solid fa-bars"></i>
         </button>
@@ -32,6 +33,21 @@
         </div>
 
     </div>
+@else
+    <div class="flex min-h-screen flex-col bg-white">
+        <x-navbar />
+
+        <main class="flex-1 bg-white">
+            @include('partials.time-travel-banner')
+            @include('partials.email-verification-banner')
+            <div class="mx-auto max-w-7xl">
+                @yield('content')
+            </div>
+        </main>
+
+        <x-footer />
+    </div>
+@endauth
 
     <div id="toastHost" class="toast-host"></div>
 

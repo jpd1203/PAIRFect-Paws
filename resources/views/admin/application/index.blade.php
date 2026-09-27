@@ -58,18 +58,34 @@
         <button type="button" class="btn btn-primary" onclick="openTopScheduleModal()"><i class="fa-solid fa-calendar-check"></i>Schedule Interview</button>
     </div>
 
+    @php
+        $appCounts = [
+            'all' => $applications->count(),
+            'pending' => $applications->filter(fn($a) => $a->status_slug === 'pending')->count(),
+            'documentflagged' => $applications->filter(fn($a) => $a->status_slug === 'documentflagged')->count(),
+            'primarycandidate' => $applications->filter(fn($a) => $a->status_slug === 'primarycandidate' || $a->is_primary_candidate)->count(),
+            'waitlisted' => $applications->filter(fn($a) => $a->status_slug === 'waitlisted')->count(),
+            'scheduled' => $applications->filter(fn($a) => $a->status_slug === 'scheduled')->count(),
+            'underreview' => $applications->filter(fn($a) => $a->status_slug === 'underreview')->count(),
+            'approved' => $applications->filter(fn($a) => $a->status_slug === 'approved')->count(),
+            'rejected' => $applications->filter(fn($a) => $a->status_slug === 'rejected')->count(),
+            'withdrawn' => $applications->filter(fn($a) => $a->status_slug === 'withdrawn')->count(),
+            'noshow' => $applications->filter(fn($a) => $a->status_slug === 'noshow')->count(),
+        ];
+    @endphp
+
     <div class="filter-bar" data-filter-bar data-filter-scope="applicationTableBody">
-        <button class="filter-btn filter-all active" data-filter-btn="all">All</button>
-        <button class="filter-btn badge-pending" data-filter-btn="pending">Pending</button>
-        <button class="filter-btn badge-documentflagged" data-filter-btn="documentflagged">Document Update</button>
-        <button class="filter-btn badge-primarycandidate" data-filter-btn="primarycandidate">Primary</button>
-        <button class="filter-btn badge-waitlisted" data-filter-btn="waitlisted">Waitlisted</button>
-        <button class="filter-btn badge-scheduled" data-filter-btn="scheduled">Scheduled</button>
-        <button class="filter-btn badge-underreview" data-filter-btn="underreview">Under Review</button>
-        <button class="filter-btn badge-approved" data-filter-btn="approved">Approved</button>
-        <button class="filter-btn badge-rejected" data-filter-btn="rejected">Rejected</button>
-        <button class="filter-btn badge-withdrawn" data-filter-btn="withdrawn">Withdrawn</button>
-        <button class="filter-btn badge-noshow" data-filter-btn="noshow">No Show</button>
+        <button class="filter-btn filter-all active" data-filter-btn="all">All ({{ $appCounts['all'] }})</button>
+        <button class="filter-btn badge-pending" data-filter-btn="pending">Pending ({{ $appCounts['pending'] }})</button>
+        <button class="filter-btn badge-documentflagged" data-filter-btn="documentflagged">Document Update ({{ $appCounts['documentflagged'] }})</button>
+        <button class="filter-btn badge-primarycandidate" data-filter-btn="primarycandidate">Primary ({{ $appCounts['primarycandidate'] }})</button>
+        <button class="filter-btn badge-waitlisted" data-filter-btn="waitlisted">Waitlisted ({{ $appCounts['waitlisted'] }})</button>
+        <button class="filter-btn badge-scheduled" data-filter-btn="scheduled">Scheduled ({{ $appCounts['scheduled'] }})</button>
+        <button class="filter-btn badge-underreview" data-filter-btn="underreview">Under Review ({{ $appCounts['underreview'] }})</button>
+        <button class="filter-btn badge-approved" data-filter-btn="approved">Approved ({{ $appCounts['approved'] }})</button>
+        <button class="filter-btn badge-rejected" data-filter-btn="rejected">Rejected ({{ $appCounts['rejected'] }})</button>
+        <button class="filter-btn badge-withdrawn" data-filter-btn="withdrawn">Withdrawn ({{ $appCounts['withdrawn'] }})</button>
+        <button class="filter-btn badge-noshow" data-filter-btn="noshow">No Show ({{ $appCounts['noshow'] }})</button>
     </div>
 
     <div class="records-container">
@@ -81,7 +97,7 @@
                 <tbody id="applicationTableBody">
                     @forelse ($applications as $app)
                         <tr data-search-row data-search-text="{{ $app->first_name }} {{ $app->last_name }} {{ $app->pet?->name }}"
-                            data-filter-row data-status="{{ $app->status_slug }}">
+                            data-filter-row data-status="{{ $app->status_slug }}{{ $app->is_primary_candidate ? ' primarycandidate' : '' }}">
                             <td class="font-semibold">
                                 {{ $app->first_name }} {{ $app->last_name }}
                                 @if($app->is_primary_candidate)<span class="badge badge-primarycandidate ml-1">Primary</span>@endif

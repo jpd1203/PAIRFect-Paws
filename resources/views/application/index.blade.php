@@ -75,24 +75,47 @@
                                 </div>
 
                                 @if($application->document_verification_status?->value === 'NeedsResubmission')
-                                    <div class="note-section bg-[#fdf4f4] border border-red-300">
-                                        <strong>Document or application details require correction:</strong>
-                                        <ul class="list-disc ml-5 mt-1">
+                                    <div class="my-4 rounded-xl border border-red-200 bg-red-50/60 p-5 text-gray-800 shadow-xs">
+                                        <div class="flex items-start gap-2.5 text-red-900 font-bold text-sm">
+                                            <i class="fa-solid fa-circle-exclamation text-red-500 mt-0.5 text-base shrink-0"></i>
+                                            <span>Document or application details require correction:</span>
+                                        </div>
+
+                                        <ul class="mt-2.5 ml-7 list-disc space-y-1 text-xs sm:text-sm text-red-950 font-medium">
                                             @foreach($application->document_verification_reasons ?? [] as $reason)
                                                 <li>{{ $reason }}</li>
                                             @endforeach
                                         </ul>
+
+                                        <p class="mt-3 text-xs text-gray-600 leading-relaxed">
+                                            You may submit one follow-up document. If the name or address entered on the application is incorrect, please contact shelter staff instead.
+                                        </p>
+
                                         @if($application->canUploadReplacementDocument())
-                                            <form method="POST" action="{{ route('applications.document.replace', $application) }}" enctype="multipart/form-data" class="mt-4">
+                                            <form method="POST" action="{{ route('applications.document.replace', $application) }}" enctype="multipart/form-data" class="mt-4 pt-4 border-t border-red-200/80">
                                                 @csrf
-                                                <p class="mt-2 text-sm">You may submit one follow-up document. If the name or address entered on the application is incorrect, contact shelter staff instead.</p>
-                                                <label class="block font-semibold mb-2 mt-3" for="replacement_document_{{ $application->id }}">Upload a matching government ID or proof of address</label>
-                                                <input id="replacement_document_{{ $application->id }}" type="file" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
-                                                <button type="submit" class="btn btn-primary mt-3">Submit Follow-up Document</button>
+                                                <label class="block text-xs font-bold text-gray-800 mb-2" for="replacement_document_{{ $application->id }}">
+                                                    Upload a matching government ID or proof of address
+                                                </label>
+                                                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                                                    <div class="flex-1 min-w-0">
+                                                        <input id="replacement_document_{{ $application->id }}" 
+                                                               type="file" 
+                                                               name="document" 
+                                                               accept=".pdf,.jpg,.jpeg,.png" 
+                                                               required
+                                                               class="block w-full text-xs text-gray-700 rounded-lg border border-gray-300 bg-white p-1.5 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-maroon-600">
+                                                    </div>
+                                                    <button type="submit" class="shrink-0 inline-flex items-center justify-center gap-2 rounded-lg bg-maroon-600 hover:bg-maroon-700 text-white font-bold px-5 py-2.5 text-xs sm:text-sm shadow-sm transition duration-150 cursor-pointer">
+                                                        <i class="fa-solid fa-cloud-arrow-up text-xs"></i>
+                                                        <span>Submit Follow-up Document</span>
+                                                    </button>
+                                                </div>
                                             </form>
                                         @else
-                                            <div class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-                                                <strong>Follow-up already submitted.</strong> Additional document uploads are blocked. Authorized shelter staff will review the application.
+                                            <div class="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs sm:text-sm text-amber-900 flex items-center gap-2">
+                                                <i class="fa-solid fa-circle-info text-amber-600 shrink-0"></i>
+                                                <span><strong>Follow-up already submitted.</strong> Additional document uploads are blocked. Authorized shelter staff will review the application.</span>
                                             </div>
                                         @endif
                                     </div>

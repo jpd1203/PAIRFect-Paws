@@ -11,7 +11,7 @@ class Pet extends Model
 {
     protected $fillable = [
         'name', 'species', 'breed', 'age', 'sex',
-        'health_status', 'behavioral_notes', 'availability_status',
+        'health_status', 'behavioral_notes', 'description', 'availability_status',
         'branch_id', 'intake_date', 'photo_path', 'is_archived', 'version',
         'energy_level', 'trainability', 'independence', 'temperament',
         'medical_needs', 'is_reactive_to_pets', 'has_aggression_history',
@@ -164,6 +164,11 @@ class Pet extends Model
     public function getNotesAttribute(): ?string
     {
         return $this->behavioral_notes;
+    }
+
+    public function getStoryAttribute(): ?string
+    {
+        return $this->description ?: $this->behavioral_notes;
     }
 
     public function getAssessmentStatusAttribute(): string

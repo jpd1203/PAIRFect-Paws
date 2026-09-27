@@ -86,11 +86,76 @@ function closeModal(id) {
 
 function initSidebar() {
     const toggle = document.getElementById('sidebarToggle');
+    const closeBtn = document.getElementById('sidebarCloseBtn');
     const sidebar = document.getElementById('appSidebar');
     const overlay = document.getElementById('sidebarOverlay');
 
-    toggle?.addEventListener('click', () => { sidebar?.classList.add('open'); overlay?.classList.add('active'); });
-    overlay?.addEventListener('click', () => { sidebar?.classList.remove('open'); overlay?.classList.remove('active'); });
+    const open = () => {
+        sidebar?.classList.add('open');
+        overlay?.classList.add('active');
+        document.body.classList.add('overflow-hidden', 'max-[991px]:overflow-hidden');
+    };
+
+    const close = () => {
+        sidebar?.classList.remove('open');
+        overlay?.classList.remove('active');
+        document.body.classList.remove('overflow-hidden', 'max-[991px]:overflow-hidden');
+    };
+
+    toggle?.addEventListener('click', open);
+    closeBtn?.addEventListener('click', close);
+    overlay?.addEventListener('click', close);
+
+    // Auto-close sidebar on mobile/tablet when a link is clicked
+    sidebar?.querySelectorAll('.menu-item').forEach((item) => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 991) close();
+        });
+    });
+
+    // Reset overlay/open state when window is resized above 991px (minimizing/maximizing tab)
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 991) {
+            sidebar?.classList.remove('open');
+            overlay?.classList.remove('active');
+            document.body.classList.remove('overflow-hidden', 'max-[991px]:overflow-hidden');
+        }
+    });
+}
+
+/** Drag-to-scroll for horizontal containers (filter-bar, tables) on tablet/desktop */
+function initDragToScroll() {
+    document.querySelectorAll('.filter-bar, .table-responsive').forEach((slider) => {
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        slider.addEventListener('mousedown', (e) => {
+            if (e.target.closest('button, a, input, select, form')) return;
+            isDown = true;
+            slider.classList.add('cursor-grabbing');
+            startX = e.pageX - slider.offsetLeft;
+            scrollLeft = slider.scrollLeft;
+        });
+
+        slider.addEventListener('mouseleave', () => {
+            isDown = false;
+            slider.classList.remove('cursor-grabbing');
+        });
+
+        slider.addEventListener('mouseup', () => {
+            isDown = false;
+            slider.classList.remove('cursor-grabbing');
+        });
+
+        slider.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - slider.offsetLeft;
+            const walk = (x - startX) * 1.5;
+            slider.scrollLeft = scrollLeft - walk;
+        });
+    });
 }
 
 /** Backdrop click closes any open .custom-modal-backdrop */
@@ -142,6 +207,21 @@ document.addEventListener('DOMContentLoaded', () => {
     initModalBackdrops();
     initSearch();
     initFilterButtons();
+    initDragToScroll();
+
+    // Global keyboard listener for Escape key to close modals and sidebar
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const sidebar = document.getElementById('appSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar?.classList.remove('open');
+            overlay?.classList.remove('active');
+            document.body.classList.remove('overflow-hidden', 'max-[991px]:overflow-hidden');
+            document.querySelectorAll('.custom-modal-backdrop.active').forEach((backdrop) => {
+                backdrop.classList.remove('active');
+            });
+        }
+    });
 });
 
 window.PAIRfectAdmin = { showToast, csrfToken };

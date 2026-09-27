@@ -19,18 +19,33 @@ class PetController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Pet::with('branch');
+        $query = Pet::with('branch')
+            ->where('availability_status', AvailabilityStatus::Available);
 
-        if ($request->filled('species')) {
+        if ($request->filled('species') && $request->species !== 'all' && $request->species !== 'All Species') {
             $query->where('species', $request->species);
         }
-        if ($request->filled('status')) {
-            $query->where('availability_status', $request->status);
+
+        if ($request->filled('age') && $request->age !== 'all' && $request->age !== 'All Ages') {
+            $age = $request->age;
+            if ($age === 'Baby') {
+                $query->where('age', '<=', 6);
+            } elseif ($age === 'Young') {
+                $query->whereBetween('age', [7, 24]);
+            } elseif ($age === 'Adult') {
+                $query->whereBetween('age', [25, 84]);
+            } elseif ($age === 'Senior') {
+                $query->where('age', '>=', 85);
+            }
         }
 
-        $pets = $query->latest()->paginate(12);
+        $pets = $query->latest('id')->paginate(16)->withQueryString();
 
-        return view('pets.index', compact('pets'));
+        return view('pets.index', [
+            'pets' => $pets,
+            'speciesFilter' => $request->species ?? 'all',
+            'ageFilter' => $request->age ?? 'all',
+        ]);
     }
 
     /**
@@ -79,6 +94,7 @@ class PetController extends Controller
             'sex' => 'nullable|in:Male,Female',
             'health_status' => 'nullable|string|max:255',
             'behavioral_notes' => 'nullable|string',
+            'description' => 'nullable|string',
             'status' => 'required|string|max:255',
             'branch_id' => 'nullable|exists:branches,id',
             'physical_size' => 'nullable|string|max:255',
@@ -103,6 +119,7 @@ class PetController extends Controller
             'sex' => $validated['sex'] ?? null,
             'health_status' => $validated['health_status'] ?? null,
             'behavioral_notes' => $validated['behavioral_notes'] ?? null,
+            'description' => $validated['description'] ?? null,
             'availability_status' => $validated['status'],
             'branch_id' => $validated['branch_id'] ?? null,
             'physical_size' => $validated['physical_size'] ?? null,
@@ -150,6 +167,7 @@ class PetController extends Controller
             'sex' => 'nullable|in:Male,Female',
             'health_status' => 'nullable|string|max:255',
             'behavioral_notes' => 'nullable|string',
+            'description' => 'nullable|string',
             'status' => 'required|string|max:255',
             'branch_id' => 'nullable|exists:branches,id',
             'physical_size' => 'nullable|string|max:255',
@@ -188,6 +206,7 @@ class PetController extends Controller
                 'sex' => $validated['sex'] ?? null,
                 'health_status' => $validated['health_status'] ?? null,
                 'behavioral_notes' => $validated['behavioral_notes'] ?? null,
+                'description' => $validated['description'] ?? null,
                 'availability_status' => $validated['status'],
                 'branch_id' => $validated['branch_id'] ?? null,
                 'physical_size' => $validated['physical_size'] ?? null,

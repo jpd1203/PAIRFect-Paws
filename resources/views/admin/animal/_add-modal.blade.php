@@ -141,12 +141,21 @@
                     </div>
 
                     <div class="form-group col-span-3">
-                        <label class="form-label">Notes</label>
+                        <label class="form-label">Pet Story / Description</label>
+                        <textarea
+                            name="description"
+                            class="form-control"
+                            rows="3"
+                            placeholder="Write the pet's background story, personality, or rescue journey..."></textarea>
+                    </div>
+
+                    <div class="form-group col-span-3">
+                        <label class="form-label">Behavioral Notes</label>
                         <textarea
                             name="notes"
                             class="form-control"
                             rows="2"
-                            placeholder="Optional notes..."></textarea>
+                            placeholder="Optional medical/behavioral notes..."></textarea>
                     </div>
 
                 </div>
