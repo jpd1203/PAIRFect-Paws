@@ -9,7 +9,7 @@
 
 <div class="card overflow-hidden">
     <div class="table-responsive overflow-x-auto w-full">
-        <table class="w-full min-w-[600px]">
+        <table class="w-full">
             <thead>
                 <tr><th>Adopter</th><th>Email</th><th>Pet</th><th>Approved</th><th>Document</th></tr>
             </thead>

@@ -22,12 +22,6 @@
         </div>
     @endif
 
-    <!-- @if (session('success'))
-        <div class="my-4 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
-            <i class="fa-solid fa-circle-check mr-2"></i>{{ session('success') }}
-        </div>
-    @endif -->
-
     @if (session('success'))
         <script>
             document.addEventListener('DOMContentLoaded', function () {

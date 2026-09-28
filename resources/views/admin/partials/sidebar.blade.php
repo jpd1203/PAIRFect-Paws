@@ -9,11 +9,8 @@
 
 <div class="sidebar" id="appSidebar">
 
-    <div class="logo flex items-center justify-between">
+    <div class="logo flex items-center justify-center">
         <h3>PAIRfect Paws</h3>
-        <button type="button" class="sidebar-close-btn hidden max-[991px]:flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer" id="sidebarCloseBtn" aria-label="Close menu">
-            <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
     </div>
 
     <div class="sidebar-nav">

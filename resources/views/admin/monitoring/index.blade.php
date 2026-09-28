@@ -164,12 +164,13 @@
             ->values();
     @endphp
 
-    <div class="mx-auto max-w-[1280px]">
+    <div class="mx-auto">
         {{-- Header matching Magic Patterns --}}
-        <header class="mb-6">
-            <h1 class="font-primary text-2xl font-bold text-ink lg:text-[28px] tracking-tight">Post-Adoption Monitoring</h1>
-            <p class="mt-1 text-sm text-muted">Track welfare check-ins for every adopted pet. Newest submissions appear first.</p>
-        </header>
+        <div class="heading-text">
+            <h2>Post-Adoption Monitoring</h2>
+            <p>Track welfare check-ins for every adopted pet. Newest submissions appear first.</p>
+        </div>
+
 
         @if (isset($errors) && $errors->any())
             <div class="mb-5 rounded-xl border border-status-danger-text bg-status-danger-bg p-4 text-sm text-status-danger-text" role="alert">
@@ -183,124 +184,110 @@
         @endif
 
         {{-- Filters & Controls Bar --}}
-        <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
-            {{-- Status Filter Tabs --}}
-            <div class="flex flex-wrap items-center gap-2" role="tablist" aria-label="Filter by status" id="monitoringFilterTabs">
-                <button
-                    type="button"
-                    role="tab"
-                    data-filter="all"
-                    class="filter-pill active whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 bg-ink text-white"
-                >
+        <div class="filter-bar" data-filter-bar data-filter-scope="monitoringTableBody">
+
+            <div class="flex flex-wrap items-center gap-2"
+                role="tablist"
+                aria-label="Filter by status"
+                id="monitoringFilterTabs">
+
+                <button type="button"
+                        role="tab"
+                        aria-selected="true"
+                        data-filter-btn="all"
+                        class="filter-btn filter-all active">
                     All ({{ $counts['all'] }})
                 </button>
-                <button
-                    type="button"
-                    role="tab"
-                    data-filter="completed"
-                    class="filter-pill whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 bg-completed-bg text-completed-fg hover:brightness-95"
-                >
+
+                <button type="button"
+                        role="tab"
+                        aria-selected="false"
+                        data-filter-btn="completed"
+                        class="filter-btn badge-completed">
                     Completed ({{ $counts['completed'] }})
                 </button>
-                <button
-                    type="button"
-                    role="tab"
-                    data-filter="pending"
-                    class="filter-pill whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 bg-pending-bg text-pending-fg hover:brightness-95"
-                >
+
+                <button type="button"
+                        role="tab"
+                        aria-selected="false"
+                        data-filter-btn="pending"
+                        class="filter-btn badge-pending">
                     Pending ({{ $counts['pending'] }})
                 </button>
-                <button
-                    type="button"
-                    role="tab"
-                    data-filter="overdue"
-                    class="filter-pill whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 bg-overdue-bg text-overdue-fg hover:brightness-95"
-                >
+
+                <button type="button"
+                        role="tab"
+                        aria-selected="false"
+                        data-filter-btn="overdue"
+                        class="filter-btn badge-overdue">
                     Overdue ({{ $counts['overdue'] }})
                 </button>
-                <button
-                    type="button"
-                    role="tab"
-                    data-filter="flagged"
-                    class="filter-pill whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 bg-flagged-bg text-flagged-fg hover:brightness-95"
-                >
+
+                <button type="button"
+                        role="tab"
+                        aria-selected="false"
+                        data-filter-btn="flagged"
+                        class="filter-btn badge-flagged">
                     Flagged ({{ $counts['flagged'] }})
                 </button>
+
                 @if ($counts['upcoming'] > 0)
-                    <button
-                        type="button"
-                        role="tab"
-                        data-filter="upcoming"
-                        class="filter-pill whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 bg-upcoming-bg text-upcoming-fg hover:brightness-95"
-                    >
+                    <button type="button"
+                            role="tab"
+                            aria-selected="false"
+                            data-filter-btn="upcoming"
+                            class="filter-btn badge-upcoming">
                         Upcoming ({{ $counts['upcoming'] }})
                     </button>
                 @endif
-            </div>
 
-            {{-- Right Controls: Search, View by, Sort --}}
-            <div class="flex flex-wrap items-center gap-3">
-                {{-- Search Box --}}
-                <div class="relative">
-                    <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
-                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
-                    </span>
-                    <input
-                        type="search"
-                        id="monitoringSearchInput"
-                        placeholder="Search pet or adopter..."
-                        class="h-9 w-60 rounded-md border border-line bg-white pl-9 pr-3 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
-                    >
-                </div>
-
-                {{-- View By Toggle --}}
-                <div class="flex items-center gap-2">
-                    <span class="text-xs text-muted font-medium">View by</span>
-                    <div class="flex rounded-md bg-surface p-0.5 border border-line/60" role="radiogroup" aria-label="Group adoptions by">
-                        <button
-                            type="button"
-                            id="viewByPetBtn"
-                            class="view-by-btn active whitespace-nowrap rounded px-3 py-1 text-xs font-semibold transition-colors bg-white text-ink shadow-sm"
-                            data-view="pet"
-                        >
-                            Pet
-                        </button>
-                        <button
-                            type="button"
-                            id="viewByAdopterBtn"
-                            class="view-by-btn whitespace-nowrap rounded px-3 py-1 text-xs font-semibold transition-colors text-muted hover:text-ink"
-                            data-view="adopter"
-                        >
-                            Adopter
-                        </button>
-                    </div>
-                </div>
-
-                {{-- Sort Dropdown --}}
-                <div class="flex items-center gap-2">
-                    <span class="text-xs text-muted font-medium">Sort</span>
-                    <select
-                        id="monitoringSortSelect"
-                        class="h-9 rounded-md border border-line bg-white px-2.5 text-xs font-medium text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15 cursor-pointer"
-                    >
-                        <option value="latest">Newest submission first</option>
-                        <option value="due">Next due first</option>
-                    </select>
-                </div>
             </div>
         </div>
 
-        {{-- Empty state --}}
-        <div id="monitoringEmptyState" class="hidden flex-col items-center justify-center rounded-xl border border-dashed border-line bg-white px-6 py-16 text-center shadow-sm">
-            <i class="fa-solid fa-clipboard-question text-3xl text-muted mb-3"></i>
-            <p class="text-sm font-semibold text-ink">No adoptions match your filters</p>
-            <p class="mt-1 text-xs text-muted">Try selecting a different status or clearing your search term.</p>
+            <div class="flex flex-wrap items-center gap-3 mb-5">
+            {{-- Search Box --}}
+            <div class="relative flex-1 min-w-[240px]">
+                <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"></span>
+                <input type="search" id="monitoringSearchInput" placeholder="Search pet or adopter..."class="search-input">
+            </div>
+
+            {{-- View By Toggle --}}
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-sm font-primary text-muted font-medium">View by</span>
+
+                <div class="flex rounded-md bg-surface p-0.5 border border-line/60" role="radiogroup" aria-label="Group adoptions by">
+                    <button type="button" id="viewByPetBtn"
+                        class="view-by-btn active whitespace-nowrap rounded px-3 py-1 text-[12px] font-semibold transition-colors bg-white text-ink shadow-sm" data-view="pet">
+                        Pet
+                    </button>
+
+                    <button type="button" id="viewByAdopterBtn"
+                        class="view-by-btn whitespace-nowrap rounded px-3 py-1 text-[12px] font-semibold transition-colors text-muted hover:text-ink"data-view="adopter">
+                        Adopter
+                    </button>
+                </div>
+            </div>
+
+            {{-- Sort Dropdown --}}
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-sm font-primary text-muted font-medium">Sort</span>
+
+                <select id="monitoringSortSelect"
+                    class="h-9 rounded-md border border-line bg-white px-2.5 text-sm font-medium text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15 cursor-pointer"
+                >
+                    <option value="latest">Newest submission first</option>
+                    <option value="due">Next due first</option>
+                </select>
+            </div>
         </div>
+        </div>
+
+        
 
         {{-- 1. PET VIEW (Default) --}}
         <div id="petViewContainer" class="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
             {{-- Table Column Headers --}}
-            <div class="hidden lg:grid monitoring-row-grid bg-surface px-5 py-3 text-xs font-semibold text-muted border-b border-line uppercase tracking-wider" aria-hidden="true">
+            <div class="hidden lg:grid monitoring-row-grid bg-neutral-light px-5 py-3 text-[13.5px] font-primary font-semibold text-text-muted border-b border-line uppercase tracking-wider" aria-hidden="true">
                 <span>Adopted pet</span>
                 <span>Check-ins</span>
                 <span>Latest submission</span>
@@ -343,15 +330,15 @@
                             {{-- Col 1: Adopted Pet Info --}}
                             <div class="flex min-w-0 flex-1 items-center gap-3">
                                 @if ($petPhoto && !str_contains($petPhoto, 'rcpp-logo'))
-                                    <img src="{{ $petPhoto }}" alt="{{ $petName }}" class="h-11 w-11 shrink-0 rounded-lg object-cover ring-1 ring-line">
+                                    <img src="{{ $petPhoto }}" alt="{{ $petName }}" class="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-line">
                                 @else
-                                    <div class="h-11 w-11 shrink-0 rounded-lg bg-surface flex items-center justify-center text-brand ring-1 ring-line">
+                                    <div class="h-12 w-12 shrink-0 rounded-lg bg-surface flex items-center justify-center text-brand ring-1 ring-line">
                                         <i class="fa-solid {{ ($adoption->pet?->species?->value ?? '') === 'Cat' ? 'fa-cat' : 'fa-dog' }} text-lg"></i>
                                     </div>
                                 @endif
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-baseline gap-2">
-                                        <span class="font-semibold text-sm text-ink truncate">{{ $petName }}</span>
+                                        <span class="font-semibold text-l text-ink truncate">{{ $petName }}</span>
                                         <span class="truncate text-xs text-muted">{{ $petBreed }}</span>
                                     </div>
                                     <span class="block truncate text-xs text-muted mt-0.5">
@@ -384,7 +371,7 @@
                                         @endphp
                                         <li class="flex flex-col items-center gap-1" title="{{ $checkIn->milestone_display }}: {{ $checkIn->status_display }}">
                                             <span class="h-1.5 w-6 rounded-full {{ $barColor }}" aria-hidden="true"></span>
-                                            <span class="text-[10px] font-semibold leading-none text-muted">{{ $mCode }}</span>
+                                            <span class="text-[12px] font-semibold leading-none text-muted">{{ $mCode }}</span>
                                         </li>
                                     @endforeach
                                 </ol>
@@ -396,7 +383,7 @@
                                     @php
                                         $isNew = $latestSub->submitted_date && $now->diffInDays($latestSub->submitted_date) <= 3;
                                     @endphp
-                                    <p class="flex items-center gap-2 text-sm text-ink truncate font-medium">
+                                    <p class="flex items-center gap-2 text-[14px] text-ink truncate font-medium">
                                         <span class="truncate">{{ $latestSub->milestone_display }}</span>
                                         @if ($isNew)
                                             <span class="rounded-full bg-brand px-1.5 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">New</span>
@@ -413,7 +400,7 @@
                             {{-- Col 4: Next Check-in --}}
                             <div class="min-w-0">
                                 @if ($nextCheck)
-                                    <p class="text-sm {{ $nextCheck->status_slug === 'overdue' ? 'font-bold text-overdue-fg' : 'font-medium text-ink' }} truncate">
+                                    <p class="text-[14px] {{ $nextCheck->status_slug === 'overdue' ? 'font-bold text-overdue-fg' : 'font-medium text-ink' }} truncate">
                                         {{ $nextCheck->milestone_display }}
                                     </p>
                                     <p class="truncate text-xs text-muted mt-0.5">
@@ -437,7 +424,7 @@
                                         default => 'bg-upcoming-bg text-upcoming-fg',
                                     };
                                 @endphp
-                                <span class="inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold {{ $pillClasses }}">
+                                <span class="badge {{ $pillClasses }}">
                                     {{ ucfirst($adoption->overall_status === 'pending' ? 'Pending' : $adoption->overall_status) }}
                                 </span>
                             </div>
@@ -447,7 +434,7 @@
                                 @if ($adoption->overall_status === 'flagged')
                                     <button
                                         type="button"
-                                        class="whitespace-nowrap rounded-md border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-sm hover:bg-surface transition-colors flex items-center gap-1.5"
+                                        class="btn btn-secondary"
                                         data-report="{{ json_encode($primaryReport, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}"
                                         onclick="openMonitoringViewModal(this)"
                                     >
@@ -475,7 +462,7 @@
                                 @elseif ($adoption->overall_status === 'pending' && $nextCheck)
                                     <button
                                         type="button"
-                                        class="whitespace-nowrap rounded-md border border-pending-bg bg-pending-bg px-3 py-1.5 text-xs font-semibold text-pending-fg hover:border-pending-fg/30 transition-colors flex items-center gap-1.5"
+                                        class="btn btn-yellow"
                                         data-action="{{ route('admin.monitoring.reminder', $nextCheck) }}"
                                         data-summary="{{ $adopterName }} - {{ $petName }} - {{ $nextCheck->milestone_display }}"
                                         onclick="openMonitoringReminderModal(this)"
@@ -505,9 +492,9 @@
                         {{-- Expanded Accordion History Drawer --}}
                         <div id="drawer-{{ $adoption->id }}" class="hidden overflow-hidden bg-surface/60 border-t border-line/60 px-5 py-4 lg:pl-16">
                             <div class="overflow-x-auto rounded-lg bg-white border border-line p-3 shadow-sm">
-                                <table class="w-full text-xs">
+                                <table class="w-full text-sm">
                                     <thead>
-                                        <tr class="text-left font-semibold text-muted border-b border-line pb-2">
+                                        <tr class="text-center font-semibold text-muted border-b border-line pb-2">
                                             <th class="pb-2 pr-4">Milestone</th>
                                             <th class="pb-2 pr-4">Due Date</th>
                                             <th class="pb-2 pr-4">Submitted Date</th>
@@ -529,7 +516,7 @@
                                                     default => 'bg-upcoming-bg text-upcoming-fg',
                                                 };
                                             @endphp
-                                            <tr class="hover:bg-surface/30 transition-colors">
+                                            <tr class="hover:bg-surface/30 transition-colors text-center" data-monitoring-status="{{ $log->status_slug }}">
                                                 <td class="py-2.5 pr-4 font-semibold text-ink">
                                                     {{ $log->milestone_display }}
                                                 </td>
@@ -545,7 +532,7 @@
                                                         <span class="text-gray-400">Not submitted</span>
                                                     @endif
                                                 </td>
-                                                <td class="py-2.5 pr-4">
+                                                <td class="py-3 pr-4">
                                                     <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold {{ $badgeStyle }}">
                                                         {{ $log->status_display }}
                                                     </span>
@@ -567,7 +554,7 @@
                                                         @if (!$log->submitted_date && $log->status_slug !== 'upcoming')
                                                             <button
                                                                 type="button"
-                                                                class="btn btn-danger btn-sm !text-xs !py-1 !px-2.5"
+                                                                class="btn btn-yellow btn-sm !text-xs !py-1 !px-2.5"
                                                                 data-action="{{ route('admin.monitoring.reminder', $log) }}"
                                                                 data-summary="{{ $logSummary }}"
                                                                 onclick="openMonitoringReminderModal(this)"
@@ -605,6 +592,17 @@
                         No post-adoption monitoring records exist yet.
                     </li>
                 @endforelse
+
+                <li id="monitoringEmptyState"
+                    class="hidden flex-col items-center justify-center px-6 py-16 text-center">
+                    <i class="fa-solid fa-clipboard-question text-3xl text-muted mb-3"></i>
+                    <p class="text-sm font-semibold text-ink">
+                        No adoptions match your filters
+                    </p>
+                    <p class="mt-1 text-xs text-muted">
+                        Try selecting a different status or clearing your search term.
+                    </p>
+                </li>
             </ul>
         </div>
 
@@ -655,14 +653,14 @@
                             <li class="px-5 py-4 monitoring-row-grid flex flex-wrap items-center gap-x-4 gap-y-3 hover:bg-surface/30 transition-colors">
                                 <div class="flex min-w-0 flex-1 items-center gap-3">
                                     @if ($petPhoto && !str_contains($petPhoto, 'rcpp-logo'))
-                                        <img src="{{ $petPhoto }}" alt="{{ $petName }}" class="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-line">
+                                        <img src="{{ $petPhoto }}" alt="{{ $petName }}" class="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-line">
                                     @else
-                                        <div class="h-10 w-10 shrink-0 rounded-lg bg-surface flex items-center justify-center text-brand ring-1 ring-line">
+                                        <div class="h-12 w-12 shrink-0 rounded-lg bg-surface flex items-center justify-center text-brand ring-1 ring-line">
                                             <i class="fa-solid {{ ($adoption->pet?->species?->value ?? '') === 'Cat' ? 'fa-cat' : 'fa-dog' }}"></i>
                                         </div>
                                     @endif
                                     <div class="min-w-0 flex-1">
-                                        <span class="font-semibold text-sm text-ink truncate block">{{ $petName }}</span>
+                                        <span class="font-semibold text-l text-ink truncate block">{{ $petName }}</span>
                                         <span class="truncate text-xs text-muted block">{{ $petBreed }}</span>
                                     </div>
                                 </div>
@@ -683,7 +681,7 @@
                                             @endphp
                                             <li class="flex flex-col items-center gap-1" title="{{ $checkIn->milestone_display }}: {{ $checkIn->status_display }}">
                                                 <span class="h-1.5 w-6 rounded-full {{ $barColor }}"></span>
-                                                <span class="text-[10px] font-semibold leading-none text-muted">{{ $mCode }}</span>
+                                                <span class="text-[12px] font-semibold leading-none text-muted">{{ $mCode }}</span>
                                             </li>
                                         @endforeach
                                     </ol>
@@ -691,7 +689,7 @@
 
                                 <div class="min-w-0">
                                     @if ($latestSub)
-                                        <p class="text-sm font-medium text-ink truncate">{{ $latestSub->milestone_display }}</p>
+                                        <p class="text-[14px] font-medium text-ink truncate">{{ $latestSub->milestone_display }}</p>
                                         <p class="text-xs text-muted truncate">{{ $latestSub->submitted_date ? $latestSub->submitted_date->diffForHumans() : '' }}</p>
                                     @else
                                         <p class="text-sm text-muted">No reports yet</p>
@@ -700,7 +698,7 @@
 
                                 <div class="min-w-0">
                                     @if ($nextCheck)
-                                        <p class="text-sm font-medium {{ $nextCheck->status_slug === 'overdue' ? 'text-overdue-fg font-bold' : 'text-ink' }} truncate">
+                                        <p class="text-[14px] font-medium {{ $nextCheck->status_slug === 'overdue' ? 'text-overdue-fg font-bold' : 'text-ink' }} truncate">
                                             {{ $nextCheck->milestone_display }}
                                         </p>
                                         <p class="text-xs text-muted truncate">{{ $nextCheck->due_date->format('M j') }}</p>
@@ -710,7 +708,7 @@
                                 </div>
 
                                 <div>
-                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {{ match ($adoption->overall_status) {
+                                    <span class="badge {{ match ($adoption->overall_status) {
                                         'completed' => 'bg-completed-bg text-completed-fg',
                                         'pending' => 'bg-pending-bg text-pending-fg',
                                         'overdue' => 'bg-overdue-bg text-overdue-fg',
@@ -725,7 +723,7 @@
                                     @if ($primaryReport)
                                         <button
                                             type="button"
-                                            class="whitespace-nowrap rounded-md border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-sm hover:bg-surface transition-colors flex items-center gap-1.5"
+                                            class="btn btn-secondary"
                                             data-report="{{ json_encode($primaryReport, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}"
                                             onclick="openMonitoringViewModal(this)"
                                         >
@@ -737,13 +735,127 @@
                                 <div class="flex justify-end">
                                     <button
                                         type="button"
-                                        class="h-7 w-7 rounded flex items-center justify-center text-muted hover:text-ink hover:bg-surface"
-                                        onclick="toggleAdoptionDrawer('{{ $adoption->id }}')"
+                                        class="accordion-toggle-btn h-7 w-7 rounded flex items-center justify-center text-muted hover:text-ink hover:bg-surface transition-all"
+                                        aria-expanded="false"
+                                        aria-controls="adopter-drawer-{{ $adoption->id }}"
+                                        onclick="toggleMonitoringDrawer(
+                                                'adopter-drawer-{{ $adoption->id }}',
+                                                'adopter-chevron-{{ $adoption->id }}'
+                                            )"
+                                        title="View milestone breakdown"
                                     >
-                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                        <i
+                                            class="fa-solid fa-chevron-down text-xs transition-transform duration-200"
+                                            id="adopter-chevron-{{ $adoption->id }}"
+                                        ></i>
                                     </button>
+                                    
                                 </div>
+                                
                             </li>
+
+                            {{-- Expanded Accordion History Drawer --}}
+                            <div id="adopter-drawer-{{ $adoption->id }}" class="hidden overflow-hidden bg-surface/60 border-t border-line/60 px-5 py-4 lg:pl-16">
+                                <div class="overflow-x-auto rounded-lg bg-white border border-line p-3 shadow-sm">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr class="text-center font-semibold text-muted border-b border-line">
+                                                <th class="pb-2 pr-4">Milestone</th>
+                                                <th class="pb-2 pr-4">Due Date</th>
+                                                <th class="pb-2 pr-4">Submitted Date</th>
+                                                <th class="pb-2 pr-4">Status</th>
+                                                <th class="pb-2 pr-4">Reminders</th>
+                                                <th class="pb-2 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody class="divide-y divide-line/60">
+                                            @foreach ($adoption->checkIns as $log)
+                                                @php
+                                                    $logReport = $buildReportPayload($log);
+                                                    $logSummary = "{$uName} - {$petName} - {$log->milestone_display}";
+
+                                                    $badgeStyle = match ($log->status_slug) {
+                                                        'completed' => 'bg-completed-bg text-completed-fg',
+                                                        'pending' => 'bg-pending-bg text-pending-fg',
+                                                        'overdue' => 'bg-overdue-bg text-overdue-fg',
+                                                        'flagged' => 'bg-flagged-bg text-flagged-fg',
+                                                        default => 'bg-upcoming-bg text-upcoming-fg',
+                                                    };
+                                                @endphp
+
+                                                <tr class="hover:bg-surface/30 transition-colors text-center" data-monitoring-status="{{ $log->status_slug }}">
+                                                    <td class="py-2.5 pr-4 font-semibold text-ink">
+                                                        {{ $log->milestone_display }}
+                                                    </td>
+                                                    <td class="py-2.5 pr-4 text-muted">
+                                                        {{ $log->due_date->format('M j, Y') }}
+                                                    </td>
+                                                    <td class="py-2.5 pr-4 text-muted">
+                                                        @if ($log->submitted_date)
+                                                            <span class="font-medium text-ink">
+                                                                {{ \App\Support\ManilaTime::format($log->submitted_date, 'M j, Y g:i A') }}
+                                                            </span>
+                                                        @else
+                                                            <span class="text-gray-400"> Not submitted</span>
+                                                        @endif
+                                                    </td>
+
+                                                    <td class="py-3 pr-4">
+                                                        <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold {{ $badgeStyle }}">
+                                                            {{ $log->status_display }}
+                                                        </span>
+                                                    </td>
+
+                                                    <td class="py-2.5 pr-4 text-muted">
+                                                        {{ $log->reminders_sent }} sent
+                                                    </td>
+
+                                                    <td class="py-2.5 text-right">
+                                                        <div class="flex items-center justify-end gap-1.5">
+
+                                                            {{-- View --}}
+                                                            <button type="button" class="btn btn-secondary btn-sm !text-xs !py-1 !px-2.5"
+                                                                data-report="{{ json_encode($logReport, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}"
+                                                                onclick="openMonitoringViewModal(this)"
+                                                            >
+                                                                <i class="fa-solid fa-eye"></i> View
+                                                            </button>
+
+                                                            {{-- Remind --}}
+                                                            @if (!$log->submitted_date && $log->status_slug !== 'upcoming')
+                                                                <button type="button" class="btn btn-yellow btn-sm !text-xs !py-1 !px-2.5" data-action="{{ route('admin.monitoring.reminder', $log) }}"
+                                                                    data-summary="{{ $logSummary }}"
+                                                                    onclick="openMonitoringReminderModal(this)"
+                                                                >
+                                                                    <i class="fa-solid fa-bell"></i> Remind
+                                                                </button>
+                                                            @endif
+
+                                                            {{-- Flag --}}
+                                                            @if (!$log->is_flagged || $log->resolved_at)
+                                                                <button type="button" class="btn btn-danger btn-sm !text-xs !py-1 !px-2.5"
+                                                                    data-action="{{ route('admin.monitoring.flag', $log) }}"
+                                                                    data-summary="{{ $logSummary }}"
+                                                                    onclick="openMonitoringFlagModal(this)"
+                                                                >
+                                                                    <i class="fa-solid fa-flag"></i> Flag
+                                                                </button>
+                                                            @else
+                                                                <a class="btn btn-secondary btn-sm !text-xs !py-1 !px-2.5" href="{{ route('admin.monitoring.flagged') }}">
+                                                                    <i class="fa-solid fa-magnifying-glass"></i>Review Flag
+                                                                </a>
+                                                            @endif
+
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
                         @endforeach
                     </ul>
                 </section>
@@ -753,9 +865,6 @@
         </div>
     </div>
 
-    {{-- =========================================================
-         ORIGINAL POP-UPS (PRESERVED AS SPECIFIED)
-         ========================================================= --}}
 
     {{-- Reminder Modal --}}
     <div class="custom-modal-backdrop" id="monitoringReminderModal" role="dialog" aria-modal="true" aria-labelledby="monitoringReminderTitle">
@@ -909,19 +1018,19 @@
         };
 
         // DOM Elements
-        const filterTabs = document.querySelectorAll('#monitoringFilterTabs .filter-pill');
+        const filterTabs = document.querySelectorAll('#monitoringFilterTabs .filter-btn');
         const searchInput = document.getElementById('monitoringSearchInput');
         const viewByPetBtn = document.getElementById('viewByPetBtn');
         const viewByAdopterBtn = document.getElementById('viewByAdopterBtn');
         const sortSelect = document.getElementById('monitoringSortSelect');
         const petViewContainer = document.getElementById('petViewContainer');
-        const蝶adopterViewContainer = document.getElementById('adopterViewContainer');
+        const adopterViewContainer = document.getElementById('adopterViewContainer');
         const emptyState = document.getElementById('monitoringEmptyState');
 
         // Toggle Filter Tabs
         filterTabs.forEach(button => {
             button.addEventListener('click', () => {
-                currentFilter = button.dataset.filter;
+                currentFilter = button.dataset.filterBtn;
                 updateTabStyles();
                 applyFilters();
             });
@@ -929,7 +1038,7 @@
 
         function updateTabStyles() {
             filterTabs.forEach(button => {
-                const filter = button.dataset.filter;
+                const filter = button.dataset.filterBtn;
                 const config = tabConfigs[filter] || tabConfigs.all;
                 if (filter === currentFilter) {
                     button.className = `filter-pill active whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 ${config.active}`;
@@ -949,7 +1058,7 @@
         viewByPetBtn?.addEventListener('click', () => {
             currentView = 'pet';
             viewByPetBtn.className = 'view-by-btn active whitespace-nowrap rounded px-3 py-1 text-xs font-semibold transition-colors bg-white text-ink shadow-sm';
-            viewByAdopterBtn.className = 'view-by-btn whitespace-nowrap rounded px-3 py-1 text-xs font-semibold transition-colors text-muted hover:text-ink';
+            viewByAdopterBtn.className = 'view-by-btn whitespace-nowrap rounded px-3 py-1 text-[12px] font-semibold transition-colors text-muted hover:text-ink';
             petViewContainer.classList.remove('hidden');
             document.getElementById('adopterViewContainer').classList.add('hidden');
             applyFilters();
@@ -958,7 +1067,7 @@
         viewByAdopterBtn?.addEventListener('click', () => {
             currentView = 'adopter';
             viewByAdopterBtn.className = 'view-by-btn active whitespace-nowrap rounded px-3 py-1 text-xs font-semibold transition-colors bg-white text-ink shadow-sm';
-            viewByPetBtn.className = 'view-by-btn whitespace-nowrap rounded px-3 py-1 text-xs font-semibold transition-colors text-muted hover:text-ink';
+            viewByPetBtn.className = 'view-by-btn whitespace-nowrap rounded px-3 py-1 text-[12px] font-semibold transition-colors text-muted hover:text-ink';
             document.getElementById('adopterViewContainer').classList.remove('hidden');
             petViewContainer.classList.add('hidden');
             applyFilters();
@@ -967,27 +1076,150 @@
         // Sort Handler
         sortSelect?.addEventListener('change', (e) => {
             currentSort = e.target.value;
+
             sortItems();
+            applyFilters();
         });
 
         function sortItems() {
-            const list = document.getElementById('petViewList');
-            if (!list) return;
-            const items = Array.from(list.querySelectorAll('.adoption-item'));
+            if (currentView === 'pet') {
+                const list = document.getElementById('petViewList');
+                if (!list) return;
 
-            items.sort((a, b) => {
-                if (currentSort === 'due') {
-                    const dueA = Number(a.dataset.nextDueTs) || 9999999999;
-                    const dueB = Number(b.dataset.nextDueTs) || 9999999999;
-                    return dueA - dueB;
-                } else {
-                    const tsA = Number(a.dataset.latestTs) || 0;
-                    const tsB = Number(b.dataset.latestTs) || 0;
-                    return tsB - tsA;
+                const items = Array.from(
+                    list.querySelectorAll('.adoption-item')
+                );
+
+                items.sort((a, b) => {
+                    if (currentSort === 'due') {
+                        const dueA = Number(a.dataset.nextDueTs);
+                        const dueB = Number(b.dataset.nextDueTs);
+
+                        // Items without a due date go to the bottom
+                        const safeDueA = dueA > 0 ? dueA : Infinity;
+                        const safeDueB = dueB > 0 ? dueB : Infinity;
+
+                        return safeDueA - safeDueB;
+                    }
+
+                    // NEWEST SUBMISSION FIRST
+                    const latestA = Number(a.dataset.latestTs);
+                    const latestB = Number(b.dataset.latestTs);
+
+                    // Items without a submission go to the bottom
+                    const safeLatestA = latestA > 0 ? latestA : 0;
+                    const safeLatestB = latestB > 0 ? latestB : 0;
+
+                    return safeLatestB - safeLatestA;
+                });
+
+                items.forEach(item => list.appendChild(item));
+
+                // Keep empty state at the bottom
+                if (emptyState) {
+                    list.appendChild(emptyState);
                 }
-            });
+            }
 
-            items.forEach(item => list.appendChild(item));
+            // Adopter View
+            else {
+                const container = document.getElementById('adopterViewContainer');
+                if (!container) return;
+
+                const cards = Array.from(
+                    container.querySelectorAll('.adopter-group-card')
+                );
+
+                cards.sort((a, b) => {
+                    if (currentSort === 'due') {
+                        const dueA = Number(a.dataset.nextDueTs);
+                        const dueB = Number(b.dataset.nextDueTs);
+
+                        const safeDueA = dueA > 0 ? dueA : Infinity;
+                        const safeDueB = dueB > 0 ? dueB : Infinity;
+
+                        return safeDueA - safeDueB;
+                    }
+
+                    // NEWEST SUBMISSION FIRST
+                    const latestA = Number(a.dataset.latestTs);
+                    const latestB = Number(b.dataset.latestTs);
+
+                    const safeLatestA = latestA > 0 ? latestA : 0;
+                    const safeLatestB = latestB > 0 ? latestB : 0;
+
+                    return safeLatestB - safeLatestA;
+                });
+
+                cards.forEach(card => container.appendChild(card));
+            }
+        }
+
+
+        // Apply Search and Filters
+        function applyFilters() {
+            let visibleCount = 0;
+
+            if (currentView === 'pet') {
+
+                const items = document.querySelectorAll(
+                    '#petViewList .adoption-item'
+                );
+
+                items.forEach(item => {
+                    const status = item.dataset.status || '';
+                    const text = item.dataset.search || '';
+
+                    const matchesStatus =
+                        currentFilter === 'all' ||
+                        status === currentFilter;
+
+                    const matchesSearch =
+                        !searchQuery ||
+                        text.includes(searchQuery);
+
+                    if (matchesStatus && matchesSearch) {
+                        item.classList.remove('hidden');
+                        visibleCount++;
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                });
+
+            } else {
+
+                const cards = document.querySelectorAll(
+                    '#adopterViewContainer .adopter-group-card'
+                );
+
+                cards.forEach(card => {
+                    const name = card.dataset.adopterName || '';
+                    const email = card.dataset.adopterEmail || '';
+
+                    const matchesSearch =
+                        !searchQuery ||
+                        name.includes(searchQuery) ||
+                        email.includes(searchQuery);
+
+                    if (matchesSearch) {
+                        card.classList.remove('hidden');
+                        visibleCount++;
+                    } else {
+                        card.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Empty state
+            if (currentView === 'pet') {
+                if (visibleCount === 0) {
+                    emptyState?.classList.remove('hidden');
+                    emptyState?.classList.add('flex');
+                } else {
+                    emptyState?.classList.add('hidden');
+                    emptyState?.classList.remove('flex');
+                }
+            }
         }
 
         // Apply Search and Filters
@@ -1050,10 +1282,39 @@
                 chevron?.classList.add('rotate-180');
             }
         }
+        // function toggleAdopterDrawer(adoptionId) {
+        //     const drawer = document.getElementById(`adopter-drawer-${adoptionId}`);
+        //     const chevron = document.getElementById(`adopter-chevron-${adoptionId}`);
 
-        // =========================================================
-        // PRESERVED MODAL LOGIC (UNCHANGED)
-        // =========================================================
+        //     if (!drawer) return;
+
+        //     const isExpanded = !drawer.classList.contains('hidden');
+
+        //     if (isExpanded) {
+        //         drawer.classList.add('hidden');
+        //         chevron?.classList.remove('rotate-180');
+        //     } else {
+        //         drawer.classList.remove('hidden');
+        //         chevron?.classList.add('rotate-180');
+        //     }
+        // }
+
+        function toggleMonitoringDrawer(drawerId, chevronId) {
+            const drawer = document.getElementById(drawerId);
+            const chevron = document.getElementById(chevronId);
+
+            if (!drawer) return;
+
+            const isExpanded = !drawer.classList.contains('hidden');
+
+            if (isExpanded) {
+                drawer.classList.add('hidden');
+                chevron?.classList.remove('rotate-180');
+            } else {
+                drawer.classList.remove('hidden');
+                chevron?.classList.add('rotate-180');
+            }
+        }
 
         function openMonitoringReminderModal(button) {
             document.getElementById('monitoringReminderSubheading').textContent = button.dataset.summary || '';
@@ -1174,3 +1435,4 @@
         });
     </script>
 @endpush
+

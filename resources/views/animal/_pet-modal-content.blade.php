@@ -41,12 +41,9 @@
         <p class="text-sm font-medium text-[#777] mt-0.5">Pet Profile</p>
     </div>
     <div class="flex items-center gap-2 shrink-0">
-        <span class="badge badge-{{ $pet->adoption_status_class }} text-xs font-semibold px-3 py-1">
+        <span class="badge badge-{{ $pet->adoption_status_class }}">
             {{ $pet->status }}
         </span>
-        <button type="button" onclick="closePetModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer" aria-label="Close dialog">
-            <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
     </div>
 </div>
 

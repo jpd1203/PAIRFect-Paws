@@ -85,7 +85,7 @@
             <button type="button" class="btn btn-secondary" onclick="closeModal('applicationReviewModal')">Close</button>
             <button type="button" class="btn btn-danger" id="rRejectBtn">Reject</button>
             <button type="button" class="btn btn-blue" id="rScheduleBtn">Schedule Interview</button>
-            <button type="button" class="btn btn-sucess" id="rApproveBtn">Approve</button>
+            <button type="button" class="btn btn-success" id="rApproveBtn">Approve</button>
             <button type="button" class="btn btn-yellow" id="rNoShowBtn">Mark No Show</button>
             <button type="button" class="btn btn-secondary" id="rWithdrawBtn">Mark Withdrawn</button>
             <button type="button" class="btn btn-primary" id="rOverrideBtn">Administrative Override</button>

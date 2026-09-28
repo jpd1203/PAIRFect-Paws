@@ -140,7 +140,7 @@
             
         </div>
         
-        <div class="button-group sticky bottom-0 pt-2">
+        <div class="button-group bottom-0 pt-2">
             <a href="{{ route('admin.assessments.record') }}" class="btn btn-secondary">Back</a>
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i>Save Assessment</button>
         </div>

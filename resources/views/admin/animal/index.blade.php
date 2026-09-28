@@ -126,7 +126,7 @@
                                         <form action="{{ route('admin.animals.archive', $pet) }}" method="POST" class="inline-block"
                                               onsubmit="return confirm('Archive {{ $pet->name }}? This will hide them from the public catalog.')">
                                             @csrf
-                                            <button type="submit" class="btn btn-warning btn-sm"><i class="fa-solid fa-box-archive"></i> Archive</button>
+                                            <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-box-archive"></i> Archive</button>
                                         </form>
                                     @endif
                                 @endif

@@ -10,7 +10,7 @@
     </div>
 
     <!-- Queue Summary Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5 mt-5">
+    <!-- <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5 mt-5">
         <div class="stat-card">
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-box-archive stat-icon text-text-dark"></i>
@@ -42,7 +42,7 @@
             </div>
             <h1 class="text-status-success-text">{{ $stats['monitoring_active'] }}</h1>
         </div>
-    </div>
+    </div> -->
 
     <!-- Filters & Search Toolbar -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 my-5 flex-wrap">
@@ -122,8 +122,6 @@
                                 <i class="{{ $isDelivery ? 'fa-solid fa-truck' : 'fa-solid fa-house-user' }} text-[#9e9e9e]"></i>
                                 {{ $isDelivery ? (($record->courier ?: 'Courier') . ' · ' . ($record->tracking_number ?: 'In transit')) : 'Picked up at shelter' }}
                             </span>
-                        @else
-                            <span>{{ $record->adopter_distance ?: 'Local pickup/delivery' }}</span>
                         @endif
 
                         @if ($days !== null && !$record->adopter_outcome)

@@ -57,14 +57,20 @@
                     <input id="release-time" name="release_time" type="time" value="{{ $time }}" required
                            class="form-control">
                 </div>
-                <div class="form-group">
-                    <label for="release-staff" class="form-label">Released by</label>
-                    <input id="release-staff" name="staff_name" type="text" value="{{ $staff }}" placeholder="Staff full name" required
-                           class="form-control">
+                <div class="form-group"><label for="release-staff" class="form-label">Released by</label>
+                    <select id="release-staff" name="staff_id" class="form-select appearance-auto" required>
+                        <option value="">Select Staff</option>
+                        @foreach ($volunteers as $v)
+                            <option
+                                value="{{ $v->id }}"
+                                {{ $v->id == $currentStaffId ? 'selected' : '' }}>
+                                {{ $v->full_name }} ({{ $v->role->value }})
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
-            <!-- Courier Fields (Dynamic) -->
             <div id="courierFields" class="{{ $method === 'delivery' ? 'grid' : 'hidden' }} gap-4 rounded-xl border border-[#e2ddd7] bg-secondary-bg p-4 sm:grid-cols-2">
                 <div class="form-group">
                     <label for="courier-name" class="form-label">Courier / service</label>

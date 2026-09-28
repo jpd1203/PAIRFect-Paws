@@ -78,10 +78,10 @@
                         <i class="fa-solid fa-location-dot mt-1 text-[#9e9e9e] text-xs w-4"></i>
                         <span>{{ $record->adopter_address ?: 'No address provided' }}</span>
                     </li>
-                    <li class="flex items-start gap-2.5">
+                    <!-- <li class="flex items-start gap-2.5">
                         <i class="fa-solid fa-route mt-1 text-[#9e9e9e] text-xs w-4"></i>
                         <span>{{ $record->adopter_distance ?: 'Distance unspecified' }}</span>
-                    </li>
+                    </li> -->
                 </ul>
             </section>
 

@@ -6,7 +6,7 @@
 
 @section('content')
 
-    <div class="sticky-header">
+    <div class="nonsticky-header">
         <div class="heading-text">
             <h2>My Check-ins</h2>
             <p>Your post-adoption reporting schedule{{ $pet ? " for {$pet->name}" : '' }}.</p>

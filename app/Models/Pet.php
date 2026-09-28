@@ -191,7 +191,9 @@ class Pet extends Model
 
     public function getCardSubtitleAttribute(): string
     {
-        return ($this->breed ?? $this->species->value).' • '.$this->age_display;
+        return $this->species_display . ' · ' . ($this->breed ?? 'Mix') . ' · ' . 
+        ($this->age_years ? $this->age_years . ' yrs' : ($this->age_months ? $this->age_months . ' mos' : $this->age_group)) . ' · ' . 
+        ($this->sex === 'Female' ? 'F' : 'M');
     }
 }
 

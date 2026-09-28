@@ -87,7 +87,7 @@
                                             @endforeach
                                         </ul>
 
-                                        <p class="mt-3 text-xs text-gray-600 leading-relaxed">
+                                        <p class="mt-3 text-xs text-gray-700 leading-relaxed">
                                             You may submit one follow-up document. If the name or address entered on the application is incorrect, please contact shelter staff instead.
                                         </p>
 

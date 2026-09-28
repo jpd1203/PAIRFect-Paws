@@ -206,13 +206,13 @@
             </div>
         </div>
 
-        <div class="custom-modal-footer flex items-center justify-between">
-            <a id="camQueueLink" href="#" class="btn btn-secondary btn-sm">
-                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in Applications
-            </a>
-            <button type="button" class="btn btn-primary btn-sm" onclick="closeModal('compatAppModal')">
+        <div class="custom-modal-footer flex items-center">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('compatAppModal')">
                 Close
             </button>
+            <a id="camQueueLink" href="#" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in Applications
+            </a>
         </div>
     </div>
 </div>

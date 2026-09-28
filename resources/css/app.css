@@ -212,25 +212,22 @@
     @apply flex gap-4 mt-6 mb-6 flex-wrap;
   }
   .filter-section select {
-    @apply py-2.5 px-3.5 border border-gray-300 rounded-lg bg-white text-base cursor-pointer min-w-[130px] shadow-sm focus:border-maroon-600 focus:outline-none focus:ring-2 focus:ring-maroon-600/15;
+    @apply py-2.5 px-3.5 border border-[#888] rounded-lg bg-status-processing-bg text-base cursor-pointer min-w-[130px]; appearance: none;
   }
   .filter-section select.active-filter {
-    @apply border-maroon-600 bg-white;
+    @apply border-primary bg-primary-muted;
   }
 
   .pet-grid {
     @apply grid gap-5;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  }
-  .pet-grid.is-loading,
-  #petGridContainer.is-loading {
-    @apply opacity-50 pointer-events-none;
-  }
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+
   .pet-card {
     @apply bg-white border border-[#d6d6d6] rounded-xl p-3.5 transition hover:-translate-y-1 hover:shadow-card;
   }
   .pet-card img {
-    @apply w-full h-[165px] object-cover rounded-lg border border-[#999];
+    @apply w-full h-full object-cover rounded-lg border border-[#999];
   }
   .pet-card h3 {
     @apply mt-2.5 mb-0.5 text-[1.15rem] text-[#2f2327] font-semibold;
@@ -241,7 +238,6 @@
   .card-actions {
     @apply flex justify-end;
   }
-
   /* ---------- Empty state ---------- */
   .empty-state {
     @apply text-center py-16 px-5 text-[#888];
@@ -282,7 +278,7 @@
     @apply flex justify-between px-2 py-2 border-b border-[#8a8a8a] text-sm;
   }
   .profile-row span:first-child {
-    @apply font-medium text-[#333];
+    @apply font-medium text-gray-500;
   }
   .profile-row span:last-child {
     @apply text-text-dark text-right;

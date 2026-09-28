@@ -3,7 +3,7 @@
 @section('meta_description', 'Register for a PAIRfect Paws adopter account')
 
 @section('content')
-<div style="max-width:720px;margin:3rem auto">
+<div style="margin:3rem auto">
     <div class="card">
         <div style="text-align:center;margin-bottom:1.75rem">
             <div style="font-size:2.5rem;margin-bottom:0.5rem">🐾</div>
@@ -11,7 +11,7 @@
             <p style="color:var(--muted);font-size:0.9rem;margin-top:0.25rem">Start your adoption journey today</p>
         </div>
 
-        <form method="POST" action="{{ route('register') }}">
+        <form method="POST" action="{{ route('register.store') }}">
             @csrf
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
                 <div class="form-group">

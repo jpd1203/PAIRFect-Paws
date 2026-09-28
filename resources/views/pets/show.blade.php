@@ -100,60 +100,60 @@
             </h2>
             <div class="mt-4 grid gap-x-12 md:grid-cols-2">
                 <!-- Left Column -->
-                <dl class="divide-y divide-gray-200 text-sm">
-                    <div class="flex justify-between py-3">
+                <dl class="divide-y divide-gray-500 text-sm">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Species</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $pet->species_display }}</dd>
                     </div>
-                    <div class="flex justify-between py-3">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Breed</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $pet->breed ?? 'Mixed Breed' }}</dd>
                     </div>
-                    <div class="flex justify-between py-3">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Age</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $pet->age_years ? $pet->age_years . ' yrs' : $pet->age_group }}</dd>
                     </div>
-                    <div class="flex justify-between py-3">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Sex</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $pet->sex_display }}</dd>
                     </div>
-                    <div class="flex justify-between py-3">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Intake Date</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $pet->intake_date ? $pet->intake_date->format('m/d/Y') : 'Unknown' }}</dd>
                     </div>
-                    <div class="flex justify-between py-3">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Health Status</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $pet->health_status }}</dd>
                     </div>
-                    <div class="flex justify-between py-3">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Vaccination Records</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $pet->vaccination_record_status ?: 'Unknown' }}</dd>
                     </div>
                 </dl>
 
                 <!-- Right Column -->
-                <dl class="divide-y divide-gray-200 text-sm">
-                    <div class="flex justify-between py-3">
+                <dl class="divide-y divide-gray-500 text-sm">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Status</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $pet->status }}</dd>
                     </div>
-                    <div class="flex justify-between py-3">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Energy Level</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $energyVal }}</dd>
                     </div>
-                    <div class="flex justify-between py-3">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Independence Level</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $independenceVal }}</dd>
                     </div>
-                    <div class="flex justify-between py-3">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Trainability</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $trainabilityVal }}</dd>
                     </div>
-                    <div class="flex justify-between py-3">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Physical Size</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $pet->physical_size ?: 'Unknown' }}</dd>
                     </div>
-                    <div class="flex justify-between py-3">
+                    <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Temperament</dt>
                         <dd class="text-right font-medium text-gray-900">{{ $temperamentVal }}</dd>
                     </div>
@@ -201,9 +201,9 @@
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
                             <a href="{{ route('login') }}" class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100 transition no-underline">
-                                Log In
+                                Login
                             </a>
-                            <a href="{{ route('register') }}" class="rounded-md bg-maroon-600 hover:bg-maroon-700 px-5 py-2 text-sm font-semibold text-white transition shadow-sm no-underline">
+                            <a href="{{ route('login', ['tab' => 'register']) }}" class="rounded-md bg-maroon-600 hover:bg-maroon-700 px-5 py-2 text-sm font-semibold text-white transition shadow-sm no-underline">
                                 Register
                             </a>
                         </div>

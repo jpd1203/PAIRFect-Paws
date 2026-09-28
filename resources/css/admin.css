@@ -121,7 +121,7 @@
   .btn-danger {
     @apply bg-status-danger-bg text-status-danger-text border border-status-danger-text hover:bg-primary hover:text-white;
   }
-  .btn-sucess {
+  .btn-success {
     @apply bg-status-success-bg text-status-success-text border border-status-success-text hover:bg-status-success-text hover:text-white;
   }
   .btn-blue {
@@ -139,7 +139,7 @@
     @apply bg-white border border-[#e2ddd7] rounded-card overflow-hidden shadow-card w-full min-w-0;
   }
   .records-container .table-responsive {
-    @apply max-h-[520px] overflow-y-auto overflow-x-auto w-full min-w-0;
+    @apply overflow-y-auto overflow-x-auto w-full min-w-0;
     -webkit-overflow-scrolling: touch;
   }
   .records-container-full .table-responsive {
@@ -406,7 +406,7 @@
   }
   .custom-modal-footer,
   .custom-modal-footer-1 {
-    @apply pr-5 pb-5 flex justify-end gap-2.5 shrink-0 max-[991px]:flex-wrap;
+    @apply px-5 pb-5 flex justify-end gap-2.5 shrink-0 max-[991px]:flex-wrap;
   }
   .custom-modal-footer .btn,
   .custom-modal-footer-1 .btn {
@@ -542,7 +542,7 @@
 
   /* ---------- Adopter profiles ---------- */
   .profiles-container {
-    @apply flex flex-col gap-5 p-1 max-h-[520px] overflow-y-auto;
+    @apply flex flex-col gap-5 p-1 overflow-y-auto;
   }
   .profile-card {
     @apply bg-white border border-[#ddd] rounded-card p-[18px_22px] shadow-card transition hover:shadow-lg;
@@ -656,7 +656,7 @@
   }
 
   .assessment-scroll {
-    @apply max-h-[60vh] overflow-y-auto overflow-x-hidden pr-2;
+    @apply overflow-y-auto overflow-x-hidden pr-2;
   }
 
   .assessment-body {
@@ -802,7 +802,7 @@
   }
 
   .compat-card-footer {
-    @apply px-6 pb-4;
+    @apply px-6 pb-4 flex text-center;
   }
 
   .btn-link {
@@ -852,38 +852,6 @@
   .score-num {
     @apply font-extrabold text-[1.3rem] leading-none whitespace-nowrap;
   }
-
-  /* .pet-card-compat {
-    @apply border border-[#e1ded7] rounded-xl p-4 mb-4 flex gap-4 bg-white transition hover:shadow-card last:mb-0 max-[576px]:flex-col;
-  }
-  .pet-photo-compat {
-    @apply w-[110px] h-[110px] object-cover rounded-lg shrink-0 bg-neutral-light max-[576px]:w-full max-[576px]:h-[150px];
-  }
-  .compat-rows {
-    @apply mt-2.5;
-  }
-  .compat-row-grid {
-    @apply grid items-center gap-2 mb-1.5;
-    grid-template-columns: minmax(90px, 130px) 1fr 32px;
-  }
-  .compat-label {
-    @apply text-[.74rem] text-[#777] whitespace-nowrap overflow-hidden text-ellipsis;
-  }
-  .compat-bar-bg {
-    @apply h-1.5 rounded-full bg-[#eee] overflow-hidden;
-  }
-  .compat-bar-fill-anim {
-    @apply h-full rounded-full transition-all duration-300;
-  }
-  .compat-pct {
-    @apply text-[.72rem] text-[#777] text-right whitespace-nowrap;
-  }
-  .score-num {
-    @apply font-extrabold text-[1.3rem] leading-none whitespace-nowrap;
-  }
-  .score-tag {
-    @apply text-[.72rem] text-[#777] whitespace-nowrap;
-  } */
 
   /* =========================================================
      MANAGE FUNDS
@@ -980,6 +948,24 @@
       max-height: none;
     }
   }
+}
+
+@media (max-width: 640px) {
+    .compat-card-footer {
+        justify-content: center;
+        gap: 0.4rem;
+        margin-top: 1rem;
+    }
+
+    .compat-card-footer .btn {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.6rem;
+        min-height: 32px;
+    }
+
+    .compat-card-footer .btn i {
+        font-size: 0.65rem;
+    }
 }
 
 /* =========================================================
@@ -1082,12 +1068,13 @@
 .text-upcoming-fg { color: #8A8178; }
 .bg-upcoming-solid { background-color: #6E655D; }
 
+
 @media (min-width: 1024px) {
   .monitoring-row-grid {
     display: grid !important;
-    grid-template-columns: minmax(0, 1.4fr) 140px minmax(0, 1.1fr) minmax(0, 1fr) 96px 140px 28px;
+    grid-template-columns: minmax(0, 1.4fr) 140px minmax(0, 1.1fr) minmax(0, 1fr) 200px 110px 100px 28px;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
   }
 }
 

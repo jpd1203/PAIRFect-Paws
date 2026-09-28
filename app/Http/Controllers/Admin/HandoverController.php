@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Handover;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -60,8 +61,16 @@ class HandoverController extends Controller
     {
         $handover->load(['pet', 'application', 'user', 'notifications']);
 
+        $volunteers = User::whereIn('role', ['Administrator', 'Volunteer'])
+            ->where('is_active', true)
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get();
+
         return view('admin.handover.show', [
             'record' => $handover,
+            'volunteers' => $volunteers,
+            'currentStaffId' => Auth::id(),
         ]);
     }
 
@@ -71,7 +80,7 @@ class HandoverController extends Controller
             'release_method' => 'required|in:pickup,delivery',
             'release_date' => 'required|date',
             'release_time' => 'required|string|max:20',
-            'staff_name' => 'required|string|max:100',
+            'staff_id' => 'required|exists:users,id',
             'courier' => 'nullable|required_if:release_method,delivery|string|max:100',
             'tracking_number' => 'nullable|required_if:release_method,delivery|string|max:100',
             'proof' => 'nullable|image|max:5120',
@@ -81,7 +90,7 @@ class HandoverController extends Controller
             'release_method' => $validated['release_method'],
             'release_date' => $validated['release_date'],
             'release_time' => $validated['release_time'],
-            'staff_name' => $validated['staff_name'],
+            'staff_name' => $staffMember->full_name,
             'courier' => $validated['release_method'] === 'delivery' ? ($validated['courier'] ?? null) : null,
             'tracking_number' => $validated['release_method'] === 'delivery' ? ($validated['tracking_number'] ?? null) : null,
             'released_at' => now(),
