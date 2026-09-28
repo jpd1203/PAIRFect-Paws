@@ -16,13 +16,30 @@ class AuthController extends Controller
 
     // ─── Login ───────────────────────────────────────────────────────────────
 
-    public function showLogin()
+    public function showLogin(Request $request)
     {
+        $redirectTo = $request->query('redirect');
+        if (! $this->isValidRedirect($redirectTo)) {
+            $redirectTo = session('url.intended');
+        }
+
         if (Auth::check()) {
+            if ($redirectTo && $this->isValidRedirect($redirectTo)) {
+                return redirect()->to($redirectTo);
+            }
             return $this->redirectByRole(Auth::user());
         }
 
-        return view('auth.login');
+        if ($redirectTo && $this->isValidRedirect($redirectTo)) {
+            session(['url.intended' => $redirectTo]);
+        }
+
+        $intendedPet = null;
+        if ($redirectTo && preg_match('#/apply/(\d+)#', $redirectTo, $matches)) {
+            $intendedPet = \App\Models\Pet::find($matches[1]);
+        }
+
+        return view('auth.login', compact('intendedPet', 'redirectTo'));
     }
 
     public function login(Request $request)
@@ -60,14 +77,26 @@ class AuthController extends Controller
         \Illuminate\Support\Facades\RateLimiter::clear($throttleKey);
         $request->session()->regenerate();
 
+        $redirectTo = $request->input('redirect');
+        if (! $this->isValidRedirect($redirectTo)) {
+            $redirectTo = session()->pull('url.intended');
+        }
+
+        if ($redirectTo && $this->isValidRedirect($redirectTo)) {
+            if (Auth::user()->role !== Role::Adopter) {
+                return redirect()->route('admin.dashboard');
+            }
+            return redirect()->to($redirectTo);
+        }
+
         return redirect()->intended($this->routeForRole(Auth::user()));
     }
 
     // ─── Register ─────────────────────────────────────────────────────────────
 
-    public function showRegister()
+    public function showRegister(Request $request)
     {
-        return view('auth.register');
+        return redirect()->route('login', array_merge(['tab' => 'register'], $request->query()));
     }
 
     public function register(Request $request)
@@ -80,6 +109,11 @@ class AuthController extends Controller
             ...PhilippineLocationService::validationRules(),
         ]);
         $address = $this->locations->resolveAddress($validated);
+
+        $redirectTo = $request->input('redirect');
+        if (! $this->isValidRedirect($redirectTo)) {
+            $redirectTo = session()->pull('url.intended');
+        }
 
         $user = User::create([
             'first_name' => $validated['first_name'],
@@ -95,6 +129,20 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         event(new Registered($user));
+
+        if (app()->environment('local')) {
+            $user->markEmailAsVerified();
+
+            if ($redirectTo && $this->isValidRedirect($redirectTo)) {
+                return redirect()->to($redirectTo);
+            }
+
+            return redirect()->to($this->routeForRole($user));
+        }
+
+        if ($redirectTo && $this->isValidRedirect($redirectTo)) {
+            session(['url.intended' => $redirectTo]);
+        }
 
         return redirect()->route('verification.notice');
     }
@@ -130,6 +178,22 @@ class AuthController extends Controller
             Role::Administrator, Role::Volunteer => route('admin.dashboard'),
             Role::Adopter => route('animal.index'),
         };
+    }
+
+    private function isValidRedirect(?string $url): bool
+    {
+        if (empty($url)) {
+            return false;
+        }
+
+        if (str_starts_with($url, '/') && ! str_starts_with($url, '//') && ! str_starts_with($url, '/\\')) {
+            return true;
+        }
+
+        $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+        $targetHost = parse_url($url, PHP_URL_HOST);
+
+        return $targetHost !== null && in_array($targetHost, array_filter([$appHost, '127.0.0.1', 'localhost']), true);
     }
 }
 

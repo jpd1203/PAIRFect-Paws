@@ -160,6 +160,36 @@
   .records-container table tbody tr:last-child td {
     @apply border-b-0;
   }
+  .records-container table tbody tr.highlighted-application-row td {
+    background-color: #F8F1E5;
+    animation: beigeHighlightFade 3.8s ease-out forwards;
+  }
+  .records-container table tbody tr.highlighted-application-row td:first-child {
+    border-left: 4px solid #B88E3E;
+    animation: borderHighlightFade 3.8s ease-out forwards, beigeHighlightFade 3.8s ease-out forwards;
+  }
+  @keyframes beigeHighlightFade {
+    0% {
+      background-color: #F8F1E5;
+    }
+    55% {
+      background-color: #F8F1E5;
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+  @keyframes borderHighlightFade {
+    0% {
+      border-left-color: #B88E3E;
+    }
+    55% {
+      border-left-color: #B88E3E;
+    }
+    100% {
+      border-left-color: transparent;
+    }
+  }
 
   /* ---------- Dashboard ---------- */
   .stats-grid {
@@ -371,55 +401,63 @@
     border-color: #B08968;
     color: #4A2E1D;
   }
+  .badge-beige-highlight {
+    background-color: #EFE4D2 !important;
+    border-color: #DFCBB5 !important;
+    color: #694E21 !important;
+  }
 
   /* ---------- Modals ---------- */
   .custom-modal-backdrop {
-    @apply hidden fixed inset-0 bg-[rgba(30,20,15,.5)] z-[1200] items-center justify-center p-4 overflow-y-auto;
+    @apply hidden fixed inset-0 bg-[rgba(30,20,15,.6)] backdrop-blur-sm z-[1200] items-center justify-center p-2 sm:p-4 overflow-y-auto;
+    -webkit-overflow-scrolling: touch;
   }
   .custom-modal-backdrop.active {
     @apply flex;
   }
   .custom-modal {
-    @apply bg-white w-full max-w-[580px] rounded-[18px] overflow-hidden shadow-modal max-h-[92vh] flex flex-col;
+    @apply bg-white w-full max-w-[580px] rounded-2xl overflow-hidden shadow-modal max-h-[94vh] sm:max-h-[90vh] flex flex-col my-auto;
   }
   .custom-modal-wide {
-    @apply max-w-[720px];
+    @apply max-w-[740px];
   }
   .adoption-history-modal {
     @apply max-w-[860px];
   }
   .custom-modal-header {
-    @apply pb-0 p-[1.2rem_1.5rem_1rem] shrink-0;
+    @apply p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white sticky top-0 z-10;
   }
   .custom-modal-header h2,
   .custom-modal-header h3 {
-    @apply font-primary font-bold m-0 text-[1.15rem];
+    @apply font-primary font-bold m-0 text-base sm:text-xl text-gray-900;
   }
-  .custom-modal-header h3 {
-    @apply text-[1.3rem];
+  .custom-modal-header small,
+  .custom-modal-header p {
+    @apply text-gray-500 text-xs sm:text-sm block mt-0.5;
   }
-  .custom-modal-header small {
-    @apply text-[#777] text-[.82rem] block mt-1;
+  .modal-close-btn {
+    @apply w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer border-0 bg-transparent text-lg shrink-0 -mr-1;
   }
   .custom-modal-body {
-    @apply p-[1.2rem_1.5rem_1.5rem] overflow-y-auto flex-1;
+    @apply p-3.5 sm:p-6 overflow-y-auto flex-1;
+    -webkit-overflow-scrolling: touch;
   }
   .custom-modal-footer,
   .custom-modal-footer-1 {
-    @apply px-5 pb-5 flex justify-end gap-2.5 shrink-0 max-[991px]:flex-wrap;
+    @apply p-3.5 sm:p-5 border-t border-gray-100 flex justify-end gap-2.5 shrink-0 bg-gray-50/70 max-[640px]:flex-col-reverse;
   }
   .custom-modal-footer .btn,
   .custom-modal-footer-1 .btn {
-    @apply min-h-[40px] max-[991px]:flex-1 max-[991px]:min-w-[100px];
+    @apply min-h-[42px] text-sm max-[640px]:w-full;
   }
   .custom-modal > form {
     @apply flex flex-col flex-1 min-h-0;
   }
   .form-group {
-    @apply flex flex-col flex-1 min-h-0;
+    @apply flex flex-col min-w-0;
   }
   .form-label {
-    @apply font-semibold mb-1.5 text-[.88rem] text-text-dark block;
+    @apply font-semibold mb-1 text-xs sm:text-sm text-text-dark block;
   }
   .form-select {
     appearance: none;
@@ -427,15 +465,31 @@
   }
   .form-control,
   .form-select {
-    @apply w-full border border-[#ccc] rounded-lg py-2.5 px-3 text-[.9rem] transition-colors bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none;
+    @apply w-full border border-gray-300 rounded-xl py-2 px-3 sm:py-2.5 text-sm transition-colors bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none min-h-[42px];
   }
 
- .select-wrapper {
+  /* Interactive modal tabs */
+  .modal-tab-pill {
+    @apply flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer border-0 whitespace-nowrap;
+  }
+  .modal-tab-pill.active {
+    @apply bg-maroon-600 text-white shadow-sm;
+  }
+  .modal-tab-pill:not(.active) {
+    @apply bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900;
+  }
+
+  /* Photo upload dropzone */
+  .photo-upload-zone {
+    @apply border-2 border-dashed border-gray-300 hover:border-maroon-500 rounded-2xl p-4 text-center cursor-pointer transition bg-gray-50/50 hover:bg-[#FAF8F5] flex flex-col items-center justify-center gap-2;
+  }
+
+  .select-wrapper {
     @apply relative;
   }
 
   .select-arrow {
-      @apply pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#777];
+    @apply pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-gray-400;
   }
   .remarks-textarea {
     @apply resize-y min-h-[80px];
@@ -1095,5 +1149,83 @@
 .cursor-grabbing {
   cursor: grabbing !important;
   user-select: none;
+}
+
+/* =========================================================
+   PET ASSESSMENT RATING SELECTOR & BADGES
+   ========================================================= */
+
+.rating-radiogroup {
+  background-color: #F5EFEB !important;
+}
+
+.rating-pill {
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+/* Active / Checked State - Solid Red */
+.rating-pill.is-active,
+.rating-pill:has(input:checked) {
+  background-color: #A61D24 !important;
+  color: #FFFFFF !important;
+  border-color: #A61D24 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+.rating-pill.is-active span,
+.rating-pill:has(input:checked) span {
+  color: #FFFFFF !important;
+}
+
+.rating-pill.is-active .pill-label,
+.rating-pill:has(input:checked) .pill-label {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Unselected Hover - Soft Red Highlight */
+.rating-pill:not(.is-active):not(:has(input:checked)):hover {
+  background-color: #FDF2F2 !important;
+  color: #A61D24 !important;
+}
+
+.rating-pill:not(.is-active):not(:has(input:checked)):hover span {
+  color: #A61D24 !important;
+}
+
+/* Question Number Badge - Solid Red when Answered */
+.q-badge.is-answered,
+.question-item:has(input:checked) .q-badge {
+  background-color: #A61D24 !important;
+  color: #FFFFFF !important;
+  border-color: #A61D24 !important;
+  box-shadow: 0 1px 2px rgba(166, 29, 36, 0.25) !important;
+}
+
+.question-item:has(input:checked) .q-badge-num {
+  display: none !important;
+}
+
+.question-item:has(input:checked) .q-badge-check {
+  display: block !important;
+}
+
+/* Save Assessment Button */
+.btn-assessment-save {
+  background-color: #A61D24 !important;
+  color: #FFFFFF !important;
+  border-color: #A61D24 !important;
+  transition: all 0.15s ease-in-out;
+}
+.btn-assessment-save:hover {
+  background-color: #8D171E !important;
+  border-color: #8D171E !important;
+}
+
+/* Assessment Record Filter Bar - Active All is Red */
+.filter-all.active {
+  background-color: #A61D24 !important;
+  border-color: #A61D24 !important;
+  color: #FFFFFF !important;
 }
 

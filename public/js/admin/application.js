@@ -461,6 +461,20 @@ document.addEventListener('DOMContentLoaded', () => {
             renderApplicantMatches(search.value);
         }
     });
+
+    // Auto-scroll to highlighted application if arrived from compatibility
+    const highlightId = new URLSearchParams(window.location.search).get('highlight');
+    if (highlightId) {
+        const row = document.getElementById('application-row-' + highlightId);
+        if (row) {
+            setTimeout(() => {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 200);
+            setTimeout(() => {
+                row.classList.remove('highlighted-application-row');
+            }, 4000);
+        }
+    }
 });
 
 function openAddNoteModal(id) {

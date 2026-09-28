@@ -242,7 +242,7 @@
             'document_url' => route('admin.applications.document', $app),
             'document_status' => $app->document_verification_status?->value ?? 'Pending',
             'verification_url' => route('admin.applications.document-verification', $app),
-            'applications_url' => route('admin.applications.index', ['search' => $app->first_name]),
+            'applications_url' => route('admin.applications.index', ['highlight' => $app->id]) . '#application-row-' . $app->id,
         ];
     })->toJson(JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}
 </script>

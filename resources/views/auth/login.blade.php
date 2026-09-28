@@ -1,19 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-[#fbf9f5]" style="background-color: #fbf9f5; min-height: 100%;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Sign in & Register - PAIRfect Paws</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        html, body {
+            background-color: #fbf9f5 !important;
+            min-height: 100% !important;
+            height: auto !important;
+        }
+        main {
+            background-color: #fbf9f5 !important;
+        }
+    </style>
 </head>
-<body class="bg-[#fbf9f5] min-h-screen flex flex-col font-sans">
+<body class="bg-[#fbf9f5] min-h-screen flex flex-col font-sans" style="background-color: #fbf9f5;">
 
     {{-- NAVBAR --}}
     @include('components.navbar')
 
     {{-- MAIN CONTENT CONTAINER --}}
-    <main class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <main class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#fbf9f5]" style="background-color: #fbf9f5;">
 
         <div class="w-full max-w-[490px] bg-[#f5f1ea] border-2 border-[#d8d1c5] rounded-2xl p-5 sm:p-6 shadow-md relative">
 
@@ -22,6 +32,16 @@
                 <img src="{{ asset('images/rcpp-logo-2.png') }}" alt="RCPP Logo"
                      class="w-18 h-18 sm:w-20 sm:h-20 rounded-full shadow-md object-cover">
             </div>
+
+            @if (isset($intendedPet) && $intendedPet)
+                <div class="mb-4 flex items-center gap-3.5 rounded-xl border border-[#c9ae72] bg-[#fffaf0] p-3 text-sm text-[#4a3520] shadow-sm">
+                    <img src="{{ $intendedPet->image_url }}" alt="{{ $intendedPet->name }}" class="h-12 w-12 rounded-lg object-cover border border-[#c9ae72] shrink-0">
+                    <div class="min-w-0">
+                        <div class="font-bold text-gray-900 truncate">Adopting {{ $intendedPet->name }}</div>
+                        <p class="text-xs text-gray-600 mt-0.5 leading-snug">Sign in or register below to proceed directly to {{ $intendedPet->name }}'s adoption application.</p>
+                    </div>
+                </div>
+            @endif
 
             <!-- Tab Switcher Header -->
             <div class="flex border-b-2 border-[#c5bcb0] mb-5">
@@ -54,6 +74,7 @@
             <!-- 1. SIGN IN FORM -->
             <form id="signInForm" action="{{ route('login.store') }}" method="POST" class="space-y-4" novalidate>
                 @csrf
+                <input type="hidden" name="redirect" value="{{ $redirectTo ?? request('redirect', session('url.intended')) }}">
 
                 <div>
                     <label for="signin_email" class="block text-xs font-bold text-gray-700 mb-1">Email*</label>
@@ -81,6 +102,7 @@
             <!-- 2. REGISTER FORM -->
             <form id="registerForm" action="{{ route('register.store') }}" method="POST" class="space-y-3.5 hidden" novalidate>
                 @csrf
+                <input type="hidden" name="redirect" value="{{ $redirectTo ?? request('redirect', session('url.intended')) }}">
 
                 <!-- Name (First, Last) -->
                 <div>

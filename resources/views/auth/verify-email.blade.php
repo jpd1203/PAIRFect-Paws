@@ -1,16 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-[#fbf9f5]" style="background-color: #fbf9f5; min-height: 100%;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Verify Email - PAIRfect Paws</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        html, body {
+            background-color: #fbf9f5 !important;
+            min-height: 100% !important;
+            height: auto !important;
+        }
+        main {
+            background-color: #fbf9f5 !important;
+        }
+    </style>
 </head>
-<body class="min-h-screen bg-[#fbf9f5] font-sans">
+<body class="min-h-screen bg-[#fbf9f5] font-sans" style="background-color: #fbf9f5;">
     @include('components.navbar')
 
-    <main class="mx-auto flex min-h-[calc(100vh-76px)] max-w-2xl items-center px-4 py-10">
+    <main class="mx-auto flex min-h-[calc(100vh-76px)] max-w-2xl items-center px-4 py-10 bg-[#fbf9f5]" style="background-color: #fbf9f5;">
         <section class="w-full rounded-2xl border-2 border-[#d8d1c5] bg-[#f5f1ea] p-6 shadow-md sm:p-8">
             <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-maroon-100 text-2xl text-maroon-700">
                 <span aria-hidden="true">&#9993;</span>

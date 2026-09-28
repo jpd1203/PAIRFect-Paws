@@ -79,10 +79,24 @@
                 <!-- Adopt CTA Button -->
                 <div class="mt-auto flex flex-wrap items-center gap-3 pt-6">
                     @if ($pet->availability_status->value === 'Available')
-                        <button type="button" onclick="document.getElementById('applySection').scrollIntoView({behavior: 'smooth'})"
-                                class="rounded-md border border-[#2f7d63] bg-[#ddf3ea] px-6 py-2.5 text-sm font-bold text-[#1f6b52] transition-colors duration-150 hover:bg-[#cbebdd] shadow-sm cursor-pointer">
-                            Adopt Me!
-                        </button>
+                        @auth
+                            @if (auth()->user()->isAdopter())
+                                <a href="{{ route('application.apply', $pet) }}"
+                                   class="rounded-md border border-[#2f7d63] bg-[#ddf3ea] px-6 py-2.5 text-sm font-bold text-[#1f6b52] transition-colors duration-150 hover:bg-[#cbebdd] shadow-sm no-underline inline-block">
+                                    Adopt Me!
+                                </a>
+                            @else
+                                <button type="button" onclick="document.getElementById('applySection').scrollIntoView({behavior: 'smooth'})"
+                                        class="rounded-md border border-[#2f7d63] bg-[#ddf3ea] px-6 py-2.5 text-sm font-bold text-[#1f6b52] transition-colors duration-150 hover:bg-[#cbebdd] shadow-sm cursor-pointer">
+                                    Adopt Me!
+                                </button>
+                            @endif
+                        @else
+                            <button type="button" onclick="document.getElementById('applySection').scrollIntoView({behavior: 'smooth'})"
+                                    class="rounded-md border border-[#2f7d63] bg-[#ddf3ea] px-6 py-2.5 text-sm font-bold text-[#1f6b52] transition-colors duration-150 hover:bg-[#cbebdd] shadow-sm cursor-pointer">
+                                Adopt Me!
+                            </button>
+                        @endauth
                         <span class="text-xs sm:text-sm text-gray-500">Application takes about 5 minutes</span>
                     @else
                         <span class="rounded-md border border-gray-300 bg-gray-100 px-5 py-2 text-sm font-semibold text-gray-600">
@@ -200,10 +214,10 @@
                             <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Create a free account or log in to track your adoption application progress.</p>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
-                            <a href="{{ route('login') }}" class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100 transition no-underline">
+                            <a href="{{ route('login', ['redirect' => route('application.apply', $pet)]) }}" class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100 transition no-underline">
                                 Login
                             </a>
-                            <a href="{{ route('login', ['tab' => 'register']) }}" class="rounded-md bg-maroon-600 hover:bg-maroon-700 px-5 py-2 text-sm font-semibold text-white transition shadow-sm no-underline">
+                            <a href="{{ route('login', ['tab' => 'register', 'redirect' => route('application.apply', $pet)]) }}" class="rounded-md bg-maroon-600 hover:bg-maroon-700 px-5 py-2 text-sm font-semibold text-white transition shadow-sm no-underline">
                                 Register
                             </a>
                         </div>

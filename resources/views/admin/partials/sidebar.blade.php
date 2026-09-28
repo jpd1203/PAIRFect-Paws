@@ -1,9 +1,24 @@
 @php
     $isActive = fn (string ...$routeNames) => collect($routeNames)->contains(fn ($r) => request()->routeIs($r));
     $staff = auth()->user();
+    
+    // Flagged cases count (persistent, not dismissible)
     $unresolvedMonitoringFlags = \App\Models\PostAdoptionLog::query()
         ->where('is_flagged', true)
         ->whereNull('resolved_at')
+        ->count();
+
+    // Dismissible badges counts
+    $pendingApplicationsCount = \App\Models\AdoptionApplication::query()
+        ->where('status', 'Pending')
+        ->count();
+
+    $pendingHandoverCount = \App\Models\Handover::query()
+        ->whereNull('released_at')
+        ->count();
+
+    $pendingMonitoringCount = \App\Models\PostAdoptionLog::query()
+        ->whereNull('submitted_date')
         ->count();
 @endphp
 
@@ -33,8 +48,17 @@
                 <i class="fa-solid fa-pen-to-square fa-lg"></i> Assessment Record
             </a>
 
-            <a href="{{ route('admin.applications.index') }}" class="menu-item {{ $isActive('admin.applications.index') ? 'active' : '' }}">
+            <a href="{{ route('admin.applications.index') }}"
+               class="menu-item {{ $isActive('admin.applications.index') ? 'active' : '' }}"
+               data-sidebar-dismissible="applications"
+               data-badge-count="{{ $pendingApplicationsCount }}">
                 <i class="fa-solid fa-file fa-lg"></i> Applications
+                @if ($pendingApplicationsCount > 0)
+                    <span class="ml-auto min-w-5 rounded-full bg-status-danger-text px-1.5 py-0.5 text-center text-[.7rem] font-bold leading-none text-white sidebar-dismissible-badge"
+                          id="sidebar-badge-applications">
+                        {{ $pendingApplicationsCount > 99 ? '99+' : $pendingApplicationsCount }}
+                    </span>
+                @endif
             </a>
 
             <a href="{{ route('admin.compatibility.index') }}" class="menu-item {{ $isActive('admin.compatibility.index') ? 'active' : '' }}">
@@ -45,8 +69,17 @@
                 <i class="fa-solid fa-circle-user fa-lg"></i> Adoption Profile
             </a>
 
-            <a href="{{ route('admin.handover.index') }}" class="menu-item {{ $isActive('admin.handover.index', 'admin.handover.show') ? 'active' : '' }}">
+            <a href="{{ route('admin.handover.index') }}"
+               class="menu-item {{ $isActive('admin.handover.index', 'admin.handover.show') ? 'active' : '' }}"
+               data-sidebar-dismissible="handover"
+               data-badge-count="{{ $pendingHandoverCount }}">
                 <i class="fa-solid fa-truck-ramp-box fa-lg"></i> Handover &amp; Release
+                @if ($pendingHandoverCount > 0)
+                    <span class="ml-auto min-w-5 rounded-full bg-status-danger-text px-1.5 py-0.5 text-center text-[.7rem] font-bold leading-none text-white sidebar-dismissible-badge"
+                          id="sidebar-badge-handover">
+                        {{ $pendingHandoverCount > 99 ? '99+' : $pendingHandoverCount }}
+                    </span>
+                @endif
             </a>
 
         </div>
@@ -55,10 +88,20 @@
 
         <div class="menu-section">
 
-            <a href="{{ route('admin.monitoring.index') }}" class="menu-item {{ $isActive('admin.monitoring.index') ? 'active' : '' }}">
+            <a href="{{ route('admin.monitoring.index') }}"
+               class="menu-item {{ $isActive('admin.monitoring.index') ? 'active' : '' }}"
+               data-sidebar-dismissible="monitoring"
+               data-badge-count="{{ $pendingMonitoringCount }}">
                 <i class="fa-solid fa-magnifying-glass fa-lg"></i> Monitoring
+                @if ($pendingMonitoringCount > 0)
+                    <span class="ml-auto min-w-5 rounded-full bg-status-danger-text px-1.5 py-0.5 text-center text-[.7rem] font-bold leading-none text-white sidebar-dismissible-badge"
+                          id="sidebar-badge-monitoring">
+                        {{ $pendingMonitoringCount > 99 ? '99+' : $pendingMonitoringCount }}
+                    </span>
+                @endif
             </a>
 
+            {{-- Flagged Cases: Count stays permanently (not dismissible on click) --}}
             <a href="{{ route('admin.monitoring.flagged') }}" class="menu-item {{ $isActive('admin.monitoring.flagged') ? 'active' : '' }}">
                 <i class="fa-solid fa-triangle-exclamation fa-lg"></i> Flagged Cases
                 @if ($unresolvedMonitoringFlags > 0)
@@ -99,32 +142,62 @@
 
     </div>
 
-    @php $user = auth()->user(); @endphp
-    <div class="user-card">
-
-        <div class="avatar">
-            {{ $user?->avatar_initial ?? '?' }}
-        </div>
-
-        <div class="user-info">
-            <strong>{{ $user?->full_name ?? 'Staff' }}</strong>
-            <small>{{ $user?->email ?? '' }}</small>
-        </div>
-
-        @if (auth()->check())
-            <form action="{{ route('admin.logout') }}" method="POST" class="m-0">
-                @csrf
-                <button type="submit" class="logout-btn" title="Log out" aria-label="Log out">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
-            </form>
-        @else
-            <a href="{{ route('login') }}" class="logout-btn" title="Sign in" aria-label="Sign in">
-                <i class="fa-solid fa-right-to-bracket"></i>
-            </a>
-        @endif
-
-    </div>
+    @include('partials.profile-card')
 </div>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+{{-- Sidebar Badges Dismissible Logic --}}
+<script>
+(function() {
+    var dismissibleKeys = ['applications', 'handover', 'monitoring'];
+
+    // If currently on an active route, automatically mark it as dismissed
+    @if ($isActive('admin.applications.index'))
+        try { localStorage.setItem('sidebar_badge_dismissed_applications', 'true'); } catch (e) {}
+    @endif
+    @if ($isActive('admin.handover.index', 'admin.handover.show'))
+        try { localStorage.setItem('sidebar_badge_dismissed_handover', 'true'); } catch (e) {}
+    @endif
+    @if ($isActive('admin.monitoring.index'))
+        try { localStorage.setItem('sidebar_badge_dismissed_monitoring', 'true'); } catch (e) {}
+    @endif
+
+    // Hide badges immediately to prevent UI flicker
+    dismissibleKeys.forEach(function(key) {
+        try {
+            var isDismissed = localStorage.getItem('sidebar_badge_dismissed_' + key) === 'true';
+            if (isDismissed) {
+                var badge = document.getElementById('sidebar-badge-' + key);
+                if (badge) {
+                    badge.style.display = 'none';
+                }
+            }
+        } catch (e) {}
+    });
+
+    // Attach click listeners to dismiss badges immediately on click
+    function initDismissibleBadges() {
+        document.querySelectorAll('[data-sidebar-dismissible]').forEach(function(link) {
+            link.addEventListener('click', function() {
+                var key = this.getAttribute('data-sidebar-dismissible');
+                if (key) {
+                    try {
+                        localStorage.setItem('sidebar_badge_dismissed_' + key, 'true');
+                    } catch (e) {}
+                    var badge = document.getElementById('sidebar-badge-' + key);
+                    if (badge) {
+                        badge.style.display = 'none';
+                    }
+                }
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initDismissibleBadges);
+    } else {
+        initDismissibleBadges();
+    }
+})();
+</script>

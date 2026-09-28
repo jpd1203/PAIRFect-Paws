@@ -63,7 +63,7 @@
     </div>
 
     <div class="user-info min-w-0">
-        <strong class="block truncate">{{ $user?->full_name ?? 'Guest' }}</strong>
+        <strong class="block truncate">{{ ($user?->full_name ?: null) ?? ($user?->isStaff() ? 'Staff' : 'Guest') }}</strong>
         <small class="block truncate">{{ $user?->email ?? '' }}</small>
     </div>
 
@@ -87,7 +87,7 @@
                 <i class="fa-solid fa-gear"></i> Settings
             </a>
 
-            <form action="{{ route('logout') }}" method="POST" class="m-0">
+            <form action="{{ Route::has('admin.logout') && request()->is('admin*') ? route('admin.logout') : route('logout') }}" method="POST" class="m-0">
                 @csrf
                 <button type="submit" class="profile-dropdown-item profile-dropdown-item-danger logout-button font-semibold">
                     <i class="fa-solid fa-right-from-bracket"></i> Logout

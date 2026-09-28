@@ -47,6 +47,7 @@
         </div>
     @endif
 
+
     <div class="flex flex-wrap gap-3 items-center my-5">
         <input type="text" data-search-input data-search-scope="applicationTableBody" class="search-input flex-1 min-w-[220px]" placeholder="Search by applicant or pet name…">
         <button type="button" class="btn btn-primary" onclick="openTopScheduleModal()"><i class="fa-solid fa-calendar-check"></i>Schedule Interview</button>
@@ -90,12 +91,18 @@
                 </thead>
                 <tbody id="applicationTableBody">
                     @forelse ($applications as $app)
+                        @php
+                            $isHighlighted = (string) request('highlight') === (string) $app->id;
+                        @endphp
                         <tr data-search-row data-search-text="{{ $app->first_name }} {{ $app->last_name }} {{ $app->pet?->name }}"
-                            data-filter-row data-status="{{ $app->status_slug }}{{ $app->is_primary_candidate ? ' primarycandidate' : '' }}">
-                            <td class="font-semibold">
-                                {{ $app->first_name }} {{ $app->last_name }}
-                                @if($app->is_primary_candidate)<span class="badge badge-primarycandidate ml-1">Primary</span>@endif
-
+                            data-filter-row data-status="{{ $app->status_slug }}{{ $app->is_primary_candidate ? ' primarycandidate' : '' }}"
+                            id="application-row-{{ $app->id }}"
+                            class="{{ $isHighlighted ? 'highlighted-application-row' : '' }}">
+                            <td class="font-semibold text-left">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span>{{ $app->first_name }} {{ $app->last_name }}</span>
+                                    @if($app->is_primary_candidate)<span class="badge badge-primarycandidate ml-1">Primary</span>@endif
+                                </div>
                             </td>
                             <td>{{ $app->pet?->name }}</td>
                             <td>
@@ -116,7 +123,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="text-[#888] py-6">No applications yet.</td></tr>
+                        <tr><td colspan="6" class="text-[#888] py-6">No applications yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -173,7 +180,7 @@
                 'decide_action' => route('admin.applications.decide', $app),
                 'queue_outcome_action' => route('admin.applications.queue-outcome', $app),
                 'override_action' => route('admin.applications.override', $app),
-                'can_override' => auth()->user()->isAdmin(),
+                'can_override' => (bool) auth()->user()?->isAdmin(),
                 'history_url' => $app->user_id ? route('admin.adopter-profiles.history', $app->user_id) : null,
             ];
         })->toJson(JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}
@@ -183,4 +190,21 @@
 
 @push('scripts')
     <script src="{{ asset('js/admin/application.js') }}" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const highlightId = new URLSearchParams(window.location.search).get('highlight');
+            if (highlightId) {
+                const row = document.getElementById('application-row-' + highlightId);
+                if (row) {
+                    setTimeout(() => {
+                        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 200);
+
+                    setTimeout(() => {
+                        row.classList.remove('highlighted-application-row');
+                    }, 4000);
+                }
+            }
+        });
+    </script>
 @endpush

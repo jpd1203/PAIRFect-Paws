@@ -3,9 +3,10 @@
 @section('title', 'Assessment Record - PAIRfect Paws Admin')
 
 @section('content')
+
     <div class="heading-text">
         <h2>Assessment Record</h2>
-        <p>A pet may be assessed a maximum of 3 times.</p>
+        <p>Behavioral assessments for each pet. A pet may be assessed a maximum of 3 times.</p>
     </div>
 
     @if (session('success'))
@@ -24,50 +25,166 @@
         </script>
     @endif
 
-
-    <div class="my-5">
+    <div class="flex flex-wrap gap-3 items-center my-5">
         <input type="text" data-search-input data-search-scope="assessmentTableBody"
-               class="search-input w-full" placeholder="Search">
+               class="search-input flex-1 min-w-[220px]" placeholder="Search by name, species, breed…">
     </div>
 
-    <div class="records-container">
+    @php
+        $counts = [
+            'all' => $pets->count(),
+            'pending' => $pets->filter(fn($p) => $p->assessment_records_count == 0)->count(),
+            'inprogress' => $pets->filter(fn($p) => $p->assessment_records_count > 0 && $p->assessment_records_count < 3)->count(),
+            'complete' => $pets->filter(fn($p) => $p->assessment_records_count >= 3)->count(),
+        ];
+    @endphp
+
+    <div class="filter-bar" data-filter-bar data-filter-scope="assessmentTableBody">
+        <button type="button" class="filter-btn filter-all active" data-filter-btn="all">
+            All ({{ $counts['all'] }})
+        </button>
+        <button type="button" class="filter-btn badge-pending" data-filter-btn="pending">
+            Pending ({{ $counts['pending'] }})
+        </button>
+        <button type="button" class="filter-btn badge-scheduled" data-filter-btn="inprogress">
+            In progress ({{ $counts['inprogress'] }})
+        </button>
+        <button type="button" class="filter-btn badge-approved" data-filter-btn="complete">
+            Complete ({{ $counts['complete'] }})
+        </button>
+    </div>
+
+    <div class="records-container mt-4">
         <div class="table-responsive custom-scrollbar">
             <table class="w-full">
                 <thead>
                     <tr>
-                        <th>Pet</th><th>Assessed By</th><th>Date Last Assessed</th>
-                        <th>Status</th><th>Summary</th><th>Actions</th>
+                        <th class="px-5 py-3">Pet</th>
+                        <th class="px-5 py-3">Status</th>
+                        <th class="px-5 py-3">Last Assessment</th>
+                        <th class="px-5 py-3">Summary</th>
+                        <th class="px-5 py-3 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="assessmentTableBody">
                     @forelse ($pets as $pet)
-                        <tr data-search-row data-search-text="{{ $pet->name }} {{ $pet->species }}">
-                            <td class="font-semibold">{{ $pet->name }} <span class="text-[#999] font-normal">({{ $pet->species }})</span></td>
-                            <td>{{ $pet->last_assessed_by ?? '—' }}</td>
-                            <td>{{ $pet->last_assessed_at ? \App\Support\ManilaTime::format($pet->last_assessed_at, 'M j, Y') : '—' }}</td>
-                            <td>
-                                <span class="badge {{ $pet->assessment_status === 'complete' ? 'badge-completed' : 'badge-pending' }}">
-                                    {{ ucfirst($pet->assessment_status) }}
-                                </span>
-                                <div class="text-[#999] text-[.75rem] mt-1">{{ $pet->assessment_records_count }}/3</div>
+                        @php
+                            $petStatusSlug = match(true) {
+                                $pet->assessment_records_count >= 3 => 'complete',
+                                $pet->assessment_records_count > 0 => 'inprogress',
+                                default => 'pending',
+                            };
+                            $doneCount = min(3, (int) $pet->assessment_records_count);
+                        @endphp
+                        <tr data-search-row data-search-text="{{ $pet->name }} {{ $pet->species_display }} {{ $pet->breed }}"
+                            data-filter-row data-status="{{ $petStatusSlug }}"
+                            class="transition-colors hover:bg-neutral-light/50">
+                            
+                            <!-- 1. Pet Info with Icon/Avatar -->
+                            <td class="px-5 py-3.5">
+                                <div class="flex items-center gap-3">
+                                    @if ($pet->photo_path)
+                                        <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-gray-200 bg-gray-100">
+                                            <img src="{{ $pet->image_url }}" alt="{{ $pet->name }}" class="w-full h-full object-cover">
+                                        </div>
+                                    @else
+                                        <div class="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center bg-maroon-50 text-maroon-600 border border-maroon-100 text-sm">
+                                            <i class="fa-solid fa-{{ strtolower($pet->species?->value ?? $pet->species) === 'cat' ? 'cat' : 'dog' }}"></i>
+                                        </div>
+                                    @endif
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-gray-900 leading-snug">{{ $pet->name }}</p>
+                                        <p class="text-xs text-gray-500 capitalize truncate">
+                                            {{ $pet->species_display }} &middot; {{ $pet->breed ?? 'Mix' }} &middot; {{ $pet->age_display }}
+                                        </p>
+                                    </div>
+                                </div>
                             </td>
-                            <td>
-                                @if ($pet->assessment_status === 'complete')
-                                    <button class="btn btn-secondary btn-sm" onclick="openAssessmentSummary({{ $pet->id }})"><i class="fa-solid fa-clipboard-list"></i>Summary</button>
+
+                            <!-- 2. Status Badge with Dot + Segmented 3-Bar Indicator -->
+                            <td class="px-5 py-3.5">
+                                <div class="flex flex-col items-start gap-1.5">
+                                    @if ($petStatusSlug === 'complete')
+                                        <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                            Complete
+                                        </span>
+                                    @elseif ($petStatusSlug === 'inprogress')
+                                        <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                                            In progress
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span>
+                                            Pending
+                                        </span>
+                                    @endif
+
+                                    <!-- 3-Segment Progress Indicator Bar -->
+                                    <div class="flex items-center gap-2 mt-0.5" title="{{ $doneCount }} of 3 assessments completed">
+                                        <div class="flex items-center gap-1" role="img" aria-label="{{ $doneCount }} of 3 assessments completed">
+                                            @for ($i = 0; $i < 3; $i++)
+                                                <span class="h-1.5 w-5 rounded-full transition-colors {{ $i < $doneCount ? 'bg-maroon-600' : 'bg-gray-200' }}"></span>
+                                            @endfor
+                                        </div>
+                                        <span class="text-xs tabular-nums text-gray-500 font-medium">{{ $doneCount }}/3</span>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- 3. Last Assessment Details -->
+                            <td class="px-5 py-3.5">
+                                @if ($pet->last_assessed_at)
+                                    <div>
+                                        <p class="font-medium text-gray-900 text-sm">
+                                            {{ \App\Support\ManilaTime::format($pet->last_assessed_at, 'M j, Y') }}
+                                        </p>
+                                        <p class="text-xs text-gray-500 mt-0.5">
+                                            by {{ $pet->last_assessed_by ?? 'Staff' }}
+                                        </p>
+                                    </div>
                                 @else
-                                    <span class="text-[#bbb]">—</span>
+                                    <span class="text-gray-400 text-sm font-normal">Not yet assessed</span>
                                 @endif
                             </td>
-                            <td>
-                                @if ($pet->assessment_records_count < 3)
-                                    <a href="{{ route('admin.assessments.create', $pet) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-clipboard-check"></i>Assess</a>
+
+                            <!-- 4. Summary Button with Pop Up Modal -->
+                            <td class="px-5 py-3.5">
+                                @if ($pet->assessment_records_count > 0 || $pet->assessment_status === 'complete')
+                                    <button type="button" class="btn btn-sm whitespace-nowrap inline-flex items-center gap-1.5 border border-[#A61D24] text-[#A61D24] hover:bg-[#A61D24] hover:text-white transition-colors cursor-pointer" onclick="openAssessmentSummary({{ $pet->id }})">
+                                        <i class="fa-solid fa-clipboard-list"></i>
+                                        <span>Summary</span>
+                                    </button>
                                 @else
-                                    <span class="badge badge-completed">Complete</span>
+                                    <span class="text-gray-300 font-medium">—</span>
+                                @endif
+                            </td>
+
+                            <!-- 5. Actions Button -->
+                            <td class="px-5 py-3.5 text-right">
+                                @if ($pet->assessment_records_count >= 3)
+                                    <span class="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        <span>All done</span>
+                                    </span>
+                                @else
+                                    <a href="{{ route('admin.assessments.create', $pet) }}"
+                                       class="btn btn-primary btn-sm whitespace-nowrap inline-flex items-center gap-1.5">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                        <span>Assess</span>
+                                        <span class="font-normal text-white/80">#{{ $pet->assessment_records_count + 1 }}</span>
+                                    </a>
                                 @endif
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="text-[#888] py-6">No pets on record yet.</td></tr>
+                        <tr>
+                            <td colspan="5" class="text-center py-10 text-gray-500">
+                                <p class="font-medium text-gray-900">No pets on record yet.</p>
+                                <p class="text-xs text-gray-400 mt-1">Animals added to the shelter will appear here for assessment.</p>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
@@ -76,7 +193,7 @@
 
     <!-- Assessment Summary Modal -->
     <div class="custom-modal-backdrop" id="assessmentSummaryModal">
-        <div class="custom-modal" id="assessmentSummaryContent">
+        <div class="custom-modal custom-modal-wide" id="assessmentSummaryContent">
             <!-- filled dynamically via fetch() -->
         </div>
     </div>
@@ -88,13 +205,21 @@
         async function openAssessmentSummary(petId) {
             const content = document.getElementById('assessmentSummaryContent');
             try {
+                content.innerHTML = `
+                    <div class="p-8 text-center text-gray-500">
+                        <i class="fa-solid fa-spinner fa-spin text-2xl text-maroon-600 mb-2"></i>
+                        <p class="text-sm">Loading assessment summary…</p>
+                    </div>
+                `;
+                openModal('assessmentSummaryModal');
+
                 const res = await fetch(`/admin/animals/${petId}/assessment-summary`, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 });
                 if (!res.ok) throw new Error('Failed to load summary');
                 content.innerHTML = await res.text();
-                openModal('assessmentSummaryModal');
             } catch (err) {
+                closeModal('assessmentSummaryModal');
                 window.PAIRfectAdmin?.showToast('Could not load the assessment summary.', 'error');
             }
         }

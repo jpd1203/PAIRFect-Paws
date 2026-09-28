@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Settings - PAIRfect Paws')
+@section('title', auth()->check() && auth()->user()->isStaff() ? 'Settings - PAIRfect Paws Admin' : 'Settings - PAIRfect Paws')
 
 @section('content')
 

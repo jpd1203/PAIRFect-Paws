@@ -19,12 +19,16 @@
         <button class="topbar-toggle" id="sidebarToggle" aria-label="Open menu">
             <i class="fa-solid fa-bars"></i>
         </button>
-        <span class="topbar-title">PAIRfect Paws</span>
+        <span class="topbar-title">PAIRfect Paws{{ auth()->check() && auth()->user()->isStaff() ? ' Admin' : '' }}</span>
     </div>
 
     <div class="app-container">
 
-        @include('partials.sidebar')
+        @if (auth()->check() && auth()->user()->isStaff())
+            @include('admin.partials.sidebar')
+        @else
+            @include('partials.sidebar')
+        @endif
 
         <div class="main-content">
             @include('partials.time-travel-banner')

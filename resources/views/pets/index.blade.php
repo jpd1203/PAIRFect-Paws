@@ -78,8 +78,8 @@
                                 {{ $pet->species_display }} &middot; {{ $pet->breed ?? 'Mix' }} &middot; {{ $pet->age_years ? $pet->age_years . ' yrs' : ($pet->age_months ? $pet->age_months . ' mos' : $pet->age_group) }} middot; {{ $pet->sex === 'Female' ? 'F' : 'M' }}
                             </p>
 
-                            <div class="mt-auto flex justify-end pt-3"> <a href="{{ route('pets.show', $pet) }}" aria-label="Adopt Me: {{ $pet->name }}"
-                                class="btn btn-adoptMe">
+                            <div class="mt-auto flex justify-end pt-3">
+                                <a href="{{ route('pets.show', $pet) }}" aria-label="Adopt Me: {{ $pet->name }}" class="btn btn-adoptMe">
                                     Adopt Me!
                                 </a>
                             </div>

@@ -184,7 +184,7 @@
         @endif
 
         {{-- Filters & Controls Bar --}}
-        <div class="filter-bar" data-filter-bar data-filter-scope="monitoringTableBody">
+        <div class="filter-bar">
 
             <div class="flex flex-wrap items-center gap-2"
                 role="tablist"
@@ -620,9 +620,18 @@
                     $lastReportText = $group->latest_submitted
                         ? ('Last report ' . $group->latest_submitted->submitted_date->diffForHumans())
                         : 'No reports yet';
+                    $groupLatestTs = $group->latest_submitted?->submitted_date ? $group->latest_submitted->submitted_date->timestamp : 0;
+                    $groupNextDue = $group->adoptions->pluck('next_check_in')->filter()->sortBy('scheduled_date')->first();
+                    $groupNextDueTs = $groupNextDue?->scheduled_date ? $groupNextDue->scheduled_date->timestamp : 9999999999;
+                    $groupAllSearch = strtolower($uName . ' ' . $uEmail . ' ' . $group->adoptions->map(fn($a) => ($a->pet?->name ?? '') . ' ' . ($a->pet?->breed ?? ''))->implode(' '));
                 @endphp
 
-                <section class="adopter-group-card overflow-hidden rounded-xl border border-line bg-white shadow-sm" data-adopter-name="{{ strtolower($uName) }}" data-adopter-email="{{ strtolower($uEmail) }}">
+                <section class="adopter-group-card overflow-hidden rounded-xl border border-line bg-white shadow-sm"
+                    data-adopter-name="{{ strtolower($uName) }}"
+                    data-adopter-email="{{ strtolower($uEmail) }}"
+                    data-search="{{ $groupAllSearch }}"
+                    data-latest-ts="{{ $groupLatestTs }}"
+                    data-next-due-ts="{{ $groupNextDueTs }}">
                     {{-- Adopter Group Header --}}
                     <header class="flex flex-wrap items-center gap-3 border-b border-line bg-surface px-5 py-3">
                         <div class="flex h-9 w-9 items-center justify-center rounded-full bg-white text-xs font-bold text-ink ring-1 ring-line">
@@ -648,9 +657,14 @@
                                 $petBreed = $adoption->pet?->breed ?: ($adoption->pet?->species?->value ?: 'Pet');
                                 $latestSub = $adoption->latest_submitted;
                                 $nextCheck = $adoption->next_check_in;
+                                $petSearchText = strtolower("{$petName} {$petBreed} {$uName} {$uEmail}");
                             @endphp
 
-                            <li class="px-5 py-4 monitoring-row-grid flex flex-wrap items-center gap-x-4 gap-y-3 hover:bg-surface/30 transition-colors">
+                            <li class="adopter-pet-row"
+                                data-status="{{ $adoption->overall_status }}"
+                                data-search="{{ $petSearchText }}"
+                                id="adopter-pet-row-{{ $adoption->id }}">
+                                <div class="px-5 py-4 monitoring-row-grid flex flex-wrap items-center gap-x-4 gap-y-3 hover:bg-surface/30 transition-colors">
                                 <div class="flex min-w-0 flex-1 items-center gap-3">
                                     @if ($petPhoto && !str_contains($petPhoto, 'rcpp-logo'))
                                         <img src="{{ $petPhoto }}" alt="{{ $petName }}" class="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-line">
@@ -749,10 +763,8 @@
                                             id="adopter-chevron-{{ $adoption->id }}"
                                         ></i>
                                     </button>
-                                    
                                 </div>
-                                
-                            </li>
+                            </div>
 
                             {{-- Expanded Accordion History Drawer --}}
                             <div id="adopter-drawer-{{ $adoption->id }}" class="hidden overflow-hidden bg-surface/60 border-t border-line/60 px-5 py-4 lg:pl-16">
@@ -855,15 +867,25 @@
                                     </table>
                                 </div>
                             </div>
-                            
-                        @endforeach
-                    </ul>
-                </section>
-            @empty
-                <div class="py-12 text-center text-muted">No adopters found.</div>
-            @endforelse
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @empty
+            <div class="py-12 text-center text-muted">No adopters found.</div>
+        @endforelse
+
+        <div id="adopterEmptyState" class="hidden flex-col items-center justify-center px-6 py-16 text-center rounded-xl border border-line bg-white shadow-sm">
+            <i class="fa-solid fa-clipboard-question text-3xl text-muted mb-3"></i>
+            <p class="text-sm font-semibold text-ink">
+                No adoptions match your filters
+            </p>
+            <p class="mt-1 text-xs text-muted">
+                Try selecting a different status or clearing your search term.
+            </p>
         </div>
     </div>
+</div>
 
 
     {{-- Reminder Modal --}}
@@ -1007,16 +1029,6 @@
         let currentSort = 'latest';
         let searchQuery = '';
 
-        // Tab Pill Styling Configuration
-        const tabConfigs = {
-            all: { idle: 'bg-upcoming-bg text-ink', active: 'bg-ink text-white' },
-            completed: { idle: 'bg-completed-bg text-completed-fg', active: 'bg-completed-solid text-white' },
-            pending: { idle: 'bg-pending-bg text-pending-fg', active: 'bg-pending-solid text-white' },
-            overdue: { idle: 'bg-overdue-bg text-overdue-fg', active: 'bg-overdue-solid text-white' },
-            flagged: { idle: 'bg-flagged-bg text-flagged-fg', active: 'bg-flagged-solid text-white' },
-            upcoming: { idle: 'bg-upcoming-bg text-upcoming-fg', active: 'bg-gray-700 text-white' }
-        };
-
         // DOM Elements
         const filterTabs = document.querySelectorAll('#monitoringFilterTabs .filter-btn');
         const searchInput = document.getElementById('monitoringSearchInput');
@@ -1039,11 +1051,12 @@
         function updateTabStyles() {
             filterTabs.forEach(button => {
                 const filter = button.dataset.filterBtn;
-                const config = tabConfigs[filter] || tabConfigs.all;
                 if (filter === currentFilter) {
-                    button.className = `filter-pill active whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 ${config.active}`;
+                    button.classList.add('active');
+                    button.setAttribute('aria-selected', 'true');
                 } else {
-                    button.className = `filter-pill whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 ${config.idle} hover:brightness-95`;
+                    button.classList.remove('active');
+                    button.setAttribute('aria-selected', 'false');
                 }
             });
         }
@@ -1152,72 +1165,10 @@
                 });
 
                 cards.forEach(card => container.appendChild(card));
-            }
-        }
 
-
-        // Apply Search and Filters
-        function applyFilters() {
-            let visibleCount = 0;
-
-            if (currentView === 'pet') {
-
-                const items = document.querySelectorAll(
-                    '#petViewList .adoption-item'
-                );
-
-                items.forEach(item => {
-                    const status = item.dataset.status || '';
-                    const text = item.dataset.search || '';
-
-                    const matchesStatus =
-                        currentFilter === 'all' ||
-                        status === currentFilter;
-
-                    const matchesSearch =
-                        !searchQuery ||
-                        text.includes(searchQuery);
-
-                    if (matchesStatus && matchesSearch) {
-                        item.classList.remove('hidden');
-                        visibleCount++;
-                    } else {
-                        item.classList.add('hidden');
-                    }
-                });
-
-            } else {
-
-                const cards = document.querySelectorAll(
-                    '#adopterViewContainer .adopter-group-card'
-                );
-
-                cards.forEach(card => {
-                    const name = card.dataset.adopterName || '';
-                    const email = card.dataset.adopterEmail || '';
-
-                    const matchesSearch =
-                        !searchQuery ||
-                        name.includes(searchQuery) ||
-                        email.includes(searchQuery);
-
-                    if (matchesSearch) {
-                        card.classList.remove('hidden');
-                        visibleCount++;
-                    } else {
-                        card.classList.add('hidden');
-                    }
-                });
-            }
-
-            // Empty state
-            if (currentView === 'pet') {
-                if (visibleCount === 0) {
-                    emptyState?.classList.remove('hidden');
-                    emptyState?.classList.add('flex');
-                } else {
-                    emptyState?.classList.add('hidden');
-                    emptyState?.classList.remove('flex');
+                const adopterEmpty = document.getElementById('adopterEmptyState');
+                if (adopterEmpty) {
+                    container.appendChild(adopterEmpty);
                 }
             }
         }
@@ -1229,7 +1180,7 @@
             if (currentView === 'pet') {
                 const items = document.querySelectorAll('#petViewList .adoption-item');
                 items.forEach(item => {
-                    const status = item.dataset.status;
+                    const status = item.dataset.status || '';
                     const text = item.dataset.search || '';
 
                     const matchesStatus = (currentFilter === 'all') || (status === currentFilter);
@@ -1242,28 +1193,53 @@
                         item.classList.add('hidden');
                     }
                 });
+
+                if (visibleCount === 0) {
+                    emptyState?.classList.remove('hidden');
+                    emptyState?.classList.add('flex');
+                } else {
+                    emptyState?.classList.add('hidden');
+                    emptyState?.classList.remove('flex');
+                }
             } else {
                 const cards = document.querySelectorAll('#adopterViewContainer .adopter-group-card');
-                cards.forEach(card => {
-                    const name = card.dataset.adopterName || '';
-                    const email = card.dataset.adopterEmail || '';
-                    const matchesSearch = !searchQuery || name.includes(searchQuery) || email.includes(searchQuery);
+                const adopterEmpty = document.getElementById('adopterEmptyState');
 
-                    if (matchesSearch) {
+                cards.forEach(card => {
+                    const petRows = card.querySelectorAll('.adopter-pet-row');
+                    let matchingPetsInCard = 0;
+
+                    petRows.forEach(row => {
+                        const status = row.dataset.status || '';
+                        const text = row.dataset.search || '';
+
+                        const matchesStatus = (currentFilter === 'all') || (status === currentFilter);
+                        const matchesSearch = !searchQuery || text.includes(searchQuery);
+
+                        if (matchesStatus && matchesSearch) {
+                            row.classList.remove('hidden');
+                            matchingPetsInCard++;
+                        } else {
+                            row.classList.add('hidden');
+                        }
+                    });
+
+                    // Card is shown if at least one pet matches the status filter and search query
+                    if (matchingPetsInCard > 0) {
                         card.classList.remove('hidden');
                         visibleCount++;
                     } else {
                         card.classList.add('hidden');
                     }
                 });
-            }
 
-            if (visibleCount === 0) {
-                emptyState?.classList.remove('hidden');
-                emptyState?.classList.add('flex');
-            } else {
-                emptyState?.classList.add('hidden');
-                emptyState?.classList.remove('flex');
+                if (visibleCount === 0) {
+                    adopterEmpty?.classList.remove('hidden');
+                    adopterEmpty?.classList.add('flex');
+                } else {
+                    adopterEmpty?.classList.add('hidden');
+                    adopterEmpty?.classList.remove('flex');
+                }
             }
         }
 

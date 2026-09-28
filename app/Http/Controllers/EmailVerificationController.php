@@ -46,7 +46,7 @@ class EmailVerificationController extends Controller
                 ->with('success', $message);
         }
 
-        return $this->redirectByRole($user)
+        return redirect()->intended($this->routeForRole($user))
             ->with('success', 'Your email address has been verified.');
     }
 
