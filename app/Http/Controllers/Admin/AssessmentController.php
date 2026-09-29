@@ -122,7 +122,7 @@ class AssessmentController extends Controller
                         'tem3' => 'Hides or runs away when unfamiliar people visit the home',
                         'tem4' => 'Shows signs of fear when exposed to unfamiliar objects placed in the home',
                         'tem5' => 'Startles easily at sudden sounds or unexpected stimuli',
-                        'tem6' => 'Startles easily at sudden sounds or unexpected stimuli (Listed twice in manuscript)',
+                        'tem6' => 'Avoids new environments',
                     ],
                 ],
             ];

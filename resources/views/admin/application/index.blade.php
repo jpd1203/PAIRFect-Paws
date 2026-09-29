@@ -104,7 +104,42 @@
                                     @if($app->is_primary_candidate)<span class="badge badge-primarycandidate ml-1">Primary</span>@endif
                                 </div>
                             </td>
-                            <td>{{ $app->pet?->name }}</td>
+                            <td class="px-5 py-3.5">
+                            @if ($app->pet)
+                                <div class="flex items-center gap-4">
+
+                                    @if ($app->pet->photo_path)
+                                        <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-gray-200 bg-gray-100">
+                                            <img
+                                                src="{{ $app->pet->image_url }}"
+                                                alt="{{ $app->pet->name }}"
+                                                class="w-full h-full object-cover">
+                                        </div>
+                                    @else
+                                        <div class="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center bg-maroon-50 text-maroon-600 border border-maroon-100 text-sm">
+                                            <i class="fa-solid fa-{{ strtolower($app->pet->species?->value ?? $app->pet->species) === 'cat' ? 'cat' : 'dog' }}"></i>
+                                        </div>
+                                    @endif
+
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-left text-gray-900 leading-snug">
+                                            {{ $app->pet->name }}
+                                        </p>
+
+                                        <p class="text-xs text-gray-500 capitalize truncate">
+                                            {{ $app->pet->species_display }}
+                                            &middot;
+                                            {{ $app->pet->breed ?? 'Mix' }}
+                                            &middot;
+                                            {{ $app->pet->age_display }}
+                                        </p>
+                                    </div>
+
+                                </div>
+                            @else
+                                <span class="text-gray-400">No pet assigned</span>
+                            @endif
+                        </td>
                             <td>
                                 @if($app->queue_position)
                                     <span class="badge" style="background:#f3f4f6;color:#374151">#{{ $app->queue_position }}</span><br>

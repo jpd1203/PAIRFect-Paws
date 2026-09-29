@@ -55,12 +55,59 @@
         <article class="dashboard-box mb-5">
             <div class="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-[#eee8df] pb-4">
                 <div>
-                    <div class="flex flex-wrap items-center gap-2">
+                    <!-- <div class="flex flex-wrap items-center gap-2">
                         <h3 class="!mb-0">{{ $log->pet?->name ?: 'Unknown pet' }}</h3>
                         <span class="badge badge-flagged">Flagged</span>
                         <span class="badge badge-pending">{{ $log->milestone_display }}</span>
-                    </div>
-                    <p class="mt-1 text-sm text-[#666]">
+                    </div> -->
+                    <div class="flex items-center gap-4">
+                    @if ($log->pet)
+                        {{-- Pet Profile Image --}}
+                        @if ($log->pet->photo_path)
+                            <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-gray-200 bg-gray-100">
+                                <img
+                                    src="{{ $log->pet->image_url }}"
+                                    alt="{{ $log->pet->name }}"
+                                    class="w-full h-full object-cover">
+                            </div>
+                        @else
+                            <div class="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center bg-maroon-50 text-maroon-600 border border-maroon-100 text-sm">
+                                <i class="fa-solid fa-{{ strtolower($log->pet->species?->value ?? $log->pet->species) === 'cat' ? 'cat' : 'dog' }}"></i>
+                            </div>
+                        @endif
+
+                        {{-- Pet Information --}}
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-4">
+                                <h3 class="!mb-0 font-bold text-gray-900">
+                                    {{ $log->pet->name }}
+                                </h3>
+
+                                <span class="badge badge-flagged">Flagged</span>
+                                <span class="badge badge-pending">{{ $log->milestone_display }}</span>
+                            </div>
+
+                            <p class="mt-0.5 text-xs text-gray-500 capitalize truncate">
+                                {{ $log->pet->species_display }}
+                                &middot;
+                                {{ $log->pet->breed ?? 'Mix' }}
+                            </p>
+                        </div>
+
+                    @else
+                        <div class="min-w-0">
+                            <h3 class="!mb-0 font-bold text-gray-900">
+                                Unknown pet
+                            </h3>
+
+                            <div class="mt-1 flex flex-wrap items-center gap-2">
+                                <span class="badge badge-flagged">Flagged</span>
+                                <span class="badge badge-pending">{{ $log->milestone_display }}</span>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+                    <p class="mt-3 text-sm text-[#666]">
                         Adopter: <strong>{{ $log->user?->full_name ?: 'Unknown adopter' }}</strong>
                         &middot; Due {{ $log->due_date->format('M j, Y') }}
                         &middot; {{ $log->reminders_sent }} reminder{{ $log->reminders_sent === 1 ? '' : 's' }} sent

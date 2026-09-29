@@ -35,7 +35,7 @@
     $totalAssessmentRatings = $totalBehaviorQuestions + 1; // +1 for medical_needs
 @endphp
 
-<div class="mx-auto w-full max-w-7xl px-2 pb-28 pt-2 sm:px-4 lg:pb-12 lg:pt-4" id="assessmentApp">
+<div class="" id="assessmentApp">
 
     {{-- Back Link --}}
     <div>

@@ -248,7 +248,7 @@
             </div>
             
             <!-- Sticky Modal Footer -->
-            <div class="custom-modal-footer">
+            <div class="custom-modal-footer bg-white">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('addAnimalModal')">Cancel</button>
                 <button type="submit" class="btn btn-primary">
                     <i class="fa-solid fa-plus"></i>

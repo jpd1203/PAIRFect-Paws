@@ -9,22 +9,6 @@
         <p>Manage all shelter animal profiles</p>
     </div>
 
-    <!-- @if (session('success'))
-        <div class="bg-green-800 border border-green-800 text-green-700 px-4 py-3 rounded relative my-3">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if ($errors->any())
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-3">
-            <ul class="list-disc pl-5">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif -->
-
     @if (session('success'))
         <script>
             document.addEventListener('DOMContentLoaded', function () {
@@ -106,34 +90,97 @@
                             data-search-text="{{ $pet->name }} {{ $pet->species_display }} {{ $pet->breed }}"
                             data-filter-row
                             data-filters="species:{{ $pet->species_display }}|age:{{ $pet->age_group }}|health:{{ $pet->health_status }}|status:{{ $pet->status }}">
-                            <td class="font-semibold">{{ $pet->name }}</td>
+
+                            {{-- Pet Profile --}}
+                            <td class="px-5 py-3.5">
+                                <div class="flex items-center gap-4">
+
+                                    @if ($pet->photo_path)
+                                        <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-gray-200 bg-gray-100">
+                                            <img
+                                                src="{{ $pet->image_url }}"
+                                                alt="{{ $pet->name }}"
+                                                class="w-full h-full object-cover">
+                                        </div>
+                                    @else
+                                        <div class="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center bg-maroon-50 text-maroon-600 border border-maroon-100 text-sm">
+                                            <i class="fa-solid fa-{{ strtolower($pet->species?->value ?? $pet->species) === 'cat' ? 'cat' : 'dog' }}"></i>
+                                        </div>
+                                    @endif
+
+                                    <p class="font-bold text-left text-gray-900 leading-snug">
+                                        {{ $pet->name }}
+                                    </p>
+
+                                </div>
+                            </td>
+
                             <td>{{ $pet->species_display }}</td>
                             <td>{{ $pet->breed }}</td>
                             <td>{{ $pet->age_display }}</td>
                             <td>{{ $pet->sex }}</td>
-                            <td><span class="badge badge-{{ $pet->health_status_class }}">{{ $pet->health_status }}</span></td>
-                            <td><span class="badge badge-{{ $pet->adoption_status_class }}">{{ $pet->status }}</span></td>
+
                             <td>
-                                <button class="btn btn-secondary btn-sm" onclick="openViewAnimalModal({{ $pet->id }})"><i class="fa-solid fa-eye"></i>View</button>
-                                                              @if(auth()->user()->isAdmin())
+                                <span class="badge badge-{{ $pet->health_status_class }}">
+                                    {{ $pet->health_status }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="badge badge-{{ $pet->adoption_status_class }}">
+                                    {{ $pet->status }}
+                                </span>
+                            </td>
+
+                            <td>
+                                <button
+                                    class="btn btn-secondary btn-sm"
+                                    onclick="openViewAnimalModal({{ $pet->id }})">
+                                    <i class="fa-solid fa-eye"></i>
+                                    View
+                                </button>
+
+                                @if(auth()->user()->isAdmin())
                                     @if($pet->is_archived)
-                                        <form action="{{ route('admin.animals.restore', $pet) }}" method="POST" class="inline-block"
-                                              onsubmit="return confirm('Restore {{ $pet->name }}? This will return them to the active catalog.')">
+                                        <form
+                                            action="{{ route('admin.animals.restore', $pet) }}"
+                                            method="POST"
+                                            class="inline-block"
+                                            onsubmit="return confirm('Restore {{ $pet->name }}? This will return them to the active catalog.')">
+
                                             @csrf
-                                            <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-arrow-rotate-left"></i> Restore</button>
+
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                <i class="fa-solid fa-arrow-rotate-left"></i>
+                                                Restore
+                                            </button>
                                         </form>
                                     @else
-                                        <form action="{{ route('admin.animals.archive', $pet) }}" method="POST" class="inline-block"
-                                              onsubmit="return confirm('Archive {{ $pet->name }}? This will hide them from the public catalog.')">
+                                        <form
+                                            action="{{ route('admin.animals.archive', $pet) }}"
+                                            method="POST"
+                                            class="inline-block"
+                                            onsubmit="return confirm('Archive {{ $pet->name }}? This will hide them from the public catalog.')">
+
                                             @csrf
-                                            <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-box-archive"></i> Archive</button>
+
+                                            <button type="submit" class="btn btn-danger btn-sm">
+                                                <i class="fa-solid fa-box-archive"></i>
+                                                Archive
+                                            </button>
                                         </form>
                                     @endif
                                 @endif
                             </td>
+
                         </tr>
+
                     @empty
-                        <tr><td colspan="8" class="text-[#888] py-6">No animals on record yet.</td></tr>
+                        <tr>
+                            <td colspan="8" class="text-[#888] py-6">
+                                No animals on record yet.
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
