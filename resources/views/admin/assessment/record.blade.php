@@ -82,18 +82,18 @@
                             
                             <!-- 1. Pet Info with Icon/Avatar -->
                             <td class="px-5 py-3.5">
-                                <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-4">
                                     @if ($pet->photo_path)
-                                        <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-gray-200 bg-gray-100">
+                                        <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-gray-200 bg-gray-100">
                                             <img src="{{ $pet->image_url }}" alt="{{ $pet->name }}" class="w-full h-full object-cover">
                                         </div>
                                     @else
-                                        <div class="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center bg-maroon-50 text-maroon-600 border border-maroon-100 text-sm">
+                                        <div class="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center bg-maroon-50 text-maroon-600 border border-maroon-100 text-sm">
                                             <i class="fa-solid fa-{{ strtolower($pet->species?->value ?? $pet->species) === 'cat' ? 'cat' : 'dog' }}"></i>
                                         </div>
                                     @endif
                                     <div class="min-w-0">
-                                        <p class="font-bold text-gray-900 leading-snug">{{ $pet->name }}</p>
+                                        <p class="font-bold text-left text-gray-900 leading-snug">{{ $pet->name }}</p>
                                         <p class="text-xs text-gray-500 capitalize truncate">
                                             {{ $pet->species_display }} &middot; {{ $pet->breed ?? 'Mix' }} &middot; {{ $pet->age_display }}
                                         </p>
@@ -105,18 +105,18 @@
                             <td class="px-5 py-3.5">
                                 <div class="flex flex-col items-start gap-1.5">
                                     @if ($petStatusSlug === 'complete')
-                                        <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                        <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold bg-[#E1F5EE] text-[#295F51] border border-[#295F51]">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-[#295F51]"></span>
                                             Complete
                                         </span>
                                     @elseif ($petStatusSlug === 'inprogress')
-                                        <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                                            <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                                        <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold bg-[#E6F1FB] text-[#2A4877] border border-[#2A4877]">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-[#2A4877]"></span>
                                             In progress
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-                                            <span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span>
+                                        <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold bg-[#FAEEDA] text-[#614E34] border border-[#614E34]">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-[#614E34]"></span>
                                             Pending
                                         </span>
                                     @endif

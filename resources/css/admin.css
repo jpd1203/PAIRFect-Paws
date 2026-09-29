@@ -1126,7 +1126,7 @@
 @media (min-width: 1024px) {
   .monitoring-row-grid {
     display: grid !important;
-    grid-template-columns: minmax(0, 1.4fr) 140px minmax(0, 1.1fr) minmax(0, 1fr) 200px 110px 100px 28px;
+    grid-template-columns: minmax(0, 1.4fr) 140px minmax(0, 1.1fr) minmax(0, 1fr) 180px 100px 90px 28px;
     align-items: center;
     gap: 0.75rem;
   }

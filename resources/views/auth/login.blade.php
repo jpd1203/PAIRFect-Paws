@@ -23,7 +23,7 @@
     @include('components.navbar')
 
     {{-- MAIN CONTENT CONTAINER --}}
-    <main class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#fbf9f5]" style="background-color: #fbf9f5;">
+    <main class="flex-1 min-h-[calc(100vh-80px)] flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#fbf9f5]">
 
         <div class="w-full max-w-[490px] bg-[#f5f1ea] border-2 border-[#d8d1c5] rounded-2xl p-5 sm:p-6 shadow-md relative">
 
