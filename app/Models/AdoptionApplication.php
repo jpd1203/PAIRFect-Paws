@@ -17,6 +17,7 @@ class AdoptionApplication extends Model
         'applicant_street_address', 'applicant_zip_code',
         'status', 'motivation_statement',
         'housing_type', 'income_range', 'knn_score', 'compatibility_result', 'document_path',
+        'knn_distance', 'knn_penalty', 'knn_computed_at', 'knn_algorithm_version', 'knn_source_fingerprint',
         'physical_activity_level', 'time_availability', 'prior_pet_experience',
         'household_composition', 'document_disk', 'document_original_name',
         'document_mime_type', 'document_verification_status', 'document_type',
@@ -26,6 +27,8 @@ class AdoptionApplication extends Model
         'interview_date', 'interview_notes', 'conducted_by', 'decision_remarks', 'version',
         'is_primary_candidate', 'queue_promoted_at', 'admin_review_flagged_at',
         'queue_closed_at', 'adopted_at', 'override_reason',
+        'reschedule_options', 'reschedule_reason', 'reschedule_status',
+        'reschedule_requested_at', 'reschedule_reviewed_at',
     ];
 
     protected function casts(): array
@@ -34,12 +37,16 @@ class AdoptionApplication extends Model
             'status' => ApplicationStatus::class,
             'interview_date' => 'datetime',
             'knn_score' => 'float',
+            'knn_distance' => 'float', 'knn_penalty' => 'float', 'knn_computed_at' => 'datetime',
             'compatibility_result' => 'array',
             'is_primary_candidate' => 'boolean',
             'queue_promoted_at' => 'datetime',
             'admin_review_flagged_at' => 'datetime',
             'queue_closed_at' => 'datetime',
             'adopted_at' => 'datetime',
+            'reschedule_options' => 'array',
+            'reschedule_requested_at' => 'datetime',
+            'reschedule_reviewed_at' => 'datetime',
             'document_verification_status' => DocumentVerificationStatus::class,
             'ocr_extracted_text' => 'encrypted',
             'ocr_confidence' => 'float',

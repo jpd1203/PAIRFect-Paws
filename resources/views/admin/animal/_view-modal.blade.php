@@ -82,18 +82,6 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label" for="vSize">Physical Size</label>
-                            <div class="select-wrapper">
-                                <select id="vSize" name="physical_size" class="form-select">
-                                    @foreach ($options::SIZES as $s)
-                                        <option>{{ $s }}</option>
-                                    @endforeach
-                                </select>
-                                <i class="fa-solid fa-chevron-down select-arrow"></i>
-                            </div>
-                        </div>
-
                         <div class="form-group sm:col-span-2 md:col-span-1">
                             <label class="form-label" for="vIntake">Intake Date</label>
                             <input id="vIntake" name="intake_date" type="date" class="form-control">
@@ -150,12 +138,65 @@
                             <label class="form-label" for="vMedical">Medical Needs Level</label>
                             <div class="select-wrapper">
                                 <select id="vMedical" name="medical_needs" class="form-select">
-                                    <option value="">Not recorded</option>
+                                    <option value="">Not yet veterinary-assessed</option>
                                     <option value="1">1 - Routine care only</option>
                                     <option value="2">2 - Minor medical care</option>
                                     <option value="3">3 - Regular medication/checkups</option>
                                     <option value="4">4 - Frequent veterinary care</option>
                                     <option value="5">5 - Intensive ongoing care</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down select-arrow"></i>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">Use the veterinary health evaluation. Required before matching.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="vSize">Physical Size</label>
+                            <div class="select-wrapper">
+                                <select id="vSize" name="physical_size" class="form-select">
+                                    <option value="">Not yet veterinary-assessed</option>
+                                    @foreach (array_keys(config('matching.size_levels')) as $size)
+                                        <option value="{{ $size }}">{{ $size }}</option>
+                                    @endforeach
+                                </select>
+                                <i class="fa-solid fa-chevron-down select-arrow"></i>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">Based on veterinary assessment. Required before matching.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="vLifeStage">Life Stage</label>
+                            <div class="select-wrapper">
+                                <select id="vLifeStage" name="life_stage" class="form-select">
+                                    <option value="">Not yet verified</option>
+                                    <option value="young">Young</option>
+                                    <option value="adult">Adult</option>
+                                    <option value="senior">Senior</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down select-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="vAggression">Documented Aggression History</label>
+                            <div class="select-wrapper">
+                                <select id="vAggression" name="has_aggression_history" class="form-select">
+                                    <option value="">Not yet assessed / Unknown</option>
+                                    <option value="0">No documented aggression history</option>
+                                    <option value="1">Yes, documented aggression history</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down select-arrow"></i>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">Select No only after checking the animal's documented history.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="vVocalization">High Vocalization</label>
+                            <div class="select-wrapper">
+                                <select id="vVocalization" name="high_vocalization" class="form-select">
+                                    <option value="">Not yet assessed / Unknown</option>
+                                    <option value="0">No</option>
+                                    <option value="1">Yes</option>
                                 </select>
                                 <i class="fa-solid fa-chevron-down select-arrow"></i>
                             </div>

@@ -36,6 +36,8 @@ class StatusUpdateMail extends Mailable implements ShouldBeEncrypted, ShouldQueu
 
     public string $actionUrl;
 
+    public string $rescheduleUrl;
+
     public function __construct(
         AdoptionApplication $application,
         public string $event = 'status_updated',
@@ -50,6 +52,7 @@ class StatusUpdateMail extends Mailable implements ShouldBeEncrypted, ShouldQueu
             ? ManilaTime::format($application->interview_date, 'F j, Y \\a\\t g:i A')
             : null;
         $this->actionUrl = route('application.index');
+        $this->rescheduleUrl = route('application.index', ['reschedule' => $application->id]).'#reschedule-'.$application->id;
         $this->initializeDeliveryIdempotency();
         $this->onQueue('emails')->afterCommit();
     }

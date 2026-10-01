@@ -41,6 +41,7 @@
                 <input id="password_confirmation" type="password" name="password_confirmation" required>
             </div>
             <button type="submit" class="btn btn-primary" style="width:100%">Create account</button>
+            <p style="color:var(--muted);font-size:0.875rem;margin-top:0.75rem">After registration, you can complete the 20-question personality assessment or skip it and browse pets. Recommendations and adoption applications require the completed assessment.</p>
         </form>
 
         <p style="text-align:center;margin-top:1.25rem;font-size:0.875rem;color:var(--muted)">

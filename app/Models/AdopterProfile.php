@@ -14,22 +14,20 @@ class AdopterProfile extends Model
         'housing_type',
         'household_composition',
         'monthly_income_range',
+        'bfi_responses', 'extraversion', 'conscientiousness', 'neuroticism', 'openness',
+        'bfi_completed_at', 'has_existing_pets', 'has_children', 'financial_readiness',
     ];
 
-    /** @return array<string, string> */
-    public function knnInputs(): array
+    protected $hidden = ['bfi_responses'];
+
+    protected function casts(): array
     {
         return [
-            'physical_activity_level' => (string) $this->physical_activity_level,
-            'time_availability' => (string) $this->time_availability,
-            'prior_pet_experience' => (string) $this->prior_pet_experience,
-            'housing_type' => (string) $this->housing_type,
-            'household_composition' => (string) $this->household_composition,
-            'monthly_income_range' => (string) $this->monthly_income_range,
-            'has_existing_pets' => in_array($this->prior_pet_experience, [
-                'Currently own pets',
-                'Experienced with rescue/special needs animals',
-            ], true) ? 'yes' : 'no',
+            'bfi_responses' => 'array', 'bfi_completed_at' => 'datetime',
+            'extraversion' => 'float', 'conscientiousness' => 'float',
+            'neuroticism' => 'float', 'openness' => 'float',
+            'has_existing_pets' => 'boolean', 'has_children' => 'boolean',
+            'financial_readiness' => 'integer',
         ];
     }
 

@@ -66,7 +66,7 @@ class DatabaseSeeder extends Seeder
             'first_name' => 'Jane',
             'last_name' => 'Doe',
             'email' => 'adopter@example.com',
-            'email_verified_at' => now(),
+            'email_verified_at' => null,
             'password' => Hash::make('password'),
             'role' => Role::Adopter->value,
             'is_active' => true,

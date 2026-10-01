@@ -27,6 +27,48 @@
 </div>
 
 <div class="custom-modal-body custom-scrollbar">
+    <section class="mb-5 rounded-xl border border-[#ddd] bg-neutral-light p-4" aria-label="Account-wide adopter history summary">
+        <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="font-primary font-bold">Account-wide Compliance History</h3>
+            <span class="badge {{ $historySummary['badge_class'] }}">{{ $historySummary['review_label'] }}</span>
+        </div>
+        <p class="text-sm mt-2">
+            {{ $historySummary['previous_applications'] }} application attempts &middot;
+            {{ $historySummary['approved_placements'] }} approved placements &middot;
+            {{ $historySummary['rejected_applications'] }} rejected applications &middot;
+            {{ $historySummary['completed_checkins'] }} completed check-ins
+        </p>
+        <p class="text-sm">
+            {{ $historySummary['flagged_welfare_reports'] }} flagged welfare reports &middot;
+            {{ $historySummary['missed_checkins'] }} missed check-ins &middot;
+            {{ $historySummary['late_checkins'] }} late check-ins &middot;
+            {{ $historySummary['unresolved_monitoring_flags'] }} unresolved monitoring flags
+        </p>
+        @if ($historySummary['explanations'])
+            <ul class="list-disc pl-5 mt-2 text-sm">
+                @foreach ($historySummary['explanations'] as $explanation)<li>{{ $explanation }}</li>@endforeach
+            </ul>
+        @endif
+        <p class="text-xs text-[#777] mt-2">These facts are for shelter review only; they do not alter compatibility or make an adoption decision.</p>
+    </section>
+
+    <details class="mb-5 rounded-xl border border-[#ddd] bg-neutral-light" data-account-history-timeline>
+        <summary class="cursor-pointer px-4 py-3 font-primary font-bold">Chronological account history ({{ $historyEvents->count() }} records)</summary>
+        <ol class="border-t border-[#ddd] p-3 flex flex-col gap-2">
+            @foreach ($historyEvents as $event)
+                <li class="rounded-lg border border-[#ddd] bg-white p-3 text-sm">
+                    <time class="font-semibold" datetime="{{ $event['date']->toDateString() }}">{{ \App\Support\ManilaTime::format($event['date'], 'M j, Y') }}</time>
+                    &middot; {{ $event['title'] }} &mdash; {{ $event['detail'] }}
+                    @if ($event['reasons'])
+                        <ul class="list-disc pl-5 mt-1 text-xs">
+                            @foreach ($event['reasons'] as $reason)<li>{{ $reason }}</li>@endforeach
+                        </ul>
+                    @endif
+                </li>
+            @endforeach
+        </ol>
+    </details>
+
     @if ($hasPlacement)
         <section
             data-selected-application-id="{{ $selectedPlacement->id }}"

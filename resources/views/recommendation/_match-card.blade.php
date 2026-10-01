@@ -32,7 +32,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5 mt-3">
-            <button type="button" class="btn btn-secondary" onclick="openPetModal({{ $pet->id }})">View</button>
+            <a class="btn btn-secondary" href="{{ route('pets.show', $pet) }}">View</a>
             <a class="btn btn-adoptMe text-center" href="{{ route('application.apply', $pet) }}">Adopt</a>
         </div>
     </div>

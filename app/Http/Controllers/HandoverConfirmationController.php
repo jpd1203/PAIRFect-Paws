@@ -7,6 +7,7 @@ use App\Models\AdoptionApplication;
 use App\Models\Handover;
 use App\Models\HandoverNotification;
 use App\Services\HandoverService;
+use App\Services\HandoverNotificationService;
 use App\Services\PostAdoptionScheduleService;
 use Illuminate\Http\Request;
 
@@ -15,6 +16,7 @@ class HandoverConfirmationController extends Controller
     public function __construct(
         private readonly HandoverService $handovers,
         private readonly PostAdoptionScheduleService $postAdoptionSchedule,
+        private readonly HandoverNotificationService $notifications,
     ) {}
 
     public function confirmView(Request $request, Handover $handover)
@@ -54,7 +56,7 @@ class HandoverConfirmationController extends Controller
             $handover->recordHistory('Post-adoption monitoring activated', 'System');
             $handover->save();
 
-            $handover->createNotification('completed');
+            $this->notifications->create($handover, 'completed');
 
             $application = $handover->application;
             if ($application?->status === ApplicationStatus::Approved) {
@@ -69,7 +71,7 @@ class HandoverConfirmationController extends Controller
             $handover->recordHistory('Adopter reported pet not received', $adopterName);
             $handover->save();
 
-            $handover->createNotification('issue_logged');
+            $this->notifications->create($handover, 'issue_logged');
 
             return back()->with('toast', [
                 'type' => 'warning',

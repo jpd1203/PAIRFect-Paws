@@ -3,163 +3,106 @@
 namespace App\Http\Controllers;
 
 use App\Services\KnnRecommendationService;
+use App\Services\Matching\AdopterMatchingProfileService;
+use App\Services\Matching\MatchingProfileMapper;
 use App\Support\ApplicationOptions;
+use App\Models\Pet;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class RecommendationController extends Controller
 {
-    public function __construct(private KnnRecommendationService $knn) {}
+    public function __construct(
+        private KnnRecommendationService $knn,
+        private AdopterMatchingProfileService $profiles,
+        private MatchingProfileMapper $mapper,
+    ) {}
 
-    /**
-     * GET /recommendation
-     * Show the intake form.
-     */
-    public function intake()
+    public function onboarding(Request $request)
     {
-        return view('recommendation.intake', [
-            'options' => ApplicationOptions::class,
-            'profile' => auth()->check() ? auth()->user()->adopterProfile : null,
-        ]);
+        return $this->intake($request);
     }
 
-    /**
-     * POST /recommendation/start
-     * Validate inputs, run KNN, return results view.
-     */
-    public function start(Request $request)
+    public function intake(Request $request)
     {
-        $validated = $request->validate([
-            'physical_activity_level' => ['required', 'string', Rule::in(ApplicationOptions::PHYSICAL_ACTIVITY_LEVELS)],
-            'time_availability' => ['required', 'string', Rule::in(ApplicationOptions::TIME_AVAILABILITY_OPTIONS)],
-            'prior_pet_experience' => ['required', 'string', Rule::in(ApplicationOptions::PRIOR_EXPERIENCE_OPTIONS)],
-            'housing_type' => ['required', 'string', Rule::in(ApplicationOptions::HOUSING_TYPES)],
-            'household_composition' => ['required', 'string', Rule::in(ApplicationOptions::HOUSEHOLD_COMPOSITIONS)],
-            'monthly_income_range' => ['required', 'string', Rule::in(ApplicationOptions::INCOME_RANGES)],
-        ]);
-
-        if ($request->user()?->isAdopter()) {
-            $request->user()->adopterProfile()->updateOrCreate([], [
-                'physical_activity_level' => $validated['physical_activity_level'],
-                'time_availability' => $validated['time_availability'],
-                'prior_pet_experience' => $validated['prior_pet_experience'],
-                'housing_type' => $validated['housing_type'],
-                'household_composition' => $validated['household_composition'],
-                'monthly_income_range' => $validated['monthly_income_range'],
-            ]);
+        $isOnboarding = $request->routeIs('recommendation.onboarding');
+        $returnPetId = $request->integer('return_pet') ?: ($isOnboarding ? (int) $request->session()->get('matching_return_pet') : 0);
+        $returnPet = $returnPetId > 0
+            ? Pet::whereKey($returnPetId)->where('availability_status', 'Available')->first()
+            : null;
+        if ($returnPet) {
+            $request->session()->put('matching_return_pet', $returnPet->id);
+        } else {
+            $request->session()->forget('matching_return_pet');
         }
 
-        // Derive has_existing_pets from prior_pet_experience — no extra form field needed
-        $validated['has_existing_pets'] = in_array($validated['prior_pet_experience'], [
-            'Currently own pets',
-            'Experienced with rescue/special needs animals',
-        ]) ? 'yes' : 'no';
-
-        $matches = $this->knn->run($validated);
-
-        // Default slider values — reflect the adopter's encoded profile
-        $sliders = [
-            'energy' => $this->encodeActivity($validated['physical_activity_level']),
-            'independence' => $this->encodeTime($validated['time_availability']),
-            'trainability' => $this->encodeExperience($validated['prior_pet_experience']),
-            'temperament' => $this->encodeComposition($validated['household_composition']),
-            'medical' => $this->encodeIncome($validated['monthly_income_range']),
-        ];
-
-        return view('recommendation.results', [
-            'matches' => $matches,
-            'sliders' => $sliders,
-            'matcher' => $this->knn,
-            'profile' => $validated,
+        return view('recommendation.intake', [
+            'options' => ApplicationOptions::class,
+            'profile' => $request->user()->adopterProfile,
+            'returnPet' => $returnPet,
+            'isOnboarding' => $isOnboarding,
         ]);
     }
 
-    /**
-     * POST /recommendation/recompute  (AJAX)
-     * Re-rank all available pets against slider values.
-     * Returns JSON: { matches: [ {id, overall, match_label, rows:[{label, percent}]} ] }
-     */
+    public function skipOnboarding(Request $request)
+    {
+        $request->user()->forceFill(['matching_onboarding_pending' => false])->save();
+        $request->session()->forget(['matching_return_pet', 'url.intended']);
+
+        return redirect()->route('animal.index')->with('success', 'You can browse pets now. Complete your assessment when you are ready to get recommendations or apply.');
+    }
+
+    public function start(Request $request)
+    {
+        $this->profiles->save($request->user(), $request->all());
+        $request->user()->forceFill(['matching_onboarding_pending' => false])->save();
+        $request->session()->forget('url.intended');
+
+        $returnPetId = $request->session()->pull('matching_return_pet');
+        if ($returnPetId && Pet::whereKey($returnPetId)->where('availability_status', 'Available')->exists()) {
+            return redirect()->route('application.apply', $returnPetId)
+                ->with('success', 'Personality assessment saved. Continue your application for the selected pet.');
+        }
+
+        return redirect()->route('recommendation.results');
+    }
+
+    public function results(Request $request)
+    {
+        $profile = $request->user()->adopterProfile;
+        if (! $profile || ! $this->mapper->adopterIsComplete($profile)) {
+            return redirect()->route('recommendation.intake')->withErrors(['profile' => 'Complete your personality and household profile to see recommendations.']);
+        }
+
+        return view('recommendation.results', [
+            'matches' => $this->knn->recommendPets($profile, preferences: $this->preferences($request)),
+            'matcher' => $this->knn,
+        ]);
+    }
+
     public function recompute(Request $request)
     {
-        // Sliders are sent as a JSON body from the frontend
-        $raw = $request->json()->all();
+        $profile = $request->user()->adopterProfile;
+        abort_unless($profile && $this->mapper->adopterIsComplete($profile), 422, 'Complete your matching profile first.');
+        $matches = $this->knn->recommendPets($profile, preferences: $this->preferences($request));
 
-        $sliders = [
-            'energy' => (int) ($raw['energy'] ?? 3),
-            'trainability' => (int) ($raw['trainability'] ?? 3),
-            'medical' => (int) ($raw['medical'] ?? 3),
-            'independence' => (int) ($raw['independence'] ?? 3),
-            'temperament' => (int) ($raw['temperament'] ?? 3),
-        ];
-
-        $profile = $raw['profile'] ?? [];
-
-        $matches = $this->knn->recompute($sliders, $profile);
-
-        $payload = $matches->map(fn ($m) => [
-            'id' => $m['pet']->id,
-            'overall' => $m['result']['overall'],
-            'match_label' => $this->knn->matchLabel($m['result']['overall']),
-            'rows' => $m['result']['rows'],
-        ])->values()->all();
-
-        return response()->json(['matches' => $payload]);
+        return response()->json(['matches' => $matches->map(fn ($item) => [
+            'id' => $item['pet']->id, 'pet_name' => $item['pet']->name,
+            'overall' => $item['result']['overall'],
+            'compatibility_score' => $item['result']['overall'],
+            'status' => $item['pet']->availability_status->value,
+            'match_label' => $this->knn->matchLabel($item['result']['overall']),
+        ])]);
     }
 
-    // ─── Private encoding helpers (mirrors KnnRecommendationService) ──────────
-
-    private function encodeActivity(string $v): int
+    private function preferences(Request $request): array
     {
-        return match ($v) {
-            'Low (Sedentary, short walks)' => 1,
-            'Moderate (Daily walks, occasional play)' => 3,
-            'High (Active, jogging, hiking)' => 5,
-            default => 3,
-        };
-    }
-
-    private function encodeTime(string $v): int
-    {
-        return match ($v) {
-            'Less than 2 hours/day' => 5,
-            '2-4 hours/day' => 4,
-            '4-8 hours/day' => 2,
-            'More than 8 hours/day (Work from home / Retired)' => 1,
-            default => 3,
-        };
-    }
-
-    private function encodeExperience(string $v): int
-    {
-        return match ($v) {
-            'First-time owner' => 5,
-            'Have owned pets in the past' => 4,
-            'Currently own pets' => 3,
-            'Experienced with rescue/special needs animals' => 1,
-            default => 3,
-        };
-    }
-
-    private function encodeComposition(string $v): int
-    {
-        return match ($v) {
-            'Living with children (under 12)' => 5,
-            'Living with teenagers' => 4,
-            'Living with adults only' => 3,
-            'Living alone' => 2,
-            default => 3,
-        };
-    }
-
-    private function encodeIncome(string $v): int
-    {
-        return match ($v) {
-            'Below ₱15,000' => 1,
-            '₱15,000 - ₱30,000' => 2,
-            '₱30,000 - ₱50,000' => 3,
-            '₱50,000 - ₱80,000' => 4,
-            'Above ₱80,000' => 5,
-            default => 3,
-        };
+        return $request->validate([
+            'species' => ['nullable', Rule::in(['Dog', 'Cat'])],
+            'size' => ['nullable', Rule::in(array_keys(config('matching.size_levels')))],
+            'score' => 'prohibited', 'knn_score' => 'prohibited', 'distance' => 'prohibited',
+            'energy' => 'prohibited', 'trainability' => 'prohibited', 'temperament' => 'prohibited',
+            'medical' => 'prohibited', 'independence' => 'prohibited', 'profile' => 'prohibited',
+        ]);
     }
 }

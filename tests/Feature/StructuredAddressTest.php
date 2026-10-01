@@ -17,10 +17,11 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use Tests\Concerns\BuildsMatchingFixtures;
 
 class StructuredAddressTest extends TestCase
 {
-    use RefreshDatabase;
+    use BuildsMatchingFixtures, RefreshDatabase;
 
     public function test_location_endpoints_expose_the_ncr_direct_locality_hierarchy_from_the_local_dataset(): void
     {
@@ -65,8 +66,8 @@ class StructuredAddressTest extends TestCase
             'first_name' => 'Josh',
             'last_name' => 'Oliver',
             'email' => 'josh.structured@example.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
             ...$this->ncrAddressPayload(),
         ])->assertRedirect(route('verification.notice'));
 
@@ -93,8 +94,8 @@ class StructuredAddressTest extends TestCase
             'first_name' => 'Forged',
             'last_name' => 'Hierarchy',
             'email' => 'forged.address@example.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
             ...$this->ncrAddressPayload(),
             'province_code' => '0128000000',
         ];
@@ -118,7 +119,7 @@ class StructuredAddressTest extends TestCase
             'first_name' => 'Josh',
             'last_name' => 'Oliver',
             'email' => 'josh.application@example.test',
-            'password' => bcrypt('password123'),
+            'password' => bcrypt('Password123!'),
             'role' => Role::Adopter->value,
             'email_verified_at' => now(),
         ]);
@@ -127,6 +128,9 @@ class StructuredAddressTest extends TestCase
             'species' => 'Dog',
             'availability_status' => AvailabilityStatus::Available->value,
         ]);
+
+        $this->completeMatchingProfile($adopter);
+        $this->completePetAssessment($pet);
 
         $verifier = \Mockery::mock(DocumentVerificationService::class);
         $verifier->shouldReceive('verify')
@@ -174,7 +178,7 @@ class StructuredAddressTest extends TestCase
         ])->assertRedirect(route('application.index'));
 
         $application = AdoptionApplication::sole();
-        $this->assertSame(ApplicationStatus::UnderReview, $application->status);
+        $this->assertSame(ApplicationStatus::Pending, $application->status);
         $this->assertSame(DocumentVerificationStatus::Verified, $application->document_verification_status);
         $this->assertSame('National Capital Region (NCR)', $application->applicant_region);
         $this->assertNull($application->applicant_province);

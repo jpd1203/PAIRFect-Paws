@@ -2,195 +2,286 @@
 
 namespace Tests\Feature;
 
-use App\Enums\AvailabilityStatus;
-use App\Enums\DocumentVerificationStatus;
 use App\Enums\Role;
-use App\Models\AdopterProfile;
-use App\Models\AdoptionApplication;
 use App\Models\AssessmentRecord;
 use App\Models\Pet;
-use App\Models\User;
-use App\Services\DocumentVerificationService;
-use App\ValueObjects\DocumentVerificationResult;
+use App\Services\KnnRecommendationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\BuildsMatchingFixtures;
 use Tests\TestCase;
 
 class AssessmentKnnIntegrationTest extends TestCase
 {
-    use RefreshDatabase;
+    use BuildsMatchingFixtures, RefreshDatabase;
 
-    public function test_cbarq_uses_one_to_five_and_stores_higher_temperament_as_calmer(): void
-    {
-        $admin = User::factory()->create(['role' => Role::Administrator->value]);
-        $calmDog = $this->pet('Calm Dog');
-
-        $this->actingAs($admin)
-            ->post(route('admin.assessments.store', $calmDog), $this->validDogAssessment())
-            ->assertRedirect(route('admin.assessments.record'));
-
-        $calmRecord = $calmDog->assessmentRecords()->sole();
-        $this->assertSame(5.0, (float) $calmRecord->energy_level);
-        $this->assertSame(5.0, (float) $calmRecord->trainability);
-        $this->assertSame(5.0, (float) $calmRecord->independence);
-        $this->assertSame(5.0, (float) $calmRecord->temperament);
-
-        $fearfulDog = $this->pet('Fearful Dog');
-        $fearOverrides = array_fill_keys([
-            'sf1', 'sf2', 'sf3', 'sf4', 'sf5',
-            'nf1', 'nf2', 'nf3', 'nf4', 'nf5', 'nf6',
-        ], 5);
-
-        $this->actingAs($admin)
-            ->post(route('admin.assessments.store', $fearfulDog), $this->validDogAssessment($fearOverrides))
-            ->assertRedirect(route('admin.assessments.record'));
-
-        $this->assertSame(1.0, (float) $fearfulDog->assessmentRecords()->sole()->temperament);
-    }
-
-    public function test_assessment_rejects_missing_and_out_of_range_answers(): void
-    {
-        $admin = User::factory()->create(['role' => Role::Administrator->value]);
-        $dog = $this->pet('Tampered Assessment Dog');
-        $payload = $this->validDogAssessment(['t5' => 6]);
-        unset($payload['e1']);
-
-        $this->actingAs($admin)
-            ->from(route('admin.assessments.create', $dog))
-            ->post(route('admin.assessments.store', $dog), $payload)
-            ->assertRedirect(route('admin.assessments.create', $dog))
-            ->assertSessionHasErrors(['e1', 't5']);
-
-        $this->assertDatabaseCount('assessment_records', 0);
-    }
-
-    public function test_recommendation_persists_six_variables_and_ranks_calm_pet_for_children(): void
-    {
-        $adopter = User::factory()->create(['role' => Role::Adopter->value]);
-        $calm = $this->eligiblePet('Calm Match', 5);
-        $fearful = $this->eligiblePet('Fearful Match', 1);
-
-        $response = $this->actingAs($adopter)->post(route('recommendation.start'), $this->profileInputs());
-
-        $response->assertOk()->assertViewHas('matches', function ($matches) use ($calm, $fearful): bool {
-            return $matches->pluck('pet.id')->all() === [$calm->id, $fearful->id]
-                && abs($matches[0]['distance'] - 0.0) < 0.000001
-                && abs($matches[1]['distance'] - 4.0) < 0.000001;
-        });
-
-        $this->assertDatabaseHas('adopter_profiles', [
-            'user_id' => $adopter->id,
-            ...$this->profileInputs(),
-        ]);
-    }
-
-    public function test_application_uses_six_dimension_distance_and_updates_reusable_profile(): void
-    {
-        Mail::fake();
-        Storage::fake('local');
-        $adopter = User::factory()->create(['role' => Role::Adopter->value]);
-        $pet = $this->eligiblePet('Application Match', 5);
-        $verifier = \Mockery::mock(DocumentVerificationService::class);
-        $verifier->shouldReceive('verify')->once()->andReturn(new DocumentVerificationResult(
-            DocumentVerificationStatus::Verified,
-            'QA ADOPTER IDENTIFICATION CARD 4489 FRANCISCO STREET MANILA',
-            null,
-            1.0,
-            [],
-            'Government ID',
-        ));
-        $this->app->instance(DocumentVerificationService::class, $verifier);
-
-        $this->actingAs($adopter)->post(route('application.submit'), [
-            'pet_id' => $pet->id,
-            'first_name' => $adopter->first_name,
-            'last_name' => $adopter->last_name,
-            'email' => $adopter->email,
-            'phone_number' => '09171234567',
-            'region_code' => '1300000000',
-            'province_code' => '__direct__',
-            'city_municipality_code' => '1380600000',
-            'barangay_code' => '1380606197',
-            'street_address' => '4489 V. Francisco St. Sta. Mesa',
-            'zip_code' => '1016',
-            'motivation_statement' => 'I can provide a safe and permanent home.',
-            ...$this->profileInputs(),
-            'agreed_to_terms' => '1',
-            'document' => UploadedFile::fake()->image('identity.jpg'),
-        ])->assertRedirect(route('application.index'));
-
-        $application = AdoptionApplication::sole();
-        $this->assertSame(0.0, (float) $application->knn_score);
-        $this->assertSame($this->profileInputs(), AdopterProfile::sole()->only(array_keys($this->profileInputs())));
-    }
-
-    /** @param array<string, int> $overrides */
-    private function validDogAssessment(array $overrides = []): array
-    {
-        $payload = array_fill_keys([
-            'e1', 'e2', 'e3',
-            't1', 't2', 't3', 't4', 't8',
-        ], 5);
-        $payload += array_fill_keys([
-            't5', 't6', 't7',
-            'i1', 'i2', 'i3', 'i4', 'i5', 'i6',
-            'sf1', 'sf2', 'sf3', 'sf4', 'sf5',
-            'nf1', 'nf2', 'nf3', 'nf4', 'nf5', 'nf6',
-        ], 1);
-        $payload['medical_needs'] = 5;
-
-        return array_replace($payload, $overrides);
-    }
-
-    /** @return array<string, string> */
-    private function profileInputs(): array
+    private function assessmentPayload(): array
     {
         return [
-            'physical_activity_level' => 'High (Active, jogging, hiking)',
-            'time_availability' => 'Less than 2 hours/day',
-            'prior_pet_experience' => 'First-time owner',
-            'housing_type' => 'Single Family Home (Fenced Yard)',
-            'household_composition' => 'Living with children (under 12)',
-            'monthly_income_range' => 'Above ₱80,000',
+            'responses' => $this->behaviorResponses('dog', 0),
         ];
     }
 
-    private function pet(string $name): Pet
+    public function test_add_animal_can_start_with_unknown_profile_fields_in_the_existing_wizard(): void
     {
-        return Pet::create([
-            'name' => $name,
-            'species' => 'Dog',
-            'availability_status' => AvailabilityStatus::Available->value,
-            'physical_size' => 'Extra Large',
-        ]);
+        $this->actingAs($this->matchingUser(Role::Administrator))
+            ->post(route('admin.animals.store'), [
+                'name' => 'New Intake', 'species' => 'Dog', 'breed' => 'Aspin',
+                'status' => 'Assessing', 'health_status' => 'Needs Vet',
+            ])->assertRedirect(route('admin.animals.index'));
+
+        $pet = Pet::where('name', 'New Intake')->sole();
+        $this->assertSame('Assessing', $pet->availability_status->value);
+        foreach (['physical_size', 'medical_needs', 'life_stage', 'has_aggression_history', 'high_vocalization'] as $field) {
+            $this->assertNull($pet->{$field});
+        }
+        $this->assertNull($pet->aggression_history_verified_at);
+
+        $page = $this->get(route('admin.animals.index'))->assertOk()->getContent();
+        $basicStep = strpos($page, 'id="addTabPane-1"');
+        $healthStep = strpos($page, 'id="addTabPane-2"');
+        $storyStep = strpos($page, 'id="addTabPane-3"');
+        $this->assertGreaterThan($healthStep, strpos($page, 'name="physical_size"'));
+        $this->assertGreaterThan($basicStep, $healthStep);
+        $this->assertLessThan($storyStep, strpos($page, 'name="high_vocalization"'));
+        foreach (array_keys(config('matching.size_levels')) as $size) {
+            $this->assertStringContainsString('<option value="'.$size.'">'.$size.'</option>', $page);
+        }
     }
 
-    private function eligiblePet(string $name, float $temperament): Pet
+    public function test_add_animal_saves_explicit_five_level_size_and_verified_no_answers(): void
     {
-        $pet = $this->pet($name);
-        $pet->update([
-            'energy_level' => 5,
-            'trainability' => 5,
-            'independence' => 5,
-            'temperament' => $temperament,
-            'medical_needs' => 5,
-            'assessment_count' => 3,
-        ]);
+        $this->actingAs($this->matchingUser(Role::Administrator))
+            ->post(route('admin.animals.store'), [
+                'name' => 'Assessed Intake', 'species' => 'Cat', 'status' => 'Assessing',
+                'physical_size' => 'Extra Small', 'medical_needs' => '1',
+                'life_stage' => 'young', 'has_aggression_history' => '0', 'high_vocalization' => '0',
+            ])->assertRedirect(route('admin.animals.index'));
 
-        foreach (range(1, 3) as $assessment) {
-            AssessmentRecord::create([
-                'pet_id' => $pet->id,
-                'energy_level' => 5,
-                'trainability' => 5,
-                'independence' => 5,
-                'temperament' => $temperament,
-            ]);
+        $pet = Pet::where('name', 'Assessed Intake')->sole();
+        $this->assertSame('Extra Small', $pet->physical_size);
+        $this->assertSame(1.0, $pet->medical_needs);
+        $this->assertSame('young', $pet->life_stage);
+        $this->assertFalse($pet->has_aggression_history);
+        $this->assertFalse($pet->high_vocalization);
+        $this->assertNotNull($pet->aggression_history_verified_at);
+    }
+
+    public function test_profile_fields_are_saved_by_animal_management_and_read_by_matching(): void
+    {
+        $pet = $this->matchingPet();
+        $this->actingAs($this->matchingUser(Role::Administrator))
+            ->put(route('admin.pets.update', $pet), [
+                'name' => $pet->name, 'species' => $pet->species->value,
+                'status' => 'Available', 'version' => $pet->version,
+                'physical_size' => 'Extra Large', 'medical_needs' => 5,
+                'life_stage' => 'senior', 'has_aggression_history' => '1', 'high_vocalization' => '1',
+            ])->assertRedirect(route('admin.animals.index'));
+
+        $pet = $pet->fresh();
+        $this->assertSame('Extra Large', $pet->physical_size);
+        $this->assertSame(5.0, $pet->medical_needs);
+        $this->assertSame('senior', $pet->life_stage);
+        $this->assertTrue($pet->has_aggression_history);
+        $this->assertTrue($pet->high_vocalization);
+        $this->assertNotNull($pet->aggression_history_verified_at);
+
+        $adopter = $this->matchingAdopter(['housing_type' => 'Apartment / Condo']);
+        $match = app(KnnRecommendationService::class)->calculateMatch($adopter, $pet);
+        $this->assertTrue($match->eligible);
+        $this->assertSame(5.0, $match->petVector['physical_size']);
+        $this->assertSame(5.0, $match->petVector['medical_needs']);
+        $this->assertCount(6, $match->petVector);
+        $this->assertSame(1.0, $match->penalty);
+
+        $adopter->update(['has_children' => true]);
+        $this->assertSame('EXCLUDED_CHILD_SAFETY', app(KnnRecommendationService::class)
+            ->calculateMatch($adopter->fresh(), $pet)->exclusionReason);
+    }
+
+    public function test_behavior_assessment_cannot_overwrite_pet_profile_even_with_forged_fields(): void
+    {
+        $pet = $this->matchingPet([], 0);
+        $payload = $this->assessmentPayload() + [
+            'physical_size' => 'Extra Large', 'medical_needs' => 5,
+            'life_stage' => 'senior', 'has_aggression_history' => '1', 'high_vocalization' => '1',
+        ];
+        $this->actingAs($this->matchingUser(Role::Volunteer))
+            ->post(route('admin.assessments.store', $pet), $payload)
+            ->assertRedirect(route('admin.assessments.record'));
+
+        $pet = $pet->fresh();
+        $this->assertSame('Medium', $pet->physical_size);
+        $this->assertSame(3.0, $pet->medical_needs);
+        $this->assertSame('adult', $pet->life_stage);
+        $this->assertFalse($pet->has_aggression_history);
+        $this->assertFalse($pet->high_vocalization);
+        $this->assertDatabaseCount('assessment_records', 1);
+    }
+
+    public function test_cbarq_zero_to_four_is_normalized_without_reversing_fearfulness(): void
+    {
+        $pet = $this->matchingPet([], 0);
+        $payload = $this->assessmentPayload();
+        $payload['responses']['energy']['E1'] = 1;
+        foreach (range(1, 3) as $i) {
+            $this->actingAs($this->matchingUser(Role::Volunteer))
+                ->post(route('admin.assessments.store', $pet), $payload)
+                ->assertRedirect(route('admin.assessments.record'));
         }
+        $record = $pet->assessmentRecords()->first();
+        $this->assertSame(1.0, $record->temperament);
+        $this->assertSame(5.0, $record->independence);
+        $this->assertSame(2.5, $record->trainability);
+        $this->assertEqualsWithDelta(1 + 1 / 3, $pet->fresh()->energy_level, 1e-12);
+        $this->assertSame(3, $pet->fresh()->assessment_count);
+        $this->assertSame(1, app(KnnRecommendationService::class)->recommendPets($this->matchingAdopter())->count());
+    }
 
-        return $pet;
+    public function test_out_of_range_and_fractional_behavior_answers_are_rejected(): void
+    {
+        $pet = $this->matchingPet([], 0);
+        foreach ([-1, 5, 1.5] as $invalid) {
+            $payload = $this->assessmentPayload();
+            $payload['responses']['trainability']['T5'] = $invalid;
+            $this->actingAs($this->matchingUser(Role::Administrator))
+                ->postJson(route('admin.assessments.store', $pet), $payload)
+                ->assertUnprocessable()->assertJsonValidationErrors('responses.trainability.T5');
+        }
+        $this->assertDatabaseCount('assessment_records', 0);
+    }
+
+    public function test_incomplete_subscales_are_saved_as_null_and_do_not_create_a_match(): void
+    {
+        $pet = $this->matchingPet([], 0);
+        $payload = $this->assessmentPayload();
+        $payload['responses']['energy'] = [];
+        $this->actingAs($this->matchingUser(Role::Volunteer))
+            ->post(route('admin.assessments.store', $pet), $payload)
+            ->assertRedirect(route('admin.assessments.record'));
+        $this->assertNull(AssessmentRecord::sole()->energy_level);
+        $this->assertNull($pet->fresh()->energy_level);
+    }
+
+    public function test_new_pet_safety_data_starts_unknown_and_can_remain_unknown_after_behavior_assessment(): void
+    {
+        $pet = Pet::create(['name' => 'Unverified Test Pet', 'species' => 'Dog']);
+        $this->assertNull($pet->fresh()->has_aggression_history);
+        $this->assertNull($pet->fresh()->high_vocalization);
+        $this->assertNull($pet->fresh()->life_stage);
+        $this->assertNull($pet->fresh()->physical_size);
+        $this->assertNull($pet->fresh()->medical_needs);
+
+        $this->actingAs($this->matchingUser(Role::Volunteer))
+            ->post(route('admin.assessments.store', $pet), $this->assessmentPayload())
+            ->assertRedirect(route('admin.assessments.record'));
+
+        $this->assertNull($pet->fresh()->has_aggression_history);
+        $this->assertNull($pet->fresh()->high_vocalization);
+        $this->assertNull($pet->fresh()->life_stage);
+        $this->assertNull($pet->fresh()->physical_size);
+        $this->assertNull($pet->fresh()->medical_needs);
+        $this->assertDatabaseCount('assessment_records', 1);
+
+        $verified = Pet::create(['name' => 'Verified Test Pet', 'species' => 'Dog', 'has_aggression_history' => false]);
+        $this->assertFalse($verified->fresh()->has_aggression_history);
+        $this->assertNotNull($verified->fresh()->aggression_history_verified_at);
+    }
+
+    public function test_animal_profile_can_clear_safety_answers_and_exclude_matching(): void
+    {
+        $pet = $this->matchingPet();
+        $this->actingAs($this->matchingUser(Role::Volunteer))
+            ->put(route('admin.pets.update', $pet), [
+                'name' => $pet->name, 'species' => $pet->species->value,
+                'status' => 'Available', 'version' => $pet->version,
+                'life_stage' => '', 'has_aggression_history' => '', 'high_vocalization' => '',
+            ])->assertRedirect(route('admin.animals.index'));
+
+        $this->assertNull($pet->fresh()->life_stage);
+        $this->assertNull($pet->fresh()->has_aggression_history);
+        $this->assertNull($pet->fresh()->aggression_history_verified_at);
+        $this->assertNull($pet->fresh()->high_vocalization);
+        $this->assertFalse(Pet::recommendationEligible()->whereKey($pet->id)->exists());
+        $this->assertSame('SAFETY_INFORMATION_INCOMPLETE', app(KnnRecommendationService::class)
+            ->calculateMatch($this->matchingAdopter(), $pet->fresh())->exclusionReason);
+    }
+
+    public function test_legacy_no_without_verification_is_incomplete_until_staff_confirms_it(): void
+    {
+        $pet = $this->matchingPet();
+        $pet->forceFill(['aggression_history_verified_at' => null])->saveQuietly();
+
+        $this->assertFalse($pet->fresh()->has_aggression_history);
+        $this->assertFalse(Pet::recommendationEligible()->whereKey($pet->id)->exists());
+        $this->assertSame('SAFETY_INFORMATION_INCOMPLETE', app(KnnRecommendationService::class)
+            ->calculateMatch($this->matchingAdopter(), $pet->fresh())->exclusionReason);
+
+        $this->actingAs($this->matchingUser(Role::Volunteer));
+        $this->get(route('admin.assessments.summary', $pet))->assertOk()
+            ->assertSee('verified aggression history')->assertSee('Not verified');
+        $form = $this->get(route('admin.animals.index'))->assertOk()->getContent();
+        $this->assertStringContainsString('id="vAggression" name="has_aggression_history"', $form);
+        $this->assertStringContainsString('"has_aggression_history":null', $form);
+
+        $this->put(route('admin.pets.update', $pet), [
+            'name' => $pet->name, 'species' => $pet->species->value,
+            'status' => 'Available', 'version' => $pet->version,
+            'has_aggression_history' => '',
+        ])->assertRedirect(route('admin.animals.index'));
+        $this->assertFalse($pet->fresh()->has_aggression_history);
+        $this->assertNull($pet->fresh()->aggression_history_verified_at);
+
+        $this->put(route('admin.pets.update', $pet), [
+            'name' => $pet->name, 'species' => $pet->species->value,
+            'status' => 'Available', 'version' => $pet->fresh()->version,
+            'has_aggression_history' => '0',
+        ])->assertRedirect(route('admin.animals.index'));
+
+        $this->assertNotNull($pet->fresh()->aggression_history_verified_at);
+        $this->assertTrue(Pet::recommendationEligible()->whereKey($pet->id)->exists());
+    }
+
+    public function test_staff_can_clear_unverified_veterinary_values_without_inventing_a_match(): void
+    {
+        $pet = $this->matchingPet();
+        $this->actingAs($this->matchingUser(Role::Administrator))
+            ->put(route('admin.pets.update', $pet), [
+                'name' => $pet->name, 'species' => $pet->species->value,
+                'status' => 'Available', 'version' => $pet->version,
+                'physical_size' => '', 'medical_needs' => '',
+            ])->assertRedirect(route('admin.animals.index'));
+
+        $this->assertNull($pet->fresh()->physical_size);
+        $this->assertNull($pet->fresh()->medical_needs);
+        $this->assertSame('PET_SIZE_NOT_ASSESSED', app(KnnRecommendationService::class)
+            ->calculateMatch($this->matchingAdopter(), $pet->fresh())->exclusionReason);
+    }
+
+    public function test_recommendation_profile_stores_all_lifestyle_fields_and_twenty_bfi_answers(): void
+    {
+        $user = $this->matchingUser();
+        $fields = [
+            'physical_activity_level' => 'Moderate (Daily walks, occasional play)',
+            'time_availability' => '2-4 hours/day',
+            'prior_pet_experience' => 'Experienced with rescue/special needs animals',
+            'housing_type' => 'Single Family Home (Fenced Yard)',
+            'household_composition' => 'Living with adults only',
+            'monthly_income_range' => '₱30,000 - ₱50,000',
+            'has_existing_pets' => false, 'has_children' => false,
+            'bfi_responses' => $this->bfiResponses(),
+        ];
+        $fields['bfi_responses']['EX1'] = 4;
+        $this->actingAs($user)->post(route('recommendation.start'), $fields)->assertRedirect(route('recommendation.results'));
+        $profile = $user->fresh()->adopterProfile;
+        $this->assertFalse($profile->has_existing_pets); // Experience is not current ownership.
+        $this->assertEqualsWithDelta(19 / 6, $profile->extraversion, 1e-12);
+        $this->assertSame(3, $profile->financial_readiness);
+        $this->assertCount(20, $profile->bfi_responses);
+        foreach (['physical_activity_level', 'time_availability', 'prior_pet_experience', 'housing_type', 'household_composition', 'monthly_income_range'] as $key) {
+            $this->assertSame($fields[$key], $profile->{$key});
+        }
+        $this->get(route('recommendation.results'))->assertOk();
+        $this->postJson(route('recommendation.recompute'), ['energy' => 5, 'knn_score' => 99.99])
+            ->assertUnprocessable()->assertJsonValidationErrors(['energy', 'knn_score']);
     }
 }
-
-

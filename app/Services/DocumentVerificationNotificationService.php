@@ -25,7 +25,7 @@ class DocumentVerificationNotificationService
                 [
                     "The supporting document for your application for {$application->pet?->name} matched the details you provided.",
                     $isWaitlisted
-                        ? 'Another primary application is already active, so yours remains eligible in the first-come, first-served waitlist.'
+                        ? 'Another primary application is already active. Your verified application remains in the compatibility-ranked waitlist.'
                         : 'Your application can now proceed to shelter review.',
                 ],
                 'View My Applications',

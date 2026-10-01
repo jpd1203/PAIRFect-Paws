@@ -112,14 +112,14 @@ class PasswordResetTest extends TestCase
         $this->post(route('password.update'), [
             'token' => $token,
             'email' => $user->email,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'New-Secure-Password123!',
+            'password_confirmation' => 'New-Secure-Password123!',
         ])
             ->assertRedirect(route('login'))
             ->assertSessionHas('status');
 
         $user->refresh();
-        $this->assertTrue(Hash::check('new-secure-password', $user->password));
+        $this->assertTrue(Hash::check('New-Secure-Password123!', $user->password));
         $this->assertNotSame('old-remember-token', $user->remember_token);
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
         $this->assertDatabaseMissing('sessions', ['id' => 'reset-user-session']);
@@ -129,13 +129,13 @@ class PasswordResetTest extends TestCase
         $this->from(route('login'))->post(route('password.update'), [
             'token' => $token,
             'email' => $user->email,
-            'password' => 'attempted-reuse-password',
-            'password_confirmation' => 'attempted-reuse-password',
+            'password' => 'Attempted-Reuse-Password123!',
+            'password_confirmation' => 'Attempted-Reuse-Password123!',
         ])
             ->assertRedirect(route('login'))
             ->assertSessionHasErrors('email');
 
-        $this->assertTrue(Hash::check('new-secure-password', $user->refresh()->password));
+        $this->assertTrue(Hash::check('New-Secure-Password123!', $user->refresh()->password));
     }
 
     public function test_invalid_and_expired_tokens_do_not_change_the_password(): void
@@ -146,8 +146,8 @@ class PasswordResetTest extends TestCase
         $this->from(route('password.request'))->post(route('password.update'), [
             'token' => 'invalid-token',
             'email' => $invalidUser->email,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'New-Secure-Password123!',
+            'password_confirmation' => 'New-Secure-Password123!',
         ])
             ->assertRedirect(route('password.request'))
             ->assertSessionHasErrors('email');
@@ -161,8 +161,8 @@ class PasswordResetTest extends TestCase
         $this->from(route('password.request'))->post(route('password.update'), [
             'token' => $expiredToken,
             'email' => $expiredUser->email,
-            'password' => 'new-expired-password',
-            'password_confirmation' => 'new-expired-password',
+            'password' => 'New-Expired-Password123!',
+            'password_confirmation' => 'New-Expired-Password123!',
         ])
             ->assertRedirect(route('password.request'))
             ->assertSessionHasErrors('email');
@@ -180,7 +180,7 @@ class PasswordResetTest extends TestCase
             ->post(route('password.update'), [
                 'token' => $token,
                 'email' => $user->email,
-                'password' => 'new-secure-password',
+                'password' => 'New-Secure-Password123!',
                 'password_confirmation' => 'does-not-match',
             ])
             ->assertRedirect(route('password.reset', ['token' => $token, 'email' => $user->email]))
@@ -201,8 +201,8 @@ class PasswordResetTest extends TestCase
             ->post(route('password.update'), [
                 'token' => $token,
                 'email' => $user->email,
-                'password' => 'new-secure-password',
-                'password_confirmation' => 'new-secure-password',
+                'password' => 'New-Secure-Password123!',
+                'password_confirmation' => 'New-Secure-Password123!',
             ])
             ->assertSessionHasErrors('email');
 

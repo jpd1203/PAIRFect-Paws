@@ -198,6 +198,9 @@
             'status' => $p->status, 'vacc' => $p->vaccination_record_status, 'notes' => $p->behavioral_notes,
             'description' => $p->description,
             'physical_size' => $p->physical_size, 'medical_needs' => $p->medical_needs,
+            'life_stage' => $p->life_stage,
+            'has_aggression_history' => $p->aggression_history_verified_at === null ? null : $p->has_aggression_history,
+            'high_vocalization' => $p->high_vocalization,
             'assessment_status' => $p->assessment_status,
             'assessment_count' => $p->assessment_records_count, 'version' => $p->version,
             'image_url' => $p->image_url,
@@ -243,5 +246,4 @@
     </script>
     <script src="{{ asset('js/admin/animal.js') }}" defer></script>
 @endpush
-
 

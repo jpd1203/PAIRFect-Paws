@@ -117,16 +117,14 @@
 
         <div class="menu-section">
 
-            <a href="{{ route('admin.volunteers.index') }}" class="menu-item {{ $isActive('admin.volunteers.index') ? 'active' : '' }}">
-                <i class="fa-solid fa-users fa-lg"></i> Volunteers
-            </a>
+            @if($staff?->isAdmin())
+                <a href="{{ route('admin.volunteers.index') }}" class="menu-item {{ $isActive('admin.volunteers.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-users fa-lg"></i> Volunteers
+                </a>
+            @endif
 
             <a href="{{ route('admin.audit-logs.index') }}" class="menu-item {{ $isActive('admin.audit-logs.index') ? 'active' : '' }}">
                 <i class="fa-solid fa-clipboard-list fa-lg"></i> Audit Logs
-            </a>
-
-            <a href="{{ route('admin.funds.index') }}" class="menu-item {{ $isActive('admin.funds.index') ? 'active' : '' }}">
-                <i class="fa-solid fa-sack-dollar fa-lg"></i> Manage Funds
             </a>
 
             @if (config('post_adoption.time_travel.enabled'))

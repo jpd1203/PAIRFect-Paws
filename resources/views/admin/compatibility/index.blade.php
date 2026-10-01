@@ -6,7 +6,7 @@
 
 <div class="heading-text">
     <h2>Compatibility</h2>
-    <p>Pet Recommendation match results for applicants who used the feature.</p>
+    <p>Application matches for each pet, ranked by full compatibility score. Shelter staff make the final adoption decision.</p>
 </div>
 
 @php
@@ -16,14 +16,15 @@
         'good' => 0,
         'fair' => 0,
         'low' => 0,
+        'unscored' => 0,
     ];
 
     foreach ($applications as $appItem) {
-        $score = $appItem->compatibility_result['overall'] ?? 0;
-        $tierKey = $score >= 80 ? 'high'
+        $score = $appItem->knn_score;
+        $tierKey = $score === null ? 'unscored' : ($score >= 80 ? 'high'
                 : ($score >= 60 ? 'good'
                 : ($score >= 40 ? 'fair'
-                : 'low'));
+                : 'low')));
         $compatCounts[$tierKey]++;
     }
 @endphp
@@ -34,6 +35,7 @@
     <button class="filter-btn badge-scheduled" data-filter-btn="good">Good Match ({{ $compatCounts['good'] }})</button>
     <button class="filter-btn badge-pending" data-filter-btn="fair">Fair Match ({{ $compatCounts['fair'] }})</button>
     <button class="filter-btn badge-rejected" data-filter-btn="low">Low Match ({{ $compatCounts['low'] }})</button>
+    <button class="filter-btn badge-pending" data-filter-btn="unscored">Not Scored ({{ $compatCounts['unscored'] }})</button>
 </div>
 
 <div id="compatList" class="flex flex-col gap-2 mt-4">
@@ -41,18 +43,19 @@
     @forelse ($applications as $app)
 
         @php
-            $overall = $app->compatibility_result['overall'] ?? 0;
+            $overall = $app->knn_score;
 
-            $tier = $overall >= 80 ? 'high'
+            $tier = $overall === null ? 'unscored' : ($overall >= 80 ? 'high'
                     : ($overall >= 60 ? 'good'
                     : ($overall >= 40 ? 'fair'
-                    : 'low'));
+                    : 'low')));
 
             $tierLabel = match ($tier) {
                 'high' => 'High Match',
                 'good' => 'Good Match',
                 'fair' => 'Fair Match',
                 'low' => 'Low Match',
+                'unscored' => 'Not Scored',
             };
 
             $tierColor = match ($tier) {
@@ -60,6 +63,7 @@
                 'good' => '#2A4877',
                 'fair' => '#614E34',
                 'low' => '#773E47',
+                'unscored' => '#6B7280',
             };
 
             $tierBg = match ($tier) {
@@ -67,6 +71,7 @@
                 'good' => '#E8EDF5',
                 'fair' => '#FAEEDA',
                 'low' => '#FCEBEB',
+                'unscored' => '#F3F4F6',
             };
         @endphp
 
@@ -83,12 +88,22 @@
                 <div class="compat-info">
 
                     <div class="pet-title"> <h3>{{ $app->pet?->name }}</h3>
-                        <span>{{ $app->pet?->species }}•{{ $app->pet?->age_group }}•{{ $app->pet?->sex }}</span>
+                        <span>{{ $app->pet?->species_display }} · {{ $app->pet?->age_group }} · {{ $app->pet?->sex }}</span>
                     </div>
 
                     <p class="matched-user">Matched with
                         <strong>{{ $app->first_name }} {{ $app->last_name }}</strong>
                     </p>
+                    @php $historySummary = $historySummaries[$app->id] ?? null; @endphp
+                    @if ($historySummary && $historySummary['review_status'] !== 'no_recorded_concerns')
+                        <p class="applied-date">
+                            History: <span class="badge {{ $historySummary['badge_class'] }}">{{ $historySummary['review_label'] }}</span>
+                            <button type="button" class="btn btn-secondary btn-sm" data-history-url="{{ route('admin.adopter-profiles.history', $app->user_id) }}" onclick="openCompatHistory(this.dataset.historyUrl)">View History</button>
+                        </p>
+                    @else
+                        <p class="applied-date">History: No Recorded Concerns</p>
+                    @endif
+                    <p class="applied-date">{{ $app->queue_position ? 'Rank #'.$app->queue_position.' for this pet' : 'Not in the active ranked queue' }}</p>
 
                     <p class="applied-date"><i class="fa-regular fa-calendar"></i>
                         Applied
@@ -99,10 +114,10 @@
                 {{-- SCORE --}}
                 <div class="compat-score">
 
-                    <div class="score-circle"style="--ring: {{ $tierColor }};--ring-bg: {{ $tierBg }};--score: {{ $overall }};">
+                    <div class="score-circle" aria-label="{{ $overall === null ? 'Not scored' : 'Compatibility '.number_format($overall, 2).'%' }}" style="--ring: {{ $tierColor }};--ring-bg: {{ $tierBg }};--score: {{ $overall ?? 0 }};">
                         <div class="score-value">
-                            <strong>{{ $overall }}</strong>
-                            <small>/100</small>
+                            <strong>{{ $overall === null ? '—' : number_format($overall, 2) }}</strong>
+                            <small>{{ $overall === null ? '' : '/100' }}</small>
                         </div>
                     </div>
 
@@ -127,11 +142,15 @@
 
         <div class="empty-state"><i class="fa-solid fa-circle-check"></i>
             <h3>No Compatibility Result</h3>
-            <p>No applicants have used Pet Recommendation yet.</p>
+            <p>No adoption applications have been recorded yet.</p>
         </div>
 
     @endforelse
 
+</div>
+
+<div class="custom-modal-backdrop" id="compatHistoryModal">
+    <div class="custom-modal adoption-history-modal" id="compatHistoryContent"></div>
 </div>
 
 
@@ -255,6 +274,25 @@
 
     const COMPAT_APPS = JSON.parse(document.getElementById('compatAppData')?.textContent || '{}');
 
+    async function openCompatHistory(url) {
+        const content = document.getElementById('compatHistoryContent');
+        openModal('compatHistoryModal');
+        content.textContent = 'Loading adopter history...';
+        try {
+            const response = await fetch(url, {
+                credentials: 'same-origin',
+                headers: { 'Accept': 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            if (!response.ok) throw new Error('Could not load history');
+            content.innerHTML = await response.text();
+        } catch (error) {
+            content.textContent = 'Could not load adopter history. Please try again.';
+        }
+    }
+
+    function switchProfileHistory(url) { openCompatHistory(url); }
+    function closeProfileHistory() { closeModal('compatHistoryModal'); }
+
     function openBreakdown(result, subheading) {
 
         document.getElementById('breakdownSubheading').textContent = subheading;
@@ -262,6 +300,13 @@
         const host = document.getElementById('breakdownRows');
 
         host.innerHTML = '';
+
+        if (!result?.rows?.length) {
+            const message = document.createElement('p');
+            message.className = 'text-sm text-gray-600';
+            message.textContent = 'No current compatibility breakdown is available for this application.';
+            host.appendChild(message);
+        }
 
         (result?.rows || []).forEach((row) => {
 

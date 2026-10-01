@@ -82,6 +82,15 @@ class AuthController extends Controller
             $redirectTo = session()->pull('url.intended');
         }
 
+        if (Auth::user()->isAdopter() && Auth::user()->matching_onboarding_pending) {
+            $petId = $this->isValidRedirect($redirectTo) ? $this->intendedPetId($redirectTo) : null;
+            if ($petId !== null) {
+                $request->session()->put('matching_return_pet', $petId);
+            }
+
+            return redirect()->route(Auth::user()->hasVerifiedEmail() ? 'recommendation.onboarding' : 'verification.notice');
+        }
+
         if ($redirectTo && $this->isValidRedirect($redirectTo)) {
             if (Auth::user()->role !== Role::Adopter) {
                 return redirect()->route('admin.dashboard');
@@ -122,6 +131,7 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
             'role' => Role::Adopter->value,
             'is_active' => true,
+            'matching_onboarding_pending' => true,
             ...$address,
         ]);
 
@@ -130,14 +140,15 @@ class AuthController extends Controller
 
         event(new Registered($user));
 
+        $petId = $this->isValidRedirect($redirectTo) ? $this->intendedPetId($redirectTo) : null;
+        if ($petId !== null) {
+            $request->session()->put('matching_return_pet', $petId);
+        }
+
         if (app()->environment('local')) {
             $user->markEmailAsVerified();
 
-            if ($redirectTo && $this->isValidRedirect($redirectTo)) {
-                return redirect()->to($redirectTo);
-            }
-
-            return redirect()->to($this->routeForRole($user));
+            return redirect()->route('recommendation.onboarding');
         }
 
         if ($redirectTo && $this->isValidRedirect($redirectTo)) {
@@ -195,5 +206,11 @@ class AuthController extends Controller
 
         return $targetHost !== null && in_array($targetHost, array_filter([$appHost, '127.0.0.1', 'localhost']), true);
     }
-}
 
+    private function intendedPetId(?string $url): ?int
+    {
+        return preg_match('#^/(?:apply|applications/create)/(\d+)$#', (string) parse_url($url ?? '', PHP_URL_PATH), $matches)
+            ? (int) $matches[1]
+            : null;
+    }
+}

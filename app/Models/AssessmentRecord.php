@@ -13,15 +13,17 @@ class AssessmentRecord extends Model
         'trainability',
         'independence',
         'temperament',
+        'responses', 'scoring_version',
     ];
 
     protected function casts(): array
     {
         return [
-            'energy_level' => 'decimal:1',
-            'trainability' => 'decimal:1',
-            'independence' => 'decimal:1',
-            'temperament' => 'decimal:1',
+            'energy_level' => 'float',
+            'trainability' => 'float',
+            'independence' => 'float',
+            'temperament' => 'float',
+            'responses' => 'array',
         ];
     }
 

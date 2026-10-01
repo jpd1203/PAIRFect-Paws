@@ -17,7 +17,13 @@
     </table>
 
     @if($status === 'InterviewScheduled')
-        <p>Great news! An interview has been scheduled for your application. Please ensure you are available at the time listed above.</p>
+        @if($event === 'interview_rescheduled')
+            <p>Your interview has been rescheduled. Please use the updated date and time above.</p>
+        @else
+            <p>Great news! An interview has been scheduled for your application. Please ensure you are available at the time listed above.</p>
+        @endif
+        <p>If you are unavailable at the scheduled date or time, you may request a reschedule. Provide your available dates and times so shelter staff can review your request. Your current schedule stays in place until staff confirms a change.</p>
+        <p><a href="{{ $rescheduleUrl }}" style="color:#1d4ed8;font-weight:600">Request Reschedule</a></p>
     @elseif($status === 'UnderReview')
         <p>Your application is currently under final review by our shelter staff. We are carefully considering your application and will notify you of our decision soon.</p>
     @elseif($status === 'Pending')

@@ -9,6 +9,7 @@ use App\Mail\StatusUpdateMail;
 use App\Models\AdoptionApplication;
 use App\Models\Pet;
 use App\Models\User;
+use App\Services\Matching\ApplicantRankingService;
 use App\Support\ManilaTime;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -27,6 +28,7 @@ class ReservationQueueService
         private readonly PostAdoptionScheduleService $postAdoptionSchedule,
         private readonly EmailNotificationService $emailNotifications,
         private readonly HandoverService $handovers,
+        private readonly ApplicantRankingService $ranking,
     ) {}
 
     public function schedule(
@@ -42,7 +44,7 @@ class ReservationQueueService
 
         $result = DB::transaction(function () use ($application, $scheduledAt, $interviewer, $actorId): array {
             $pet = Pet::withoutGlobalScope('notArchived')->lockForUpdate()->findOrFail($application->pet_id);
-            $candidate = AdoptionApplication::lockForUpdate()->findOrFail($application->id);
+            $candidate = AdoptionApplication::where('pet_id', $pet->id)->lockForUpdate()->findOrFail($application->id);
 
             $isReschedule = $candidate->status === ApplicationStatus::InterviewScheduled
                 && $candidate->is_primary_candidate;
@@ -63,22 +65,15 @@ class ReservationQueueService
             }
 
             if (! $isReschedule) {
-                $firstEligible = AdoptionApplication::where('pet_id', $pet->id)
-                    ->whereIn('status', [ApplicationStatus::Pending->value, ApplicationStatus::UnderReview->value, ApplicationStatus::PrimaryCandidate->value])
-                    ->whereIn('document_verification_status', [
-                        DocumentVerificationStatus::Verified->value,
-                        DocumentVerificationStatus::LegacyReview->value,
-                    ])
-                    ->whereNotIn('status', self::TERMINAL_STATUSES)
-                    ->orderByRaw('knn_score IS NULL, knn_score ASC')
-                    ->orderBy('created_at')
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->first();
-
-                if (($candidate->status === ApplicationStatus::Pending || $candidate->status === ApplicationStatus::UnderReview) && $firstEligible?->id !== $candidate->id) {
+                $firstEligible = $this->ranking->eligibleForPet($pet, [
+                    ApplicationStatus::Pending, ApplicationStatus::UnderReview, ApplicationStatus::PrimaryCandidate,
+                ])->first();
+                $candidate->refresh();
+                if (! $this->ranking->isEligible($candidate) ||
+                    ((! $candidate->is_primary_candidate || $candidate->status !== ApplicationStatus::PrimaryCandidate)
+                        && $firstEligible?->id !== $candidate->id)) {
                     throw ValidationException::withMessages([
-                        'application_id' => 'The highest scoring eligible application must be scheduled first. Use an administrative override after the queue is active if required.',
+                        'application_id' => 'Schedule the highest-ranked eligible applicant first. An administrator can override an active primary candidate with an audited reason.',
                     ]);
                 }
             }
@@ -104,14 +99,15 @@ class ReservationQueueService
                 'interview_date' => $scheduledAt,
                 'conducted_by' => $interviewer->full_name,
                 'admin_review_flagged_at' => null,
+                ...($isReschedule && $candidate->reschedule_status === 'pending' ? [
+                    'reschedule_status' => 'approved',
+                    'reschedule_reviewed_at' => now(),
+                ] : []),
             ]);
 
-            $newlyWaitlisted = AdoptionApplication::where('pet_id', $pet->id)
-                ->where('id', '!=', $candidate->id)
-                ->whereIn('status', [ApplicationStatus::Pending->value, ApplicationStatus::UnderReview->value])
-                ->where('document_verification_status', DocumentVerificationStatus::Verified->value)
-                ->lockForUpdate()
-                ->get();
+            $newlyWaitlisted = $this->ranking->eligibleForPet($pet, [
+                ApplicationStatus::Pending, ApplicationStatus::UnderReview,
+            ])->reject(fn ($application) => $application->id === $candidate->id);
 
             if ($newlyWaitlisted->isNotEmpty()) {
                 AdoptionApplication::whereKey($newlyWaitlisted->modelKeys())
@@ -175,8 +171,8 @@ class ReservationQueueService
         }
 
         $promoted = DB::transaction(function () use ($application, $outcome, $reason, $actorId) {
-            $candidate = AdoptionApplication::lockForUpdate()->findOrFail($application->id);
-            $pet = Pet::withoutGlobalScope('notArchived')->lockForUpdate()->findOrFail($candidate->pet_id);
+            $pet = Pet::withoutGlobalScope('notArchived')->lockForUpdate()->findOrFail($application->pet_id);
+            $candidate = AdoptionApplication::where('pet_id', $pet->id)->lockForUpdate()->findOrFail($application->id);
 
             if (! $candidate->is_primary_candidate) {
                 throw ValidationException::withMessages([
@@ -192,6 +188,11 @@ class ReservationQueueService
             if ($outcome === ApplicationStatus::NoShow && $candidate->status !== ApplicationStatus::InterviewScheduled) {
                 throw ValidationException::withMessages([
                     'outcome' => 'Only a scheduled interview can be marked as a no-show.',
+                ]);
+            }
+            if ($outcome === ApplicationStatus::NoShow && $candidate->reschedule_status === 'pending') {
+                throw ValidationException::withMessages([
+                    'outcome' => 'Review the pending reschedule request before recording a no-show.',
                 ]);
             }
 
@@ -322,8 +323,8 @@ class ReservationQueueService
         ?int $actorId
     ): AdoptionApplication {
         DB::transaction(function () use ($application, $notes, $conductedBy, $actorId) {
-            $candidate = AdoptionApplication::lockForUpdate()->findOrFail($application->id);
-            $pet = Pet::withoutGlobalScope('notArchived')->lockForUpdate()->findOrFail($candidate->pet_id);
+            $pet = Pet::withoutGlobalScope('notArchived')->lockForUpdate()->findOrFail($application->pet_id);
+            $candidate = AdoptionApplication::where('pet_id', $pet->id)->lockForUpdate()->findOrFail($application->id);
 
             if ($candidate->status !== ApplicationStatus::InterviewScheduled || ! $candidate->is_primary_candidate) {
                 throw ValidationException::withMessages([
@@ -357,8 +358,8 @@ class ReservationQueueService
     public function approve(AdoptionApplication $application, ?string $remarks, ?int $actorId): Collection
     {
         $closed = DB::transaction(function () use ($application, $remarks, $actorId) {
-            $candidate = AdoptionApplication::lockForUpdate()->findOrFail($application->id);
-            $pet = Pet::withoutGlobalScope('notArchived')->lockForUpdate()->findOrFail($candidate->pet_id);
+            $pet = Pet::withoutGlobalScope('notArchived')->lockForUpdate()->findOrFail($application->pet_id);
+            $candidate = AdoptionApplication::where('pet_id', $pet->id)->lockForUpdate()->findOrFail($application->id);
 
             if (! $candidate->is_primary_candidate || $candidate->status !== ApplicationStatus::UnderReview) {
                 throw ValidationException::withMessages([
@@ -375,7 +376,6 @@ class ReservationQueueService
                 'queue_closed_at' => $approvedAt,
                 'adopted_at' => $approvedAt,
             ]);
-            $pet->update(['availability_status' => AvailabilityStatus::Adopted->value]);
 
             $remaining = AdoptionApplication::with('user')
                 ->where('pet_id', $pet->id)
@@ -391,6 +391,10 @@ class ReservationQueueService
                     'queue_closed_at' => now(),
                 ]);
             }
+
+            // Close waitlisted applications before the availability hook runs, so
+            // their last valid compatibility snapshots remain in adoption history.
+            $pet->update(['availability_status' => AvailabilityStatus::Adopted->value]);
 
             $this->postAdoptionSchedule->ensureForApplication($candidate);
             $this->handovers->forApprovedApplication($candidate);
@@ -433,14 +437,19 @@ class ReservationQueueService
         int $actorId
     ): AdoptionApplication {
         $demotedApplicationId = DB::transaction(function () use ($target, $reason, $actorId): ?int {
-            $candidate = AdoptionApplication::lockForUpdate()->findOrFail($target->id);
-            $pet = Pet::withoutGlobalScope('notArchived')->lockForUpdate()->findOrFail($candidate->pet_id);
+            $pet = Pet::withoutGlobalScope('notArchived')->lockForUpdate()->findOrFail($target->pet_id);
+            $candidate = AdoptionApplication::where('pet_id', $pet->id)->lockForUpdate()->findOrFail($target->id);
 
             if ($candidate->status !== ApplicationStatus::Waitlisted) {
                 throw ValidationException::withMessages(['override_reason' => 'Only a waitlisted application can bypass the active queue.']);
             }
             if ($candidate->document_verification_status !== DocumentVerificationStatus::Verified) {
                 throw ValidationException::withMessages(['override_reason' => 'Only a document-verified applicant can be promoted.']);
+            }
+            $this->ranking->eligibleForPet($pet, [ApplicationStatus::Waitlisted]);
+            $candidate->refresh();
+            if (! $this->ranking->isEligible($candidate)) {
+                throw ValidationException::withMessages(['override_reason' => 'This applicant no longer has a valid compatibility result.']);
             }
 
             $current = AdoptionApplication::where('pet_id', $pet->id)
@@ -505,6 +514,7 @@ class ReservationQueueService
 
         $applications = AdoptionApplication::where('is_primary_candidate', true)
             ->where('status', ApplicationStatus::InterviewScheduled->value)
+            ->where(fn ($query) => $query->whereNull('reschedule_status')->orWhere('reschedule_status', '!=', 'pending'))
             ->where('interview_date', '<=', $timeout)
             ->get();
 
@@ -536,14 +546,7 @@ class ReservationQueueService
 
     private function promoteNextLocked(Pet $pet, ?int $actorId, string $notes): ?AdoptionApplication
     {
-        $next = AdoptionApplication::where('pet_id', $pet->id)
-            ->where('status', ApplicationStatus::Waitlisted->value)
-            ->where('document_verification_status', DocumentVerificationStatus::Verified->value)
-            ->orderByRaw('knn_score IS NULL, knn_score ASC')
-            ->orderBy('created_at')
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->first();
+        $next = $this->ranking->eligibleForPet($pet, [ApplicationStatus::Waitlisted])->first();
 
         if (! $next) {
             $pet->update(['availability_status' => AvailabilityStatus::Available->value]);

@@ -46,7 +46,7 @@ class EmailVerificationController extends Controller
                 ->with('success', $message);
         }
 
-        return redirect()->intended($this->routeForRole($user))
+        return $this->redirectByRole($request->user())
             ->with('success', 'Your email address has been verified.');
     }
 
@@ -63,6 +63,10 @@ class EmailVerificationController extends Controller
 
     private function redirectByRole(User $user): RedirectResponse
     {
+        if ($user->isAdopter() && $user->matching_onboarding_pending) {
+            return redirect()->route('recommendation.onboarding');
+        }
+
         return match ($user->role) {
             Role::Administrator, Role::Volunteer => redirect()->route('admin.dashboard'),
             Role::Adopter => redirect()->route('animal.index'),

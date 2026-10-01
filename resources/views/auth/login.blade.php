@@ -38,7 +38,7 @@
                     <img src="{{ $intendedPet->image_url }}" alt="{{ $intendedPet->name }}" class="h-12 w-12 rounded-lg object-cover border border-[#c9ae72] shrink-0">
                     <div class="min-w-0">
                         <div class="font-bold text-gray-900 truncate">Adopting {{ $intendedPet->name }}</div>
-                        <p class="text-xs text-gray-600 mt-0.5 leading-snug">Sign in or register below to proceed directly to {{ $intendedPet->name }}'s adoption application.</p>
+                        <p class="text-xs text-gray-600 mt-0.5 leading-snug">Sign in or register below. Complete the personality assessment before applying for {{ $intendedPet->name }}.</p>
                     </div>
                 </div>
             @endif
@@ -160,7 +160,7 @@
                 </div>
 
                 <p class="text-[11px] text-gray-500 text-center leading-tight pt-1">
-                    New accounts are assigned as Prospective Adopter. Volunteer accounts are created by an Administrator.
+                    New accounts are assigned as Prospective Adopter. The optional personality assessment comes next; you may skip it and browse pets. Volunteer accounts are created by an Administrator.
                 </p>
             </form>
 

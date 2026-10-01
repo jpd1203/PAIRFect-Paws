@@ -1,12 +1,19 @@
 /** Applications — drives Review / Schedule Interview / Interview Notes / History / Compatibility modals. */
 const APPLICATIONS = JSON.parse(document.getElementById('applicationData')?.textContent || '[]');
-const SCHEDULABLE_APPLICATIONS = APPLICATIONS.filter(
-    (application) => application.status === 'primarycandidate'
-        || (application.status === 'scheduled' && application.is_primary)
-        || (application.status === 'underreview'
-            && !application.is_primary
-            && ['Verified', 'LegacyReview'].includes(application.document_verification_status))
-);
+const SCHEDULABLE_APPLICATIONS = APPLICATIONS.filter((application) => {
+    if (application.status === 'primarycandidate' && application.is_primary) return true;
+    if (application.status === 'scheduled' && application.is_primary) return true;
+
+    const hasActivePrimary = APPLICATIONS.some((other) =>
+        other.pet_id === application.pet_id && other.id !== application.id && other.is_primary
+    );
+
+    return ['pending', 'underreview'].includes(application.status)
+        && !application.is_primary
+        && !hasActivePrimary
+        && application.queue_position === 1
+        && ['Verified', 'LegacyReview'].includes(application.document_verification_status);
+});
 
 let visibleApplicantMatches = [];
 let highlightedApplicantIndex = -1;
@@ -44,9 +51,30 @@ function openReviewModal(id) {
     document.getElementById('rDocumentLink').href = a.document_url;
     document.getElementById('rDocumentStatus').textContent = a.document_verification_status;
     document.getElementById('rVerificationLink').href = a.verification_url;
-    document.getElementById('rQueuePosition').textContent = a.queue_position ? `#${a.queue_position}` : 'Queue closed';
+    document.getElementById('rQueuePosition').textContent = a.queue_position
+        ? `#${a.queue_position}`
+        : ['approved', 'rejected', 'withdrawn', 'noshow', 'closed'].includes(a.status)
+            ? 'Queue closed'
+            : 'Not ranked';
     document.getElementById('rCandidateRole').textContent = a.is_primary ? 'Primary candidate' : (a.status === 'waitlisted' ? 'Waitlisted' : 'Not active');
     document.getElementById('rTimeoutRow').style.display = a.admin_review_flagged ? 'flex' : 'none';
+
+    const history = a.history_summary || {};
+    const historyBadge = document.getElementById('rHistoryStatus');
+    historyBadge.textContent = history.review_label || 'No Recorded Concerns';
+    historyBadge.className = `badge ${history.badge_class || 'badge-completed'}`;
+    document.getElementById('rHistoryApplications').textContent = history.previous_applications ?? 0;
+    document.getElementById('rHistoryPlacements').textContent = history.approved_placements ?? 0;
+    document.getElementById('rHistoryFlags').textContent = history.flagged_welfare_reports ?? 0;
+    document.getElementById('rHistoryCheckins').textContent = `${history.missed_checkins ?? 0} / ${history.late_checkins ?? 0}`;
+    const historyReasons = document.getElementById('rHistoryReasons');
+    historyReasons.replaceChildren();
+    (history.explanations || []).forEach((reason) => {
+        const item = document.createElement('li');
+        item.textContent = reason;
+        historyReasons.append(item);
+    });
+    document.getElementById('rFullHistoryBtn').onclick = () => openAdoptionHistoryModal(a.history_url);
 
     document.getElementById('rHistoryRow').style.display = a.has_history ? 'flex' : 'none';
     document.getElementById('rHistoryBtn').onclick = () => openAdoptionHistoryModal(a.history_url);
@@ -98,6 +126,48 @@ function openReviewModal(id) {
     document.getElementById('rDecisionRemarksSection').style.display = a.decision_remarks ? 'block' : 'none';
     document.getElementById('rDecisionRemarksText').textContent = a.decision_remarks ?? '';
 
+    const rescheduleSection = document.getElementById('rRescheduleSection');
+    const hasRescheduleRequest = a.reschedule_status === 'pending' && a.status === 'scheduled' && a.is_primary;
+    rescheduleSection.style.display = hasRescheduleRequest ? 'block' : 'none';
+    if (hasRescheduleRequest) {
+        document.getElementById('rRescheduleCurrent').textContent = `${a.interview_date} at ${a.interview_time}`;
+        document.getElementById('rRescheduleReason').textContent = a.reschedule_reason || 'No reason provided';
+        document.getElementById('rRescheduleAppId').value = a.id;
+        document.getElementById('rRescheduleDeclineForm').action = a.reschedule_decline_action;
+        const choices = document.getElementById('rRescheduleOptions');
+        choices.replaceChildren();
+        (a.reschedule_options || []).forEach((option, index) => {
+            const label = document.createElement('label');
+            label.className = 'block cursor-pointer py-1';
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'preferred_reschedule_option';
+            radio.value = index;
+            radio.checked = index === 0;
+            label.append(radio, document.createTextNode(` Option ${index + 1}: ${option.date} at ${option.time} (Asia/Manila)`));
+            choices.append(label);
+        });
+        const interviewer = document.getElementById('rRescheduleStaff');
+        interviewer.value = '';
+        const matchingStaff = Array.from(interviewer.options).find((option) => option.dataset.staffName === a.conducted_by);
+        if (matchingStaff) interviewer.value = matchingStaff.value;
+        document.getElementById('rRescheduleAcceptBtn').onclick = () => {
+            const selected = choices.querySelector('input:checked');
+            if (!selected || !interviewer.value) {
+                window.alert('Select a preferred time and an active interviewer before confirming.');
+                return;
+            }
+            const option = a.reschedule_options[Number(selected.value)];
+            document.getElementById('rRescheduleDate').value = option.date;
+            document.getElementById('rRescheduleTime').value = option.time;
+            document.getElementById('rRescheduleAcceptForm').requestSubmit();
+        };
+        document.getElementById('rRescheduleDifferentBtn').onclick = () => {
+            closeModal('applicationReviewModal');
+            openScheduleModal(a);
+        };
+    }
+
     // Footer actions depend on where the application is in the pipeline
     const actionsRow = document.getElementById('rActionsRow');
     const scheduleBtn = document.getElementById('rScheduleBtn');
@@ -115,33 +185,21 @@ function openReviewModal(id) {
 
     [scheduleBtn, approveBtn, rejectBtn, noShowBtn, withdrawBtn, overrideBtn]
         .forEach((button) => {
+            if (!button) return;
             button.style.display = 'none';
             button.onclick = null;
         });
 
     scheduleBtn.textContent = 'Schedule Interview';
     scheduleBtn.className = 'btn btn-blue';
-    rejectBtn.textContent = 'Reject';
-    rejectBtn.className = 'btn btn-danger';
-
-    // if (a.status === 'primarycandidate' || (a.status === 'underreview' && !a.is_primary)) {
-    //     scheduleBtn.style.display = 'inline-flex';
-    //     scheduleBtn.onclick = () => { closeModal('applicationReviewModal'); openScheduleModal(a); };
-    //     rejectBtn.style.display = 'inline-flex';
-    //     rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
-    // } else if (a.status === 'underreview' && a.is_primary) {
-    //     approveBtn.style.display = 'inline-flex';
-    //     rejectBtn.style.display = 'inline-flex';
-    //     approveBtn.onclick = () => submitDecision(decisionForm, 'Approved');
-    //     rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
-    // } else if (a.status === 'documentflagged') {
-    //     rejectBtn.style.display = 'inline-flex';
-    //     rejectBtn.onclick = () => submitDecision(decisionForm, 'Rejected');
-    // } else if (a.status === 'scheduled' && a.is_primary) {
-    //     scheduleBtn.textContent = 'Reschedule Interview';
-    //     scheduleBtn.style.display = 'inline-flex';
-    //     scheduleBtn.onclick = () => { closeModal('applicationReviewModal'); openScheduleModal(a); };
-    // }
+    const showDecisionButton = (button, decision) => {
+        if (!button) return;
+        button.innerHTML = decision === 'Approved'
+            ? '<i class="fa-solid fa-circle-check"></i> Approve'
+            : '<i class="fa-solid fa-circle-xmark"></i> Reject';
+        button.style.display = 'inline-flex';
+        button.onclick = () => openDecisionModal(a, decision);
+    };
     if (a.status === 'pending') {
     // Pending application
     scheduleBtn.innerHTML = '<i class="fa-solid fa-calendar-check"></i> Schedule Interview';
@@ -151,19 +209,12 @@ function openReviewModal(id) {
         openScheduleModal(a);
     };
 
-    rejectBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Reject';
-    rejectBtn.style.display = 'inline-flex';
-    rejectBtn.onclick = () => openDecisionModal(a, 'Rejected');
+    showDecisionButton(rejectBtn, 'Rejected');
 
     } else if (a.status === 'underreview' && a.is_primary) {
         // Under Review — primary candidate (post-interview): can approve or reject
-        approveBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Approve';
-        approveBtn.style.display = 'inline-flex';
-        approveBtn.onclick = () => openDecisionModal(a, 'Approved');
-
-        rejectBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Reject';
-        rejectBtn.style.display = 'inline-flex';
-        rejectBtn.onclick = () => openDecisionModal(a, 'Rejected');
+        showDecisionButton(approveBtn, 'Approved');
+        showDecisionButton(rejectBtn, 'Rejected');
 
     } else if (a.status === 'underreview' && !a.is_primary) {
         // Under Review — not primary: can schedule interview or reject
@@ -174,9 +225,7 @@ function openReviewModal(id) {
             openScheduleModal(a);
         };
 
-        rejectBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Reject';
-        rejectBtn.style.display = 'inline-flex';
-        rejectBtn.onclick = () => openDecisionModal(a, 'Rejected');
+        showDecisionButton(rejectBtn, 'Rejected');
 
     } else if (a.status === 'primarycandidate') {
         // Promoted primary candidate: can schedule interview
@@ -189,9 +238,7 @@ function openReviewModal(id) {
 
     } else if (a.status === 'documentflagged') {
 
-        rejectBtn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Reject';
-        rejectBtn.style.display = 'inline-flex';
-        rejectBtn.onclick = () => openDecisionModal(a, 'Rejected');
+        showDecisionButton(rejectBtn, 'Rejected');
 
     } else if (a.status === 'scheduled' && a.is_primary) {
 
@@ -207,13 +254,18 @@ function openReviewModal(id) {
         withdrawBtn.style.display = 'inline-flex';
         withdrawBtn.onclick = () => submitQueueOutcome(outcomeForm, 'Withdrawn');
     }
-    if (a.is_primary && a.status === 'scheduled') {
+    if (a.is_primary && a.status === 'scheduled' && !hasRescheduleRequest) {
         noShowBtn.style.display = 'inline-flex';
         noShowBtn.onclick = () => submitQueueOutcome(outcomeForm, 'NoShow');
     }
     if (a.can_override && !a.is_primary && a.status === 'waitlisted') {
         overrideBtn.style.display = 'inline-flex';
         overrideBtn.onclick = () => submitOverride(overrideForm);
+    }
+
+    if (!SCHEDULABLE_APPLICATIONS.some((candidate) => candidate.id === a.id)) {
+        scheduleBtn.style.display = 'none';
+        scheduleBtn.onclick = null;
     }
 
     openModal('applicationReviewModal');
@@ -349,7 +401,7 @@ function renderApplicantMatches(query) {
         const empty = document.createElement('div');
         empty.className = 'applicant-search-empty';
         empty.textContent = SCHEDULABLE_APPLICATIONS.length === 0
-            ? 'There are no document-verified or promoted applications to schedule.'
+            ? 'There are no highest-ranked eligible or promoted applications to schedule.'
             : 'No matching schedulable applicants found.';
         results.appendChild(empty);
     } else {
@@ -495,6 +547,10 @@ async function openAdoptionHistoryModal(url) {
     } catch (err) {
         window.PAIRfectAdmin?.showToast('Could not load adoption history.', 'error');
     }
+}
+
+function switchProfileHistory(url) {
+    openAdoptionHistoryModal(url);
 }
 
 function openCompatibilityModal(a) {

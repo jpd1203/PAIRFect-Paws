@@ -4,7 +4,6 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\DonationController;
 use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\HandoverConfirmationController;
 use App\Http\Controllers\LocationController;
@@ -15,7 +14,6 @@ use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\TimeTravelController;
 use App\Http\Middleware\EnsureVerificationLinkMatchesUser;
 use App\Models\AdoptionApplication;
-use App\Models\FundRecord;
 use App\Models\Pet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -23,11 +21,6 @@ use Illuminate\Support\Facades\Route;
 // ─── Public Routes ────────────────────────────────────────────────────────────
 
 Route::get('/', function () {
-    $impactTotal = FundRecord::where('is_public', true)
-        ->where('transaction_type', 'Donation')
-        ->sum('amount');
-    $donorCount = FundRecord::where('transaction_type', 'Donation')->count();
-
     $featuredPets = Pet::where('availability_status', 'Available')
         ->where('is_archived', false)
         ->latest('id')
@@ -38,15 +31,10 @@ Route::get('/', function () {
         ->where('is_archived', false)
         ->count();
 
-    return view('landing', compact('impactTotal', 'donorCount', 'featuredPets', 'availablePetsCount'));
+    return view('landing', compact('featuredPets', 'availablePetsCount'));
 })->name('landing');
 
 Route::get('/home', function () {
-    $impactTotal = FundRecord::where('is_public', true)
-        ->where('transaction_type', 'Donation')
-        ->sum('amount');
-    $donorCount = FundRecord::where('transaction_type', 'Donation')->count();
-
     $featuredPets = Pet::where('availability_status', 'Available')
         ->where('is_archived', false)
         ->latest('id')
@@ -57,26 +45,10 @@ Route::get('/home', function () {
         ->where('is_archived', false)
         ->count();
 
-    return view('landing', compact('impactTotal', 'donorCount', 'featuredPets', 'availablePetsCount'));
+    return view('landing', compact('featuredPets', 'availablePetsCount'));
 })->name('home');
 
-Route::get('/donate', fn () => view('donate'))->name('donate');
-Route::post('/donate', [DonationController::class, 'store'])->name('donate.store');
-
-Route::get('/community-impact', function () {
-    $donations = FundRecord::where('is_public', true)
-        ->orderByDesc('created_at')
-        ->orderByDesc('id')
-        ->get();
-    $totalDonated = FundRecord::where('is_public', true)
-        ->where('transaction_type', 'Donation')
-        ->sum('amount');
-    $totalSpent = FundRecord::where('is_public', true)
-        ->where('transaction_type', 'Expense')
-        ->sum('amount');
-
-    return view('community-impact', compact('donations', 'totalDonated', 'totalSpent'));
-})->name('community-impact');
+Route::view('/donate', 'donate')->name('donate');
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.store');
@@ -116,9 +88,14 @@ Route::get('/pets/{pet}/modal', [PetController::class, 'modal'])->name('pets.mod
 Route::get('/pets/{pet}', [PetController::class, 'show'])->name('pets.show');
 
 // Recommendation engine routes (public / guest OK)
-Route::get('/recommendation', [RecommendationController::class, 'intake'])->name('recommendation.intake');
-Route::post('/recommendation/start', [RecommendationController::class, 'start'])->name('recommendation.start');
-Route::post('/recommendation/recompute', [RecommendationController::class, 'recompute'])->name('recommendation.recompute');
+Route::middleware(['auth', 'adopter', 'verified'])->group(function () {
+    Route::get('/onboarding/assessment', [RecommendationController::class, 'onboarding'])->name('recommendation.onboarding');
+    Route::post('/onboarding/assessment/skip', [RecommendationController::class, 'skipOnboarding'])->name('recommendation.onboarding.skip');
+    Route::get('/recommendation', [RecommendationController::class, 'intake'])->name('recommendation.intake');
+    Route::post('/recommendation/start', [RecommendationController::class, 'start'])->name('recommendation.start');
+    Route::get('/recommendation/results', [RecommendationController::class, 'results'])->name('recommendation.results');
+    Route::post('/recommendation/recompute', [RecommendationController::class, 'recompute'])->name('recommendation.recompute');
+});
 
 // ─── Authenticated Routes ─────────────────────────────────────────────────────
 
@@ -188,6 +165,8 @@ Route::middleware('auth')->group(function () {
         Route::middleware('verified')->group(function () {
             // My Application
             Route::get('/application', [ApplicationController::class, 'index'])->name('application.index');
+            Route::post('/applications/{application}/reschedule', [ApplicationController::class, 'requestReschedule'])
+                ->name('applications.reschedule.request');
 
             // Apply for adoption
             Route::get('/apply/{pet}', [ApplicationController::class, 'create'])->name('application.apply');
@@ -241,64 +220,21 @@ Route::middleware('auth')->group(function () {
         Route::put('/pets/{pet}', [PetController::class, 'update'])->name('pets.update');
 
         // Assessments (stub routes for sidebar links)
-        Route::get('/assessments/record', fn () => view('admin.assessment.record', [
-            'pets' => Pet::withCount('assessmentRecords')
-                ->orderByDesc('last_assessed_at')
-                ->orderByDesc('created_at')
-                ->orderByDesc('id')
-                ->get(),
-        ]))->name('assessments.record');
+        Route::get('/assessments/record', [Admin\AssessmentController::class, 'index'])->name('assessments.record');
         Route::get('/animals/{pet}/assessment-summary', [Admin\AssessmentController::class, 'summary'])->name('assessments.summary');
         Route::get('/assessments/create/{pet}', [Admin\AssessmentController::class, 'create'])->name('assessments.create');
         Route::post('/assessments/{pet}', [Admin\AssessmentController::class, 'store'])->name('assessments.store');
 
         // Compatibility
-        Route::get('/compatibility', function () {
-            $knn = app(\App\Services\KnnRecommendationService::class);
-
-            $applications = AdoptionApplication::with('pet')
-                ->whereNotNull('knn_score')
-                ->get();
-
-            // Backfill any applications that have a knn_score but no stored compatibility_result
-            $applications->each(function (AdoptionApplication $app) use ($knn) {
-                if ($app->compatibility_result !== null || !$app->pet) {
-                    return;
-                }
-
-                $inputs = [
-                    'physical_activity_level' => $app->physical_activity_level ?? '',
-                    'time_availability' => $app->time_availability ?? '',
-                    'prior_pet_experience' => $app->prior_pet_experience ?? '',
-                    'housing_type' => $app->housing_type ?? '',
-                    'household_composition' => $app->household_composition ?? '',
-                    'monthly_income_range' => $app->income_range ?? '',
-                    'has_existing_pets' => in_array($app->prior_pet_experience, [
-                        'Currently own pets',
-                        'Experienced with rescue/special needs animals',
-                    ], true) ? 'yes' : 'no',
-                ];
-
-                try {
-                    $result = $knn->resultFor($app->pet, $inputs);
-                    $app->update(['compatibility_result' => $result]);
-                } catch (\Throwable) {
-                    // Pet may have invalid physical_size; skip gracefully
-                }
-            });
-
-            // Sort by overall compatibility score descending
-            $applications = $applications->sortByDesc(
-                fn ($app) => $app->compatibility_result['overall'] ?? 0
-            )->values();
-
-            return view('admin.compatibility.index', compact('applications'));
-        })->name('compatibility.index');
+        Route::get('/compatibility', [Admin\CompatibilityController::class, 'index'])->name('compatibility.index');
+        Route::get('/pets/{pet}/ranked-applicants', [Admin\CompatibilityController::class, 'forPet'])->name('pets.ranked-applicants');
 
         // Applications queue
         Route::get('/applications', [Admin\ApplicationController::class, 'index'])->name('applications.index');
+        Route::get('/applications/report.csv', [Admin\AdoptionApplicationsReportController::class, 'export'])->name('applications.export');
         Route::post('/applications/{application}/interview', [Admin\ApplicationController::class, 'scheduleInterview'])->name('applications.interview');
-        Route::post('/applications/{application}/decision', [Admin\ApplicationController::class, 'decision'])->name('applications.decide');
+        Route::post('/applications/{application}/reschedule/decline', [Admin\ApplicationController::class, 'declineReschedule'])
+            ->name('applications.reschedule.decline');
         Route::post('/applications/{application}/notes', [Admin\ApplicationController::class, 'saveNotes'])->name('applications.notes');
         Route::post('/applications/{application}/queue-outcome', [Admin\ApplicationController::class, 'queueOutcome'])->name('applications.queue-outcome');
         Route::get('/applications/{application}/document', [Admin\AdoptionProfileController::class, 'document'])->name('applications.document');
@@ -331,11 +267,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/monitoring/{log}/video', [Admin\MonitoringController::class, 'video'])->name('monitoring.video');
         Route::post('/monitoring/{log}/reminder', [Admin\MonitoringController::class, 'sendReminder'])->name('monitoring.reminder');
         Route::post('/monitoring/{log}/flag', [Admin\MonitoringController::class, 'flag'])->name('monitoring.flag');
-        Route::post('/monitoring/flagged/{log}/resolve', [Admin\MonitoringController::class, 'resolve'])->name('monitoring.resolve');
-
-        // Funds
-        Route::get('/funds', [Admin\FundController::class, 'index'])->name('funds.index');
-        Route::post('/funds', [Admin\FundController::class, 'store'])->name('funds.store');
 
         // Audit Logs
         Route::get('/audit-logs', [Admin\AuditLogController::class, 'index'])->name('audit-logs.index');
@@ -343,11 +274,9 @@ Route::middleware('auth')->group(function () {
 
         // ─── Admin-only routes ────────────────────────────────────────────────
         Route::middleware('admin')->group(function () {
+            Route::post('/applications/{application}/decision', [Admin\ApplicationController::class, 'decision'])->name('applications.decide');
             Route::post('/applications/{application}/override', [Admin\ApplicationController::class, 'overridePrimary'])->name('applications.override');
-
-            // Financial corrections and deletions require administrator access.
-            Route::match(['put', 'patch'], '/funds/{fund}', [Admin\FundController::class, 'update'])->name('funds.update');
-            Route::delete('/funds/{fund}', [Admin\FundController::class, 'destroy'])->name('funds.destroy');
+            Route::post('/monitoring/flagged/{log}/resolve', [Admin\MonitoringController::class, 'resolve'])->name('monitoring.resolve');
 
             // Archive pet
             Route::post('/pets/{pet}/archive', [PetController::class, 'archive'])->name('pets.archive');
@@ -371,6 +300,3 @@ Route::middleware(['auth', 'adopter', 'verified'])->group(function () {
     Route::post('/adopter/notifications/{notification}/read', [HandoverConfirmationController::class, 'markRead'])->name('adopter.handover.notification.read');
     Route::post('/adopter/{handover}/notifications/read-all', [HandoverConfirmationController::class, 'markAllRead'])->name('adopter.handover.notifications.read-all');
 });
-
-
-

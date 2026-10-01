@@ -26,6 +26,18 @@
                 <div class="review-row" id="rTimeoutRow"><span>72-hour timeout</span><span class="text-amber-700 font-semibold">Flagged for administrative review</span></div>
             </div>
 
+            <div class="review-section" aria-label="Applicant history screening">
+                <h6>Applicant History</h6>
+                <div class="review-row"><span>Review status</span><span id="rHistoryStatus" class="badge"></span></div>
+                <div class="review-row"><span>Previous applications</span><span id="rHistoryApplications"></span></div>
+                <div class="review-row"><span>Approved placements</span><span id="rHistoryPlacements"></span></div>
+                <div class="review-row"><span>Flagged welfare reports</span><span id="rHistoryFlags"></span></div>
+                <div class="review-row"><span>Missed / late check-ins</span><span id="rHistoryCheckins"></span></div>
+                <ul id="rHistoryReasons" class="text-sm text-[#555] list-disc pl-5"></ul>
+                <p class="text-xs text-[#777] mt-2">Decision support only. Compatibility ranking is unchanged; staff review the underlying records.</p>
+                <button type="button" class="btn btn-secondary btn-sm mt-2" id="rFullHistoryBtn">View Full History</button>
+            </div>
+
             <div class="review-section">
                 <h6>Adopter Profile</h6>
                 <div class="review-row"><span>Physical Activity Level</span><span id="rActivity"></span></div>
@@ -72,6 +84,33 @@
                 <p id="rInterviewNotesText" class="text-[.88rem] text-[#555] bg-neutral-light rounded-lg p-3 mt-2"></p>
             </div>
 
+            <div class="review-section" id="rRescheduleSection" hidden>
+                <h6>Interview Reschedule Requested</h6>
+                <p class="text-sm">The current interview time remains official until staff confirms a new one.</p>
+                <div class="review-row"><span>Current schedule</span><span id="rRescheduleCurrent"></span></div>
+                <div class="review-row"><span>Adopter availability</span><div id="rRescheduleOptions"></div></div>
+                <div class="review-row"><span>Reason</span><span id="rRescheduleReason"></span></div>
+                <form id="rRescheduleAcceptForm" action="{{ route('admin.applications.schedule') }}" method="POST" class="mt-3">
+                    @csrf
+                    <input type="hidden" name="application_id" id="rRescheduleAppId">
+                    <input type="hidden" name="interview_date" id="rRescheduleDate">
+                    <input type="hidden" name="interview_time" id="rRescheduleTime">
+                    <label class="form-label" for="rRescheduleStaff">Confirmed interviewer</label>
+                    <select class="form-select" name="staff_id" id="rRescheduleStaff" required>
+                        <option value="">Select Interviewer</option>
+                        @foreach ($volunteers as $volunteer)
+                            <option value="{{ $volunteer->id }}" data-staff-name="{{ $volunteer->full_name }}">{{ $volunteer->full_name }} ({{ $volunteer->role->value }})</option>
+                        @endforeach
+                    </select>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <button type="button" class="btn btn-blue" id="rRescheduleAcceptBtn">Accept Selected Time</button>
+                        <button type="button" class="btn btn-secondary" id="rRescheduleDifferentBtn">Set Different Time</button>
+                        <button type="submit" class="btn btn-danger" id="rRescheduleDeclineBtn" form="rRescheduleDeclineForm">Decline Request</button>
+                    </div>
+                </form>
+                <form id="rRescheduleDeclineForm" method="POST" class="hidden">@csrf</form>
+            </div>
+
             <div id="rDecisionRemarksSection" class="review-section">
                 <h6>Decision Remarks</h6>
                 <p id="rDecisionRemarksText" class="text-[.88rem] text-[#555] bg-neutral-light rounded-lg p-3"></p>
@@ -83,12 +122,18 @@
 
         <div class="custom-modal-footer" id="rActionsRow">
             <button type="button" class="btn btn-secondary" onclick="closeModal('applicationReviewModal')">Close</button>
-            <button type="button" class="btn btn-danger" id="rRejectBtn">Reject</button>
+            @if(auth()->user()->isAdmin())
+                <button type="button" class="btn btn-danger" id="rRejectBtn">Reject</button>
+            @endif
             <button type="button" class="btn btn-blue" id="rScheduleBtn">Schedule Interview</button>
-            <button type="button" class="btn btn-success" id="rApproveBtn">Approve</button>
+            @if(auth()->user()->isAdmin())
+                <button type="button" class="btn btn-success" id="rApproveBtn">Approve</button>
+            @endif
             <button type="button" class="btn btn-yellow" id="rNoShowBtn">Mark No Show</button>
             <button type="button" class="btn btn-secondary" id="rWithdrawBtn">Mark Withdrawn</button>
-            <button type="button" class="btn btn-primary" id="rOverrideBtn">Administrative Override</button>
+            @if(auth()->user()->isAdmin())
+                <button type="button" class="btn btn-primary" id="rOverrideBtn">Administrative Override</button>
+            @endif
         </div>
 
         <form id="rDecisionForm" method="POST" class="hidden">

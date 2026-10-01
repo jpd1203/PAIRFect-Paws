@@ -53,6 +53,20 @@
         <button type="button" class="btn btn-primary" onclick="openTopScheduleModal()"><i class="fa-solid fa-calendar-check"></i>Schedule Interview</button>
     </div>
 
+    <form action="{{ route('admin.applications.export') }}" method="GET" class="flex flex-wrap items-end gap-3 mb-5" aria-label="Export adoption applications report">
+        <label class="text-sm">From <input type="date" name="from" class="form-control" aria-label="Report start date"></label>
+        <label class="text-sm">To <input type="date" name="to" class="form-control" aria-label="Report end date"></label>
+        <label class="text-sm">Status
+            <select name="status" class="form-select" aria-label="Report application status">
+                <option value="">All statuses</option>
+                @foreach (\App\Enums\ApplicationStatus::cases() as $reportStatus)
+                    <option value="{{ $reportStatus->value }}">{{ str($reportStatus->value)->headline() }}</option>
+                @endforeach
+            </select>
+        </label>
+        <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-download"></i> Export Applications CSV</button>
+    </form>
+
     @php
         $appCounts = [
             'all' => $applications->count(),
@@ -102,6 +116,9 @@
                                 <div class="flex items-center gap-1.5 flex-wrap">
                                     <span>{{ $app->first_name }} {{ $app->last_name }}</span>
                                     @if($app->is_primary_candidate)<span class="badge badge-primarycandidate ml-1">Primary</span>@endif
+                                    @if(($historySummaries[$app->id]['review_status'] ?? 'no_recorded_concerns') !== 'no_recorded_concerns')
+                                        <span class="badge {{ $historySummaries[$app->id]['badge_class'] }}">{{ $historySummaries[$app->id]['review_label'] }}</span>
+                                    @endif
                                 </div>
                             </td>
                             <td class="px-5 py-3.5">
@@ -151,6 +168,9 @@
                             <td>{{ \App\Support\ManilaTime::format($app->created_at, 'M j, Y') }}</td>
                             <td><span class="badge {{ $app->status_badge_class }}">{{ $app->status_display }}</span></td>
                             <td>
+                                @if ($app->reschedule_status === 'pending')
+                                    <span class="badge badge-scheduled">Reschedule Requested</span>
+                                @endif
                                 <button class="btn btn-secondary btn-sm" onclick="openReviewModal({{ $app->id }})"><i class="fa-solid fa-eye"></i>View</button>
                                 @if ($app->status_slug === 'scheduled')
                                     <button class="btn btn-yellow btn-sm" onclick="openAddNoteModal({{ $app->id }})"><i class="fa-solid fa-note-sticky"></i>Add Notes</button>
@@ -170,12 +190,15 @@
     @include('admin.application._note-modal')
     @include('admin.application._history-modal')
     @include('admin.application._compatibility-modal')
-    @include('admin.application._decision-modal')
+    @if(auth()->user()->isAdmin())
+        @include('admin.application._decision-modal')
+    @endif
 
     <script id="applicationData" type="application/json">
-        {!! $applications->map(function ($app) {
+        {!! $applications->map(function ($app) use ($historySummaries) {
             return [
                 'id' => $app->id,
+                'pet_id' => $app->pet_id,
                 'status' => $app->status_slug,
                 'status_display' => $app->status_display,
                 'is_primary' => $app->is_primary_candidate,
@@ -210,6 +233,10 @@
                 'interview_time_input' => $app->interview_date ? \App\Support\ManilaTime::format($app->interview_date, 'H:i') : null,
                 'conducted_by' => $app->conducted_by,
                 'decision_remarks' => $app->decision_remarks,
+                'reschedule_status' => $app->reschedule_status,
+                'reschedule_reason' => $app->reschedule_reason,
+                'reschedule_options' => $app->reschedule_options ?? [],
+                'reschedule_decline_action' => route('admin.applications.reschedule.decline', $app),
                 'schedule_action' => route('admin.applications.schedule'),
                 'notes_action' => route('admin.applications.notes', $app),
                 'decide_action' => route('admin.applications.decide', $app),
@@ -217,6 +244,7 @@
                 'override_action' => route('admin.applications.override', $app),
                 'can_override' => (bool) auth()->user()?->isAdmin(),
                 'history_url' => $app->user_id ? route('admin.adopter-profiles.history', $app->user_id) : null,
+                'history_summary' => $historySummaries[$app->id] ?? null,
             ];
         })->toJson(JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}
     </script>

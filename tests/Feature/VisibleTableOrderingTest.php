@@ -8,7 +8,6 @@ use App\Enums\Milestone;
 use App\Enums\Role;
 use App\Models\AdoptionApplication;
 use App\Models\AuditLog;
-use App\Models\FundRecord;
 use App\Models\Pet;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
@@ -20,7 +19,7 @@ class VisibleTableOrderingTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_application_displays_are_newest_first_while_queue_positions_remain_first_come_first_served(): void
+    public function test_application_displays_are_newest_first_while_legacy_unscored_rows_are_not_ranked(): void
     {
         $admin = $this->user(Role::Administrator, 'application-admin');
         $adopter = $this->user(Role::Adopter, 'application-adopter');
@@ -44,9 +43,9 @@ class VisibleTableOrderingTest extends TestCase
             ->viewData('applications');
 
         $this->assertSame($expected, $adminApplications->pluck('id')->all());
-        $this->assertSame(1, $adminApplications->firstWhere('id', $oldest->id)->queue_position);
-        $this->assertSame(2, $adminApplications->firstWhere('id', $newer->id)->queue_position);
-        $this->assertSame(3, $adminApplications->firstWhere('id', $newest->id)->queue_position);
+        $this->assertNull($adminApplications->firstWhere('id', $oldest->id)->queue_position);
+        $this->assertNull($adminApplications->firstWhere('id', $newer->id)->queue_position);
+        $this->assertNull($adminApplications->firstWhere('id', $newest->id)->queue_position);
 
         $dashboardApplications = $this->get(route('admin.dashboard'))
             ->assertOk()
@@ -122,25 +121,11 @@ class VisibleTableOrderingTest extends TestCase
         );
     }
 
-    public function test_fund_and_audit_tables_are_newest_first_including_same_second_records(): void
+    public function test_audit_tables_are_newest_first_including_same_second_records(): void
     {
         $admin = $this->user(Role::Administrator, 'records-admin');
 
-        $oldFund = $this->fund('Old Fund', '2026-08-01 09:00:00');
-        $newerFund = $this->fund('Newer Fund', '2026-08-02 09:00:00');
-        $newestFund = $this->fund('Newest Fund', '2026-08-02 09:00:00');
-        $expectedFunds = [$newestFund->id, $newerFund->id, $oldFund->id];
-
-        $publicFunds = $this->get(route('community-impact'))
-            ->assertOk()
-            ->viewData('donations');
-        $this->assertSame($expectedFunds, $publicFunds->pluck('id')->all());
-
-        $adminFunds = $this->actingAs($admin)
-            ->get(route('admin.funds.index'))
-            ->assertOk()
-            ->viewData('records');
-        $this->assertSame($expectedFunds, $adminFunds->pluck('id')->all());
+        $this->actingAs($admin);
 
         $oldLog = $this->auditLog($admin, 'Old Audit', '2026-08-01 09:00:00');
         $newerLog = $this->auditLog($admin, 'Newer Audit', '2026-08-02 09:00:00');
@@ -234,16 +219,6 @@ class VisibleTableOrderingTest extends TestCase
             'user_id' => $adopter->id,
             'pet_id' => $pet->id,
             'status' => ApplicationStatus::UnderReview->value,
-        ]), $createdAt);
-    }
-
-    private function fund(string $activity, string $createdAt): FundRecord
-    {
-        return $this->timestamp(FundRecord::create([
-            'amount' => 100,
-            'transaction_type' => 'Donation',
-            'source_or_destination' => $activity,
-            'is_public' => true,
         ]), $createdAt);
     }
 

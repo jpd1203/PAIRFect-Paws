@@ -20,18 +20,11 @@
         4 => 'Highly Trainable',
         5 => 'Exceptionally Trainable',
     ];
-    $temperamentLabels = [
-        1 => 'Cautious / Reactive',
-        2 => 'Reserved',
-        3 => 'Generally calm',
-        4 => 'Gentle & Friendly',
-        5 => 'Very Calm & Adaptable',
-    ];
 
     $energyVal = ($pet->energy_level > 0) ? ($energyLabels[(int)$pet->energy_level] ?? $pet->energy_level) : 'N/A';
     $independenceVal = ($pet->independence > 0) ? ($independenceLabels[(int)$pet->independence] ?? $pet->independence) : 'N/A';
     $trainabilityVal = ($pet->trainability > 0) ? ($trainabilityLabels[(int)$pet->trainability] ?? $pet->trainability) : 'N/A';
-    $temperamentVal = ($pet->temperament > 0) ? ($temperamentLabels[(int)$pet->temperament] ?? $pet->temperament) : 'N/A';
+    $temperamentVal = $pet->temperament_display;
 @endphp
 
 <x-public-layout :title="$pet->name . ' - ' . config('app.name')">

@@ -44,15 +44,15 @@ class AccountPasswordTest extends TestCase
             ->from(route('account.settings'))
             ->patch(route('account.password.update'), [
                 'current_password' => 'CurrentPass123',
-                'password' => 'NewSecurePass456',
-                'password_confirmation' => 'NewSecurePass456',
+                'password' => 'NewSecurePass456!',
+                'password_confirmation' => 'NewSecurePass456!',
             ])
             ->assertRedirect(route('account.settings'))
             ->assertSessionHas('success')
             ->assertSessionHas('toast.type', 'success');
 
         $user->refresh();
-        $this->assertTrue(Hash::check('NewSecurePass456', $user->password));
+        $this->assertTrue(Hash::check('NewSecurePass456!', $user->password));
         $this->assertFalse(Hash::check('CurrentPass123', $user->password));
         $this->assertNotSame('old-remember-token', $user->remember_token);
         $this->assertAuthenticatedAs($user);
@@ -69,7 +69,7 @@ class AccountPasswordTest extends TestCase
             ->value('notes');
         $this->assertIsString($auditNotes);
         $this->assertStringNotContainsString('CurrentPass123', $auditNotes);
-        $this->assertStringNotContainsString('NewSecurePass456', $auditNotes);
+        $this->assertStringNotContainsString('NewSecurePass456!', $auditNotes);
     }
 
     public function test_incorrect_current_password_confirmation_and_password_reuse_do_not_change_it(): void
@@ -80,8 +80,8 @@ class AccountPasswordTest extends TestCase
             ->from(route('account.settings'))
             ->patch(route('account.password.update'), [
                 'current_password' => 'IncorrectPass123',
-                'password' => 'NewSecurePass456',
-                'password_confirmation' => 'NewSecurePass456',
+                'password' => 'NewSecurePass456!',
+                'password_confirmation' => 'NewSecurePass456!',
             ])
             ->assertRedirect(route('account.settings'))
             ->assertSessionHasErrorsIn('updatePassword', 'current_password');
@@ -90,7 +90,7 @@ class AccountPasswordTest extends TestCase
         $this->from(route('account.settings'))
             ->patch(route('account.password.update'), [
                 'current_password' => 'CurrentPass123',
-                'password' => 'NewSecurePass456',
+                'password' => 'NewSecurePass456!',
                 'password_confirmation' => 'DoesNotMatch456',
             ])
             ->assertRedirect(route('account.settings'))
@@ -122,8 +122,8 @@ class AccountPasswordTest extends TestCase
     {
         $payload = [
             'current_password' => 'CurrentPass123',
-            'password' => 'NewSecurePass456',
-            'password_confirmation' => 'NewSecurePass456',
+            'password' => 'NewSecurePass456!',
+            'password_confirmation' => 'NewSecurePass456!',
         ];
 
         $this->patch(route('account.password.update'), $payload)

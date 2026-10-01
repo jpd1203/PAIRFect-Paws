@@ -96,7 +96,6 @@ function openViewAnimalModal(id) {
     setVal('vAgeYears', a.age_years);
     setVal('vAgeMonths', a.age_months);
     setVal('vSex', a.sex);
-    setVal('vSize', a.physical_size);
     setVal('vIntake', a.intake);
 
     // Populate Tab 2: Health & Status
@@ -104,6 +103,10 @@ function openViewAnimalModal(id) {
     setVal('vVacc', a.vacc);
     setVal('vStatus', a.status);
     setVal('vMedical', a.medical_needs);
+    setVal('vSize', a.physical_size);
+    setVal('vLifeStage', a.life_stage);
+    setVal('vAggression', a.has_aggression_history === null ? '' : Number(a.has_aggression_history));
+    setVal('vVocalization', a.high_vocalization === null ? '' : Number(a.high_vocalization));
 
     // Populate Tab 3: Story & Media
     setVal('vDescription', a.description);

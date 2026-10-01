@@ -24,8 +24,6 @@ class AnimalController extends Controller
         {
             const SPECIES = ['Cat', 'Dog'];
 
-            const SIZES = ['Small', 'Medium', 'Large'];
-
             const AGE_GROUPS = ['Baby', 'Young', 'Adult', 'Senior'];
 
             const HEALTH_STATUSES = ['Healthy', 'Needs Vet', 'Under Treatment', 'Critical'];

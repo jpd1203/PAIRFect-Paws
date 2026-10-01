@@ -73,8 +73,8 @@ class MonitoringController extends Controller
                 $query->where('user_id', $request->user()->id)
                     ->where('status', ApplicationStatus::Approved->value);
             })
-            ->orderByDesc('scheduled_date')
-            ->orderByDesc('id')
+            ->orderBy('scheduled_date')
+            ->orderBy('id')
             ->get()
             ->each(function (PostAdoptionLog $log): void {
                 $log->setAttribute('display_status', $this->computeDisplayStatus($log));
@@ -95,8 +95,8 @@ class MonitoringController extends Controller
         $logs = $this->ownedApprovedLogs($request)
             ->whereNull('submitted_date')
             ->whereDate('scheduled_date', '<=', $today)
-            ->orderByDesc('scheduled_date')
-            ->orderByDesc('id')
+            ->orderBy('scheduled_date')
+            ->orderBy('id')
             ->get()
             ->each(fn (PostAdoptionLog $log) => $this->setDisplayStatus($log));
 

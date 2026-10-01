@@ -9,6 +9,7 @@ use App\Models\Pet;
 use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 class PetController extends Controller
 {
@@ -97,8 +98,11 @@ class PetController extends Controller
             'description' => 'nullable|string',
             'status' => 'required|string|max:255',
             'branch_id' => 'nullable|exists:branches,id',
-            'physical_size' => 'nullable|string|max:255',
+            'physical_size' => ['nullable', Rule::in(array_keys(config('matching.size_levels')))],
             'medical_needs' => 'nullable|numeric|min:1|max:5',
+            'life_stage' => ['nullable', Rule::in(['young', 'adult', 'senior'])],
+            'has_aggression_history' => 'nullable|boolean',
+            'high_vocalization' => 'nullable|boolean',
             'vaccination_record_status' => 'nullable|string|max:255',
             'intake_date' => 'nullable|date|before_or_equal:today',
             'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:102400',
@@ -124,6 +128,10 @@ class PetController extends Controller
             'branch_id' => $validated['branch_id'] ?? null,
             'physical_size' => $validated['physical_size'] ?? null,
             'medical_needs' => $validated['medical_needs'] ?? null,
+            'life_stage' => $validated['life_stage'] ?? null,
+            'has_aggression_history' => $validated['has_aggression_history'] ?? null,
+            'aggression_history_verified_at' => ($validated['has_aggression_history'] ?? null) === null ? null : now(),
+            'high_vocalization' => $validated['high_vocalization'] ?? null,
             'vaccination_record_status' => $validated['vaccination_record_status'] ?? null,
             'intake_date' => $validated['intake_date'] ?? now()->toDateString(),
             'photo_path' => $photoPath,
@@ -170,8 +178,11 @@ class PetController extends Controller
             'description' => 'nullable|string',
             'status' => 'required|string|max:255',
             'branch_id' => 'nullable|exists:branches,id',
-            'physical_size' => 'nullable|string|max:255',
+            'physical_size' => ['nullable', Rule::in(array_keys(config('matching.size_levels')))],
             'medical_needs' => 'nullable|numeric|min:1|max:5',
+            'life_stage' => ['nullable', Rule::in(['young', 'adult', 'senior'])],
+            'has_aggression_history' => 'nullable|boolean',
+            'high_vocalization' => 'nullable|boolean',
             'vaccination_record_status' => 'nullable|string|max:255',
             'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:102400',
             'version' => 'required|integer',
@@ -195,32 +206,53 @@ class PetController extends Controller
         }
 
         // Optimistic concurrency check
+        $changes = array_filter([
+            'name' => $validated['name'],
+            'species' => $validated['species'],
+            'breed' => $validated['breed'] ?? null,
+            'age' => $age > 0 ? $age : null,
+            'sex' => $validated['sex'] ?? null,
+            'health_status' => $validated['health_status'] ?? null,
+            'behavioral_notes' => $validated['behavioral_notes'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'availability_status' => $validated['status'],
+            'branch_id' => $validated['branch_id'] ?? null,
+            'physical_size' => $validated['physical_size'] ?? null,
+            'medical_needs' => $validated['medical_needs'] ?? null,
+            'vaccination_record_status' => $validated['vaccination_record_status'] ?? null,
+            'photo_path' => $this->handlePhotoUpload($request, $pet->photo_path),
+            'version' => $submittedVersion + 1,
+        ], fn ($v) => $v !== null);
+
+        // Explicit unknown selections clear canonical profile data; omitted fields retain it.
+        // An unverified legacy aggression "No" remains stored but not trusted until confirmed.
+        foreach (['physical_size', 'medical_needs', 'life_stage', 'high_vocalization'] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $changes[$field] = $validated[$field];
+            }
+        }
+        if (array_key_exists('has_aggression_history', $validated)) {
+            if ($validated['has_aggression_history'] !== null) {
+                $changes['has_aggression_history'] = $validated['has_aggression_history'];
+                $changes['aggression_history_verified_at'] = now();
+            } elseif ($pet->aggression_history_verified_at !== null || $pet->has_aggression_history === null) {
+                $changes['has_aggression_history'] = null;
+                $changes['aggression_history_verified_at'] = null;
+            }
+        }
+
         $updated = Pet::withoutGlobalScope('notArchived')
             ->where('id', $pet->id)
             ->where('version', $submittedVersion)
-            ->update(array_filter([
-                'name' => $validated['name'],
-                'species' => $validated['species'],
-                'breed' => $validated['breed'] ?? null,
-                'age' => $age > 0 ? $age : null,
-                'sex' => $validated['sex'] ?? null,
-                'health_status' => $validated['health_status'] ?? null,
-                'behavioral_notes' => $validated['behavioral_notes'] ?? null,
-                'description' => $validated['description'] ?? null,
-                'availability_status' => $validated['status'],
-                'branch_id' => $validated['branch_id'] ?? null,
-                'physical_size' => $validated['physical_size'] ?? null,
-                'medical_needs' => $validated['medical_needs'] ?? null,
-                'vaccination_record_status' => $validated['vaccination_record_status'] ?? null,
-                'photo_path' => $this->handlePhotoUpload($request, $pet->photo_path),
-                'version' => $submittedVersion + 1,
-            ], fn ($v) => $v !== null));
+            ->update($changes);
 
         if ($updated === 0) {
             return back()->withErrors([
                 'concurrency' => 'This record was changed by someone else while you were editing it. Please reload and try again.',
             ])->withInput();
         }
+
+        app(\App\Services\Matching\ApplicationMatchService::class)->refreshPetSummary($pet->fresh());
 
         AuditLogService::log(
             auth()->id(),
@@ -295,4 +327,3 @@ class PetController extends Controller
         return $existingPath ?? '';
     }
 }
-

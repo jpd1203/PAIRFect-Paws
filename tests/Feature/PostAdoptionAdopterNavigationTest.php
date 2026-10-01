@@ -7,6 +7,7 @@ use App\Enums\AvailabilityStatus;
 use App\Enums\Milestone;
 use App\Enums\Role;
 use App\Models\AdoptionApplication;
+use App\Models\Handover;
 use App\Models\Pet;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
@@ -27,6 +28,14 @@ class PostAdoptionAdopterNavigationTest extends TestCase
 
         $adopter = $this->user(Role::Adopter, 'sidebar-adopter');
         $dueLog = $this->logFor($adopter, 'Sidebar Pet', '2026-08-25');
+        Handover::create([
+            'code' => 'sidebar-received',
+            'application_id' => $dueLog->application_id,
+            'pet_id' => $dueLog->adoptionApplication->pet_id,
+            'user_id' => $adopter->id,
+            'adopter_outcome' => 'received',
+            'adopter_confirmed_at' => now(),
+        ]);
 
         $submitPage = $this->actingAs($adopter)
             ->get(route('monitoring.submit-report'))

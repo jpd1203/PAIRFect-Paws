@@ -907,22 +907,6 @@
     @apply font-extrabold text-[1.3rem] leading-none whitespace-nowrap;
   }
 
-  /* =========================================================
-     MANAGE FUNDS
-     ========================================================= */
-  .funds-table th {
-    @apply text-left;
-  }
-  .funds-table td {
-    @apply text-left;
-  }
-  .amount-positive {
-    @apply text-status-success-text font-semibold;
-  }
-  .amount-negative {
-    @apply text-status-danger-text font-semibold;
-  }
-
   /* ============================================================
      RESPONSIVE
      ============================================================ */
@@ -1228,4 +1212,3 @@
   border-color: #A61D24 !important;
   color: #FFFFFF !important;
 }
-

@@ -34,6 +34,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
         'password',
         'role',
         'is_active',
+        'matching_onboarding_pending',
         'branch_id',
         'region',
         'province',
@@ -55,6 +56,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'password' => 'hashed',
             'role' => Role::class,
             'is_active' => 'boolean',
+            'matching_onboarding_pending' => 'boolean',
         ];
     }
 

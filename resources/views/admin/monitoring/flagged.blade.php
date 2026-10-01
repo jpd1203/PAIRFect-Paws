@@ -181,6 +181,7 @@
                 </section>
             </div>
 
+            @if(auth()->user()->isAdmin())
             <form method="POST" action="{{ route('admin.monitoring.resolve', $log) }}" class="mt-4 rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4">
                 @csrf
                 <label for="resolution-note-{{ $log->id }}" class="form-label">Resolution Note</label>
@@ -199,6 +200,7 @@
                     </button>
                 </div>
             </form>
+            @endif
         </article>
     @empty
         <div class="dashboard-box py-12 text-center">

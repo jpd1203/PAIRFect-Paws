@@ -12,9 +12,14 @@ use App\Services\DocumentVerificationNotificationService;
 use App\Services\DocumentVerificationService;
 use App\Services\EmailNotificationService;
 use App\Services\KnnRecommendationService;
+use App\Services\Matching\ApplicationMatchService;
+use App\Services\Matching\MatchingProfileMapper;
+use App\Services\Matching\MatchPresenter;
 use App\Services\PhilippineLocationService;
+use App\Support\ManilaTime;
 use App\Support\PhilippineAddress;
 use App\ValueObjects\DocumentVerificationResult;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -28,12 +33,22 @@ class ApplicationController extends Controller
         private DocumentVerificationNotificationService $documentNotifications,
         private EmailNotificationService $emailNotifications,
         private PhilippineLocationService $locations,
-        private KnnRecommendationService $knn,
+        private ApplicationMatchService $matching,
+        private MatchingProfileMapper $matchingProfiles,
+        private KnnRecommendationService $matcher,
     ) {}
 
     public function index()
     {
         $applications = AdoptionApplication::with('pet')
+            // Adopter responses never load staff-only interview, decision, ranking,
+            // OCR, or audit notes from the application record.
+            ->select([
+                'id', 'user_id', 'pet_id', 'status', 'created_at', 'updated_at',
+                'document_verification_status', 'document_verification_reasons',
+                'document_reupload_count', 'interview_date', 'conducted_by',
+                'reschedule_status', 'reschedule_options',
+            ])
             ->where('user_id', Auth::id())
             ->orderByDesc('created_at')
             ->orderByDesc('id')
@@ -42,7 +57,76 @@ class ApplicationController extends Controller
         return view('application.index', compact('applications'));
     }
 
-    public function create(Pet $pet)
+    public function requestReschedule(Request $request, AdoptionApplication $application)
+    {
+        abort_unless($application->user_id === $request->user()->id, 404);
+
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:1000',
+            'options' => 'required|array|min:1|max:3',
+            'options.*.date' => 'nullable|date_format:Y-m-d',
+            'options.*.time' => 'nullable|date_format:H:i',
+        ]);
+
+        $options = [];
+        foreach ($validated['options'] as $option) {
+            $date = $option['date'] ?? null;
+            $time = $option['time'] ?? null;
+            if (! $date && ! $time) {
+                continue;
+            }
+            if (! $date || ! $time) {
+                throw ValidationException::withMessages(['options' => 'Enter both a date and a time for each preferred option.']);
+            }
+            $preferredAt = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$time}", ManilaTime::timezone());
+            if (! $preferredAt || $preferredAt->lte(ManilaTime::now())) {
+                throw ValidationException::withMessages(['options' => 'Every preferred date and time must be in the future.']);
+            }
+            if (in_array(['date' => $date, 'time' => $time], $options, true)) {
+                throw ValidationException::withMessages(['options' => 'Choose different dates or times for each option.']);
+            }
+            $options[] = ['date' => $date, 'time' => $time];
+        }
+        if ($options === []) {
+            throw ValidationException::withMessages(['options' => 'Enter at least one preferred date and time.']);
+        }
+
+        DB::transaction(function () use ($application, $validated, $options): void {
+            $current = AdoptionApplication::whereKey($application->id)->lockForUpdate()->firstOrFail();
+            if ($current->status !== ApplicationStatus::InterviewScheduled
+                || ! $current->is_primary_candidate
+                || ! $current->interview_date
+                || $current->interview_date->lte(now())) {
+                throw ValidationException::withMessages(['application' => 'Only an upcoming interview for your active application can be rescheduled.']);
+            }
+            if ($current->reschedule_status === 'pending') {
+                throw ValidationException::withMessages(['application' => 'A reschedule request is already awaiting staff review.']);
+            }
+            $current->update([
+                'reschedule_options' => $options,
+                'reschedule_reason' => trim((string) ($validated['reason'] ?? '')) ?: null,
+                'reschedule_status' => 'pending',
+                'reschedule_requested_at' => now(),
+                'reschedule_reviewed_at' => null,
+            ]);
+            AuditLogService::log($current->user_id, 'Interview Reschedule Requested', 'AdoptionApplication', $current->id);
+        });
+
+        $this->emailNotifications->staff(
+            "Interview reschedule requested - application #{$application->id}",
+            'Interview reschedule requested',
+            ["The adopter for application #{$application->id} has requested a different interview time.", 'Review their preferred times in the protected application queue.'],
+            'Review Applications',
+            route('admin.applications.index', ['highlight' => $application->id]),
+            false,
+            'interview_reschedule_requested',
+            $application->id,
+        );
+
+        return back()->with('success', 'Your reschedule request was sent to shelter staff. Your current interview time stays in place until staff confirms a change.');
+    }
+
+    public function create(Request $request, Pet $pet)
     {
         abort_if(
             $pet->availability_status !== AvailabilityStatus::Available,
@@ -50,13 +134,36 @@ class ApplicationController extends Controller
             'This pet is processing an active application and is not accepting new applications.'
         );
 
-        $profile = auth()->check() ? auth()->user()->adopterProfile : null;
+        $profile = $request->user()->adopterProfile()->first();
+        if (! $profile || ! $this->matchingProfiles->adopterIsComplete($profile)) {
+            return redirect()->route('recommendation.intake', ['return_pet' => $pet->id])
+                ->with('warning', 'Complete your reusable personality and household profile before applying for this pet.');
+        }
+
+        $draftKey = 'application_drafts.'.$pet->id;
+        $draft = $request->session()->get($draftKey);
+        if (is_array($draft) && ($draft['expires_at'] ?? 0) > now()->timestamp) {
+            $request->session()->flashInput(array_merge($draft['fields'], $request->old()));
+        } else {
+            $request->session()->forget($draftKey);
+        }
 
         return view('application.apply', compact('pet', 'profile'));
     }
 
     public function store(Request $request)
     {
+        $petId = $request->validate(['pet_id' => 'required|integer|exists:pets,id'])['pet_id'];
+        $pet = Pet::findOrFail($petId);
+        $user = $request->user();
+        $profile = $user->adopterProfile()->first();
+        if (! $profile || ! $this->matchingProfiles->adopterIsComplete($profile)) {
+            $this->preserveDraft($request, $pet->id);
+
+            return redirect()->route('recommendation.intake', ['return_pet' => $pet->id])
+                ->with('warning', 'Complete your reusable personality assessment before submitting. Your entered details will be restored when you return.');
+        }
+
         $validated = $request->validate([
             'pet_id' => 'required|exists:pets,id',
             'first_name' => 'required|string|max:255',
@@ -64,13 +171,10 @@ class ApplicationController extends Controller
             'email' => 'required|email|max:255',
             'phone_number' => 'required|string|max:50',
             'motivation_statement' => 'required|string|max:2000',
-            'housing_type' => 'required|string|max:255',
             'physical_activity_level' => 'required|string|max:255',
             'time_availability' => 'required|string|max:255',
             'prior_pet_experience' => 'required|string|max:255',
             'household_composition' => 'required|string|max:255',
-            'monthly_income_range' => 'nullable|required_without:income_range|string|max:255',
-            'income_range' => 'nullable|required_without:monthly_income_range|string|max:255',
             'document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'agreed_to_terms' => 'accepted',
             ...PhilippineLocationService::validationRules(),
@@ -78,54 +182,44 @@ class ApplicationController extends Controller
 
         $address = $this->locations->resolveAddress($validated);
 
-        $user = Auth::user();
-        $pet = Pet::findOrFail($validated['pet_id']);
-        $incomeRange = $validated['monthly_income_range'] ?? $validated['income_range'];
-
         if ($pet->availability_status !== AvailabilityStatus::Available) {
             return back()->withErrors([
                 'pet_id' => 'This pet is processing an active application and is not accepting new applications.',
             ])->withInput();
         }
 
+        $preflight = $this->matcher->calculateMatch($profile, $pet);
+        if (! $preflight->eligible || $preflight->compatibilityScore === null) {
+            throw ValidationException::withMessages([
+                'pet_id' => MatchPresenter::reason($preflight->exclusionReason),
+            ]);
+        }
+
         $document = $request->file('document');
         $documentDisk = 'local';
         $documentPath = $document->store('adoption-documents', $documentDisk);
-        $verification = $this->documentVerification->verify(
-            $documentDisk,
-            $documentPath,
-            $document->getMimeType() ?: $document->getClientMimeType(),
-            [
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'],
-                ...PhilippineAddress::ocrPayload($address),
-            ]
-        );
-
-        $knnInputs = [
-            'physical_activity_level' => $validated['physical_activity_level'],
-            'time_availability' => $validated['time_availability'],
-            'prior_pet_experience' => $validated['prior_pet_experience'],
-            'housing_type' => $validated['housing_type'],
-            'household_composition' => $validated['household_composition'],
-            'monthly_income_range' => $incomeRange,
-            'has_existing_pets' => in_array($validated['prior_pet_experience'], [
-                'Currently own pets',
-                'Experienced with rescue/special needs animals',
-            ], true) ? 'yes' : 'no',
-        ];
-        $isRecommendationEligible = Pet::recommendationEligible()->whereKey($pet->id)->exists();
-        $knnScore = $isRecommendationEligible
-            ? $this->knn->distanceFor($pet, $knnInputs)
-            : null;
-        $compatibilityResult = $isRecommendationEligible
-            ? $this->knn->resultFor($pet, $knnInputs)
-            : null;
-
         try {
+            $verification = $this->documentVerification->verify(
+                $documentDisk,
+                $documentPath,
+                $document->getMimeType() ?: $document->getClientMimeType(),
+                [
+                    'first_name' => $validated['first_name'],
+                    'last_name' => $validated['last_name'],
+                    ...PhilippineAddress::ocrPayload($address),
+                ]
+            );
+
+            $knnInputs = [
+                'physical_activity_level' => $validated['physical_activity_level'],
+                'time_availability' => $validated['time_availability'],
+                'prior_pet_experience' => $validated['prior_pet_experience'],
+                'household_composition' => $validated['household_composition'],
+            ];
+
             $application = DB::transaction(function () use (
-                $validated, $user, $knnScore, $compatibilityResult, $document, $documentDisk,
-                $documentPath, $incomeRange, $verification, $address, $knnInputs
+                $validated, $user, $document, $documentDisk,
+                $documentPath, $verification, $address, $knnInputs
             ) {
                 // This row lock makes the availability check and insert one atomic operation.
                 $lockedPet = Pet::withoutGlobalScope('notArchived')
@@ -155,13 +249,24 @@ class ApplicationController extends Controller
                     ]);
                 }
 
-                $user->adopterProfile()->updateOrCreate([], [
+                $matchingProfile = $user->adopterProfile()->lockForUpdate()->first();
+                if (! $matchingProfile || ! $this->matchingProfiles->adopterIsComplete($matchingProfile)) {
+                    throw ValidationException::withMessages([
+                        'profile' => 'Your personality assessment needs an update before applying.',
+                    ]);
+                }
+                $match = $this->matcher->calculateMatch($matchingProfile, $lockedPet);
+                if (! $match->eligible || $match->compatibilityScore === null) {
+                    throw ValidationException::withMessages([
+                        'pet_id' => MatchPresenter::reason($match->exclusionReason),
+                    ]);
+                }
+
+                $matchingProfile->update([
                     'physical_activity_level' => $knnInputs['physical_activity_level'],
                     'time_availability' => $knnInputs['time_availability'],
                     'prior_pet_experience' => $knnInputs['prior_pet_experience'],
-                    'housing_type' => $knnInputs['housing_type'],
                     'household_composition' => $knnInputs['household_composition'],
-                    'monthly_income_range' => $knnInputs['monthly_income_range'],
                 ]);
 
                 $application = AdoptionApplication::create([
@@ -174,20 +279,23 @@ class ApplicationController extends Controller
                     ...$this->applicationAddressAttributes($address),
                     'status' => $this->applicationStatusFor($verification->status, $lockedPet),
                     'motivation_statement' => $validated['motivation_statement'],
-                    'housing_type' => $validated['housing_type'],
-                    'income_range' => $incomeRange,
+                    'housing_type' => $matchingProfile->housing_type,
+                    'income_range' => $matchingProfile->monthly_income_range,
                     'physical_activity_level' => $validated['physical_activity_level'],
                     'time_availability' => $validated['time_availability'],
                     'prior_pet_experience' => $validated['prior_pet_experience'],
                     'household_composition' => $validated['household_composition'],
-                    'knn_score' => $knnScore,
-                    'compatibility_result' => $compatibilityResult,
                     'document_path' => $documentPath,
                     'document_disk' => $documentDisk,
                     'document_original_name' => $this->safeOriginalName($document->getClientOriginalName()),
                     'document_mime_type' => $document->getMimeType() ?: $document->getClientMimeType(),
                     ...$this->verificationAttributes($verification),
                 ]);
+
+                $this->matching->refresh($application);
+                if ($application->knn_score === null || ! ($application->compatibility_result['eligible'] ?? false)) {
+                    throw ValidationException::withMessages(['pet_id' => 'This pet cannot currently be matched with your profile. Please refresh and try again.']);
+                }
 
                 AuditLogService::log(
                     $user->id,
@@ -232,11 +340,12 @@ class ApplicationController extends Controller
             $application->id,
         );
         $this->documentNotifications->send($application);
+        $request->session()->forget('application_drafts.'.$application->pet_id);
 
         [$flashType, $message] = match ($verification->status) {
             DocumentVerificationStatus::Verified => [
                 'success',
-                'Your document was verified and the application is now under review.',
+                'Your document was verified and the application is pending shelter review.',
             ],
             DocumentVerificationStatus::NeedsResubmission => [
                 'warning',
@@ -410,6 +519,18 @@ class ApplicationController extends Controller
 
         return mb_substr((string) preg_replace('/[^\pL\pN._ -]+/u', '_', $basename), 0, 255);
     }
+
+    private function preserveDraft(Request $request, int $petId): void
+    {
+        $fields = $request->only([
+            'first_name', 'last_name', 'email', 'phone_number', 'region_code', 'province_code',
+            'city_municipality_code', 'barangay_code', 'street_address', 'zip_code',
+            'motivation_statement', 'physical_activity_level', 'time_availability',
+            'prior_pet_experience', 'household_composition',
+        ]);
+        $request->session()->put('application_drafts.'.$petId, [
+            'fields' => array_filter($fields, fn ($value) => is_string($value) && mb_strlen($value) <= 2000),
+            'expires_at' => now()->addMinutes(30)->timestamp,
+        ]);
+    }
 }
-
-

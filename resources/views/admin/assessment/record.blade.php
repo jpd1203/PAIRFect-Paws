@@ -6,7 +6,7 @@
 
     <div class="heading-text">
         <h2>Assessment Record</h2>
-        <p>Behavioral assessments for each pet. A pet may be assessed a maximum of 3 times.</p>
+        <p>Behavioral assessments for each pet. Matching requires {{ config('matching.min_observers') }} distinct observers.</p>
     </div>
 
     @if (session('success'))
@@ -34,8 +34,8 @@
         $counts = [
             'all' => $pets->count(),
             'pending' => $pets->filter(fn($p) => $p->assessment_records_count == 0)->count(),
-            'inprogress' => $pets->filter(fn($p) => $p->assessment_records_count > 0 && $p->assessment_records_count < 3)->count(),
-            'complete' => $pets->filter(fn($p) => $p->assessment_records_count >= 3)->count(),
+            'inprogress' => $pets->filter(fn($p) => $p->assessment_records_count > 0 && ! $p->matching_behavior_complete)->count(),
+            'complete' => $pets->filter(fn($p) => $p->matching_behavior_complete)->count(),
         ];
     @endphp
 
@@ -70,7 +70,7 @@
                     @forelse ($pets as $pet)
                         @php
                             $petStatusSlug = match(true) {
-                                $pet->assessment_records_count >= 3 => 'complete',
+                                $pet->matching_behavior_complete => 'complete',
                                 $pet->assessment_records_count > 0 => 'inprogress',
                                 default => 'pending',
                             };
@@ -163,17 +163,17 @@
 
                             <!-- 5. Actions Button -->
                             <td class="px-5 py-3.5 text-right">
-                                @if ($pet->assessment_records_count >= 3)
-                                    <span class="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-                                        <i class="fa-solid fa-circle-check"></i>
-                                        <span>All done</span>
+                                @if ($pet->matching_behavior_complete)
+                                    <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold bg-[#E1F5EE] text-[#295F51] border border-[#295F51]" aria-label="Assessment complete">
+                                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                                        Complete
                                     </span>
                                 @else
                                     <a href="{{ route('admin.assessments.create', $pet) }}"
                                        class="btn btn-primary btn-sm whitespace-nowrap inline-flex items-center gap-1.5">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                         <span>Assess</span>
-                                        <span class="font-normal text-white/80">#{{ $pet->assessment_records_count + 1 }}</span>
+                                        <span class="font-normal text-white/80">#{{ min(config('matching.min_observers'), $pet->assessment_records_count + 1) }}</span>
                                     </a>
                                 @endif
                             </td>

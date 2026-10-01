@@ -30,8 +30,8 @@ class EmailVerificationTest extends TestCase
             'first_name' => 'Jessa',
             'last_name' => 'Tester',
             'email' => 'jessa@example.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
             ...$this->addressPayload(),
         ])->assertRedirect(route('verification.notice'));
 
@@ -191,7 +191,8 @@ class EmailVerificationTest extends TestCase
         $this->get(route('monitoring.index'))->assertRedirect(route('verification.notice'));
 
         $user->markEmailAsVerified();
-        $this->get(route('application.apply', $pet))->assertOk();
+        $this->get(route('application.apply', $pet))
+            ->assertRedirect(route('recommendation.intake', ['return_pet' => $pet->id]));
     }
 
     public function test_administrators_and_volunteers_must_verify_before_staff_access(): void
@@ -232,8 +233,8 @@ class EmailVerificationTest extends TestCase
             'first_name' => 'New',
             'last_name' => 'Administrator',
             'email' => 'new-administrator@example.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
             'role' => Role::Administrator->value,
             'branch_id' => null,
         ])->assertRedirect(route('admin.volunteers.index'));
@@ -252,8 +253,8 @@ class EmailVerificationTest extends TestCase
             'first_name' => 'New',
             'last_name' => 'Volunteer',
             'email' => 'new-volunteer@example.test',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
             'role' => Role::Volunteer->value,
             'branch_id' => null,
         ])->assertRedirect(route('admin.volunteers.index'));
@@ -325,7 +326,7 @@ class EmailVerificationTest extends TestCase
             'first_name' => 'Email',
             'last_name' => 'Tester',
             'email' => str_replace([' ', '.'], '-', $key).'-'.uniqid().'@example.test',
-            'password' => 'password123',
+            'password' => 'Password123!',
             'role' => $role->value,
             'is_active' => true,
             'email_verified_at' => $verified ? now() : null,

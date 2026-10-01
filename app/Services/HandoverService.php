@@ -10,6 +10,8 @@ use InvalidArgumentException;
 
 class HandoverService
 {
+    public function __construct(private HandoverNotificationService $notifications) {}
+
     /**
      * Create the one adopter-owned handover record for an approved adoption.
      * The lookup is idempotent so it can also safely backfill adoptions that
@@ -52,7 +54,7 @@ class HandoverService
 
         if ($handover->wasRecentlyCreated) {
             $handover->loadMissing('pet');
-            $handover->createNotification('prepared', [
+            $this->notifications->create($handover, 'prepared', [
                 'title' => 'Your adoption has been approved',
                 'body' => "Your adoption for {$handover->pet?->name} has been approved. Shelter staff will contact you when the handover is scheduled.",
             ]);

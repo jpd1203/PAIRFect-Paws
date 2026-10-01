@@ -12,6 +12,16 @@
 
         <div class="content-area custom-scrollbar">
 
+            <section class="form-section !mt-4" aria-label="Personality Assessment">
+                <h3>Personality Assessment</h3>
+                <p>✓ Personality questionnaire completed. Last updated: {{ $profile->bfi_completed_at?->format('F j, Y') }}.</p>
+                <p>Your saved assessment and the pet's behavioral profile determine compatibility when you submit. Shelter staff make the final adoption decision.</p>
+                <p>Matching household: {{ $profile->housing_type }}; {{ $profile->has_existing_pets ? 'existing pets' : 'no existing pets' }}; {{ $profile->has_children ? 'children at home' : 'no children at home' }}. Your saved income range informs care-capacity screening.</p>
+                <a class="btn btn-secondary mt-3" href="{{ route('recommendation.intake', ['return_pet' => $pet->id]) }}">Review / Update Assessment</a>
+            </section>
+            @if (session('success'))<p class="mb-4 text-green-800">{{ session('success') }}</p>@endif
+            @if (old('motivation_statement'))<p class="mb-4 text-amber-800">Your entered details were restored. Please reattach your supporting document before submitting.</p>@endif
+
             @if ($errors->any())
                 <div class="mb-5 rounded-lg border border-status-danger-text bg-status-danger-bg px-4 py-3 text-status-danger-text text-sm">
                     <strong>Please fix the following:</strong>
@@ -110,38 +120,12 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="housing_type">Housing Type*</label>
-                            <div class="select-wrapper">
-                                <select id="housing_type" name="housing_type" required>
-                                    <option value="">Select Housing Type</option>
-                                    @foreach (\App\Support\ApplicationOptions::HOUSING_TYPES as $option)
-                                        <option value="{{ $option }}" @selected(old('housing_type', $profile?->housing_type) === $option)>{{ $option }}</option>
-                                    @endforeach
-                                </select>
-                                <i class="fa-solid fa-chevron-down select-arrow"></i>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
                             <label for="household_composition">Household Composition*</label>
                             <div class="select-wrapper">
                                 <select id="household_composition" name="household_composition" required>
                                     <option value="">Select Household Composition</option>
                                     @foreach (\App\Support\ApplicationOptions::HOUSEHOLD_COMPOSITIONS as $option)
                                         <option value="{{ $option }}" @selected(old('household_composition', $profile?->household_composition) === $option)>{{ $option }}</option>
-                                    @endforeach
-                                </select>
-                                <i class="fa-solid fa-chevron-down select-arrow"></i>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="monthly_income_range">Monthly Income Range*</label>
-                            <div class="select-wrapper">
-                                <select id="monthly_income_range" name="monthly_income_range" required>
-                                    <option value="">Select Income Range</option>
-                                    @foreach (\App\Support\ApplicationOptions::INCOME_RANGES as $option)
-                                        <option value="{{ $option }}" @selected(old('monthly_income_range', $profile?->monthly_income_range) === $option)>{{ $option }}</option>
                                     @endforeach
                                 </select>
                                 <i class="fa-solid fa-chevron-down select-arrow"></i>
@@ -240,6 +224,4 @@
     </script>
 
 @endsection
-
-
 

@@ -156,6 +156,43 @@
                                         </span>
                                     </div>
                                 @endif
+                                @if ($status === 'InterviewScheduled' && $application->interview_date)
+                                    <div id="reschedule-{{ $application->id }}" class="note-section">
+                                        @if ($application->reschedule_status === 'pending')
+                                            <strong>Reschedule requested:</strong> Staff is reviewing your preferred times. Your current interview schedule remains in effect until they confirm a change.
+                                        @else
+                                            @if ($application->reschedule_status === 'approved')
+                                                <p>Your interview was rescheduled. The confirmed time is shown above.</p>
+                                            @elseif ($application->reschedule_status === 'declined')
+                                                <p>Staff could not approve your last reschedule request. The current interview time remains in effect.</p>
+                                            @endif
+                                            @if ($application->interview_date->isFuture())
+                                                <details class="mt-2" {{ request('reschedule') == $application->id ? 'open' : '' }}>
+                                                    <summary class="cursor-pointer font-semibold">Request Reschedule</summary>
+                                                    <p class="my-2 text-sm">Suggest up to three future dates and times. Staff will confirm the final schedule.</p>
+                                                    <form method="POST" action="{{ route('applications.reschedule.request', $application) }}" class="space-y-3">
+                                                        @csrf
+                                                        <label class="block text-sm">Reason (optional)
+                                                            <textarea name="reason" maxlength="1000" rows="2" class="form-control w-full">{{ old('reason') }}</textarea>
+                                                        </label>
+                                                        @for ($option = 0; $option < 3; $option++)
+                                                            <div class="flex flex-wrap gap-2 items-end">
+                                                                <span class="text-sm font-medium">Option {{ $option + 1 }}{{ $option === 0 ? ' (required)' : '' }}</span>
+                                                                <label class="text-sm">Date
+                                                                    <input type="date" name="options[{{ $option }}][date]" value="{{ old("options.{$option}.date") }}" min="{{ \App\Support\ManilaTime::now()->format('Y-m-d') }}" class="form-control" {{ $option === 0 ? 'required' : '' }}>
+                                                                </label>
+                                                                <label class="text-sm">Time
+                                                                    <input type="time" name="options[{{ $option }}][time]" value="{{ old("options.{$option}.time") }}" class="form-control" {{ $option === 0 ? 'required' : '' }}>
+                                                                </label>
+                                                            </div>
+                                                        @endfor
+                                                        <button type="submit" class="btn btn-blue">Send Reschedule Request</button>
+                                                    </form>
+                                                </details>
+                                            @endif
+                                        @endif
+                                    </div>
+                                @endif
                             </div>
 
                             <div class="progress-section">
@@ -219,12 +256,6 @@
                                 </div>
                             </div>
 
-                            @if ($application->interview_notes || $application->decision_remarks)
-                                <div class="note-section">
-                                    <strong>Note:</strong>
-                                    {{ $application->decision_remarks ?: $application->interview_notes }}
-                                </div>
-                            @endif
                         </article>
                     @endforeach
                 </div>

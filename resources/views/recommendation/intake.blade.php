@@ -6,15 +6,20 @@
 
     <div class="nonsticky-header">
         <div class="heading-text">
-            <h2>Pet Recommendation</h2>
-            <p>Tell us about your lifestyle so we can find your most compatible pet.</p>
+            <h2>{{ $isOnboarding ? 'Your Adoption Profile' : 'Pet Recommendation' }}</h2>
+            <p>{{ $isOnboarding ? 'Get started with the 20-question personality assessment, or skip it for now and browse pets.' : 'Complete your personality questionnaire and household information to find compatible pets.' }}</p>
         </div>
     
         <div class="content-area-nonsticky custom-scrollbar">
 
             <div class="reco-banner my-3">
-                This information helps tailor your compatibility results. All pairings are still reviewed
-                and decided manually by shelter staff — this is a guide, not a final decision.
+                @if ($returnPet)
+                    Personality Assessment Required for {{ $returnPet->name }}. Complete your reusable assessment, then continue your application. Shelter staff make the final decision.
+                @elseif ($isOnboarding)
+                    Your account is ready. This assessment is optional today, but you must complete it before personalized recommendations or a formal adoption application. You can still browse pets if you skip.
+                @else
+                    Your reusable personality and household profile calculates pet compatibility. Shelter staff make the final adoption decision.
+                @endif
             </div>
 
             @if ($errors->any())
@@ -35,47 +40,12 @@
 
                 <div class="info-card shadow-card">
                     <h3>Your Adopter Profile</h3>
+                    <p class="mb-4">Your answers are saved to your account and reused for future pets. Housing, children, existing pets, and care budget determine eligibility.</p>
 
                         <div class="form-grid">
 
-                            <div class="form-group">
-                                <label for="physical_activity_level">Physical Activity Level*</label>
-                                <div class="select-wrapper">
-                                    <select id="physical_activity_level" name="physical_activity_level" required>
-                                        <option value="">Select Activity Level</option>
-                                        @foreach ($options::PHYSICAL_ACTIVITY_LEVELS as $option)
-                                            <option value="{{ $option }}" @selected(old('physical_activity_level', $profile?->physical_activity_level) === $option)>{{ $option }}</option>
-                                        @endforeach
-                                    </select>
-                                    <i class="fa-solid fa-chevron-down select-arrow"></i>
-                                </div>
-                            </div>
 
-                            <div class="form-group">
-                                <label for="time_availability">Time Availability*</label>
-                                <div class="select-wrapper">
-                                    <select id="time_availability" name="time_availability" required>
-                                        <option value="">Select Time Availability</option>
-                                        @foreach ($options::TIME_AVAILABILITY_OPTIONS as $option)
-                                            <option value="{{ $option }}" @selected(old('time_availability', $profile?->time_availability) === $option)>{{ $option }}</option>
-                                        @endforeach
-                                    </select>
-                                    <i class="fa-solid fa-chevron-down select-arrow"></i>
-                                </div>
-                            </div>
 
-                            <div class="form-group">
-                                <label for="prior_pet_experience">Prior Pet Experience*</label>
-                                <div class="select-wrapper">
-                                    <select id="prior_pet_experience" name="prior_pet_experience" required>
-                                        <option value="">Select Experience</option>
-                                        @foreach ($options::PRIOR_EXPERIENCE_OPTIONS as $option)
-                                            <option value="{{ $option }}" @selected(old('prior_pet_experience', $profile?->prior_pet_experience) === $option)>{{ $option }}</option>
-                                        @endforeach
-                                    </select>
-                                    <i class="fa-solid fa-chevron-down select-arrow"></i>
-                                </div>
-                            </div>
 
                             <div class="form-group">
                                 <label for="housing_type">Housing Type*</label>
@@ -90,18 +60,6 @@
                                 </div>
                             </div>
 
-                            <div class="form-group">
-                                <label for="household_composition">Household Composition*</label>
-                                <div class="select-wrapper">
-                                    <select id="household_composition" name="household_composition" required>
-                                        <option value="">Select Household Composition</option>
-                                        @foreach ($options::HOUSEHOLD_COMPOSITIONS as $option)
-                                            <option value="{{ $option }}" @selected(old('household_composition', $profile?->household_composition) === $option)>{{ $option }}</option>
-                                        @endforeach
-                                    </select>
-                                    <i class="fa-solid fa-chevron-down select-arrow"></i>
-                                </div>
-                            </div>
 
                             <div class="form-group">
                                 <label for="monthly_income_range">Monthly Income Range*</label>
@@ -116,6 +74,8 @@
                                 </div>
                             </div>
                         </div>
+                        @include('partials.matching-household-fields')
+                        @include('partials.bfi-questionnaire')
                         <div class="submit-container">
                         <button type="submit" class="btn btn-primary"><i class="fa-solid fa-heart"></i>
                             Start Matching
@@ -125,6 +85,14 @@
                 </div>
 
             </form>
+
+            @if ($isOnboarding)
+                <form action="{{ route('recommendation.onboarding.skip') }}" method="POST" class="mt-4 text-center">
+                    @csrf
+                    <button type="submit" class="btn btn-secondary">Skip for now</button>
+                    <p class="mt-2 text-sm text-ink-muted">You can complete the assessment later from Pet Recommendation or when you apply.</p>
+                </form>
+            @endif
 
         </div>
     </div>

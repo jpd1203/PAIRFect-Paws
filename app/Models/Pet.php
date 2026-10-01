@@ -15,6 +15,7 @@ class Pet extends Model
         'branch_id', 'intake_date', 'photo_path', 'is_archived', 'version',
         'energy_level', 'trainability', 'independence', 'temperament',
         'medical_needs', 'is_reactive_to_pets', 'has_aggression_history',
+        'aggression_history_verified_at', 'high_vocalization', 'life_stage', 'assessment_scoring_version',
         'last_assessed_at', 'assessment_count', 'physical_size', 'vaccination_record_status', 'last_assessed_by',
     ];
 
@@ -26,13 +27,15 @@ class Pet extends Model
             'is_archived' => 'boolean',
             'intake_date' => 'date',
             'last_assessed_at' => 'datetime',
-            'energy_level' => 'decimal:1',
-            'trainability' => 'decimal:1',
-            'independence' => 'decimal:1',
-            'temperament' => 'decimal:1',
-            'medical_needs' => 'decimal:1',
+            'energy_level' => 'float',
+            'trainability' => 'float',
+            'independence' => 'float',
+            'temperament' => 'float',
+            'medical_needs' => 'float',
+            'high_vocalization' => 'boolean',
             'is_reactive_to_pets' => 'boolean',
             'has_aggression_history' => 'boolean',
+            'aggression_history_verified_at' => 'datetime',
         ];
     }
 
@@ -43,6 +46,12 @@ class Pet extends Model
     {
         static::addGlobalScope('notArchived', function (Builder $builder) {
             $builder->where('is_archived', false);
+        });
+
+        static::saving(function (Pet $pet) {
+            if ($pet->isDirty('has_aggression_history')) {
+                $pet->aggression_history_verified_at = $pet->has_aggression_history === null ? null : now();
+            }
         });
     }
 
@@ -66,13 +75,13 @@ class Pet extends Model
     {
         return $query
             ->where('availability_status', AvailabilityStatus::Available->value)
-            ->has('assessmentRecords', '>=', 3)
-            ->whereNotNull('energy_level')
-            ->whereNotNull('trainability')
-            ->whereNotNull('independence')
-            ->whereNotNull('temperament')
+            ->whereHas('assessmentRecords', fn (Builder $records) => $records->whereNotNull('responses'))
             ->whereNotNull('medical_needs')
-            ->whereIn('physical_size', ['Extra Small', 'Small', 'Medium', 'Large', 'Extra Large']);
+            ->whereIn('physical_size', ['Extra Small', 'Small', 'Medium', 'Large', 'Extra Large'])
+            ->whereIn('life_stage', ['young', 'adult', 'senior'])
+            ->whereNotNull('has_aggression_history')
+            ->whereNotNull('aggression_history_verified_at')
+            ->whereNotNull('high_vocalization');
     }
 
     // ─── Accessors used by frontend Blade templates ────────────────────────
@@ -173,11 +182,19 @@ class Pet extends Model
 
     public function getAssessmentStatusAttribute(): string
     {
-        $count = array_key_exists('assessment_records_count', $this->attributes)
-            ? (int) $this->attributes['assessment_records_count']
-            : $this->assessmentRecords()->count();
+        return $this->assessment_scoring_version !== null
+            && $this->assessment_count >= config('matching.min_observers')
+            && $this->energy_level !== null && $this->trainability !== null
+            && $this->independence !== null && $this->temperament !== null ? 'complete' : 'pending';
+    }
 
-        return $count >= 3 ? 'complete' : 'pending';
+    public function getTemperamentDisplayAttribute(): string
+    {
+        if ($this->assessment_status !== 'complete') {
+            return 'Assessment in progress';
+        }
+
+        return number_format($this->temperament, 2).' / 5 fearfulness/reactivity';
     }
 
     public function getImageUrlAttribute(): string
@@ -196,4 +213,3 @@ class Pet extends Model
         ($this->sex === 'Female' ? 'F' : 'M');
     }
 }
-

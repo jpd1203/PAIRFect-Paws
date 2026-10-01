@@ -7,7 +7,6 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CheckInMilestoneController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
-use App\Http\Controllers\DonationController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PetController;
 use App\Http\Controllers\ProfileController;
@@ -49,7 +48,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/applications/{application}/override', [ApplicationController::class, 'override']);
     });
     Route::apiResource('documents', DocumentController::class);
-    Route::apiResource('donations', DonationController::class);
     Route::apiResource('adopter-profiles', AdopterProfileController::class);
     Route::apiResource('check-ins', CheckInMilestoneController::class);
 });

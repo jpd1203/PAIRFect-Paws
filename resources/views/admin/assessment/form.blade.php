@@ -13,7 +13,6 @@
     ];
 
     $ratingLabels = ['Never', 'Seldom', 'Sometimes', 'Usually', 'Always'];
-    $medicalLabels = ['Routine', 'Minor', 'Moderate', 'Significant', 'Intensive'];
 
     // Calculate total questions count
     $totalBehaviorQuestions = 0;
@@ -32,7 +31,6 @@
         $totalBehaviorQuestions += $count;
     }
 
-    $totalAssessmentRatings = $totalBehaviorQuestions + 1; // +1 for medical_needs
 @endphp
 
 <div class="" id="assessmentApp">
@@ -54,10 +52,21 @@
         </p>
         <p class="mt-3 text-sm text-ink-muted">
             Rate how often <span class="font-medium text-ink">{{ $animal->name }}</span> shows each behavior, from
-            <span class="font-medium text-ink">1 Never</span> to
-            <span class="font-medium text-ink">5 Always</span>.
+            <span class="font-medium text-ink">0 Never</span> to
+            <span class="font-medium text-ink">4 Always</span>. Leave items you have not observed unanswered; each subscale needs at least 80% of its answers for matching.
         </p>
     </header>
+
+    @if ($errors->any())
+        <div role="alert" class="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <p class="font-semibold">Please review these assessment details:</p>
+            <ul class="mt-2 list-disc pl-5">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     {{-- Form with Two-Column Layout --}}
     <form action="{{ route('admin.assessments.store', $animal) }}" method="POST" id="assessmentForm" class="mt-6" novalidate>
@@ -65,7 +74,7 @@
 
         <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
 
-            {{-- Main Column: Question Sections & KNN Flags --}}
+            {{-- Main Column: Species-specific behavioral questions --}}
             <div class="space-y-6">
 
                 @foreach ($categories as $catKey => $cat)
@@ -133,114 +142,6 @@
                     </section>
                 @endforeach
 
-                {{-- KNN Matching Flags & Medical Needs Section --}}
-                <section id="section-flags" aria-labelledby="heading-flags"
-                         class="scroll-mt-6 rounded-xl border border-line bg-white shadow-sm overflow-hidden"
-                         data-section="flags" data-section-total="1">
-                    
-                    <header class="border-b border-line px-5 py-4 sm:px-6 bg-white">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h2 id="heading-flags" class="text-lg font-semibold text-ink font-primary">KNN matching flags</h2>
-                                <p class="mt-0.5 text-sm text-ink-muted">These fields power the pet-recommendation algorithm. Set them based on your observations above.</p>
-                            </div>
-                            <span class="section-progress-badge mt-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums bg-sand text-ink-muted transition-colors duration-200"
-                                  data-badge-section="flags">
-                                <span data-section-answered-count="flags">0</span>/1
-                            </span>
-                        </div>
-                    </header>
-
-                    <div class="px-5 sm:px-6">
-
-                        {{-- Medical Needs Level --}}
-                        @php
-                            $hasMedAnswer = old('medical_needs') !== null && old('medical_needs') !== '';
-                        @endphp
-                        <div id="q-medical_needs" class="question-item flex scroll-mt-24 flex-col gap-3 py-3.5 sm:py-4 xl:flex-row xl:items-center xl:gap-8"
-                             data-q-key="medical_needs" data-section-key="flags">
-                            
-                            <div class="flex flex-1 items-center gap-3.5">
-                                <span class="q-badge flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-all duration-200 {{ $hasMedAnswer ? 'bg-[#A61D24] text-white is-answered shadow-sm' : 'bg-[#F5EFEB] text-[#7A6E6A]' }}"
-                                      data-q-badge="medical_needs">
-                                    <span class="q-badge-num {{ $hasMedAnswer ? 'hidden' : '' }}">1</span>
-                                    <svg class="h-4 w-4 text-white {{ $hasMedAnswer ? '' : 'hidden' }} q-badge-check" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.8">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </span>
-                                <div class="min-w-0 flex-1">
-                                    <p id="label-medical_needs" class="text-[15px] sm:text-base font-normal text-[#231D19] leading-snug">
-                                        Medical needs level
-                                    </p>
-                                    <p class="mt-0.5 text-xs text-[#9A918A]">
-                                        1 = Routine care only · 5 = Intensive ongoing medical care
-                                    </p>
-                                    <p class="q-error-msg mt-1 text-xs font-medium text-[#A61D24] hidden">
-                                        Select a rating to continue
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="pl-10 xl:pl-0">
-                                <div role="radiogroup" aria-labelledby="label-medical_needs"
-                                     class="rating-radiogroup grid w-full shrink-0 grid-cols-5 gap-1 rounded-2xl bg-[#F5EFEB] p-1.5 sm:w-[440px] md:w-[460px]"
-                                     data-rating-group="medical_needs">
-                                    @for ($val = 1; $val <= 5; $val++)
-                                        @php
-                                            $isMedChecked = old('medical_needs') == $val;
-                                        @endphp
-                                        <label class="rating-pill flex cursor-pointer flex-col items-center justify-center rounded-xl py-2 px-1 transition-all duration-150 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#A61D24] {{ $isMedChecked ? 'is-active bg-[#A61D24] text-white shadow-sm' : 'text-[#382F2D] hover:bg-[#FDF2F2] hover:text-[#A61D24]' }}"
-                                               data-val="{{ $val }}">
-                                            <input type="radio" name="medical_needs" value="{{ $val }}"
-                                                   {{ $isMedChecked ? 'checked' : '' }} class="sr-only rating-input" required>
-                                            <span class="text-sm sm:text-base font-bold leading-tight">{{ $val }}</span>
-                                            <span class="pill-label text-[11px] sm:text-xs leading-tight mt-0.5 {{ $isMedChecked ? 'text-white/95 font-medium' : 'text-[#7A6E6A] font-normal' }}">{{ $medicalLabels[$val - 1] }}</span>
-                                        </label>
-                                    @endfor
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Safety Flags --}}
-                        <fieldset class="border-t border-line py-5">
-                            <legend class="float-left mb-3 w-full text-sm font-semibold text-ink">
-                                Safety flags <span class="font-normal text-ink-subtle">· optional</span>
-                            </legend>
-
-                            <div class="clear-both grid gap-3 md:grid-cols-2">
-                                
-                                {{-- Animal Reactive Flag --}}
-                                @php
-                                    $isReactive = (bool) old('is_reactive_to_pets');
-                                @endphp
-                                <label class="safety-flag-card flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors duration-150 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#A61D24] {{ $isReactive ? 'border-red-300 bg-[#FDF2F2]' : 'border-line hover:border-[#A61D24] bg-white' }}">
-                                    <input type="checkbox" name="is_reactive_to_pets" value="1" {{ $isReactive ? 'checked' : '' }}
-                                           class="safety-flag-checkbox mt-0.5 h-4 w-4 shrink-0 rounded text-[#A61D24] focus:ring-[#A61D24]">
-                                    <span>
-                                        <span class="block text-sm font-medium text-ink">Reactive or aggressive toward other animals</span>
-                                        <span class="mt-0.5 block text-xs text-ink-muted">Excludes matches with households that have other pets.</span>
-                                    </span>
-                                </label>
-
-                                {{-- Human Aggression History Flag --}}
-                                @php
-                                    $hasAggression = (bool) old('has_aggression_history');
-                                @endphp
-                                <label class="safety-flag-card flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors duration-150 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#A61D24] {{ $hasAggression ? 'border-red-300 bg-[#FDF2F2]' : 'border-line hover:border-[#A61D24] bg-white' }}">
-                                    <input type="checkbox" name="has_aggression_history" value="1" {{ $hasAggression ? 'checked' : '' }}
-                                           class="safety-flag-checkbox mt-0.5 h-4 w-4 shrink-0 rounded text-[#A61D24] focus:ring-[#A61D24]">
-                                    <span>
-                                        <span class="block text-sm font-medium text-ink">Has documented aggression or high-fear history toward people</span>
-                                        <span class="mt-0.5 block text-xs text-ink-muted">Limits matches to experienced adopters without young children.</span>
-                                    </span>
-                                </label>
-
-                            </div>
-                        </fieldset>
-
-                    </div>
-                </section>
-
             </div>
 
             {{-- Sidebar Column: Sticky Progress Checklist & Actions --}}
@@ -285,7 +186,7 @@
                         <div class="flex items-baseline justify-between">
                             <p class="text-sm font-semibold text-ink font-primary">Progress</p>
                             <p class="text-sm tabular-nums text-ink-muted">
-                                <span id="desktopAnsweredCount" class="font-semibold text-ink">0</span> of {{ $totalAssessmentRatings }}
+                                <span id="desktopAnsweredCount" class="font-semibold text-ink">0</span> of {{ $totalBehaviorQuestions }}
                             </p>
                         </div>
 
@@ -306,24 +207,11 @@
                                         <span class="sidebar-section-status shrink-0 text-xs tabular-nums text-ink-subtle" data-sidebar-status="{{ $catKey }}">
                                             <span data-sidebar-answered="{{ $catKey }}">0</span>/{{ $sectionQuestionsCount[$catKey] }}
                                         </span>
-                                        <i class="fa-solid fa-check text-xs text-ok-700 hidden" data-sidebar-check="{{ $catKey }}"></i>
+                                        <i class="fa-solid fa-check text-xs text-ok-700" data-sidebar-check="{{ $catKey }}" style="display:none"></i>
                                     </button>
                                 </li>
                             @endforeach
 
-                            {{-- KNN Flags Link --}}
-                            <li>
-                                <button type="button" data-jump-to="section-flags"
-                                        class="flex w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left text-sm transition-colors duration-150 hover:bg-[#FDF2F2] hover:text-[#A61D24] text-ink">
-                                    <span class="sidebar-section-title truncate" data-sidebar-title="flags">
-                                        Matching flags
-                                    </span>
-                                    <span class="sidebar-section-status shrink-0 text-xs tabular-nums text-ink-subtle" data-sidebar-status="flags">
-                                        <span data-sidebar-answered="flags">0</span>/1
-                                    </span>
-                                    <i class="fa-solid fa-check text-xs text-ok-700 hidden" data-sidebar-check="flags"></i>
-                                </button>
-                            </li>
                         </ul>
 
                         {{-- Action Buttons --}}
@@ -348,7 +236,7 @@
         {{-- Mobile Fixed Bottom Bar --}}
         <div class="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 border-t border-line bg-white/95 backdrop-blur-sm px-4 py-3 lg:hidden shadow-lg">
             <p class="text-sm tabular-nums text-ink-muted">
-                <span id="mobileAnsweredCount" class="font-semibold text-ink">0</span> of {{ $totalAssessmentRatings }} rated
+                <span id="mobileAnsweredCount" class="font-semibold text-ink">0</span> of {{ $totalBehaviorQuestions }} rated
             </p>
             <button type="submit"
                     class="btn-assessment-save flex items-center gap-2 rounded-xl bg-[#A61D24] hover:bg-[#8D171E] px-4 py-2 text-sm font-semibold text-white shadow-sm cursor-pointer">
@@ -384,7 +272,7 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const totalRequired = {{ $totalAssessmentRatings }};
+    const totalRequired = {{ $totalBehaviorQuestions }};
     const form = document.getElementById('assessmentForm');
     const sections = Array.from(document.querySelectorAll('[data-section]'));
     let isSubmitting = false;
@@ -456,11 +344,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if (isSectionDone) {
                 if (sidebarStatus) sidebarStatus.classList.add('hidden');
-                if (sidebarCheck) sidebarCheck.classList.remove('hidden');
+                if (sidebarCheck) sidebarCheck.style.display = '';
                 if (sidebarTitle) sidebarTitle.classList.replace('text-ink', 'text-ink-muted');
             } else {
                 if (sidebarStatus) sidebarStatus.classList.remove('hidden');
-                if (sidebarCheck) sidebarCheck.classList.add('hidden');
+                if (sidebarCheck) sidebarCheck.style.display = 'none';
                 if (sidebarTitle) sidebarTitle.classList.replace('text-ink-muted', 'text-ink');
             }
         });
@@ -506,20 +394,6 @@ document.addEventListener('DOMContentLoaded', function () {
             updateProgress();
         }
 
-        // Safety flag checkboxes toggle card styling
-        if (e.target && e.target.classList.contains('safety-flag-checkbox')) {
-            const cb = e.target;
-            const card = cb.closest('.safety-flag-card');
-            if (card) {
-                if (cb.checked) {
-                    card.classList.remove('border-line', 'hover:border-ink-subtle', 'bg-white');
-                    card.classList.add('border-brand-200', 'bg-brand-50');
-                } else {
-                    card.classList.remove('border-brand-200', 'bg-brand-50');
-                    card.classList.add('border-line', 'hover:border-ink-subtle', 'bg-white');
-                }
-            }
-        }
     });
 
     // --- Smooth Jump Links in Sidebar ---
@@ -535,44 +409,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Validation on Form Submission ---
     form.addEventListener('submit', function (e) {
-        const answered = updateProgress();
-
-        if (answered < totalRequired) {
+        updateProgress();
+        if (!form.reportValidity()) {
             e.preventDefault();
-
-            // Find first unanswered question item
-            let firstUnanswered = null;
-            const allItems = form.querySelectorAll('.question-item');
-
-            allItems.forEach(item => {
-                const checked = item.querySelector('.rating-input:checked');
-                const errorMsg = item.querySelector('.q-error-msg');
-                const radioGroup = item.querySelector('.rating-radiogroup');
-
-                if (!checked) {
-                    if (!firstUnanswered) firstUnanswered = item;
-                    if (errorMsg) errorMsg.classList.remove('hidden');
-                    if (radioGroup) radioGroup.classList.add('ring-1', 'ring-brand-500');
-                } else {
-                    if (errorMsg) errorMsg.classList.add('hidden');
-                    if (radioGroup) radioGroup.classList.remove('ring-1', 'ring-brand-500');
-                }
-            });
-
-            const needed = totalRequired - answered;
-            const msg = `${needed} ${needed === 1 ? 'rating' : 'ratings'} still needed`;
-            if (window.PAIRfectAdmin && typeof window.PAIRfectAdmin.showToast === 'function') {
-                window.PAIRfectAdmin.showToast(msg, 'error');
-            } else if (typeof showToast === 'function') {
-                showToast(msg, 'error');
-            }
-
-            if (firstUnanswered) {
-                firstUnanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            return false;
+            return;
         }
-
         isSubmitting = true;
     });
 

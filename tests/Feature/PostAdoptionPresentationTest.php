@@ -18,10 +18,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
+use Tests\Concerns\BuildsMatchingFixtures;
 
 class PostAdoptionPresentationTest extends TestCase
 {
-    use RefreshDatabase;
+    use BuildsMatchingFixtures, RefreshDatabase;
 
     protected function tearDown(): void
     {
@@ -102,6 +103,8 @@ class PostAdoptionPresentationTest extends TestCase
         $application->update([
             'document_verification_status' => DocumentVerificationStatus::Verified,
         ]);
+        $this->completeMatchingProfile($adopter);
+        $this->completePetAssessment($application->pet);
 
         $this->actingAs($staff)
             ->post(route('admin.applications.schedule'), [

@@ -21,10 +21,11 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use Tests\Concerns\BuildsMatchingFixtures;
 
 class DocumentVerificationTest extends TestCase
 {
-    use RefreshDatabase;
+    use BuildsMatchingFixtures, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -308,7 +309,7 @@ class DocumentVerificationTest extends TestCase
         });
     }
 
-    public function test_verified_submission_is_stored_privately_and_moves_under_review(): void
+    public function test_verified_submission_is_stored_privately_and_waits_for_staff_review(): void
     {
         Mail::fake();
         Storage::fake('local');
@@ -343,7 +344,7 @@ class DocumentVerificationTest extends TestCase
         ])->assertRedirect(route('application.index'));
 
         $application = AdoptionApplication::sole();
-        $this->assertSame(ApplicationStatus::UnderReview, $application->status);
+        $this->assertSame(ApplicationStatus::Pending, $application->status);
         $this->assertSame(DocumentVerificationStatus::Verified, $application->document_verification_status);
         $this->assertSame('local', $application->document_disk);
         $this->assertSame('Juan', $application->applicant_first_name);
@@ -392,7 +393,7 @@ class DocumentVerificationTest extends TestCase
 
         $application->refresh();
         $this->assertSame(DocumentVerificationStatus::Verified, $application->document_verification_status);
-        $this->assertSame(ApplicationStatus::UnderReview, $application->status);
+        $this->assertSame(ApplicationStatus::Pending, $application->status);
         $this->assertSame(1, $application->document_reupload_count);
         Storage::disk('local')->assertMissing('adoption-documents/old.jpg');
         Storage::disk('local')->assertExists($application->document_path);
@@ -515,7 +516,7 @@ class DocumentVerificationTest extends TestCase
 
         $application->refresh();
         $this->assertSame(DocumentVerificationStatus::Verified, $application->document_verification_status);
-        $this->assertSame(ApplicationStatus::UnderReview, $application->status);
+        $this->assertSame(ApplicationStatus::Pending, $application->status);
         $this->assertSame('JUAN CRUZ QUEZON CITY IDENTIFICATION CARD', $application->ocr_extracted_text);
         $this->assertNotNull($application->document_verified_at);
     }
@@ -568,6 +569,9 @@ class DocumentVerificationTest extends TestCase
             'species' => 'Dog',
             'availability_status' => AvailabilityStatus::Available->value,
         ]);
+
+        $this->completeMatchingProfile($adopter);
+        $this->completePetAssessment($pet);
 
         return [$adopter, $pet];
     }

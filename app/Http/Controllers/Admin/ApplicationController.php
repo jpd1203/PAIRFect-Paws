@@ -11,9 +11,12 @@ use App\Models\AdoptionApplication;
 use App\Models\Pet;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\AdopterHistoryService;
 use App\Services\DocumentVerificationNotificationService;
 use App\Services\DocumentVerificationService;
+use App\Services\EmailNotificationService;
 use App\Services\ReservationQueueService;
+use App\Services\Matching\ApplicantRankingService;
 use App\Support\ManilaTime;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -28,6 +31,10 @@ class ApplicationController extends Controller
         private ReservationQueueService $reservationQueue,
         private DocumentVerificationNotificationService $documentNotifications,
         private DocumentVerificationService $documentVerification,
+        private \App\Services\Matching\ApplicationMatchService $matching,
+        private ApplicantRankingService $ranking,
+        private EmailNotificationService $emailNotifications,
+        private AdopterHistoryService $adopterHistory,
     ) {}
 
     /**
@@ -35,38 +42,20 @@ class ApplicationController extends Controller
      */
     public function index()
     {
-        // Display newest submissions first. Queue positions below remain FCFS.
+        // Display newest submissions first; positions reflect eligible compatibility ranking.
         $applications = AdoptionApplication::with(['user', 'pet'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();
 
-        $terminalStatuses = collect([
-            ApplicationStatus::Approved,
-            ApplicationStatus::Rejected,
-            ApplicationStatus::Withdrawn,
-            ApplicationStatus::NoShow,
-            ApplicationStatus::Closed,
-        ])->map->value->all();
+        $this->matching->refreshMany($applications);
+        $historySummaries = $this->adopterHistory->summariesForApplications($applications);
 
-        $applications->groupBy('pet_id')->each(function ($petApplications) use ($terminalStatuses) {
+        $applications->groupBy('pet_id')->each(function ($petApplications) {
             $position = 0;
-            $petApplications->sort(function ($a, $b) {
-                if ($a->knn_score === null && $b->knn_score !== null) return 1;
-                if ($a->knn_score !== null && $b->knn_score === null) return -1;
-                if ($a->knn_score !== $b->knn_score) return $a->knn_score <=> $b->knn_score;
-                if ($a->created_at !== $b->created_at) return $a->created_at <=> $b->created_at;
-                return $a->id <=> $b->id;
-            })->values()->each(
-                function ($application) use (&$position, $terminalStatuses) {
-                    $qualified = in_array($application->status, [
-                        ApplicationStatus::Pending,
-                        ApplicationStatus::UnderReview,
-                        ApplicationStatus::InterviewScheduled,
-                        ApplicationStatus::PrimaryCandidate,
-                        ApplicationStatus::Waitlisted,
-                    ], true);
-                    if ($qualified && ! in_array($application->status->value, $terminalStatuses, true)) {
+            $this->ranking->sort($petApplications)->each(
+                function ($application) use (&$position) {
+                    if ($this->ranking->isEligible($application)) {
                         $application->setAttribute('queue_position', ++$position);
                     }
                 }
@@ -79,35 +68,7 @@ class ApplicationController extends Controller
             ->orderBy('last_name')
             ->get();
 
-        // Backfill compatibility_result for legacy applications that only have knn_score
-        $knn = app(\App\Services\KnnRecommendationService::class);
-        $applications->each(function (AdoptionApplication $app) use ($knn) {
-            if ($app->compatibility_result !== null || $app->knn_score === null || !$app->pet) {
-                return;
-            }
-
-            $inputs = [
-                'physical_activity_level' => $app->physical_activity_level ?? '',
-                'time_availability' => $app->time_availability ?? '',
-                'prior_pet_experience' => $app->prior_pet_experience ?? '',
-                'housing_type' => $app->housing_type ?? '',
-                'household_composition' => $app->household_composition ?? '',
-                'monthly_income_range' => $app->income_range ?? '',
-                'has_existing_pets' => in_array($app->prior_pet_experience, [
-                    'Currently own pets',
-                    'Experienced with rescue/special needs animals',
-                ], true) ? 'yes' : 'no',
-            ];
-
-            try {
-                $result = $knn->resultFor($app->pet, $inputs);
-                $app->update(['compatibility_result' => $result]);
-            } catch (\Throwable) {
-                // Pet may have invalid physical_size; skip gracefully
-            }
-        });
-
-        return view('admin.application.index', compact('applications', 'volunteers'));
+        return view('admin.application.index', compact('applications', 'volunteers', 'historySummaries'));
     }
 
     /**
@@ -172,6 +133,43 @@ class ApplicationController extends Controller
         return back()->with('success', $wasRescheduled
             ? 'Interview rescheduled. Updated notifications were queued for the adopter and interviewer.'
             : 'Interview scheduled and the pet is now soft-reserved. Notifications were queued.');
+    }
+
+    public function declineReschedule(AdoptionApplication $application)
+    {
+        DB::transaction(function () use ($application): void {
+            $current = AdoptionApplication::whereKey($application->id)->lockForUpdate()->firstOrFail();
+            if ($current->reschedule_status !== 'pending'
+                || $current->status !== ApplicationStatus::InterviewScheduled
+                || ! $current->is_primary_candidate) {
+                throw ValidationException::withMessages([
+                    'reschedule' => 'There is no pending reschedule request for this active interview.',
+                ]);
+            }
+            $current->update([
+                'reschedule_status' => 'declined',
+                'reschedule_reviewed_at' => now(),
+            ]);
+            AuditLogService::log(Auth::id(), 'Interview Reschedule Declined', 'AdoptionApplication', $current->id);
+        });
+
+        $application->refresh()->loadMissing(['user', 'pet']);
+        $this->emailNotifications->user(
+            $application->user,
+            "Interview reschedule request update - {$application->pet?->name}",
+            'Interview reschedule request declined',
+            [
+                'Shelter staff could not approve your requested times.',
+                'Your original interview remains scheduled for '.ManilaTime::format($application->interview_date, 'F j, Y \a\t g:i A').' (Asia/Manila).',
+                'Please contact the shelter if you cannot attend.',
+            ],
+            'View My Applications',
+            route('application.index'),
+            'interview_reschedule_declined',
+            $application->id,
+        );
+
+        return back()->with('success', 'Reschedule request declined. The original interview time remains in effect.');
     }
 
     /**

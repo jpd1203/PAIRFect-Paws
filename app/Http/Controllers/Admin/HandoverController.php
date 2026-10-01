@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Handover;
 use App\Models\User;
+use App\Services\HandoverNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class HandoverController extends Controller
 {
+    public function __construct(private HandoverNotificationService $notifications) {}
+
     public function index(Request $request)
     {
         $query = Handover::with(['pet', 'application', 'user'])->latest('updated_at');
@@ -80,11 +85,23 @@ class HandoverController extends Controller
             'release_method' => 'required|in:pickup,delivery',
             'release_date' => 'required|date',
             'release_time' => 'required|string|max:20',
-            'staff_id' => 'required|exists:users,id',
+            'staff_id' => 'required|integer|exists:users,id',
             'courier' => 'nullable|required_if:release_method,delivery|string|max:100',
             'tracking_number' => 'nullable|required_if:release_method,delivery|string|max:100',
             'proof' => 'nullable|image|max:5120',
         ]);
+
+        $staffMember = User::query()
+            ->whereKey($validated['staff_id'])
+            ->where('is_active', true)
+            ->whereIn('role', [Role::Administrator->value, Role::Volunteer->value])
+            ->first();
+
+        if (! $staffMember) {
+            throw ValidationException::withMessages([
+                'staff_id' => 'Please select an active staff member or volunteer.',
+            ]);
+        }
 
         $data = [
             'release_method' => $validated['release_method'],
@@ -110,18 +127,25 @@ class HandoverController extends Controller
         $handover->recordHistory("Marked as released via {$methodLabel}", $handover->staff_name);
         $handover->save();
 
-        $handover->createNotification('released');
+        $this->notifications->create($handover, 'released');
 
         \App\Services\AuditLogService::log(Auth::id(), "Marked {$handover->pet?->name} ({$handover->code}) as released via {$methodLabel}", "Handover", $handover->id);
 
         return back()->with('toast', ['type' => 'success', 'message' => "{$handover->pet?->name} marked as released. Adopter notified to confirm receipt."]);
     }
 
-    public function sendReminder(Request $request, Handover $handover, \App\Services\EmailNotificationService $emailNotifications)
+    public function sendReminder(Request $request, Handover $handover)
     {
         $validated = $request->validate([
             'channel' => 'required|in:Email',
         ]);
+
+        if (! $handover->user?->email || ! $handover->user->hasVerifiedEmail()) {
+            return back()->with('toast', [
+                'type' => 'error',
+                'message' => 'The adopter needs a verified email address before an email reminder can be sent.',
+            ]);
+        }
 
         $channel = $validated['channel'];
         $reminders = $handover->reminders ?? [];
@@ -132,31 +156,16 @@ class HandoverController extends Controller
         $handover->reminders = $reminders;
 
         $staff = Auth::user()?->full_name ?? 'Staff';
-        $handover->recordHistory("Reminder sent to adopter ({$channel})", $staff);
+        $handover->recordHistory("Reminder queued for adopter ({$channel})", $staff);
         $handover->save();
 
-        $handover->createNotification('reminder', [
+        $this->notifications->create($handover, 'reminder', [
             'channels' => ['In-app', $channel],
         ]);
 
-        \App\Services\AuditLogService::log(Auth::id(), "Sent {$channel} reminder to {$handover->adopter_name} for {$handover->pet?->name}", "Handover", $handover->id);
+        \App\Services\AuditLogService::log(Auth::id(), "Queued {$channel} reminder to {$handover->adopter_name} for {$handover->pet?->name}", "Handover", $handover->id);
 
-        $petName = $handover->pet?->name ?? 'your pet';
-        $emailNotifications->user(
-            $handover->user,
-            "Reminder: Please confirm receipt of {$petName}",
-            "Confirm {$petName}'s arrival",
-            [
-                "It has been several days since {$petName} was released.",
-                "Please confirm receipt so your post-adoption check-ins can begin."
-            ],
-            'Confirm receipt',
-            route('adopter.confirm', $handover),
-            'handover_reminder',
-            $handover->id
-        );
-
-        return back()->with('toast', ['type' => 'success', 'message' => "{$channel} reminder sent to adopter."]);
+        return back()->with('toast', ['type' => 'success', 'message' => "{$channel} reminder queued for adopter."]);
     }
 
     public function reopen(Request $request, Handover $handover)
@@ -184,7 +193,7 @@ class HandoverController extends Controller
         $handover->recordHistory('Adopter notified: new handover being arranged', 'System');
         $handover->save();
 
-        $handover->createNotification('reopened');
+        $this->notifications->create($handover, 'reopened');
 
         \App\Services\AuditLogService::log(Auth::id(), "Reopened handover for {$handover->pet?->name} ({$handover->code}): {$reason}", "Handover", $handover->id);
 

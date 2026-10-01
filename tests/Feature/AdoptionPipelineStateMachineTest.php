@@ -18,10 +18,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
+use Tests\Concerns\BuildsMatchingFixtures;
 
 class AdoptionPipelineStateMachineTest extends TestCase
 {
-    use RefreshDatabase;
+    use BuildsMatchingFixtures, RefreshDatabase;
 
     public function test_verified_application_progresses_through_interview_notes_review_and_approval(): void
     {
@@ -57,6 +58,9 @@ class AdoptionPipelineStateMachineTest extends TestCase
             'status' => ApplicationStatus::Pending->value,
             'document_verification_status' => DocumentVerificationStatus::Pending->value,
         ]);
+
+        $this->completeMatchingProfile($adopter);
+        $this->completePetAssessment($pet);
 
         $this->assertDatabaseHas('adoption_applications', [
             'id' => $application->id,

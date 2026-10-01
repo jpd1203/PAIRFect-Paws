@@ -9,6 +9,7 @@ use App\Models\AdoptionApplication;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
 use App\Services\PostAdoptionClock;
+use App\Services\AdopterHistoryService;
 use App\Services\PostAdoptionScheduleService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -44,10 +45,10 @@ class AdoptionProfileController extends Controller
      * Return the selected approved placement's monitoring history alongside a
      * compact record of every application attempt owned by the adopter.
      */
-    public function history(Request $request, User $user)
+    public function history(Request $request, User $user, AdopterHistoryService $history)
     {
         $applications = $user->adoptionApplications()
-            ->with('pet')
+            ->with(['pet', 'postAdoptionLogs'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();
@@ -92,6 +93,8 @@ class AdoptionProfileController extends Controller
             $monitoringTimeline,
             $isApprovedPlacement,
         );
+        $historySummary = $history->summarize($applications);
+        $historyEvents = $history->timeline($applications);
 
         return view('admin.adopter-profile._history-modal-content', compact(
             'adopter',
@@ -102,6 +105,8 @@ class AdoptionProfileController extends Controller
             'monitoringLogs',
             'monitoringTimeline',
             'monitoringMetrics',
+            'historySummary',
+            'historyEvents',
         ));
     }
 
