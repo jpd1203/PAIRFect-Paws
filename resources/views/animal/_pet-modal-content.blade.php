@@ -110,9 +110,11 @@
 
     <!-- Right Column -->
     <div>
-        <div class="profile-row">
+        <div class="profile-row items-center">
             <span>Status</span>
-            <span>{{ $pet->status }}</span>
+            <span class="badge badge-{{ $pet->adoption_status_class }} text-[11px] py-0.5 px-2.5">
+                {{ $pet->status }}
+            </span>
         </div>
         <div class="profile-row">
             <span>Energy Level</span>

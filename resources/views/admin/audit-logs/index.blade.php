@@ -27,7 +27,12 @@
                         <tr data-search-row data-search-text="{{ $log->user_name }} {{ $log->display_action }} {{ $log->notes }}">
                             <td>{{ $log->timestamp->format('M j, Y g:i A') }}</td>
                             <td class="font-semibold">{{ $log->user_name }}</td>
-                            <td><span class="badge {{ $log->role === 'Admin' ? 'badge-approved' : ($log->role === 'Volunteer' ? 'badge-scheduled' : 'badge-pending') }}">{{ $log->role }}</span></td>
+                            <td><span class="badge {{ match (strtolower($log->role ?? '')) {
+                                'administrator', 'admin' => 'badge-pending',
+                                'volunteer' => 'badge-scheduled',
+                                'adopter' => 'badge-approved',
+                                default => 'badge-upcoming',
+                            } }}">{{ $log->role }}</span></td>
                             <td>
                                 <strong class="block">{{ $log->display_action }}</strong>
                                 @if (filled($log->notes))

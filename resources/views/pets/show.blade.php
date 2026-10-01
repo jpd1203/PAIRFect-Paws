@@ -29,10 +29,15 @@
 
 <x-public-layout :title="$pet->name . ' - ' . config('app.name')">
     <main class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
+        @php
+            $fromMatching = request('from') === 'matching' || str_contains(url()->previous(), 'recommendation');
+            $backUrl = $fromMatching ? route('recommendation.results') : route('pets.index');
+            $backLabel = $fromMatching ? 'Back to pet matching' : 'All available pets';
+        @endphp
         <!-- Back Link -->
-        <a href="{{ route('pets.index') }}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors duration-150 no-underline mb-6">
+        <a href="{{ $backUrl }}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors duration-150 no-underline mb-6">
             <i class="fa-solid fa-chevron-left text-xs"></i>
-            <span>All available pets</span>
+            <span>{{ $backLabel }}</span>
         </a>
 
         <!-- Top Section: Photo and Story -->
@@ -54,7 +59,7 @@
                             {{ $pet->species_display }} &middot; {{ $pet->breed ?? 'Mix' }} &middot; {{ $pet->age_years ? $pet->age_years . ' yrs' : ($pet->age_months ? $pet->age_months . ' mos' : $pet->age_group) }} &middot; {{ $pet->sex_display }}
                         </p>
                     </div>
-                    <span class="rounded-full border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-800 shrink-0">
+                    <span class="badge badge-{{ $pet->adoption_status_class }} shrink-0">
                         {{ $pet->status }}
                     </span>
                 </div>

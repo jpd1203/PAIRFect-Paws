@@ -434,7 +434,7 @@
                                 @if ($adoption->overall_status === 'flagged')
                                     <button
                                         type="button"
-                                        class="btn btn-secondary"
+                                        class="btn btn-secondary w-[130px] h-[36px] text-xs font-semibold"
                                         data-report="{{ json_encode($primaryReport, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}"
                                         onclick="openMonitoringViewModal(this)"
                                     >
@@ -443,7 +443,7 @@
                                 @elseif ($adoption->overall_status === 'completed')
                                     <button
                                         type="button"
-                                        class="whitespace-nowrap rounded-md border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-sm hover:bg-surface transition-colors flex items-center gap-1.5"
+                                        class="btn btn-secondary w-[130px] h-[36px] text-xs font-semibold"
                                         data-report="{{ json_encode($primaryReport, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}"
                                         onclick="openMonitoringViewModal(this)"
                                     >
@@ -452,7 +452,7 @@
                                 @elseif ($adoption->overall_status === 'overdue' && $nextCheck)
                                     <button
                                         type="button"
-                                        class="whitespace-nowrap rounded-md border border-overdue-bg bg-overdue-bg px-3 py-1.5 text-xs font-semibold text-overdue-fg hover:border-overdue-fg/30 transition-colors flex items-center gap-1.5"
+                                        class="btn w-[130px] h-[36px] text-xs font-semibold border border-overdue-bg bg-overdue-bg text-overdue-fg hover:border-overdue-fg/30 transition-colors"
                                         data-action="{{ route('admin.monitoring.flag', $nextCheck) }}"
                                         data-summary="{{ $adopterName }} - {{ $petName }} - {{ $nextCheck->milestone_display }}"
                                         onclick="openMonitoringFlagModal(this)"
@@ -462,7 +462,7 @@
                                 @elseif ($adoption->overall_status === 'pending' && $nextCheck)
                                     <button
                                         type="button"
-                                        class="btn btn-yellow"
+                                        class="btn btn-yellow w-[130px] h-[36px] text-xs font-semibold"
                                         data-action="{{ route('admin.monitoring.reminder', $nextCheck) }}"
                                         data-summary="{{ $adopterName }} - {{ $petName }} - {{ $nextCheck->milestone_display }}"
                                         onclick="openMonitoringReminderModal(this)"
@@ -737,11 +737,11 @@
                                     @if ($primaryReport)
                                         <button
                                             type="button"
-                                            class="btn btn-secondary"
+                                            class="btn btn-secondary w-[130px] h-[36px] text-xs font-semibold"
                                             data-report="{{ json_encode($primaryReport, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}"
                                             onclick="openMonitoringViewModal(this)"
                                         >
-                                            <i class="fa-solid fa-eye text-muted"></i> View
+                                            <i class="fa-solid fa-eye text-muted"></i> View Details
                                         </button>
                                     @endif
                                 </div>
@@ -892,8 +892,10 @@
     <div class="custom-modal-backdrop" id="monitoringReminderModal" role="dialog" aria-modal="true" aria-labelledby="monitoringReminderTitle">
         <div class="custom-modal">
             <div class="custom-modal-header">
-                <h2 id="monitoringReminderTitle">Send Welfare Check-in Reminder</h2>
-                <small id="monitoringReminderSubheading" class="font-medium text-gray-500"></small>
+                <div>
+                    <h2 id="monitoringReminderTitle">Send Welfare Check-in Reminder</h2>
+                    <small id="monitoringReminderSubheading" class="font-medium text-gray-500"></small>
+                </div>
             </div>
             <form id="monitoringReminderForm" method="POST">
                 @csrf
@@ -918,8 +920,10 @@
     <div class="custom-modal-backdrop" id="monitoringFlagModal" role="dialog" aria-modal="true" aria-labelledby="monitoringFlagTitle">
         <div class="custom-modal">
             <div class="custom-modal-header">
-                <h2 id="monitoringFlagTitle">Flag Post-Adoption Case</h2>
-                <small id="monitoringFlagSubheading" class="font-medium text-gray-500"></small>
+                <div>
+                    <h2 id="monitoringFlagTitle">Flag Post-Adoption Case</h2>
+                    <small id="monitoringFlagSubheading" class="font-medium text-gray-500"></small>
+                </div>
             </div>
             <form id="monitoringFlagForm" method="POST">
                 @csrf
@@ -944,8 +948,10 @@
     <div class="custom-modal-backdrop" id="monitoringViewModal" role="dialog" aria-modal="true" aria-labelledby="monitoringViewTitle">
         <div class="custom-modal custom-modal-wide">
             <div class="custom-modal-header">
-                <h2 id="monitoringViewTitle">Post-Adoption Monitoring Report</h2>
-                <small id="monitoringViewSubheading" class="font-medium text-gray-500"></small>
+                <div>
+                    <h2 id="monitoringViewTitle">Post-Adoption Monitoring Report</h2>
+                    <small id="monitoringViewSubheading" class="font-medium text-gray-500"></small>
+                </div>
             </div>
             <div class="custom-modal-body space-y-3">
                 <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">

@@ -25,12 +25,36 @@ final class AdopterMatchingProfileService
             'has_children' => ['required', 'boolean'],
             'bfi_responses' => ['required', 'array:'.implode(',', array_keys($this->config->values['bfi']['prompts']))],
         ];
+        $messages = [
+            'housing_type.required' => 'Please select your housing type.',
+            'monthly_income_range.required' => 'Please select your monthly income range.',
+            'has_existing_pets.required' => 'Please indicate if you currently have pets at home.',
+            'has_children.required' => 'Please indicate if children live in or regularly stay in your home.',
+            'bfi_responses.required' => 'Please answer all statements in the Personality Questionnaire.',
+        ];
+        $attributes = [
+            'housing_type' => 'Housing Type',
+            'monthly_income_range' => 'Monthly Income Range',
+            'has_existing_pets' => 'Existing Pets',
+            'has_children' => 'Children in Home',
+            'bfi_responses' => 'Personality Questionnaire',
+        ];
+
+        $i = 1;
+        foreach ($this->config->values['bfi']['prompts'] as $key => $prompt) {
+            $attributes["bfi_responses.{$key}"] = "Question {$i} (\"{$prompt}\")";
+            $messages["bfi_responses.{$key}.required"] = "Question {$i} (\"{$prompt}\") is required.";
+            $messages["bfi_responses.{$key}.between"] = "Question {$i} must be answered with a rating between 1 and 5.";
+            $messages["bfi_responses.{$key}.integer"] = "Question {$i} must be a valid rating.";
+            $i++;
+        }
+
         foreach ($this->config->values['bfi']['dimensions'] as $keys) {
             foreach ($keys as $key) {
                 $rules["bfi_responses.{$key}"] = ['required', 'integer', 'between:1,5'];
             }
         }
-        $validated = Validator::make($input, $rules)->validate();
+        $validated = Validator::make($input, $rules, $messages, $attributes)->validate();
         $scores = $this->bfi->score($validated['bfi_responses']);
 
         return $user->adopterProfile()->updateOrCreate([], [

@@ -2,8 +2,10 @@
 <div class="custom-modal-backdrop" id="scheduleInterviewModal">
     <div class="custom-modal">
         <div class="custom-modal-header">
-            <h2>Schedule Interview</h2>
-            <small id="scheduleSubheading">Applicant: · Pet: · Submitted:</small>
+            <div>
+                <h2>Schedule Interview</h2>
+                <small id="scheduleSubheading">Applicant: · Pet: · Submitted:</small>
+            </div>
         </div>
         <form action="{{ route('admin.applications.schedule') }}" method="POST">
             @csrf
@@ -50,14 +52,24 @@
             @csrf
             <input type="hidden" name="application_id" id="topScheduleAppId" required>
             <div class="space-y-4">
-                <div class="relative">
+                <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Applicant</label>
-                    <input type="search" id="applicantSearch"
-                           class="w-full rounded-xl border border-gray-800 px-3.5 py-2 text-sm font-medium focus:border-emerald-600 focus:outline-none"
-                           placeholder="Search applicant name, email, or pet..."
-                           autocomplete="off" role="combobox" aria-autocomplete="list"
-                           aria-controls="applicantSearchResults" aria-expanded="false">
-                    <div id="applicantSearchResults" class="applicant-search-results" role="listbox" hidden></div>
+                    <div class="relative">
+                        <input type="text" id="applicantSearch"
+                               class="w-full rounded-xl border border-gray-800 pl-3.5 pr-9 py-2 text-sm font-medium focus:border-emerald-600 focus:outline-none"
+                               placeholder="Search applicant name..."
+                               autocomplete="off" role="combobox" aria-autocomplete="list"
+                               aria-controls="applicantSearchResults" aria-expanded="false">
+                        <button type="button" id="clearApplicantSearchBtn"
+                                class="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition cursor-pointer"
+                                style="display: none;"
+                                aria-label="Clear applicant search">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                        <div id="applicantSearchResults" class="applicant-search-results" role="listbox" hidden style="display: none;"></div>
+                    </div>
                     <p id="applicantSearchError" class="mt-1 text-xs font-semibold text-red-700" hidden>
                         Select an applicant from the results before continuing.
                     </p>

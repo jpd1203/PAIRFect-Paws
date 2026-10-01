@@ -36,9 +36,12 @@ class RecommendationController extends Controller
             $request->session()->forget('matching_return_pet');
         }
 
+        $user = $request->user();
+        $profile = $user ? $user->adopterProfile : $this->getGuestProfile($request);
+
         return view('recommendation.intake', [
             'options' => ApplicationOptions::class,
-            'profile' => $request->user()->adopterProfile,
+            'profile' => $profile,
             'returnPet' => $returnPet,
             'isOnboarding' => $isOnboarding,
         ]);
@@ -54,8 +57,13 @@ class RecommendationController extends Controller
 
     public function start(Request $request)
     {
-        $this->profiles->save($request->user(), $request->all());
-        $request->user()->forceFill(['matching_onboarding_pending' => false])->save();
+        $user = $request->user();
+        if ($user) {
+            $this->profiles->save($user, $request->all());
+            $user->forceFill(['matching_onboarding_pending' => false])->save();
+        } else {
+            $this->saveGuestProfile($request);
+        }
         $request->session()->forget('url.intended');
 
         $returnPetId = $request->session()->pull('matching_return_pet');
@@ -69,7 +77,9 @@ class RecommendationController extends Controller
 
     public function results(Request $request)
     {
-        $profile = $request->user()->adopterProfile;
+        $user = $request->user();
+        $profile = $user ? $user->adopterProfile : $this->getGuestProfile($request);
+
         if (! $profile || ! $this->mapper->adopterIsComplete($profile)) {
             return redirect()->route('recommendation.intake')->withErrors(['profile' => 'Complete your personality and household profile to see recommendations.']);
         }
@@ -82,7 +92,9 @@ class RecommendationController extends Controller
 
     public function recompute(Request $request)
     {
-        $profile = $request->user()->adopterProfile;
+        $user = $request->user();
+        $profile = $user ? $user->adopterProfile : $this->getGuestProfile($request);
+
         abort_unless($profile && $this->mapper->adopterIsComplete($profile), 422, 'Complete your matching profile first.');
         $matches = $this->knn->recommendPets($profile, preferences: $this->preferences($request));
 
@@ -93,6 +105,49 @@ class RecommendationController extends Controller
             'status' => $item['pet']->availability_status->value,
             'match_label' => $this->knn->matchLabel($item['result']['overall']),
         ])]);
+    }
+
+    private function saveGuestProfile(Request $request): void
+    {
+        $config = app(\App\Services\Matching\MatchingConfiguration::class);
+        $bfi = app(\App\Services\Matching\BfiScorer::class);
+
+        $rules = [
+            'housing_type' => ['required', Rule::in(ApplicationOptions::HOUSING_TYPES)],
+            'monthly_income_range' => ['required', Rule::in(ApplicationOptions::INCOME_RANGES)],
+            'has_existing_pets' => ['required', 'boolean'],
+            'has_children' => ['required', 'boolean'],
+            'bfi_responses' => ['required', 'array:'.implode(',', array_keys($config->values['bfi']['prompts']))],
+        ];
+
+        foreach ($config->values['bfi']['dimensions'] as $keys) {
+            foreach ($keys as $key) {
+                $rules["bfi_responses.{$key}"] = ['required', 'integer', 'between:1,5'];
+            }
+        }
+
+        $validated = $request->validate($rules);
+        $scores = $bfi->score($validated['bfi_responses']);
+
+        $guestData = array_merge($validated, $scores, [
+            'financial_readiness' => $config->values['financial_levels'][$validated['monthly_income_range']] ?? 3,
+            'bfi_completed_at' => now(),
+        ]);
+
+        $request->session()->put('guest_adopter_profile', $guestData);
+    }
+
+    private function getGuestProfile(Request $request): ?\App\Models\AdopterProfile
+    {
+        $data = $request->session()->get('guest_adopter_profile');
+        if (! $data) {
+            return null;
+        }
+
+        $profile = new \App\Models\AdopterProfile();
+        $profile->forceFill($data);
+
+        return $profile;
     }
 
     private function preferences(Request $request): array

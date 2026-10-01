@@ -33,7 +33,7 @@
                         <tr data-search-row data-search-text="{{ $v->full_name }} {{ $v->email }}">
                             <td class="!text-left font-semibold">{{ $v->full_name }}</td>
                             <td>{{ $v->email }}</td>
-                            <td><span class="badge {{ $v->role === \App\Enums\Role::Administrator ? 'badge-approved' : 'badge-scheduled' }}">{{ $v->role->value }}</span></td>
+                            <td><span class="badge {{ $v->role === \App\Enums\Role::Administrator ? 'badge-pending' : 'badge-scheduled' }}">{{ $v->role->value }}</span></td>
                             <td><span class="badge {{ $v->is_active ? 'badge-active' : 'badge-inactive' }}">{{ $v->is_active ? 'Active' : 'Inactive' }}</span></td>
                             <td><span class="badge {{ $v->hasVerifiedEmail() ? 'badge-approved' : 'badge-pending' }}">{{ $v->hasVerifiedEmail() ? 'Verified' : 'Pending' }}</span></td>
                             <td>

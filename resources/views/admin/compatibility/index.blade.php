@@ -160,8 +160,10 @@
     <div class="custom-modal">
 
         <div class="custom-modal-header">
-            <h2>Compatibility Breakdown</h2>
-            <small id="breakdownSubheading"></small>
+            <div>
+                <h2>Compatibility Breakdown</h2>
+                <small id="breakdownSubheading"></small>
+            </div>
         </div>
 
         <div class="custom-modal-body">
@@ -362,7 +364,14 @@
         document.getElementById('camIncome').textContent = app.income || '—';
         document.getElementById('camMotivation').textContent = app.motivation || 'No statement provided.';
         document.getElementById('camDocLink').href = app.document_url;
-        document.getElementById('camDocStatus').textContent = app.document_status;
+        const camDocStatusDisplay = {
+            'NeedsResubmission': 'Needs Resubmission',
+            'ManualReview': 'Manual Review',
+            'LegacyReview': 'Legacy Review',
+            'Verified': 'Verified',
+            'Pending': 'Pending',
+        }[app.document_status] || app.document_status || '—';
+        document.getElementById('camDocStatus').textContent = camDocStatusDisplay;
         document.getElementById('camVerifLink').href = app.verification_url;
         document.getElementById('camQueueLink').href = app.applications_url;
 

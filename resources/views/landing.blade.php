@@ -132,31 +132,46 @@
                 <p class="mt-2 text-sm text-gray-500 sm:text-base"> These amazing animals are waiting for their forever homes. </p> 
             </div>
 
-            <div id="petsCarousel"
-                class="-mx-4 sm:-mx-6 mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth scroll-px-4 sm:scroll-px-6 px-4 sm:px-6 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div class="relative group/carousel">
+                <!-- Left Navigation Arrow -->
+                <button type="button" id="prevPetsBtn" aria-label="Previous pets"
+                    class="absolute -left-2 sm:-left-4 md:-left-5 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-800 shadow-md transition-all duration-200 hover:bg-gray-100 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-white cursor-pointer">
+                    <i class="fa-solid fa-chevron-left text-sm"></i>
+                </button>
 
-                @forelse ($featuredPets ?? [] as $pet)
-                    <article
-                        class="group relative flex w-[230px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-xl hover:border-[#c9ae72] active:scale-[0.98]">
-                        <div class="pointer-events-none absolute -right-3 -top-3 opacity-0 transition-all duration-300 group-hover:right-1 group-hover:top-1 group-hover:opacity-10">
-                            <i class="fa-solid fa-paw text-5xl text-[#8b6b43] rotate-12"></i>
-                        </div>
+                <div id="petsCarousel"
+                    class="-mx-4 sm:-mx-6 mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth scroll-px-4 sm:scroll-px-6 px-4 sm:px-6 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
-                        <div class="relative overflow-hidden rounded-xl aspect-square bg-[#f5f3ef]">
-                            <a href="{{ route('pets.show', $pet) }}" class="block h-full w-full">
-                                <img src="{{ $pet->image_url }}" alt="{{ $pet->name }}, {{ $pet->breed }}" class="aspect-square w-full h-full object-cover rounded-xl border border-[#999] transition-transform duration-500 ease-out group-hover:scale-110">
+                    @forelse ($featuredPets ?? [] as $pet)
+                        <article
+                            class="group relative flex w-[230px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-xl hover:border-[#c9ae72] active:scale-[0.98]">
+                            <div class="pointer-events-none absolute -right-3 -top-3 opacity-0 transition-all duration-300 group-hover:right-1 group-hover:top-1 group-hover:opacity-10">
+                                <i class="fa-solid fa-paw text-5xl text-[#8b6b43] rotate-12"></i>
+                            </div>
 
-                                <div class="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                                    <span class="mb-3 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-bold text-[#4a3520] shadow-md translate-y-2 transition-transform duration-300 group-hover:translate-y-0">
-                                        <i class="fa-solid fa-paw mr-1"></i>
-                                        Meet {{ $pet->name }}
-                                    </span>
-                                </div>
-                            </a>
-                            <span class="absolute top-2 right-2 rounded-full bg-white/95 backdrop-blur-sm px-2.5 py-1 text-[11px] font-semibold text-gray-800 border border-gray-200 shadow-sm transition-all duration-300 group-hover:scale-105">
-                                {{ $pet->status }}
-                            </span>
-                        </div>
+                            <div class="relative overflow-hidden rounded-xl aspect-square bg-[#f5f3ef]">
+                                <a href="{{ route('pets.show', $pet) }}" class="block h-full w-full">
+                                    <img src="{{ $pet->image_url }}" alt="{{ $pet->name }}, {{ $pet->breed }}" class="aspect-square w-full h-full object-cover rounded-xl border border-[#999] transition-transform duration-500 ease-out group-hover:scale-110">
+
+                                    <div class="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                                        <span class="mb-3 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-bold text-[#4a3520] shadow-md translate-y-2 transition-transform duration-300 group-hover:translate-y-0">
+                                            <i class="fa-solid fa-paw mr-1"></i>
+                                            Meet {{ $pet->name }}
+                                        </span>
+                                    </div>
+                                </a>
+                                @php
+                                    $statusClasses = match(strtolower($pet->status)) {
+                                        'available' => 'bg-[#E1F5EE] text-[#295F51] border-[#295F51]',
+                                        'adopted' => 'bg-[#E6F1FB] text-[#2A4877] border-[#2A4877]',
+                                        'under review', 'pending' => 'bg-[#FAEEDA] text-[#614E34] border-[#614E34]',
+                                        default => 'bg-[#E1F5EE] text-[#295F51] border-[#295F51]',
+                                    };
+                                @endphp
+                                <span class="absolute top-2 right-2 rounded-full px-2.5 py-0.5 text-[11px] font-semibold border shadow-sm transition-all duration-300 group-hover:scale-105 backdrop-blur-sm {{ $statusClasses }}">
+                                    {{ $pet->status }}
+                                </span>
+                            </div>
 
                         {{-- Pet Information --}}
                         <div class="relative z-10">
@@ -222,8 +237,15 @@
 
             </div>
 
+            <!-- Right Navigation Arrow -->
+            <button type="button" id="nextPetsBtn" aria-label="Next pets"
+                class="absolute -right-2 sm:-right-4 md:-right-5 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-800 shadow-md transition-all duration-200 hover:bg-gray-100 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-white cursor-pointer">
+                <i class="fa-solid fa-chevron-right text-sm"></i>
+            </button>
         </div>
-    </section>
+
+    </div>
+</section>
 
 
 

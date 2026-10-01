@@ -2,76 +2,93 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Pet;
+use App\Enums\Role;
 use App\Models\AssessmentRecord;
+use App\Models\Pet;
 use App\Models\User;
+use App\Services\Matching\ApplicationMatchService;
+use App\Services\Matching\BehaviorAssessmentService;
+use Illuminate\Database\Seeder;
 
 class AssessmentSeeder extends Seeder
 {
     public function run(): void
     {
-        // Ensure there is at least one user to be the assessor
-        $assessor = User::first();
-        if (!$assessor) {
-            $assessor = User::create([
-                'name' => 'Demo Assessor',
-                'email' => 'assessor@example.com',
-                'password' => bcrypt('password'),
-            ]);
-        }
+        $staff1 = User::firstOrCreate(['email' => 'admin@pairfectpaws.com'], [
+            'first_name' => 'Admin', 'last_name' => 'User', 'role' => Role::Administrator->value, 'password' => bcrypt('password'), 'email_verified_at' => now(), 'is_active' => true,
+        ]);
+        $staff2 = User::firstOrCreate(['email' => 'volunteer@pairfectpaws.com'], [
+            'first_name' => 'Volunteer', 'last_name' => 'Staff', 'role' => Role::Volunteer->value, 'password' => bcrypt('password'), 'email_verified_at' => now(), 'is_active' => true,
+        ]);
+        $staff3 = User::firstOrCreate(['email' => 'evaluator@pairfectpaws.com'], [
+            'first_name' => 'Evaluator', 'last_name' => 'Staff', 'role' => Role::Volunteer->value, 'password' => bcrypt('password'), 'email_verified_at' => now(), 'is_active' => true,
+        ]);
+        $staff = [$staff1, $staff2, $staff3];
 
         $pets = Pet::all();
-        $physicalSizes = ['Extra Small', 'Small', 'Medium', 'Large', 'Extra Large'];
+        $petConfigs = [
+            'Luna'   => ['species' => 'cat', 'energy' => 2, 'trainability' => 3, 'attachment' => 3, 'fear' => 1, 'size' => 'Small', 'life_stage' => 'adult'],
+            'Buddy'  => ['species' => 'dog', 'energy' => 4, 'trainability' => 4, 'attachment' => 4, 'fear' => 1, 'size' => 'Large', 'life_stage' => 'adult'],
+            'Mochi'  => ['species' => 'cat', 'energy' => 2, 'trainability' => 3, 'attachment' => 4, 'fear' => 1, 'size' => 'Small', 'life_stage' => 'young'],
+            'Max'    => ['species' => 'dog', 'energy' => 3, 'trainability' => 4, 'attachment' => 3, 'fear' => 1, 'size' => 'Medium', 'life_stage' => 'adult'],
+            'Coco'   => ['species' => 'dog', 'energy' => 3, 'trainability' => 3, 'attachment' => 4, 'fear' => 1, 'size' => 'Small', 'life_stage' => 'adult'],
+            'Oliver' => ['species' => 'cat', 'energy' => 3, 'trainability' => 3, 'attachment' => 3, 'fear' => 1, 'size' => 'Medium', 'life_stage' => 'adult'],
+        ];
 
         foreach ($pets as $pet) {
-            // Delete existing assessments for this pet to avoid duplicates
             AssessmentRecord::where('pet_id', $pet->id)->delete();
 
-            $totalEnergy = 0;
-            $totalTrainability = 0;
-            $totalIndependence = 0;
-            $totalTemperament = 0;
+            $speciesStr = strtolower($pet->species->value ?? 'dog');
+            $cfg = $petConfigs[$pet->name] ?? [
+                'species' => $speciesStr,
+                'energy' => 3,
+                'trainability' => 3,
+                'attachment' => 3,
+                'fear' => 1,
+                'size' => 'Medium',
+                'life_stage' => 'adult',
+            ];
 
-            // Create 3 assessment records
-            for ($i = 0; $i < 3; $i++) {
-                $energy = rand(10, 50) / 10; // 1.0 to 5.0
-                $trainability = rand(10, 50) / 10;
-                $independence = rand(10, 50) / 10;
-                $temperament = rand(10, 50) / 10;
-
-                AssessmentRecord::create([
-                    'pet_id' => $pet->id,
-                    'assessor_id' => $assessor->id,
-                    'energy_level' => $energy,
-                    'trainability' => $trainability,
-                    'independence' => $independence,
-                    'temperament' => $temperament,
-                ]);
-
-                $totalEnergy += $energy;
-                $totalTrainability += $trainability;
-                $totalIndependence += $independence;
-                $totalTemperament += $temperament;
-            }
-
-            // Update the Pet model with averages and other required fields for recommendation
             $pet->update([
-                'energy_level' => round($totalEnergy / 3, 1),
-                'trainability' => round($totalTrainability / 3, 1),
-                'independence' => round($totalIndependence / 3, 1),
-                'temperament' => round($totalTemperament / 3, 1),
-                'medical_needs' => rand(10, 50) / 10,
-                'is_reactive_to_pets' => (bool)rand(0, 1),
+                'physical_size' => $cfg['size'],
+                'life_stage' => $cfg['life_stage'],
+                'medical_needs' => 1,
                 'has_aggression_history' => false,
-                'physical_size' => $physicalSizes[array_rand($physicalSizes)],
-                'assessment_count' => 3,
-                'last_assessed_at' => now(),
-                'last_assessed_by' => $assessor->id,
+                'aggression_history_verified_at' => now(),
+                'high_vocalization' => false,
+                'availability_status' => 'Available',
             ]);
 
-            $this->command->info("Added assessments for {$pet->name}");
+            foreach ($staff as $observer) {
+                $answers = $this->behaviorAnswers($cfg['species'], $cfg['energy'], $cfg['trainability'], $cfg['attachment'], $cfg['fear']);
+                app(BehaviorAssessmentService::class)->record($pet, $observer, [
+                    'responses' => $answers,
+                ]);
+            }
+
+            app(ApplicationMatchService::class)->refreshPetSummary($pet);
+            if ($this->command) {
+                $this->command->info("Added 3 distinct assessments for {$pet->name}");
+            }
         }
     }
-}
 
+    private function behaviorAnswers(string $species, int $energy, int $trainability, int $attachment, int $fear): array
+    {
+        $answers = [];
+        foreach (config("matching.items.{$species}", []) as $group => $items) {
+            $score = match ($group) {
+                'energy' => $energy,
+                'trainability' => $trainability,
+                'attachment', 'sociability', 'attention_seeking' => $attachment,
+                default => $fear,
+            };
+            foreach ($items as $key => $prompt) {
+                $answers[$group][$key] = in_array("{$species}.{$group}.{$key}", config('matching.behavior_reverse', []), true)
+                    ? 4 - $score : $score;
+            }
+        }
+
+        return $answers;
+    }
+}

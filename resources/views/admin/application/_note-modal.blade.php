@@ -1,8 +1,10 @@
 <div class="custom-modal-backdrop" id="addNoteModal">
     <div class="custom-modal">
         <div class="custom-modal-header">
-            <h2>Interview Notes</h2>
-            <small id="noteSubheading">Applicant: · Pet: · Submitted:</small>
+            <div>
+                <h2>Interview Notes</h2>
+                <small id="noteSubheading">Applicant: · Pet: · Submitted:</small>
+            </div>
         </div>
         <form id="noteForm" method="POST">
             @csrf

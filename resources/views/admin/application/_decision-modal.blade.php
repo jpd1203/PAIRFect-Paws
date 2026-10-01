@@ -1,8 +1,10 @@
 <div class="custom-modal-backdrop" id="makeDecisionModal">
     <div class="custom-modal decision-modal">
         <div class="custom-modal-header !pb-2">
-            <h2 id="decisionModalTitle">Make Decision</h2>
-            <small id="decisionSubheading">Applicant: · Pet: · Submitted:</small>
+            <div>
+                <h2 id="decisionModalTitle">Make Decision</h2>
+                <small id="decisionSubheading">Applicant: · Pet: · Submitted:</small>
+            </div>
         </div>
         <form id="makeDecisionForm" method="POST">
             @csrf

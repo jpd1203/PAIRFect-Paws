@@ -33,7 +33,12 @@
     <div class="records-container mt-5 p-6">
         <div class="review-section">
             <h6>OCR Result</h6>
-            <div class="review-row"><span>Status</span><strong>{{ $application->document_verification_status?->value ?? 'Pending' }}</strong></div>
+            <div class="review-row"><span>Status</span><strong>{{ match($application->document_verification_status?->value) {
+                'NeedsResubmission' => 'Needs Resubmission',
+                'ManualReview' => 'Manual Review',
+                'LegacyReview' => 'Legacy Review',
+                default => $application->document_verification_status?->value ?? 'Pending'
+            } }}</strong></div>
             <div class="review-row"><span>Document Type</span><span>{{ $application->document_type ?? 'Not identified' }}</span></div>
             <div class="review-row"><span>Composite Similarity</span><span>{{ $application->document_match_score !== null ? round($application->document_match_score * 100) . '%' : 'Not available' }}</span></div>
             <div class="review-row"><span>Uploaded</span><span>{{ $application->document_uploaded_at ? \App\Support\ManilaTime::format($application->document_uploaded_at, 'F j, Y g:i A') : '—' }}</span></div>

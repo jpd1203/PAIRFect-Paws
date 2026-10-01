@@ -74,15 +74,35 @@ function showToast(message, type = 'success') {
 }
 window.showToast = showToast;
 
+function updateBodyModalScrollLock() {
+    const hasActiveModal = document.querySelector('.custom-modal-backdrop.active') !== null;
+    const sidebarOpen = document.getElementById('appSidebar')?.classList.contains('open');
+    if (hasActiveModal || sidebarOpen) {
+        document.body.classList.add('overflow-hidden');
+        document.documentElement.classList.add('overflow-hidden');
+    } else {
+        document.body.classList.remove('overflow-hidden');
+        document.documentElement.classList.remove('overflow-hidden');
+    }
+}
+
 function openModal(id) {
-    document.getElementById(id)?.classList.add('active');
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.add('active');
+    updateBodyModalScrollLock();
 }
 
 window.openModal = openModal;
 
 function closeModal(id) {
-    document.getElementById(id)?.classList.remove('active');
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.remove('active');
+    updateBodyModalScrollLock();
 }
+
+window.closeModal = closeModal;
 
 function initSidebar() {
     const toggle = document.getElementById('sidebarToggle');
@@ -93,13 +113,13 @@ function initSidebar() {
     const open = () => {
         sidebar?.classList.add('open');
         overlay?.classList.add('active');
-        document.body.classList.add('overflow-hidden', 'max-[991px]:overflow-hidden');
+        updateBodyModalScrollLock();
     };
 
     const close = () => {
         sidebar?.classList.remove('open');
         overlay?.classList.remove('active');
-        document.body.classList.remove('overflow-hidden', 'max-[991px]:overflow-hidden');
+        updateBodyModalScrollLock();
     };
 
     toggle?.addEventListener('click', open);
@@ -118,7 +138,7 @@ function initSidebar() {
         if (window.innerWidth > 991) {
             sidebar?.classList.remove('open');
             overlay?.classList.remove('active');
-            document.body.classList.remove('overflow-hidden', 'max-[991px]:overflow-hidden');
+            updateBodyModalScrollLock();
         }
     });
 }
@@ -162,7 +182,10 @@ function initDragToScroll() {
 function initModalBackdrops() {
     document.querySelectorAll('.custom-modal-backdrop').forEach((backdrop) => {
         backdrop.addEventListener('click', (e) => {
-            if (e.target === backdrop) backdrop.classList.remove('active');
+            if (e.target === backdrop) {
+                backdrop.classList.remove('active');
+                updateBodyModalScrollLock();
+            }
         });
     });
 }
@@ -209,6 +232,14 @@ document.addEventListener('DOMContentLoaded', () => {
     initFilterButtons();
     initDragToScroll();
 
+    // Automatically keep body and html scroll lock in sync whenever any modal backdrop toggles active
+    const modalObserver = new MutationObserver(() => {
+        updateBodyModalScrollLock();
+    });
+    document.querySelectorAll('.custom-modal-backdrop').forEach((backdrop) => {
+        modalObserver.observe(backdrop, { attributes: true, attributeFilter: ['class'] });
+    });
+
     // Global keyboard listener for Escape key to close modals and sidebar
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -216,10 +247,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const overlay = document.getElementById('sidebarOverlay');
             sidebar?.classList.remove('open');
             overlay?.classList.remove('active');
-            document.body.classList.remove('overflow-hidden', 'max-[991px]:overflow-hidden');
             document.querySelectorAll('.custom-modal-backdrop.active').forEach((backdrop) => {
                 backdrop.classList.remove('active');
             });
+            updateBodyModalScrollLock();
         }
     });
 });

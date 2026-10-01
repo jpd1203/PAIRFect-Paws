@@ -101,63 +101,75 @@
         <div class="table-responsive custom-scrollbar">
             <table class="w-full">
                 <thead>
-                    <tr><th>Applicant</th><th>Pet</th><th>Queue Rank</th><th>Submitted</th><th>Status</th><th>Actions</th></tr>
+                    <tr>
+                        <th class="!text-left px-5">Pet</th>
+                        <th class="!text-left px-4">Applicant</th>
+                        <th class="text-center px-4 whitespace-nowrap">Queue Rank</th>
+                        <th class="text-center px-4 whitespace-nowrap">Submitted</th>
+                        <th class="text-center px-4 whitespace-nowrap">Status</th>
+                        <th class="text-center px-5 whitespace-nowrap">Actions</th>
+                    </tr>
                 </thead>
                 <tbody id="applicationTableBody">
                     @forelse ($applications as $app)
                         @php
-                            $isHighlighted = (string) request('highlight') === (string) $app->id;
+                            $highlightTarget = request('highlight') ?? request('application_id') ?? request('app');
+                            $isHighlighted = $highlightTarget && (string) $highlightTarget === (string) $app->id;
                         @endphp
-                        <tr data-search-row data-search-text="{{ $app->first_name }} {{ $app->last_name }} {{ $app->pet?->name }}"
+                        <tr data-search-row data-search-text="{{ $app->pet?->name }} {{ $app->first_name }} {{ $app->last_name }}"
                             data-filter-row data-status="{{ $app->status_slug }}{{ $app->is_primary_candidate ? ' primarycandidate' : '' }}"
                             id="application-row-{{ $app->id }}"
                             class="{{ $isHighlighted ? 'highlighted-application-row' : '' }}">
-                            <td class="font-semibold text-left">
-                                <div class="flex items-center gap-1.5 flex-wrap">
-                                    <span>{{ $app->first_name }} {{ $app->last_name }}</span>
-                                    @if($app->is_primary_candidate)<span class="badge badge-primarycandidate ml-1">Primary</span>@endif
-                                    @if(($historySummaries[$app->id]['review_status'] ?? 'no_recorded_concerns') !== 'no_recorded_concerns')
-                                        <span class="badge {{ $historySummaries[$app->id]['badge_class'] }}">{{ $historySummaries[$app->id]['review_label'] }}</span>
+                            <td class="px-5 py-3.5 text-left">
+                                @if ($app->pet)
+                                    <div class="flex items-center gap-4">
+
+                                        @if ($app->pet->photo_path)
+                                            <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-gray-200 bg-gray-100">
+                                                <img
+                                                    src="{{ $app->pet->image_url }}"
+                                                    alt="{{ $app->pet->name }}"
+                                                    class="w-full h-full object-cover">
+                                            </div>
+                                        @else
+                                            <div class="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center bg-maroon-50 text-maroon-600 border border-maroon-100 text-sm">
+                                                <i class="fa-solid fa-{{ strtolower($app->pet->species?->value ?? $app->pet->species) === 'cat' ? 'cat' : 'dog' }}"></i>
+                                            </div>
+                                        @endif
+
+                                        <div class="min-w-0">
+                                            <p class="font-bold text-left text-gray-900 leading-snug">
+                                                {{ $app->pet->name }}
+                                            </p>
+
+                                            <p class="text-xs text-gray-500 capitalize truncate text-left">
+                                                {{ $app->pet->species_display }}
+                                                &middot;
+                                                {{ $app->pet->breed ?? 'Mix' }}
+                                                &middot;
+                                                {{ $app->pet->age_display }}
+                                            </p>
+                                        </div>
+
+                                    </div>
+                                @else
+                                    <span class="text-gray-400">No pet assigned</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3.5 text-left">
+                                <div class="flex flex-col items-start gap-1">
+                                    <span class="text-gray-900 font-bold leading-tight">{{ $app->first_name }} {{ $app->last_name }}</span>
+                                    @if($app->is_primary_candidate || (($historySummaries[$app->id]['review_status'] ?? 'no_recorded_concerns') !== 'no_recorded_concerns'))
+                                        <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                            @if($app->is_primary_candidate)<span class="badge badge-primarycandidate">Primary</span>@endif
+                                            @if(($historySummaries[$app->id]['review_status'] ?? 'no_recorded_concerns') !== 'no_recorded_concerns')
+                                                <span class="badge badge-overdue">Needs Review</span>
+                                            @endif
+                                        </div>
                                     @endif
                                 </div>
                             </td>
-                            <td class="px-5 py-3.5">
-                            @if ($app->pet)
-                                <div class="flex items-center gap-4">
-
-                                    @if ($app->pet->photo_path)
-                                        <div class="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-gray-200 bg-gray-100">
-                                            <img
-                                                src="{{ $app->pet->image_url }}"
-                                                alt="{{ $app->pet->name }}"
-                                                class="w-full h-full object-cover">
-                                        </div>
-                                    @else
-                                        <div class="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center bg-maroon-50 text-maroon-600 border border-maroon-100 text-sm">
-                                            <i class="fa-solid fa-{{ strtolower($app->pet->species?->value ?? $app->pet->species) === 'cat' ? 'cat' : 'dog' }}"></i>
-                                        </div>
-                                    @endif
-
-                                    <div class="min-w-0">
-                                        <p class="font-bold text-left text-gray-900 leading-snug">
-                                            {{ $app->pet->name }}
-                                        </p>
-
-                                        <p class="text-xs text-gray-500 capitalize truncate">
-                                            {{ $app->pet->species_display }}
-                                            &middot;
-                                            {{ $app->pet->breed ?? 'Mix' }}
-                                            &middot;
-                                            {{ $app->pet->age_display }}
-                                        </p>
-                                    </div>
-
-                                </div>
-                            @else
-                                <span class="text-gray-400">No pet assigned</span>
-                            @endif
-                        </td>
-                            <td>
+                            <td class="px-4 py-3.5 text-center whitespace-nowrap">
                                 @if($app->queue_position)
                                     <span class="badge" style="background:#f3f4f6;color:#374151">#{{ $app->queue_position }}</span><br>
                                     <span style="font-size:0.75rem;color:var(--muted)">Score: {{ isset($app->compatibility_result['overall']) ? $app->compatibility_result['overall'].'%' : 'N/A' }}</span>
@@ -165,16 +177,18 @@
                                     <span style="font-size:0.75rem;color:var(--muted)">N/A</span>
                                 @endif
                             </td>
-                            <td>{{ \App\Support\ManilaTime::format($app->created_at, 'M j, Y') }}</td>
-                            <td><span class="badge {{ $app->status_badge_class }}">{{ $app->status_display }}</span></td>
-                            <td>
-                                @if ($app->reschedule_status === 'pending')
-                                    <span class="badge badge-scheduled">Reschedule Requested</span>
-                                @endif
-                                <button class="btn btn-secondary btn-sm" onclick="openReviewModal({{ $app->id }})"><i class="fa-solid fa-eye"></i>View</button>
-                                @if ($app->status_slug === 'scheduled')
-                                    <button class="btn btn-yellow btn-sm" onclick="openAddNoteModal({{ $app->id }})"><i class="fa-solid fa-note-sticky"></i>Add Notes</button>
-                                @endif
+                            <td class="px-4 py-3.5 text-center whitespace-nowrap">{{ \App\Support\ManilaTime::format($app->created_at, 'M j, Y') }}</td>
+                            <td class="px-4 py-3.5 text-center whitespace-nowrap"><span class="badge {{ $app->status_badge_class }}">{{ $app->status_display }}</span></td>
+                            <td class="px-5 py-3.5 text-center">
+                                <div class="inline-flex flex-col items-center justify-center gap-2">
+                                    @if ($app->reschedule_status === 'pending')
+                                        <span class="badge badge-scheduled">Reschedule Requested</span>
+                                    @endif
+                                    <button class="btn btn-secondary btn-sm min-w-[105px]" onclick="openReviewModal({{ $app->id }})"><i class="fa-solid fa-eye"></i>View</button>
+                                    @if ($app->status_slug === 'scheduled')
+                                        <button class="btn btn-yellow btn-sm min-w-[105px]" onclick="openAddNoteModal({{ $app->id }})"><i class="fa-solid fa-note-sticky"></i>Add Notes</button>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -252,13 +266,21 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/admin/application.js') }}" defer></script>
+    <script src="{{ asset('js/admin/application.js') }}?v={{ filemtime(public_path('js/admin/application.js')) }}" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const highlightId = new URLSearchParams(window.location.search).get('highlight');
+            const urlParams = new URLSearchParams(window.location.search);
+            let highlightId = urlParams.get('highlight') || urlParams.get('application_id') || urlParams.get('app');
+            if (!highlightId && window.location.hash) {
+                const match = window.location.hash.match(/\d+/);
+                if (match) {
+                    highlightId = match[0];
+                }
+            }
             if (highlightId) {
                 const row = document.getElementById('application-row-' + highlightId);
                 if (row) {
+                    row.classList.add('highlighted-application-row');
                     setTimeout(() => {
                         row.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }, 200);

@@ -249,6 +249,85 @@
     @apply font-primary text-text-dark mb-1.5;
   }
 
+  /* ---------- Badges ---------- */
+  .sidebar-dismissible-badge {
+    @apply ml-auto min-w-5 rounded-full px-1.5 py-0.5 text-center text-[.7rem] font-bold leading-none text-white;
+    background-color: #A51D24;
+  }
+  .badge {
+    @apply inline-flex items-center px-3.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap border;
+  }
+  .badge-healthy,
+  .badge-available,
+  .badge-approved,
+  .badge-completed,
+  .badge-active,
+  .badge-resolved,
+  .badge-excellent,
+  .badge-Available {
+    @apply bg-status-success-bg text-status-success-text border-status-success-text;
+  }
+  .badge-undercare,
+  .badge-flagged,
+  .badge-underreview {
+    @apply bg-status-flagged-bg text-status-flagged-text border-status-flagged-text;
+  }
+  .badge-critical,
+  .badge-rejected,
+  .badge-onhold,
+  .badge-overdue,
+  .badge-inactive,
+  .badge-marked,
+  .badge-closed {
+    @apply bg-status-danger-bg text-status-danger-text border-status-danger-text;
+  }
+  .badge-processing,
+  .badge-pending {
+    @apply bg-status-processing-bg text-status-processing-text border-status-processing-text;
+  }
+  .badge-adopted,
+  .badge-scheduled,
+  .badge-Adopted {
+    @apply bg-status-adopted-bg text-status-adopted-text border-status-adopted-text;
+  }
+  .badge-upcoming,
+  .badge-soft-reserved,
+  .badge-Soft-Reserved {
+    @apply bg-status-upcoming-bg text-status-upcoming-text border-[#b0b0a8];
+  }
+
+  /* Application status color customizations */
+  .badge-documentflagged {
+    background-color: #FAE8FF;
+    border-color: #E879F9;
+    color: #701A75;
+  }
+  .badge-primarycandidate {
+    background-color: #E6F1FB;
+    border-color: #B5D4F4;
+    color: #042C53;
+  }
+  .badge-waitlisted {
+    background-color: #FAECE7;
+    border-color: #F0997B;
+    color: #4A1B0C;
+  }
+  .badge-withdrawn {
+    background-color: #F1EFE8;
+    border-color: #B4B2A9;
+    color: #2C2C2A;
+  }
+  .badge-noshow {
+    background-color: #EFE6DD;
+    border-color: #B08968;
+    color: #4A2E1D;
+  }
+  .badge-beige-highlight {
+    background-color: #EFE4D2 !important;
+    border-color: #DFCBB5 !important;
+    color: #694E21 !important;
+  }
+
   /* ---------- Modal ---------- */
   .modal-overlay {
     @apply fixed inset-0 bg-black bg-opacity-45 flex justify-center items-center z-[9999] opacity-0 invisible transition-all duration-200;

@@ -36,12 +36,12 @@
                 @endif
 
                 <!-- Find Your Match Button -->
-            <div class="mt-4 ml-auto">
-                <a href="{{ route('recommendation.intake') }}" 
-                   class="inline-flex items-center rounded-full bg-maroon-600 hover:bg-maroon-700 text-white px-5 py-2 text-xs sm:text-sm font-semibold shadow-sm transition-all duration-150 hover:shadow no-underline cursor-pointer">
-                    <span>Not sure who fits? Find your match</span>
-                </a>
-            </div>
+                <div class="mt-4 ml-auto">
+                    <a href="{{ route('recommendation.intake') }}" 
+                       class="inline-flex items-center rounded-full bg-maroon-600 hover:bg-maroon-700 text-white px-5 py-2 text-xs sm:text-sm font-semibold shadow-sm transition-all duration-150 hover:shadow no-underline cursor-pointer">
+                        <span>Not sure who fits? Find your match</span>
+                    </a>
+                </div>
             </form>
 
             <!-- Pet Grid or Empty State -->
@@ -75,7 +75,7 @@
 
                             {{-- Pet Details --}}
                             <p class="text-[#666] text-sm mb-2.5 truncate"> 
-                                {{ $pet->species_display }} &middot; {{ $pet->breed ?? 'Mix' }} &middot; {{ $pet->age_years ? $pet->age_years . ' yrs' : ($pet->age_months ? $pet->age_months . ' mos' : $pet->age_group) }} middot; {{ $pet->sex === 'Female' ? 'F' : 'M' }}
+                                {{ $pet->species_display }} &middot; {{ $pet->breed ?? 'Mix' }} &middot; {{ $pet->age_years ? $pet->age_years . ' yrs' : ($pet->age_months ? $pet->age_months . ' mos' : $pet->age_group) }} &middot; {{ $pet->sex === 'Female' ? 'F' : 'M' }}
                             </p>
 
                             <div class="mt-auto flex justify-end pt-3">
@@ -92,5 +92,4 @@
                 </div>
             @endif
         </main>
-    </div>
 </x-public-layout>

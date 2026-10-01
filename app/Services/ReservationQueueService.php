@@ -147,7 +147,7 @@ class ReservationQueueService
                 'Sign in to the staff application queue for applicant details.',
             ],
             'Open Applications',
-            route('admin.applications.index'),
+            route('admin.applications.index', ['highlight' => $application->id]) . '#application-row-' . $application->id,
             'interview_assignment_staff',
             $application->id,
         );
@@ -522,7 +522,7 @@ class ReservationQueueService
             if (! $application->admin_review_flagged_at) {
                 $application->update(['admin_review_flagged_at' => now()]);
                 AuditLogService::log(null, 'Interview Timeout Flagged for Administrative Review', 'AdoptionApplication', $application->id);
-                $this->notifyAdmins("Application {$application->id} requires review", 'An interview has been overdue without a decision for more than 72 hours.');
+                $this->notifyAdmins("Application {$application->id} requires review", 'An interview has been overdue without a decision for more than 72 hours.', $application->id);
                 $flagged++;
 
                 continue;
@@ -572,20 +572,24 @@ class ReservationQueueService
         $this->sendStatusEmail($application, 'queue_promoted');
         $this->notifyAdmins(
             "Waitlist applicant {$application->id} promoted",
-            "{$application->user?->full_name} is now the primary candidate for {$application->pet?->name}."
+            "{$application->user?->full_name} is now the primary candidate for {$application->pet?->name}.",
+            $application->id,
         );
     }
 
-    private function notifyAdmins(string $subject, string $message): void
+    private function notifyAdmins(string $subject, string $message, ?int $applicationId = null): void
     {
         $this->emailNotifications->staff(
             $subject,
             $subject,
             [$message, 'Sign in to the protected application queue for details.'],
             'Review Applications',
-            route('admin.applications.index'),
+            $applicationId
+                ? route('admin.applications.index', ['highlight' => $applicationId]) . '#application-row-' . $applicationId
+                : route('admin.applications.index'),
             true,
             'reservation_queue_staff',
+            $applicationId,
         );
     }
 

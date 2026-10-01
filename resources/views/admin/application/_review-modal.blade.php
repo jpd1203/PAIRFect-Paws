@@ -35,7 +35,7 @@
                 <div class="review-row"><span>Missed / late check-ins</span><span id="rHistoryCheckins"></span></div>
                 <ul id="rHistoryReasons" class="text-sm text-[#555] list-disc pl-5"></ul>
                 <p class="text-xs text-[#777] mt-2">Decision support only. Compatibility ranking is unchanged; staff review the underlying records.</p>
-                <button type="button" class="btn btn-secondary btn-sm mt-2" id="rFullHistoryBtn">View Full History</button>
+                <button type="button" class="btn btn-secondary btn-sm mt-2" id="rFullHistoryBtn"><i class="fa-solid fa-clock-rotate-left mr-1"></i> View Full History</button>
             </div>
 
             <div class="review-section">
@@ -53,7 +53,7 @@
 
                 <div class="review-row" id="rHistoryRow">
                     <span>Adoption Record History</span>
-                    <button type="button" class="btn btn-secondary btn-sm" id="rHistoryBtn">View</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="rHistoryBtn"><i class="fa-solid fa-clock-rotate-left mr-1"></i> View History</button>
                 </div>
 
                 <div class="review-row">

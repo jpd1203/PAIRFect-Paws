@@ -38,23 +38,25 @@
                             <input type="email" value="{{ $user->email }}" disabled>
                         </div>
 
-                        <div class="settings-field">
-                            <label for="phone_number">Phone Number 
-                                @if($user->phone_number)
-                                    <span class="field-hint" id="phone_hint">(<a href="#" style="color:var(--primary);text-decoration:underline;" onclick="event.preventDefault(); document.getElementById('phone_number').removeAttribute('disabled'); document.getElementById('phone_hint').style.display='none'; document.getElementById('phone_number').focus();">change</a>)</span>
-                                @endif
-                            </label>
-                            <input id="phone_number" name="phone_number" type="text" value="{{ old('phone_number', $user->phone_number) }}" {{ $user->phone_number ? 'disabled' : '' }}>
-                        </div>
+                        @if (!$user->isStaff())
+                            <div class="settings-field">
+                                <label for="phone_number">Phone Number 
+                                    @if($user->phone_number)
+                                        <span class="field-hint" id="phone_hint">(<a href="#" style="color:var(--primary);text-decoration:underline;" onclick="event.preventDefault(); document.getElementById('phone_number').removeAttribute('disabled'); document.getElementById('phone_hint').style.display='none'; document.getElementById('phone_number').focus();">change</a>)</span>
+                                    @endif
+                                </label>
+                                <input id="phone_number" name="phone_number" type="text" value="{{ old('phone_number', $user->phone_number) }}" {{ $user->phone_number ? 'disabled' : '' }}>
+                            </div>
 
-                        <div class="settings-field full-width">
-                            <label for="address">Address 
-                                @if($user->address)
-                                    <span class="field-hint" id="address_hint">(<a href="#" style="color:var(--primary);text-decoration:underline;" onclick="event.preventDefault(); document.getElementById('address').removeAttribute('disabled'); document.getElementById('address_hint').style.display='none'; document.getElementById('address').focus();">change</a>)</span>
-                                @endif
-                            </label>
-                            <input id="address" name="address" type="text" value="{{ old('address', $user->address) }}" {{ $user->address ? 'disabled' : '' }}>
-                        </div>
+                            <div class="settings-field full-width">
+                                <label for="address">Address 
+                                    @if($user->address)
+                                        <span class="field-hint" id="address_hint">(<a href="#" style="color:var(--primary);text-decoration:underline;" onclick="event.preventDefault(); document.getElementById('address').removeAttribute('disabled'); document.getElementById('address_hint').style.display='none'; document.getElementById('address').focus();">change</a>)</span>
+                                    @endif
+                                </label>
+                                <input id="address" name="address" type="text" value="{{ old('address', $user->address) }}" {{ $user->address ? 'disabled' : '' }}>
+                            </div>
+                        @endif
 
                     </div>
 

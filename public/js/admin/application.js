@@ -1,19 +1,26 @@
 /** Applications — drives Review / Schedule Interview / Interview Notes / History / Compatibility modals. */
 const APPLICATIONS = JSON.parse(document.getElementById('applicationData')?.textContent || '[]');
-const SCHEDULABLE_APPLICATIONS = APPLICATIONS.filter((application) => {
-    if (application.status === 'primarycandidate' && application.is_primary) return true;
-    if (application.status === 'scheduled' && application.is_primary) return true;
 
-    const hasActivePrimary = APPLICATIONS.some((other) =>
-        other.pet_id === application.pet_id && other.id !== application.id && other.is_primary
-    );
+function getSchedulableApplications() {
+    const raw = document.getElementById('applicationData')?.textContent;
+    const apps = raw ? JSON.parse(raw) : (Array.isArray(APPLICATIONS) ? APPLICATIONS : []);
+    return apps.filter((application) => {
+        if (application.status === 'primarycandidate' && application.is_primary) return true;
+        if (application.status === 'scheduled' && application.is_primary) return true;
 
-    return ['pending', 'underreview'].includes(application.status)
-        && !application.is_primary
-        && !hasActivePrimary
-        && application.queue_position === 1
-        && ['Verified', 'LegacyReview'].includes(application.document_verification_status);
-});
+        const hasActivePrimary = apps.some((other) =>
+            other.pet_id === application.pet_id && other.id !== application.id && other.is_primary
+        );
+
+        return ['pending', 'underreview'].includes(application.status)
+            && !application.is_primary
+            && !hasActivePrimary
+            && application.queue_position === 1
+            && ['Verified', 'LegacyReview'].includes(application.document_verification_status);
+    });
+}
+
+const SCHEDULABLE_APPLICATIONS = getSchedulableApplications();
 
 let visibleApplicantMatches = [];
 let highlightedApplicantIndex = -1;
@@ -49,7 +56,14 @@ function openReviewModal(id) {
     document.getElementById('rIncome').textContent = a.monthly_income_range ?? '—';
     document.getElementById('rMotivation').textContent = a.motivation_statement || 'No statement provided.';
     document.getElementById('rDocumentLink').href = a.document_url;
-    document.getElementById('rDocumentStatus').textContent = a.document_verification_status;
+    const docStatusDisplay = {
+        'NeedsResubmission': 'Needs Resubmission',
+        'ManualReview': 'Manual Review',
+        'LegacyReview': 'Legacy Review',
+        'Verified': 'Verified',
+        'Pending': 'Pending',
+    }[a.document_verification_status] || a.document_verification_status || '—';
+    document.getElementById('rDocumentStatus').textContent = docStatusDisplay;
     document.getElementById('rVerificationLink').href = a.verification_url;
     document.getElementById('rQueuePosition').textContent = a.queue_position
         ? `#${a.queue_position}`
@@ -76,7 +90,7 @@ function openReviewModal(id) {
     });
     document.getElementById('rFullHistoryBtn').onclick = () => openAdoptionHistoryModal(a.history_url);
 
-    document.getElementById('rHistoryRow').style.display = a.has_history ? 'flex' : 'none';
+    document.getElementById('rHistoryRow').style.display = (a.has_history || a.history_url) ? 'flex' : 'none';
     document.getElementById('rHistoryBtn').onclick = () => openAdoptionHistoryModal(a.history_url);
 
     document.getElementById('rCompatRow').style.display = a.has_compatibility ? 'flex' : 'none';
@@ -373,9 +387,34 @@ function openTopScheduleModal() {
     clearSelectedApplicant(false);
     openModal('scheduleNewInterviewTopModal');
     window.setTimeout(() => {
-        document.getElementById('applicantSearch')?.focus();
-        renderApplicantMatches('');
+        const search = document.getElementById('applicantSearch');
+        const results = document.getElementById('applicantSearchResults');
+        const clearBtn = document.getElementById('clearApplicantSearchBtn');
+        if (search) {
+            search.value = '';
+            search.readOnly = false;
+            search.focus();
+        }
+        if (results) {
+            results.hidden = true;
+            results.style.display = 'none';
+            results.replaceChildren();
+        }
+        if (clearBtn) {
+            clearBtn.style.display = 'none';
+        }
     }, 0);
+}
+
+function updateClearButtonState() {
+    const search = document.getElementById('applicantSearch');
+    const clearBtn = document.getElementById('clearApplicantSearchBtn');
+    if (!search || !clearBtn) return;
+    if (search.readOnly || !search.value.trim()) {
+        clearBtn.style.display = 'none';
+    } else {
+        clearBtn.style.display = 'flex';
+    }
 }
 
 function renderApplicantMatches(query) {
@@ -383,14 +422,33 @@ function renderApplicantMatches(query) {
     const search = document.getElementById('applicantSearch');
     if (!results || !search || search.readOnly) return;
 
-    const term = query.trim().toLowerCase();
-    visibleApplicantMatches = SCHEDULABLE_APPLICATIONS
+    updateClearButtonState();
+
+    const term = (query || '').trim().toLowerCase();
+
+    // The dropdown will ONLY appear if the first letter of the name is typed!
+    if (!term) {
+        visibleApplicantMatches = [];
+        highlightedApplicantIndex = -1;
+        results.replaceChildren();
+        results.hidden = true;
+        results.style.display = 'none';
+        search.setAttribute('aria-expanded', 'false');
+        return;
+    }
+
+    const schedulable = getSchedulableApplications();
+    visibleApplicantMatches = schedulable
         .filter((application) => {
-            const searchable = [application.full_name, application.email, application.pet]
-                .filter(Boolean)
-                .join(' ')
-                .toLowerCase();
-            return searchable.includes(term);
+            const fullName = (application.full_name || '').toLowerCase();
+            const pet = (application.pet || '').toLowerCase();
+            const email = (application.email || '').toLowerCase();
+            const nameParts = fullName.split(/\s+/);
+
+            return fullName.includes(term)
+                || nameParts.some((part) => part.startsWith(term))
+                || pet.includes(term)
+                || email.includes(term);
         })
         .slice(0, 8);
 
@@ -400,9 +458,7 @@ function renderApplicantMatches(query) {
     if (visibleApplicantMatches.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'applicant-search-empty';
-        empty.textContent = SCHEDULABLE_APPLICATIONS.length === 0
-            ? 'There are no highest-ranked eligible or promoted applications to schedule.'
-            : 'No matching schedulable applicants found.';
+        empty.textContent = 'No matching schedulable applicants found.';
         results.appendChild(empty);
     } else {
         visibleApplicantMatches.forEach((application, index) => {
@@ -424,7 +480,9 @@ function renderApplicantMatches(query) {
         });
     }
 
+    results.removeAttribute('hidden');
     results.hidden = false;
+    results.style.display = 'block';
     search.setAttribute('aria-expanded', 'true');
 }
 
@@ -443,11 +501,14 @@ function selectApplicant(application) {
     search.readOnly = true;
     search.setAttribute('aria-expanded', 'false');
     results.hidden = true;
+    results.style.display = 'none';
+    updateClearButtonState();
 }
 
 function clearSelectedApplicant(focusSearch = true) {
     const search = document.getElementById('applicantSearch');
     const results = document.getElementById('applicantSearchResults');
+    const clearBtn = document.getElementById('clearApplicantSearchBtn');
     if (!search || !results) return;
 
     document.getElementById('topScheduleAppId').value = '';
@@ -458,10 +519,14 @@ function clearSelectedApplicant(focusSearch = true) {
     search.readOnly = false;
     search.setAttribute('aria-expanded', 'false');
     results.hidden = true;
+    results.style.display = 'none';
+    results.replaceChildren();
+    visibleApplicantMatches = [];
+    highlightedApplicantIndex = -1;
+    if (clearBtn) clearBtn.style.display = 'none';
 
     if (focusSearch) {
         search.focus();
-        renderApplicantMatches('');
     }
 }
 
@@ -483,15 +548,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const search = document.getElementById('applicantSearch');
     const results = document.getElementById('applicantSearchResults');
     const form = document.getElementById('topScheduleForm');
+    const clearBtn = document.getElementById('clearApplicantSearchBtn');
 
-    search?.addEventListener('input', () => renderApplicantMatches(search.value));
-    search?.addEventListener('focus', () => renderApplicantMatches(search.value));
+    clearBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        clearSelectedApplicant(true);
+    });
+
+    ['input', 'keyup', 'change'].forEach((evt) => {
+        search?.addEventListener(evt, () => {
+            updateClearButtonState();
+            renderApplicantMatches(search.value);
+        });
+    });
+
+    search?.addEventListener('focus', () => {
+        updateClearButtonState();
+        if (search.value.trim().length > 0) {
+            renderApplicantMatches(search.value);
+        } else {
+            results.hidden = true;
+            results.style.display = 'none';
+            search.setAttribute('aria-expanded', 'false');
+        }
+    });
+
     search?.addEventListener('blur', () => {
         window.setTimeout(() => {
             results.hidden = true;
+            results.style.display = 'none';
             search.setAttribute('aria-expanded', 'false');
-        }, 150);
+        }, 200);
     });
+
     search?.addEventListener('keydown', (event) => {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
             event.preventDefault();
@@ -501,6 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
             selectApplicant(visibleApplicantMatches[highlightedApplicantIndex]);
         } else if (event.key === 'Escape') {
             results.hidden = true;
+            results.style.display = 'none';
             search.setAttribute('aria-expanded', 'false');
         }
     });
@@ -510,15 +601,25 @@ document.addEventListener('DOMContentLoaded', () => {
             event.preventDefault();
             document.getElementById('applicantSearchError').hidden = false;
             search.focus();
-            renderApplicantMatches(search.value);
+            if (search.value.trim().length > 0) {
+                renderApplicantMatches(search.value);
+            }
         }
     });
 
-    // Auto-scroll to highlighted application if arrived from compatibility
-    const highlightId = new URLSearchParams(window.location.search).get('highlight');
+    // Auto-scroll to highlighted application if arrived from compatibility or email notification
+    const urlParams = new URLSearchParams(window.location.search);
+    let highlightId = urlParams.get('highlight') || urlParams.get('application_id') || urlParams.get('app');
+    if (!highlightId && window.location.hash) {
+        const match = window.location.hash.match(/\d+/);
+        if (match) {
+            highlightId = match[0];
+        }
+    }
     if (highlightId) {
         const row = document.getElementById('application-row-' + highlightId);
         if (row) {
+            row.classList.add('highlighted-application-row');
             setTimeout(() => {
                 row.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 200);
@@ -537,20 +638,83 @@ function openAddNoteModal(id) {
     openModal('addNoteModal');
 }
 
-async function openAdoptionHistoryModal(url) {
-    const content = document.getElementById('adoptionHistoryContent');
-    try {
-        const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        if (!res.ok) throw new Error('failed');
-        content.innerHTML = await res.text();
-        openModal('adoptionHistoryModal');
-    } catch (err) {
-        window.PAIRfectAdmin?.showToast('Could not load adoption history.', 'error');
+let adoptionHistoryTrigger = null;
+let adoptionHistoryRequest = null;
+
+function openAdoptionHistoryModal(url, trigger = null) {
+    if (!url) {
+        window.PAIRfectAdmin?.showToast?.('No adoption record history available for this applicant.', 'info');
+        return;
     }
+    adoptionHistoryTrigger = trigger || document.activeElement;
+    openModal('adoptionHistoryModal');
+    loadAdoptionHistory(url, true);
 }
 
 function switchProfileHistory(url) {
-    openAdoptionHistoryModal(url);
+    loadAdoptionHistory(url, false);
+}
+
+async function loadAdoptionHistory(url, focusCloseButton = false) {
+    const content = document.getElementById('adoptionHistoryContent');
+    if (!content) return;
+
+    adoptionHistoryRequest?.abort();
+    adoptionHistoryRequest = new AbortController();
+
+    content.innerHTML = `
+        <div class="custom-modal-header">
+            <h2 id="profileHistoryTitle">Adoption History</h2>
+        </div>
+        <div class="custom-modal-body py-10 text-center text-[#777]" role="status">
+            <i class="fa-solid fa-spinner fa-spin text-2xl mb-3"></i>
+            <p>Loading post-adoption monitoring history...</p>
+        </div>
+    `;
+
+    try {
+        const response = await fetch(url, {
+            credentials: 'same-origin',
+            signal: adoptionHistoryRequest.signal,
+            headers: {
+                'Accept': 'text/html',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('The adoption history request failed.');
+        }
+
+        content.innerHTML = await response.text();
+        if (focusCloseButton) {
+            content.querySelector('[data-history-close]')?.focus();
+        } else {
+            content.querySelector('[data-placement-switcher]')?.focus();
+        }
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            return;
+        }
+
+        content.innerHTML = `
+            <div class="custom-modal-header"><h2 id="profileHistoryTitle">Adoption History</h2></div>
+            <div class="custom-modal-body">
+                <div class="modal-note warning">The post-adoption monitoring history could not be loaded. Please try again.</div>
+            </div>
+            <div class="custom-modal-footer-1">
+                <button type="button" class="btn btn-secondary" onclick="closeProfileHistory()">Close</button>
+            </div>
+        `;
+        window.PAIRfectAdmin?.showToast?.('Could not load post-adoption monitoring history.', 'error');
+    }
+}
+
+function closeProfileHistory() {
+    adoptionHistoryRequest?.abort();
+    adoptionHistoryRequest = null;
+    closeModal('adoptionHistoryModal');
+    adoptionHistoryTrigger?.focus();
 }
 
 function openCompatibilityModal(a) {
@@ -575,6 +739,50 @@ function openCompatibilityModal(a) {
     openModal('compatibilityResultModal');
 }
 
-function closeProfileHistory() {
-    closeModal('adoptionHistoryModal');
-}
+document.addEventListener('keydown', (event) => {
+    const modal = document.getElementById('adoptionHistoryModal');
+    if (!modal?.classList.contains('active')) {
+        return;
+    }
+
+    if (event.key === 'Escape') {
+        event.stopPropagation();
+        closeProfileHistory();
+        return;
+    }
+
+    if (event.key === 'Tab') {
+        const focusable = [...modal.querySelectorAll(
+            'button:not([disabled]), select:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )].filter((element) => element.offsetParent !== null);
+
+        if (focusable.length === 0) {
+            event.preventDefault();
+            return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    }
+});
+
+document.getElementById('adoptionHistoryModal')?.addEventListener('click', (event) => {
+    if (event.target.id === 'adoptionHistoryModal') {
+        closeProfileHistory();
+    }
+});
+
+window.openTopScheduleModal = openTopScheduleModal;
+window.clearSelectedApplicant = clearSelectedApplicant;
+window.renderApplicantMatches = renderApplicantMatches;
+window.selectApplicant = selectApplicant;
+window.openAdoptionHistoryModal = openAdoptionHistoryModal;
+window.switchProfileHistory = switchProfileHistory;
+window.closeProfileHistory = closeProfileHistory;

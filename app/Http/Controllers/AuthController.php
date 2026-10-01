@@ -82,6 +82,15 @@ class AuthController extends Controller
             $redirectTo = session()->pull('url.intended');
         }
 
+        if ($guestData = $request->session()->get('guest_adopter_profile')) {
+            $user = Auth::user();
+            if ($user->isAdopter()) {
+                $user->forceFill(['matching_onboarding_pending' => false])->save();
+                $profile = $user->adopterProfile ?? new \App\Models\AdopterProfile(['user_id' => $user->id]);
+                $profile->fill($guestData)->save();
+            }
+        }
+
         if (Auth::user()->isAdopter() && Auth::user()->matching_onboarding_pending) {
             $petId = $this->isValidRedirect($redirectTo) ? $this->intendedPetId($redirectTo) : null;
             if ($petId !== null) {
@@ -143,6 +152,21 @@ class AuthController extends Controller
         $petId = $this->isValidRedirect($redirectTo) ? $this->intendedPetId($redirectTo) : null;
         if ($petId !== null) {
             $request->session()->put('matching_return_pet', $petId);
+        }
+
+        if ($guestData = $request->session()->get('guest_adopter_profile')) {
+            $user->forceFill(['matching_onboarding_pending' => false])->save();
+            $profile = new \App\Models\AdopterProfile(['user_id' => $user->id]);
+            $profile->fill($guestData)->save();
+            $request->session()->forget('guest_adopter_profile');
+
+            if (app()->environment('local')) {
+                $user->markEmailAsVerified();
+                if ($redirectTo && $this->isValidRedirect($redirectTo)) {
+                    return redirect()->to($redirectTo);
+                }
+                return redirect()->route('recommendation.results');
+            }
         }
 
         if (app()->environment('local')) {

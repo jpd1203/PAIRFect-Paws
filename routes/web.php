@@ -91,11 +91,12 @@ Route::get('/pets/{pet}', [PetController::class, 'show'])->name('pets.show');
 Route::middleware(['auth', 'adopter', 'verified'])->group(function () {
     Route::get('/onboarding/assessment', [RecommendationController::class, 'onboarding'])->name('recommendation.onboarding');
     Route::post('/onboarding/assessment/skip', [RecommendationController::class, 'skipOnboarding'])->name('recommendation.onboarding.skip');
-    Route::get('/recommendation', [RecommendationController::class, 'intake'])->name('recommendation.intake');
-    Route::post('/recommendation/start', [RecommendationController::class, 'start'])->name('recommendation.start');
-    Route::get('/recommendation/results', [RecommendationController::class, 'results'])->name('recommendation.results');
-    Route::post('/recommendation/recompute', [RecommendationController::class, 'recompute'])->name('recommendation.recompute');
 });
+
+Route::get('/recommendation', [RecommendationController::class, 'intake'])->name('recommendation.intake');
+Route::post('/recommendation/start', [RecommendationController::class, 'start'])->name('recommendation.start');
+Route::get('/recommendation/results', [RecommendationController::class, 'results'])->name('recommendation.results');
+Route::post('/recommendation/recompute', [RecommendationController::class, 'recompute'])->name('recommendation.recompute');
 
 // ─── Authenticated Routes ─────────────────────────────────────────────────────
 

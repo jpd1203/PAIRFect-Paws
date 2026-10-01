@@ -32,7 +32,7 @@
         </div>
 
         <div class="flex flex-col gap-1.5 mt-3">
-            <a class="btn btn-secondary" href="{{ route('pets.show', $pet) }}">View</a>
+            <a class="btn btn-secondary" href="{{ route('pets.show', ['pet' => $pet, 'from' => 'matching']) }}">View</a>
             <a class="btn btn-adoptMe text-center" href="{{ route('application.apply', $pet) }}">Adopt</a>
         </div>
     </div>

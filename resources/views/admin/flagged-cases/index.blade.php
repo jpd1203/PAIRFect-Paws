@@ -131,8 +131,10 @@
     <div class="custom-modal-backdrop" id="reminderModal">
         <div class="custom-modal">
             <div class="custom-modal-header">
-                <h2>Send Follow-up Reminder</h2>
-                <small id="reminderSubheading" class="text-gray-500 font-medium"></small>
+                <div>
+                    <h2>Send Follow-up Reminder</h2>
+                    <small id="reminderSubheading" class="text-gray-500 font-medium"></small>
+                </div>
             </div>
             <form id="reminderForm" method="POST">
                 @csrf

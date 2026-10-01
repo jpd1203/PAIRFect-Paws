@@ -93,8 +93,8 @@
                         <table class="w-full dashboard-table min-w-[480px]">
                             <thead>
                                 <tr>
-                                    <th class="whitespace-nowrap">Applicant</th>
                                     <th class="whitespace-nowrap">Pet</th>
+                                    <th class="whitespace-nowrap">Applicant</th>
                                     <th class="whitespace-nowrap">Status</th>
                                     <th class="whitespace-nowrap">Submitted</th>
                                 </tr>
@@ -102,8 +102,8 @@
                             <tbody>
                                 @forelse ($recentApplications as $app)
                                     <tr>
-                                        <td class="whitespace-nowrap font-medium">{{ $app->first_name }} {{ $app->last_name }}</td>
-                                        <td class="whitespace-nowrap">{{ $app->pet?->name }}</td>
+                                        <td class="whitespace-nowrap font-medium">{{ $app->pet?->name }}</td>
+                                        <td class="whitespace-nowrap">{{ $app->first_name }} {{ $app->last_name }}</td>
                                         <td class="whitespace-nowrap"><span class="badge {{ $app->status_badge_class }}">{{ $app->status_display }}</span></td>
                                         <td class="whitespace-nowrap text-sm text-[#666]">{{ \App\Support\ManilaTime::format($app->created_at, 'M j, Y') }}</td>
                                     </tr>
