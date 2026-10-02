@@ -11,27 +11,6 @@ function csrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 }
 
-// let toastTimer;
-// function showToast(message, type = 'success') {
-//     if (!message) return;
-
-//     let host = document.getElementById('toastHost');
-//     if (!host) return;
-
-//     let toast = host.querySelector('.toast-notification');
-//     if (!toast) {
-//         toast = document.createElement('div');
-//         toast.className = 'toast-notification';
-//         host.appendChild(toast);
-//     }
-
-//     toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i><span>${message}</span>`;
-//     toast.classList.toggle('bg-status-danger-text', type === 'error');
-//     toast.classList.add('show');
-
-//     clearTimeout(toastTimer);
-//     toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
-// }
 let toastTimer;
 
 function showToast(message, type = 'success') {
@@ -48,10 +27,11 @@ function showToast(message, type = 'success') {
         host.appendChild(toast);
     }
 
-    toast.innerHTML = `
-        <i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i>
-        <span>${message}</span>
-    `;
+    const icon = document.createElement('i');
+    icon.className = `fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'}`;
+    const text = document.createElement('span');
+    text.textContent = message;
+    toast.replaceChildren(icon, text);
 
     toast.classList.remove(
         'bg-status-danger-text',

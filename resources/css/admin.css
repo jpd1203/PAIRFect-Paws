@@ -135,9 +135,6 @@
   .btn-yellow {
     @apply bg-status-processing-bg text-status-processing-text border border-status-processing-text hover:bg-status-processing-text hover:text-white;
   }
-  .btn-resolve {
-    @apply bg-status-success-text text-white border-0 hover:bg-[#1d4f43];
-  }
 
   /* ---------- Records table ---------- */
   .records-container {
@@ -655,27 +652,6 @@
   }
   #statusDeactivate:checked + .status-box.deactivate-box {
     @apply bg-status-danger-bg border-status-danger-text text-status-danger-text;
-  }
-
-  /* ---------- Flag cards ---------- */
-  .flag-cases {
-    @apply mt-5 flex flex-col gap-3.5;
-  }
-  .flag-card {
-    @apply bg-[#fdf4f4] border border-[#e8b8b8] rounded-card p-[18px];
-  }
-  .flag-card.is-resolved,
-  .flag-card[data-status*="resolved"] {
-    @apply bg-white border-[#e2ddd7];
-  }
-  .flag-message {
-    @apply text-[.95rem] text-[#7d4b52] leading-relaxed mb-3.5;
-  }
-  .flag-actions {
-    @apply flex gap-2.5 flex-wrap max-[991px]:flex-col;
-  }
-  .flag-actions .btn {
-    @apply max-[991px]:w-full;
   }
 
   /* ---------- Empty state ---------- */

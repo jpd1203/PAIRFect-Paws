@@ -22,25 +22,40 @@
                 @endif
             </div>
 
+            @if (auth()->check() && ! auth()->user()->hasVerifiedEmail())
+                <div role="alert" class="mb-5 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    You can complete your profile and view pet recommendations now. Verify your email address before you can apply to adopt a pet.
+                    <a href="{{ route('verification.notice') }}" class="font-bold underline">Verify email</a>
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="mb-5 rounded-lg border border-status-danger-text bg-status-danger-bg px-4 py-3 text-status-danger-text text-sm">
                     <strong>Please fix the following:</strong>
                     <ul class="list-disc ml-5 mt-1">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
+                        @foreach ($errors->getMessages() as $field => $messages)
+                            @foreach ($messages as $error)
+                                <li>
+                                    @if (str_starts_with($field, 'bfi_responses.'))
+                                        <a href="#bfi_{{ substr($field, strlen('bfi_responses.')) }}" class="underline">{{ $error }}</a>
+                                    @else
+                                        {{ $error }}
+                                    @endif
+                                </li>
+                            @endforeach
                         @endforeach
                     </ul>
                 </div>
             @endif
 
-            <form action="{{ route('recommendation.start') }}" method="POST" novalidate>
+            <form action="{{ route('recommendation.start') }}" method="POST">
                 @csrf
 
                 <div class="form-section mt-0">
 
                 <div class="info-card shadow-card">
                     <h3>Your Adopter Profile</h3>
-                    <p class="mb-4">Your answers are saved to your account and reused for future pets. Housing, children, existing pets, and care budget determine eligibility.</p>
+                    <p class="mb-4">{{ auth()->check() ? 'Your answers are saved to your account and reused for future pets.' : 'Your answers are saved for this browser session and can be added to your account when you sign up.' }} Housing, children, existing pets, and care budget determine eligibility.</p>
 
                         <div class="form-grid">
 

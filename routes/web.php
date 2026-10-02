@@ -13,14 +13,13 @@ use App\Http\Controllers\PetController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\TimeTravelController;
 use App\Http\Middleware\EnsureVerificationLinkMatchesUser;
-use App\Models\AdoptionApplication;
 use App\Models\Pet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // ─── Public Routes ────────────────────────────────────────────────────────────
 
-Route::get('/', function () {
+$landingPage = function () {
     $featuredPets = Pet::where('availability_status', 'Available')
         ->where('is_archived', false)
         ->latest('id')
@@ -32,23 +31,14 @@ Route::get('/', function () {
         ->count();
 
     return view('landing', compact('featuredPets', 'availablePetsCount'));
-})->name('landing');
+};
 
-Route::get('/home', function () {
-    $featuredPets = Pet::where('availability_status', 'Available')
-        ->where('is_archived', false)
-        ->latest('id')
-        ->take(12)
-        ->get();
-
-    $availablePetsCount = Pet::where('availability_status', 'Available')
-        ->where('is_archived', false)
-        ->count();
-
-    return view('landing', compact('featuredPets', 'availablePetsCount'));
-})->name('home');
+Route::get('/', $landingPage)->name('landing');
+Route::get('/home', $landingPage)->name('home');
 
 Route::view('/donate', 'donate')->name('donate');
+Route::view('/terms-and-conditions', 'legal.terms')->name('legal.terms');
+Route::view('/privacy-notice', 'legal.privacy')->name('legal.privacy');
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.store');
@@ -87,8 +77,9 @@ Route::get('/pets', [PetController::class, 'index'])->name('pets.index');
 Route::get('/pets/{pet}/modal', [PetController::class, 'modal'])->name('pets.modal');
 Route::get('/pets/{pet}', [PetController::class, 'show'])->name('pets.show');
 
-// Recommendation engine routes (public / guest OK)
-Route::middleware(['auth', 'adopter', 'verified'])->group(function () {
+// Signed-in adopters may explore recommendations before email verification.
+// Formal application routes below remain protected by the verified middleware.
+Route::middleware(['auth', 'adopter'])->group(function () {
     Route::get('/onboarding/assessment', [RecommendationController::class, 'onboarding'])->name('recommendation.onboarding');
     Route::post('/onboarding/assessment/skip', [RecommendationController::class, 'skipOnboarding'])->name('recommendation.onboarding.skip');
 });
@@ -220,7 +211,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pets/{pet}/edit', [PetController::class, 'edit'])->name('pets.edit');
         Route::put('/pets/{pet}', [PetController::class, 'update'])->name('pets.update');
 
-        // Assessments (stub routes for sidebar links)
+        // Behavioral assessments
         Route::get('/assessments/record', [Admin\AssessmentController::class, 'index'])->name('assessments.record');
         Route::get('/animals/{pet}/assessment-summary', [Admin\AssessmentController::class, 'summary'])->name('assessments.summary');
         Route::get('/assessments/create/{pet}', [Admin\AssessmentController::class, 'create'])->name('assessments.create');

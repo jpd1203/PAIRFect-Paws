@@ -86,7 +86,7 @@ final class DefenseDemoWalkthroughTest extends TestCase
 
         $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()->assertSee('Nala');
         $this->actingAs($admin)->get(route('admin.applications.index'))->assertOk()->assertSee('Export Applications CSV');
-        $this->actingAs($admin)->get(route('admin.assessments.create', $mochi))->assertOk();
+        $this->actingAs($thirdObserver)->get(route('admin.assessments.create', $mochi))->assertOk();
         $this->actingAs($carlo)->get(route('recommendation.results'))->assertSuccessful();
 
         // Exercise a harmless real maintenance write, then finish the third distinct observation.

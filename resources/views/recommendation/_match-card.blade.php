@@ -33,7 +33,13 @@
 
         <div class="flex flex-col gap-1.5 mt-3">
             <a class="btn btn-secondary" href="{{ route('pets.show', ['pet' => $pet, 'from' => 'matching']) }}">View</a>
-            <a class="btn btn-adoptMe text-center" href="{{ route('application.apply', $pet) }}">Adopt</a>
+            @if (auth()->check() && auth()->user()->isAdopter() && auth()->user()->hasVerifiedEmail())
+                <a class="btn btn-adoptMe text-center" href="{{ route('application.apply', $pet) }}">Adopt</a>
+            @elseif (auth()->guest())
+                <a class="btn btn-adoptMe text-center" href="{{ route('login', ['redirect' => route('application.apply', $pet)]) }}">Sign in to adopt</a>
+            @else
+                <button type="button" class="btn btn-adoptMe text-center opacity-50 cursor-not-allowed" disabled>Adopt</button>
+            @endif
         </div>
     </div>
 

@@ -25,6 +25,10 @@ class RecommendationController extends Controller
 
     public function intake(Request $request)
     {
+        if ($request->user() && ! $request->user()->isAdopter()) {
+            return redirect()->route('access-denied');
+        }
+
         $isOnboarding = $request->routeIs('recommendation.onboarding');
         $returnPetId = $request->integer('return_pet') ?: ($isOnboarding ? (int) $request->session()->get('matching_return_pet') : 0);
         $returnPet = $returnPetId > 0
@@ -58,6 +62,7 @@ class RecommendationController extends Controller
     public function start(Request $request)
     {
         $user = $request->user();
+        abort_if($user && ! $user->isAdopter(), 403);
         if ($user) {
             $this->profiles->save($user, $request->all());
             $user->forceFill(['matching_onboarding_pending' => false])->save();
@@ -67,7 +72,9 @@ class RecommendationController extends Controller
         $request->session()->forget('url.intended');
 
         $returnPetId = $request->session()->pull('matching_return_pet');
-        if ($returnPetId && Pet::whereKey($returnPetId)->where('availability_status', 'Available')->exists()) {
+        if ($user?->hasVerifiedEmail()
+            && $returnPetId
+            && Pet::whereKey($returnPetId)->where('availability_status', 'Available')->exists()) {
             return redirect()->route('application.apply', $returnPetId)
                 ->with('success', 'Personality assessment saved. Continue your application for the selected pet.');
         }
@@ -78,6 +85,7 @@ class RecommendationController extends Controller
     public function results(Request $request)
     {
         $user = $request->user();
+        abort_if($user && ! $user->isAdopter(), 403);
         $profile = $user ? $user->adopterProfile : $this->getGuestProfile($request);
 
         if (! $profile || ! $this->mapper->adopterIsComplete($profile)) {
@@ -93,6 +101,7 @@ class RecommendationController extends Controller
     public function recompute(Request $request)
     {
         $user = $request->user();
+        abort_if($user && ! $user->isAdopter(), 403);
         $profile = $user ? $user->adopterProfile : $this->getGuestProfile($request);
 
         abort_unless($profile && $this->mapper->adopterIsComplete($profile), 422, 'Complete your matching profile first.');

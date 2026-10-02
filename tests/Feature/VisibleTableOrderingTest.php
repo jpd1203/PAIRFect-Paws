@@ -63,6 +63,32 @@ class VisibleTableOrderingTest extends TestCase
         );
     }
 
+    public function test_admin_applications_keep_each_pets_rows_together_with_newest_pet_group_first(): void
+    {
+        $admin = $this->user(Role::Administrator, 'grouped-application-admin');
+        $adopter = $this->user(Role::Adopter, 'grouped-application-adopter');
+        $firstPet = $this->pet('Koko');
+        $secondPet = $this->pet('Leo');
+
+        $olderKoko = $this->application($adopter, $firstPet, '2026-08-01 09:00:00');
+        $leo = $this->application($adopter, $secondPet, '2026-08-02 09:00:00');
+        $newerKoko = $this->application($adopter, $firstPet, '2026-08-03 09:00:00');
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.applications.index'))
+            ->assertOk();
+
+        $this->assertSame(
+            [$newerKoko->id, $olderKoko->id, $leo->id],
+            $response->viewData('applications')->pluck('id')->all(),
+        );
+        $response->assertSeeInOrder([
+            'id="application-row-'.$newerKoko->id.'"',
+            'id="application-row-'.$olderKoko->id.'"',
+            'id="application-row-'.$leo->id.'"',
+        ], false);
+    }
+
     public function test_staff_table_is_newest_first_with_deterministic_same_second_ordering(): void
     {
         $admin = $this->timestamp(

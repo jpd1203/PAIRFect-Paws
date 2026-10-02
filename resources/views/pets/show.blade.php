@@ -79,10 +79,18 @@
                     @if ($pet->availability_status->value === 'Available')
                         @auth
                             @if (auth()->user()->isAdopter())
-                                <a href="{{ route('application.apply', $pet) }}"
-                                   class="rounded-md border border-[#2f7d63] bg-[#ddf3ea] px-6 py-2.5 text-sm font-bold text-[#1f6b52] transition-colors duration-150 hover:bg-[#cbebdd] shadow-sm no-underline inline-block">
-                                    Adopt Me!
-                                </a>
+                                @if (auth()->user()->hasVerifiedEmail())
+                                    <a href="{{ route('application.apply', $pet) }}"
+                                       class="rounded-md border border-[#2f7d63] bg-[#ddf3ea] px-6 py-2.5 text-sm font-bold text-[#1f6b52] transition-colors duration-150 hover:bg-[#cbebdd] shadow-sm no-underline inline-block">
+                                        Adopt Me!
+                                    </a>
+                                @else
+                                    <button type="button" disabled class="rounded-md border border-gray-300 bg-gray-100 px-6 py-2.5 text-sm font-bold text-gray-500 cursor-not-allowed">Adopt Me!</button>
+                                    <div role="alert" class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+                                        Verify your email address before you can apply to adopt a pet.
+                                        <a href="{{ route('verification.notice') }}" class="font-bold underline">Verify email</a>
+                                    </div>
+                                @endif
                             @else
                                 <button type="button" onclick="document.getElementById('applySection').scrollIntoView({behavior: 'smooth'})"
                                         class="rounded-md border border-[#2f7d63] bg-[#ddf3ea] px-6 py-2.5 text-sm font-bold text-[#1f6b52] transition-colors duration-150 hover:bg-[#cbebdd] shadow-sm cursor-pointer">
@@ -189,17 +197,24 @@
             @else
                 @auth
                     @if (auth()->user()->isAdopter())
-                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-xl bg-[#FAF8F5] border border-gray-200">
-                            <div>
-                                <h3 class="font-semibold text-gray-900">Ready to start your application?</h3>
-                                <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Submit your living setup and background info to apply for {{ $pet->name }}.</p>
+                        @if (auth()->user()->hasVerifiedEmail())
+                            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-xl bg-[#FAF8F5] border border-gray-200">
+                                <div>
+                                    <h3 class="font-semibold text-gray-900">Ready to start your application?</h3>
+                                    <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Submit your living setup and background info to apply for {{ $pet->name }}.</p>
+                                </div>
+                                <a href="{{ route('application.apply', $pet) }}"
+                                   class="inline-flex items-center gap-2 rounded-md bg-[#2f7d63] px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#25634e] shadow-sm no-underline whitespace-nowrap">
+                                    <i class="fa-solid fa-file-pen"></i>
+                                    Start Application Form
+                                </a>
                             </div>
-                            <a href="{{ route('application.apply', $pet) }}" 
-                               class="inline-flex items-center gap-2 rounded-md bg-[#2f7d63] px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#25634e] shadow-sm no-underline whitespace-nowrap">
-                                <i class="fa-solid fa-file-pen"></i>
-                                Start Application Form
-                            </a>
-                        </div>
+                        @else
+                            <div role="alert" class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+                                Verify your email address before you can apply to adopt a pet.
+                                <a href="{{ route('verification.notice') }}" class="font-bold underline">Verify email</a>
+                            </div>
+                        @endif
                     @else
                         <div class="p-4 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-600">
                             You are signed in as <strong>{{ auth()->user()->role->value }}</strong>. To submit an adoption application, please sign in with an Adopter account.

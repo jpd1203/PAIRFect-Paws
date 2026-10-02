@@ -9,6 +9,12 @@
     <div class="reco-banner my-3">
         Compatibility supports your decision. Shelter staff review every application and make the final adoption decision.
     </div>
+    @if (auth()->check() && ! auth()->user()->hasVerifiedEmail())
+        <div role="alert" class="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            You can view your pet matches now. Verify your email address before you can apply to adopt a pet.
+            <a href="{{ route('verification.notice') }}" class="font-bold underline">Verify email</a>
+        </div>
+    @endif
     <a class="btn btn-secondary mb-4" href="{{ route('recommendation.intake') }}">Update My Profile</a>
     <form method="GET" action="{{ route('recommendation.results') }}" class="flex flex-wrap gap-4 mb-5">
         <label>Species

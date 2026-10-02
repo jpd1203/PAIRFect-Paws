@@ -32,6 +32,8 @@ class EmailVerificationTest extends TestCase
             'email' => 'jessa@example.test',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
+            'terms_accepted' => '1',
+            'privacy_consent' => '1',
             ...$this->addressPayload(),
         ])->assertRedirect(route('verification.notice'));
 
@@ -186,6 +188,22 @@ class EmailVerificationTest extends TestCase
         ]);
 
         $this->actingAs($user)->get(route('animal.index'))->assertOk();
+        $this->get(route('recommendation.intake'))->assertOk();
+        $this->get(route('verification.notice'))
+            ->assertOk()
+            ->assertSee('See pet recommendations');
+        $this->get(route('animal.index'))
+            ->assertSee('View Pet')
+            ->assertDontSee('Adopt Me!');
+        $this->get(route('pets.show', $pet))
+            ->assertOk()
+            ->assertSee('Verify your email address before you can apply to adopt a pet.')
+            ->assertSee(route('verification.notice'))
+            ->assertDontSee('href="'.route('application.apply', $pet).'"', false);
+        $this->get(route('pets.modal', $pet))
+            ->assertOk()
+            ->assertSee('Verify your email address before you can apply to adopt a pet.')
+            ->assertDontSee('href="'.route('application.apply', $pet).'"', false);
         $this->get(route('application.apply', $pet))->assertRedirect(route('verification.notice'));
         $this->get(route('application.index'))->assertRedirect(route('verification.notice'));
         $this->get(route('monitoring.index'))->assertRedirect(route('verification.notice'));

@@ -16,10 +16,14 @@ final class BehaviorAssessmentService
         private ApplicationMatchService $matches,
     ) {}
 
-    public function record(Pet $pet, User $staff, array $input): void
+    public function record(Pet $pet, User $staff, array $input): bool
     {
-        DB::transaction(function () use ($pet, $staff, $input) {
+        return DB::transaction(function () use ($pet, $staff, $input) {
             $pet = Pet::whereKey($pet->id)->lockForUpdate()->firstOrFail();
+            if ($pet->assessmentRecords()->where('assessor_id', $staff->id)->exists()) {
+                return false;
+            }
+
             $scores = $this->scorer->score($pet->species->value, $input['responses']);
             $record = new AssessmentRecord([
                 'pet_id' => $pet->id, 'assessor_id' => $staff->id,
@@ -32,7 +36,9 @@ final class BehaviorAssessmentService
             $record->saveQuietly();
             $pet->fill(['last_assessed_at' => now(), 'last_assessed_by' => $staff->full_name])->saveQuietly();
             $this->matches->refreshPetSummary($pet);
-            AuditLogService::log($staff->id, 'Pet Assessed', 'Pet', $pet->id, "Recorded assessment for {$pet->name}; latest observation per staff member is used.");
+            AuditLogService::log($staff->id, 'Pet Assessed', 'Pet', $pet->id, "Recorded assessment for {$pet->name}; one assessment per staff account is allowed for this pet.");
+
+            return true;
         });
     }
 }

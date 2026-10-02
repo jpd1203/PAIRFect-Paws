@@ -8,11 +8,12 @@ use App\Models\Pet;
 use App\Services\Matching\BehaviorAssessmentService;
 use App\Services\Matching\MatchingConfiguration;
 use App\Services\Matching\MatchingProfileMapper;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class AssessmentController extends Controller
 {
-    public function index(MatchingProfileMapper $mapper)
+    public function index(Request $request, MatchingProfileMapper $mapper)
     {
         $pets = Pet::with('assessmentRecords')->orderByDesc('last_assessed_at')->orderByDesc('created_at')->orderByDesc('id')->get();
         foreach ($pets as $pet) {
@@ -20,13 +21,21 @@ class AssessmentController extends Controller
             $pet->setAttribute('matching_observer_count', $summary['observer_count']);
             $pet->setAttribute('matching_behavior_complete', $summary['complete']);
             $pet->setAttribute('assessment_records_count', $summary['observer_count']);
+            $pet->setAttribute('assessed_by_current_user', $pet->assessmentRecords->contains(
+                fn ($record) => $record->assessor_id === $request->user()->id
+            ));
         }
 
         return view('admin.assessment.record', compact('pets'));
     }
 
-    public function create(Pet $pet, MatchingProfileMapper $mapper)
+    public function create(Request $request, Pet $pet, MatchingProfileMapper $mapper)
     {
+        if ($pet->assessmentRecords()->where('assessor_id', $request->user()->id)->exists()) {
+            return redirect()->route('admin.assessments.record')
+                ->withErrors(['assessment' => "You have already assessed {$pet->name}. Each staff account can assess a pet only once."]);
+        }
+
         $pet->load('assessmentRecords');
         $groups = config('matching.items.'.strtolower($pet->species->value));
         $categories = collect($groups)->mapWithKeys(fn (array $items, string $key) => [
@@ -41,9 +50,15 @@ class AssessmentController extends Controller
 
     public function store(StorePetAssessmentRequest $request, Pet $pet, BehaviorAssessmentService $assessments)
     {
-        $assessments->record($pet, $request->user(), $request->validated());
+        if (! $assessments->record($pet, $request->user(), $request->validated())) {
+            $message = "You have already assessed {$pet->name}. Each staff account can assess a pet only once.";
 
-        return redirect()->route('admin.assessments.record')->with('success', 'Assessment saved. Matching uses the latest assessment from each distinct observer.');
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 409)
+                : redirect()->route('admin.assessments.record')->withErrors(['assessment' => $message]);
+        }
+
+        return redirect()->route('admin.assessments.record')->with('success', 'Assessment saved. Each pet requires observations from three distinct staff accounts.');
     }
 
     public function summary(Pet $pet, MatchingProfileMapper $mapper)

@@ -35,6 +35,10 @@ class User extends Authenticatable implements MustVerifyEmailContract
         'role',
         'is_active',
         'matching_onboarding_pending',
+        'terms_accepted_at',
+        'privacy_consent_at',
+        'terms_version',
+        'privacy_notice_version',
         'branch_id',
         'region',
         'province',
@@ -57,6 +61,8 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'role' => Role::class,
             'is_active' => 'boolean',
             'matching_onboarding_pending' => 'boolean',
+            'terms_accepted_at' => 'datetime',
+            'privacy_consent_at' => 'datetime',
         ];
     }
 

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -65,33 +64,6 @@ class PasswordResetController extends Controller
             'status',
             'Your password has been reset. You can now sign in with your new password.',
         );
-    }
-
-    /** Future API entry point; routes/api.php is not currently loaded by the application. */
-    public function sendResetLinkApi(Request $request): JsonResponse
-    {
-        $email = $this->validatedEmail($request);
-
-        $this->requestResetLink($email);
-
-        return response()->json(['message' => self::LINK_REQUESTED_MESSAGE], 202);
-    }
-
-    /** Future API entry point; routes/api.php is not currently loaded by the application. */
-    public function resetApi(Request $request): JsonResponse
-    {
-        $status = $this->resetPassword($this->validatedReset($request));
-
-        if ($status !== Password::PASSWORD_RESET) {
-            return response()->json([
-                'message' => self::INVALID_LINK_MESSAGE,
-                'errors' => ['email' => [self::INVALID_LINK_MESSAGE]],
-            ], 422);
-        }
-
-        return response()->json([
-            'message' => 'Your password has been reset. You can now sign in with your new password.',
-        ]);
     }
 
     private function validatedEmail(Request $request): string

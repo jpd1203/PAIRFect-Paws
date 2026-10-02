@@ -16,6 +16,7 @@ class AnimalController extends Controller
         $pets = Pet::withoutGlobalScope('notArchived')
             ->with('branch')
             ->withCount('assessmentRecords')
+            ->withExists(['assessmentRecords as assessed_by_current_user' => fn ($query) => $query->where('assessor_id', auth()->id())])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();

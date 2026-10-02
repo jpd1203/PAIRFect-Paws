@@ -278,8 +278,9 @@
                             </div>
                             <a id="vAssessBtn" href="#" class="btn btn-secondary btn-sm w-full sm:w-auto text-center">
                                 <i class="fa-solid fa-clipboard-check mr-1"></i>
-                                <span>Edit Assessment</span>
+                                <span>Assess</span>
                             </a>
+                            <span id="vAssessDone" class="badge badge-completed hidden" aria-live="polite"></span>
                         </div>
                     </div>
 

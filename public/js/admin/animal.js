@@ -150,8 +150,15 @@ function openViewAnimalModal(id) {
         assessCount.textContent = `${a.assessment_count}/3 assessments completed`;
     }
     const assessBtn = document.getElementById('vAssessBtn');
+    const assessDone = document.getElementById('vAssessDone');
+    const assessmentUnavailable = a.assessment_status === 'complete' || a.assessed_by_current_user;
     if (assessBtn) {
         assessBtn.href = a.assess_url;
+        assessBtn.classList.toggle('hidden', assessmentUnavailable);
+    }
+    if (assessDone) {
+        assessDone.textContent = a.assessment_status === 'complete' ? 'Complete' : 'Your assessment complete';
+        assessDone.classList.toggle('hidden', !assessmentUnavailable);
     }
 
     // Form Action URL

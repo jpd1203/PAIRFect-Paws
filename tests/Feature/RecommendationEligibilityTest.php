@@ -51,14 +51,85 @@ class RecommendationEligibilityTest extends TestCase
         $this->assertCount(0, app(KnnRecommendationService::class)->recommendPets($this->matchingAdopter()));
     }
 
-    public function test_recommendations_require_verified_adopter_and_ignore_no_profile_defaults(): void
+    public function test_recommendations_allow_guests_and_unverified_adopters_but_block_staff(): void
     {
-        $this->get(route('recommendation.intake'))->assertRedirect(route('login'));
+        $this->get(route('recommendation.intake'))->assertOk();
+        $this->get(route('recommendation.results'))->assertRedirect(route('recommendation.intake'));
         $user = $this->matchingUser();
         $this->actingAs($user)->get(route('recommendation.results'))->assertRedirect(route('recommendation.intake'));
         $this->actingAs($user)->postJson(route('recommendation.recompute'))->assertUnprocessable();
         $user->update(['email_verified_at' => null]);
-        $this->actingAs($user)->get(route('recommendation.intake'))->assertRedirect(route('verification.notice'));
+        $this->actingAs($user)->get(route('recommendation.intake'))
+            ->assertOk()
+            ->assertSee('Verify your email address before you can apply to adopt a pet.');
         $this->actingAs($this->matchingUser(Role::Volunteer))->get(route('recommendation.intake'))->assertRedirect(route('access-denied'));
+    }
+
+    public function test_guest_matching_profile_is_saved_for_the_session_and_transferred_on_login(): void
+    {
+        $pet = $this->matchingPet(['name' => 'Guest Match']);
+        $user = $this->matchingUser();
+
+        $this->post(route('recommendation.start'), [
+            'housing_type' => 'Single Family Home (Fenced Yard)',
+            'monthly_income_range' => '₱30,000 - ₱50,000',
+            'has_existing_pets' => false,
+            'has_children' => false,
+            'bfi_responses' => $this->bfiResponses(),
+        ])->assertRedirect(route('recommendation.results'));
+
+        $this->assertNotNull(session('guest_adopter_profile'));
+        $this->get(route('recommendation.results'))->assertOk()->assertSee('Guest Match');
+        $this->get(route('application.apply', $pet))->assertRedirect(route('login'));
+
+        $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'Testing123!',
+        ])->assertRedirect();
+
+        $this->assertNotNull($user->fresh()->adopterProfile?->bfi_completed_at);
+        $this->assertNull(session('guest_adopter_profile'));
+    }
+
+    public function test_unverified_adopter_can_save_a_profile_and_view_matches_but_cannot_adopt(): void
+    {
+        $user = $this->matchingUser();
+        $user->forceFill(['email_verified_at' => null])->save();
+        $pet = $this->matchingPet(['name' => 'Preview Match']);
+
+        $this->actingAs($user)
+            ->get(route('recommendation.onboarding', ['return_pet' => $pet->id]))
+            ->assertOk();
+
+        $this->post(route('recommendation.start'), [
+            'housing_type' => 'Single Family Home (Fenced Yard)',
+            'monthly_income_range' => '₱30,000 - ₱50,000',
+            'has_existing_pets' => false,
+            'has_children' => false,
+            'bfi_responses' => $this->bfiResponses(),
+        ])->assertRedirect(route('recommendation.results'));
+
+        $user = $user->fresh();
+        $this->actingAs($user);
+        $this->assertFalse($user->hasVerifiedEmail());
+        $this->assertNotNull($user->adopterProfile?->bfi_completed_at);
+        $this->get(route('recommendation.results'))
+            ->assertOk()
+            ->assertSee('Preview Match')
+            ->assertSee('Verify your email address before you can apply to adopt a pet.')
+            ->assertDontSee('href="'.route('application.apply', $pet).'"', false);
+        $this->postJson(route('recommendation.recompute'))
+            ->assertOk()
+            ->assertJsonPath('matches.0.id', $pet->id);
+        $this->get(route('application.apply', $pet))->assertRedirect(route('verification.notice'));
+        $this->post(route('application.submit'), ['pet_id' => $pet->id])
+            ->assertRedirect(route('verification.notice'));
+        $this->assertDatabaseCount('adoption_applications', 0);
+
+        $user->markEmailAsVerified();
+        $this->actingAs($user->fresh());
+        $this->get(route('recommendation.results'))
+            ->assertOk()
+            ->assertSee('href="'.route('application.apply', $pet).'"', false);
     }
 }

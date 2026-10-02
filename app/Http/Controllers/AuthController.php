@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    private const TERMS_VERSION = '1.0';
+
+    private const PRIVACY_NOTICE_VERSION = '1.0';
+
     public function __construct(private PhilippineLocationService $locations) {}
 
     // ─── Login ───────────────────────────────────────────────────────────────
@@ -89,6 +93,7 @@ class AuthController extends Controller
                 $profile = $user->adopterProfile ?? new \App\Models\AdopterProfile(['user_id' => $user->id]);
                 $profile->fill($guestData)->save();
             }
+            $request->session()->forget('guest_adopter_profile');
         }
 
         if (Auth::user()->isAdopter() && Auth::user()->matching_onboarding_pending) {
@@ -97,7 +102,7 @@ class AuthController extends Controller
                 $request->session()->put('matching_return_pet', $petId);
             }
 
-            return redirect()->route(Auth::user()->hasVerifiedEmail() ? 'recommendation.onboarding' : 'verification.notice');
+            return redirect()->route('recommendation.onboarding');
         }
 
         if ($redirectTo && $this->isValidRedirect($redirectTo)) {
@@ -124,9 +129,15 @@ class AuthController extends Controller
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
             'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+            'terms_accepted' => 'accepted',
+            'privacy_consent' => 'accepted',
             ...PhilippineLocationService::validationRules(),
+        ], [
+            'terms_accepted.accepted' => 'Terms and Conditions consent is required.',
+            'privacy_consent.accepted' => 'Privacy Notice consent is required.',
         ]);
         $address = $this->locations->resolveAddress($validated);
+        $acceptedAt = now();
 
         $redirectTo = $request->input('redirect');
         if (! $this->isValidRedirect($redirectTo)) {
@@ -141,6 +152,10 @@ class AuthController extends Controller
             'role' => Role::Adopter->value,
             'is_active' => true,
             'matching_onboarding_pending' => true,
+            'terms_accepted_at' => $acceptedAt,
+            'privacy_consent_at' => $acceptedAt,
+            'terms_version' => self::TERMS_VERSION,
+            'privacy_notice_version' => self::PRIVACY_NOTICE_VERSION,
             ...$address,
         ]);
 
@@ -159,20 +174,6 @@ class AuthController extends Controller
             $profile = new \App\Models\AdopterProfile(['user_id' => $user->id]);
             $profile->fill($guestData)->save();
             $request->session()->forget('guest_adopter_profile');
-
-            if (app()->environment('local')) {
-                $user->markEmailAsVerified();
-                if ($redirectTo && $this->isValidRedirect($redirectTo)) {
-                    return redirect()->to($redirectTo);
-                }
-                return redirect()->route('recommendation.results');
-            }
-        }
-
-        if (app()->environment('local')) {
-            $user->markEmailAsVerified();
-
-            return redirect()->route('recommendation.onboarding');
         }
 
         if ($redirectTo && $this->isValidRedirect($redirectTo)) {

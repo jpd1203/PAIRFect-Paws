@@ -168,6 +168,11 @@
                                         <i class="fa-solid fa-check" aria-hidden="true"></i>
                                         Complete
                                     </span>
+                                @elseif ($pet->assessed_by_current_user)
+                                    <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold bg-[#E1F5EE] text-[#295F51] border border-[#295F51]" aria-label="You already assessed this pet">
+                                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                                        Your assessment complete
+                                    </span>
                                 @else
                                     <a href="{{ route('admin.assessments.create', $pet) }}"
                                        class="btn btn-primary btn-sm whitespace-nowrap inline-flex items-center gap-1.5">

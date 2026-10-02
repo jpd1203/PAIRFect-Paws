@@ -88,18 +88,6 @@ class AdoptionApplication extends Model
         return $this->hasOne(Handover::class, 'application_id');
     }
 
-    // ─── Constants used by frontend Blade templates ────────────────────────
-
-    const STATUS_PENDING = 0;
-
-    const STATUS_SCHEDULED = 1;
-
-    const STATUS_UNDER_REVIEW = 2;
-
-    const STATUS_APPROVED = 3;
-
-    const STATUS_REJECTED = 4;
-
     // ─── Accessors used by frontend Blade templates ────────────────────────
 
     public function getFirstNameAttribute(): string
@@ -157,7 +145,7 @@ class AdoptionApplication extends Model
         return $this->updated_at;
     }
 
-    // Stub accessors for fields the frontend references
+    // Applicant details exposed to templates
     public function getPhoneNumberAttribute(): ?string
     {
         return $this->applicant_phone;
@@ -189,11 +177,6 @@ class AdoptionApplication extends Model
     {
         return $this->income_range;
     }
-
-    // public function getCompatibilityResultAttribute()
-    // {
-    //     return null;
-    // }
 
     public function getPriorHistoryAttribute()
     {

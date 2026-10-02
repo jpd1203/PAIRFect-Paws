@@ -68,6 +68,8 @@ class StructuredAddressTest extends TestCase
             'email' => 'josh.structured@example.test',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
+            'terms_accepted' => '1',
+            'privacy_consent' => '1',
             ...$this->ncrAddressPayload(),
         ])->assertRedirect(route('verification.notice'));
 
@@ -96,6 +98,8 @@ class StructuredAddressTest extends TestCase
             'email' => 'forged.address@example.test',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
+            'terms_accepted' => '1',
+            'privacy_consent' => '1',
             ...$this->ncrAddressPayload(),
             'province_code' => '0128000000',
         ];

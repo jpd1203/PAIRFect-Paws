@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\AdoptionApplication;
 use App\Models\Handover;
 use App\Models\HandoverNotification;
 use App\Models\Pet;

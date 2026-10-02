@@ -144,12 +144,25 @@
                     </div>
                 </div>
 
-                <!-- Terms & Conditions Checkbox -->
-                <div class="pt-1">
-                    <label class="flex items-start gap-2 text-[11px] text-gray-700 leading-snug cursor-pointer font-medium">
-                        <input type="checkbox" name="terms" required value="1" class="mt-0.5 rounded border-gray-300 text-maroon-600 focus:ring-maroon-500">
-                        <span>I agree to the terms and conditions under RA 8485 and RA 10173.</span>
-                    </label>
+                <!-- Separate account terms and privacy consent -->
+                <div class="space-y-3 pt-1">
+                    <div id="consentError" role="alert" class="rounded-lg border border-red-300 bg-red-50 p-2 text-xs text-red-800" @if (! $errors->has('terms_accepted') && ! $errors->has('privacy_consent')) hidden @endif>
+                        You must agree to the Terms and Conditions and acknowledge the Privacy Notice before creating an account.
+                    </div>
+                    <div>
+                        <div class="flex items-start gap-2 text-[11px] text-gray-700 leading-snug font-medium">
+                            <input id="terms_accepted" type="checkbox" name="terms_accepted" required value="1" aria-describedby="terms_accepted_error" class="mt-0.5 rounded border-gray-300 text-maroon-600 focus:ring-maroon-500">
+                            <label for="terms_accepted">I have read and agree to the <a href="{{ route('legal.terms') }}" data-legal-dialog="termsDialog" class="font-bold text-maroon-700 underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-maroon-600">PAIRfect Paws Terms and Conditions</a>, including my responsibilities for the proper care and welfare of animals in accordance with Republic Act No. 8485, as amended.</label>
+                        </div>
+                        <p id="terms_accepted_error" class="mt-1 text-xs text-red-700" @if (! $errors->has('terms_accepted')) hidden @endif>Terms and Conditions consent is required.</p>
+                    </div>
+                    <div>
+                        <div class="flex items-start gap-2 text-[11px] text-gray-700 leading-snug font-medium">
+                            <input id="privacy_consent" type="checkbox" name="privacy_consent" required value="1" aria-describedby="privacy_consent_error" class="mt-0.5 rounded border-gray-300 text-maroon-600 focus:ring-maroon-500">
+                            <label for="privacy_consent">I have read the <a href="{{ route('legal.privacy') }}" data-legal-dialog="privacyDialog" class="font-bold text-maroon-700 underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-maroon-600">PAIRfect Paws Privacy Notice</a> and consent to the collection, use, storage, and processing of my personal information for the purposes described in the notice.</label>
+                        </div>
+                        <p id="privacy_consent_error" class="mt-1 text-xs text-red-700" @if (! $errors->has('privacy_consent')) hidden @endif>Privacy Notice consent is required.</p>
+                    </div>
                 </div>
 
                 <!-- Submit Button -->
@@ -167,6 +180,20 @@
         </div>
 
     </main>
+
+    <dialog id="termsDialog" aria-labelledby="terms-dialog-title" class="w-[90vw] max-w-3xl max-h-[85vh] overflow-y-auto rounded-xl bg-white p-0 shadow-2xl backdrop:bg-black/60">
+        <div class="sticky top-0 z-10 flex justify-end border-b border-gray-200 bg-white px-5 py-3">
+            <button type="button" data-close-legal-dialog class="rounded-md px-3 py-1 text-sm font-semibold text-maroon-700 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-maroon-600" aria-label="Close Terms and Conditions">Close</button>
+        </div>
+        @include('legal.terms-content')
+    </dialog>
+
+    <dialog id="privacyDialog" aria-labelledby="privacy-dialog-title" class="w-[90vw] max-w-3xl max-h-[85vh] overflow-y-auto rounded-xl bg-white p-0 shadow-2xl backdrop:bg-black/60">
+        <div class="sticky top-0 z-10 flex justify-end border-b border-gray-200 bg-white px-5 py-3">
+            <button type="button" data-close-legal-dialog class="rounded-md px-3 py-1 text-sm font-semibold text-maroon-700 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-maroon-600" aria-label="Close Privacy Notice">Close</button>
+        </div>
+        @include('legal.privacy-content')
+    </dialog>
 
     <script>
         function switchAuthTab(tab) {
@@ -190,6 +217,25 @@
 
         // Auto-switch to register tab if query param ?tab=register or validation error on register form
         document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('[data-legal-dialog]').forEach((link) => {
+                const dialog = document.getElementById(link.dataset.legalDialog);
+                if (!dialog || typeof dialog.showModal !== 'function') return;
+
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    dialog.showModal();
+                });
+
+                dialog.addEventListener('close', () => link.focus());
+                dialog.querySelector('[data-close-legal-dialog]').addEventListener('click', () => dialog.close());
+                dialog.addEventListener('click', (event) => {
+                    const bounds = dialog.getBoundingClientRect();
+                    if (event.target === dialog && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) {
+                        dialog.close();
+                    }
+                });
+            });
+
             const urlParams = new URLSearchParams(window.location.search);
             const isRegisterTab = urlParams.get('tab') === 'register';
             const hasRegisterError = {{ session()->has('register_error') || old('first_name') ? 'true' : 'false' }};
@@ -197,6 +243,39 @@
             if (isRegisterTab || hasRegisterError) {
                 switchAuthTab('register');
             }
+
+            const registerForm = document.getElementById('registerForm');
+            const terms = document.getElementById('terms_accepted');
+            const privacy = document.getElementById('privacy_consent');
+            const consentError = document.getElementById('consentError');
+            const termsError = document.getElementById('terms_accepted_error');
+            const privacyError = document.getElementById('privacy_consent_error');
+            let consentValidationAttempted = {{ $errors->has('terms_accepted') || $errors->has('privacy_consent') ? 'true' : 'false' }};
+
+            function showConsentErrors() {
+                const termsMissing = !terms.checked;
+                const privacyMissing = !privacy.checked;
+                consentError.hidden = !(termsMissing || privacyMissing);
+                termsError.hidden = !termsMissing;
+                privacyError.hidden = !privacyMissing;
+                terms.setAttribute('aria-invalid', String(termsMissing));
+                privacy.setAttribute('aria-invalid', String(privacyMissing));
+                return termsMissing || privacyMissing;
+            }
+
+            registerForm.addEventListener('submit', (event) => {
+                consentValidationAttempted = true;
+                if (showConsentErrors()) {
+                    event.preventDefault();
+                    (terms.checked ? privacy : terms).focus();
+                }
+            });
+            terms.addEventListener('change', () => {
+                if (consentValidationAttempted) showConsentErrors();
+            });
+            privacy.addEventListener('change', () => {
+                if (consentValidationAttempted) showConsentErrors();
+            });
         });
     </script>
 

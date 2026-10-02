@@ -42,7 +42,7 @@ class ApplicationController extends Controller
      */
     public function index()
     {
-        // Display newest submissions first; positions reflect eligible compatibility ranking.
+        // Start newest-first so pet groups and applications within each group retain recency order.
         $applications = AdoptionApplication::with(['user', 'pet'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
@@ -51,7 +51,8 @@ class ApplicationController extends Controller
         $this->matching->refreshMany($applications);
         $historySummaries = $this->adopterHistory->summariesForApplications($applications);
 
-        $applications->groupBy('pet_id')->each(function ($petApplications) {
+        $petGroups = $applications->groupBy('pet_id');
+        $petGroups->each(function ($petApplications) {
             $position = 0;
             $this->ranking->sort($petApplications)->each(
                 function ($application) use (&$position) {
@@ -61,6 +62,9 @@ class ApplicationController extends Controller
                 }
             );
         });
+
+        // Keep applications for the same pet adjacent without changing their queue positions.
+        $applications = $petGroups->flatMap(fn ($petApplications) => $petApplications->all())->values();
 
         $volunteers = User::whereIn('role', [Role::Administrator->value, Role::Volunteer->value])
             ->where('is_active', true)

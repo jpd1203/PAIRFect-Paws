@@ -38,7 +38,7 @@
                 <button type="button" class="btn btn-adoptMe" data-pet-id="{{ $pet->id }}" onclick="openPetModal({{ $pet->id }})">
                     {{ $pet->availability_status->value === 'Soft-Reserved'
                         ? 'View Processing Status'
-                        : 'Adopt Me!' }}
+                        : (auth()->check() && ! auth()->user()->hasVerifiedEmail() ? 'View Pet' : 'Adopt Me!') }}
                 </button>
             </div>
 

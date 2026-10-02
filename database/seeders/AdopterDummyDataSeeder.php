@@ -17,7 +17,6 @@ use App\Models\HandoverNotification;
 use App\Models\Pet;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 

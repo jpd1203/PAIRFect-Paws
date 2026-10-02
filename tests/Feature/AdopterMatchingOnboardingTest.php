@@ -28,6 +28,7 @@ class AdopterMatchingOnboardingTest extends TestCase
             'region_code' => '1300000000', 'province_code' => '__direct__',
             'city_municipality_code' => '1380600000', 'barangay_code' => '1380606197',
             'street_address' => '4489 V. Francisco St. Sta. Mesa', 'zip_code' => '1016',
+            'terms_accepted' => '1', 'privacy_consent' => '1',
             'redirect' => $redirect,
         ])->assertRedirect(route('verification.notice'));
 
@@ -62,7 +63,9 @@ class AdopterMatchingOnboardingTest extends TestCase
     public function test_registration_offers_twenty_questions_but_skip_allows_browsing_without_a_profile(): void
     {
         $user = $this->registerAdopter();
-        $this->get(route('recommendation.onboarding'))->assertRedirect(route('verification.notice'));
+        $this->get(route('recommendation.onboarding'))
+            ->assertOk()
+            ->assertSee('Verify your email address before you can apply to adopt a pet.');
         $this->get(route('pets.index'))->assertOk();
         $this->verify($user);
 
@@ -117,6 +120,38 @@ class AdopterMatchingOnboardingTest extends TestCase
         $this->post(route('recommendation.start'), $this->completeAssessment())
             ->assertRedirect(route('application.apply', $pet));
         $this->assertFalse($user->fresh()->matching_onboarding_pending);
+    }
+
+    public function test_unanswered_n1_shows_a_clear_question_link_and_inline_error(): void
+    {
+        $user = $this->registerAdopter();
+        $this->get(route('recommendation.onboarding'))->assertOk();
+        $incomplete = $this->completeAssessment();
+        unset($incomplete['bfi_responses']['N1']);
+
+        $response = $this->post(route('recommendation.start'), $incomplete)
+            ->assertSessionHasErrors([
+                'bfi_responses.N1' => 'Please answer question 13: Is emotionally stable, not easily upset.',
+            ]);
+        $response->assertRedirect(route('recommendation.onboarding'));
+
+        $this->get(route('recommendation.onboarding'))
+            ->assertOk()
+            ->assertSee('name="bfi_responses[N1]" required', false)
+            ->assertDontSee('novalidate');
+        $this->withViewErrors([
+            'bfi_responses.N1' => 'Please answer question 13: Is emotionally stable, not easily upset.',
+        ]);
+        $html = view('recommendation.intake', [
+            'options' => \App\Support\ApplicationOptions::class,
+            'profile' => null,
+            'returnPet' => null,
+            'isOnboarding' => true,
+        ])->render();
+        $this->assertStringContainsString('href="#bfi_N1"', $html);
+        $this->assertStringContainsString('aria-describedby="bfi_N1_error"', $html);
+        $this->assertStringContainsString('Please answer question 13: Is emotionally stable, not easily upset.', $html);
+        $this->assertNull($user->fresh()->adopterProfile);
     }
 
     public function test_onboarding_is_offered_after_verification_in_a_logged_out_session(): void

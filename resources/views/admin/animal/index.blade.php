@@ -203,6 +203,7 @@
             'high_vocalization' => $p->high_vocalization,
             'assessment_status' => $p->assessment_status,
             'assessment_count' => $p->assessment_records_count, 'version' => $p->version,
+            'assessed_by_current_user' => (bool) $p->assessed_by_current_user,
             'image_url' => $p->image_url,
             'assess_url' => route('admin.assessments.create', $p),
             'update_url' => route('admin.animals.update', $p),
@@ -246,4 +247,3 @@
     </script>
     <script src="{{ asset('js/admin/animal.js') }}" defer></script>
 @endpush
-

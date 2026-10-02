@@ -30,7 +30,7 @@ final class AdopterMatchingProfileService
             'monthly_income_range.required' => 'Please select your monthly income range.',
             'has_existing_pets.required' => 'Please indicate if you currently have pets at home.',
             'has_children.required' => 'Please indicate if children live in or regularly stay in your home.',
-            'bfi_responses.required' => 'Please answer all statements in the Personality Questionnaire.',
+            'bfi_responses.required' => 'Please answer all 20 personality questions before starting matching.',
         ];
         $attributes = [
             'housing_type' => 'Housing Type',
@@ -43,9 +43,9 @@ final class AdopterMatchingProfileService
         $i = 1;
         foreach ($this->config->values['bfi']['prompts'] as $key => $prompt) {
             $attributes["bfi_responses.{$key}"] = "Question {$i} (\"{$prompt}\")";
-            $messages["bfi_responses.{$key}.required"] = "Question {$i} (\"{$prompt}\") is required.";
-            $messages["bfi_responses.{$key}.between"] = "Question {$i} must be answered with a rating between 1 and 5.";
-            $messages["bfi_responses.{$key}.integer"] = "Question {$i} must be a valid rating.";
+            $messages["bfi_responses.{$key}.required"] = "Please answer question {$i}: {$prompt}.";
+            $messages["bfi_responses.{$key}.between"] = "Question {$i} must have a response from 1 to 5.";
+            $messages["bfi_responses.{$key}.integer"] = "Question {$i} must have a response from 1 to 5.";
             $i++;
         }
 

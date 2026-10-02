@@ -79,8 +79,8 @@
                             </p>
 
                             <div class="mt-auto flex justify-end pt-3">
-                                <a href="{{ route('pets.show', $pet) }}" aria-label="Adopt Me: {{ $pet->name }}" class="btn btn-adoptMe">
-                                    Adopt Me!
+                                <a href="{{ route('pets.show', $pet) }}" aria-label="{{ auth()->check() && ! auth()->user()->hasVerifiedEmail() ? 'View pet: ' : 'Adopt Me: ' }}{{ $pet->name }}" class="btn btn-adoptMe">
+                                    {{ auth()->check() && ! auth()->user()->hasVerifiedEmail() ? 'View Pet' : 'Adopt Me!' }}
                                 </a>
                             </div>
                         </article>
