@@ -16,6 +16,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // This seeder is a sample dataset, not a production bootstrap.
+        if (app()->isProduction()) {
+            return;
+        }
+
         // ─── Branches ─────────────────────────────────────────────────────────
 
         $branchMain = Branch::create([

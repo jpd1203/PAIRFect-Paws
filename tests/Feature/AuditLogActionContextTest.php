@@ -19,6 +19,22 @@ class AuditLogActionContextTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_only_administrators_can_view_or_export_audit_logs(): void
+    {
+        $admin = $this->user('Audit', 'Admin', 'audit-admin@example.test', Role::Administrator);
+        $volunteer = $this->user('Audit', 'Volunteer', 'audit-volunteer@example.test', Role::Volunteer);
+
+        $this->actingAs($volunteer)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertDontSee('Audit Logs');
+
+        foreach (['admin.audit-logs.index', 'admin.audit-logs.export'] as $route) {
+            $this->actingAs($volunteer)->get(route($route))->assertRedirect(route('access-denied'));
+            $this->actingAs($admin)->get(route($route))->assertOk();
+        }
+    }
+
     public function test_audit_actions_identify_their_pet_adopter_and_monitoring_milestone(): void
     {
         $admin = $this->user('Audit', 'Admin', 'audit-admin@example.test', Role::Administrator);

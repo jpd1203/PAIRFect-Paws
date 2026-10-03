@@ -34,6 +34,9 @@ class ReservationQueueTest extends TestCase
         $this->assertTrue($first->refresh()->is_primary_candidate);
         $this->assertSame(ApplicationStatus::InterviewScheduled, $first->status);
         $this->assertSame(ApplicationStatus::Waitlisted, $second->refresh()->status);
+        $this->assertSame(1, $first->user->inAppNotifications()->where('kind', 'interview_scheduled')->count());
+        $this->assertSame(1, $second->user->inAppNotifications()->where('kind', 'application_waitlisted')->count());
+        $this->assertSame(1, $staff->inAppNotifications()->where('kind', 'interview_assignment_staff')->count());
         Mail::assertQueued(StatusUpdateMail::class, fn (StatusUpdateMail $mail): bool => $mail->hasTo($first->user->email) && $mail->event === 'interview_scheduled'
         );
         Mail::assertQueued(StatusUpdateMail::class, fn (StatusUpdateMail $mail): bool => $mail->hasTo($second->user->email) && $mail->event === 'application_waitlisted'
@@ -49,6 +52,7 @@ class ReservationQueueTest extends TestCase
         $this->assertSame($second->id, $promoted?->id);
         $this->assertSame(ApplicationStatus::NoShow, $first->refresh()->status);
         $this->assertSame(ApplicationStatus::PrimaryCandidate, $second->refresh()->status);
+        $this->assertSame(1, $second->user->inAppNotifications()->where('kind', 'queue_promoted')->count());
         $this->assertTrue($second->is_primary_candidate);
         $this->assertSame(AvailabilityStatus::SoftReserved, $pet->refresh()->availability_status);
         Mail::assertQueued(StatusUpdateMail::class, fn (StatusUpdateMail $mail): bool => $mail->hasTo($second->user->email) && $mail->event === 'queue_promoted'
@@ -70,6 +74,7 @@ class ReservationQueueTest extends TestCase
             $newDate->format('Y-m-d H:i'),
             $first->refresh()->interview_date->format('Y-m-d H:i'),
         );
+        $this->assertSame(1, $first->user->inAppNotifications()->where('kind', 'interview_rescheduled')->count());
         Mail::assertQueued(StatusUpdateMail::class, fn (StatusUpdateMail $mail): bool => $mail->hasTo($first->user->email)
             && $mail->event === 'interview_rescheduled'
             && filled($mail->previousInterviewDate)
@@ -253,6 +258,7 @@ class ReservationQueueTest extends TestCase
 
         $this->assertNull($promoted);
         $this->assertSame(ApplicationStatus::Rejected, $first->refresh()->status);
+        $this->assertSame(1, $first->user->inAppNotifications()->where('kind', 'application_rejected')->count());
         $this->assertFalse($first->is_primary_candidate);
         $this->assertSame('The housing arrangement is not suitable for this pet.', $first->decision_remarks);
         $this->assertSame(ApplicationStatus::UnderReview, $second->refresh()->status);
@@ -442,6 +448,7 @@ class ReservationQueueTest extends TestCase
 
         $this->assertCount(1, $closed);
         $this->assertSame(ApplicationStatus::Approved, $first->refresh()->status);
+        $this->assertSame(1, $first->user->inAppNotifications()->where('kind', 'application_approved')->count());
         $this->assertNotNull($first->adopted_at);
         $this->assertSame(ApplicationStatus::Closed, $second->refresh()->status);
         $this->assertSame(AvailabilityStatus::Adopted, $pet->refresh()->availability_status);

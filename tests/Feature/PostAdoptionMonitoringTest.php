@@ -38,7 +38,7 @@ class PostAdoptionMonitoringTest extends TestCase
     {
         parent::setUp();
 
-        config()->set('post_adoption.capture.ffprobe_path', '');
+        $this->bindProbeDurations(array_fill(0, 20, 3000));
     }
 
     protected function tearDown(): void
@@ -259,11 +259,11 @@ class PostAdoptionMonitoringTest extends TestCase
         $this->assertSame(3000, $verification['required_duration_ms']);
         $this->assertSame(750, $verification['duration_tolerance_ms']);
         $this->assertSame(3012, $verification['declared_duration_ms']);
-        $this->assertNull($verification['verified_duration_ms']);
-        $this->assertSame('probe_unavailable', $verification['duration_verification_status']);
+        $this->assertSame(3000, $verification['verified_duration_ms']);
+        $this->assertSame('verified', $verification['duration_verification_status']);
         $this->assertSame($log->video_sha256, $verification['video_sha256']);
         $this->assertNotEmpty($verification['challenge_consumed_at']);
-        $this->assertSame(3012, $log->video_duration_ms);
+        $this->assertSame(3000, $log->video_duration_ms);
         $this->assertSame('video/mp4', $log->video_mime_type);
         $this->assertStringStartsWith("post-adoption-videos/{$log->application_id}/", $log->video_path);
         $this->assertStringEndsWith('.mp4', $log->video_path);
@@ -286,7 +286,7 @@ class PostAdoptionMonitoringTest extends TestCase
         ]);
     }
 
-    public function test_browser_webm_is_accepted_without_ffprobe_and_negative_survey_is_flagged(): void
+    public function test_verified_browser_webm_with_negative_survey_is_flagged(): void
     {
         Storage::fake('local');
         Mail::fake();
@@ -301,6 +301,12 @@ class PostAdoptionMonitoringTest extends TestCase
             'email_verified_at' => now(),
         ]);
 
+        $admin = User::create([
+            'first_name' => 'Welfare', 'last_name' => 'Admin',
+            'email' => 'welfare-admin@example.test', 'password' => 'password',
+            'role' => Role::Administrator->value, 'is_active' => true, 'email_verified_at' => now(),
+        ]);
+
         $this->actingAs($adopter)->postJson(
             route('monitoring.submit', $log),
             $this->validReportPayloadFor($adopter, $log, [
@@ -313,11 +319,31 @@ class PostAdoptionMonitoringTest extends TestCase
         $log->refresh();
         $this->assertSame('video/webm', $log->video_mime_type);
         $this->assertStringEndsWith('.webm', $log->video_path);
-        $this->assertSame('probe_unavailable', $log->survey_data['_verification']['duration_verification_status']);
+        $this->assertSame('verified', $log->survey_data['_verification']['duration_verification_status']);
         $this->assertTrue($log->is_flagged);
+        $this->assertSame(1, $adopter->inAppNotifications()->where('kind', 'welfare_report_received')->count());
+        $this->assertSame(1, $admin->inAppNotifications()->where('kind', 'welfare_report_staff_alert')->count());
+        $this->assertSame(0, $staff->inAppNotifications()->where('kind', 'welfare_report_staff_alert')->count());
         $this->assertContains('survey_welfare_concern', array_column($log->flag_reasons, 'code'));
         Storage::disk('local')->assertExists($log->video_path);
         Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool => $mail->hasTo($staff->email));
+    }
+
+    public function test_missing_ffprobe_rejects_video_without_consuming_the_challenge(): void
+    {
+        Storage::fake('local');
+        config()->set('post_adoption.capture.ffprobe_path', '');
+        $this->app->instance(VideoDurationProbe::class, new VideoDurationProbe());
+        [$adopter, , $log] = $this->monitoringLog();
+        $payload = $this->validReportPayloadFor($adopter, $log);
+
+        $this->actingAs($adopter)
+            ->postJson(route('monitoring.submit', $log), $payload)
+            ->assertStatus(503);
+
+        $this->assertNull($log->fresh()->submitted_date);
+        $this->assertNull(PostAdoptionCaptureChallenge::findOrFail($payload['capture_challenge_id'])->consumed_at);
+        $this->assertSame([], Storage::disk('local')->allFiles());
     }
 
     public function test_invalid_container_is_rejected_without_consuming_challenge_or_storing_media(): void

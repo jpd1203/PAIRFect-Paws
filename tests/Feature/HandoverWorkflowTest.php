@@ -7,6 +7,7 @@ use App\Enums\AvailabilityStatus;
 use App\Enums\Role;
 use App\Models\AdoptionApplication;
 use App\Models\Handover;
+use App\Models\AuditLog;
 use App\Models\HandoverNotification;
 use App\Models\Pet;
 use App\Models\PostAdoptionLog;
@@ -15,6 +16,8 @@ use App\Mail\TransactionalMail;
 use App\Services\HandoverService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class HandoverWorkflowTest extends TestCase
@@ -93,21 +96,103 @@ class HandoverWorkflowTest extends TestCase
     public function test_confirmation_uses_the_current_post_adoption_logs_instead_of_the_removed_checkin_model(): void
     {
         Mail::fake();
+        Storage::fake('local');
         $adopter = $this->adopter('owner@example.test');
         $application = $this->approvedApplication($adopter);
         $handover = $this->handoverFor($application);
+        $handover->update(['released_at' => now()]);
 
         $this->assertSame(0, PostAdoptionLog::where('application_id', $application->id)->count());
 
         $this->actingAs($adopter)
             ->from(route('adopter.confirm', $handover))
-            ->post(route('adopter.confirm.submit', $handover), ['outcome' => 'received'])
+            ->post(route('adopter.confirm.submit', $handover), [
+                'outcome' => 'received', 'receipt_proof' => UploadedFile::fake()->image('receipt.jpg'),
+            ])
             ->assertRedirect(route('adopter.confirm', $handover));
 
         $this->assertSame('received', $handover->fresh()->adopter_outcome);
+        $this->assertSame(1, $adopter->inAppNotifications()->where('kind', 'completed')->count());
+        $this->assertNotNull($handover->fresh()->received_at);
+        Storage::disk('local')->assertExists($handover->fresh()->receipt_proof_path);
+        $this->assertSame(
+            hash('sha256', Storage::disk('local')->get($handover->fresh()->receipt_proof_path)),
+            $handover->fresh()->receipt_proof_hash
+        );
+        $this->assertSame(1, AuditLog::where('entity_name', 'Handover')->where('entity_id', $handover->id)->where('action', 'handover.received')->count());
         $this->assertCount(3, PostAdoptionLog::where('application_id', $application->id)->get());
         Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool =>
             $mail->hasTo($adopter->email) && str_starts_with($mail->subjectLine, 'Welcome home,'));
+    }
+
+    public function test_receipt_requires_release_and_a_valid_photo_and_can_only_be_confirmed_once(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        $adopter = $this->adopter('receipt-owner@example.test');
+        $handover = $this->handoverFor($this->approvedApplication($adopter));
+        $url = route('adopter.confirm.submit', $handover);
+
+        $this->actingAs($adopter)->post($url, [
+            'outcome' => 'received', 'receipt_proof' => UploadedFile::fake()->image('early.jpg'),
+        ])->assertSessionHasErrors('outcome');
+        $this->assertNull($handover->fresh()->adopter_outcome);
+        $this->assertSame([], Storage::disk('local')->allFiles());
+
+        $handover->update(['released_at' => now()]);
+        $this->post($url, ['outcome' => 'received'])->assertSessionHasErrors('receipt_proof');
+        $this->post($url, ['outcome' => 'received', 'receipt_proof' => UploadedFile::fake()->create('not-image.php', 1, 'application/x-php')])
+            ->assertSessionHasErrors('receipt_proof');
+        $this->post($url, ['outcome' => 'received', 'receipt_proof' => UploadedFile::fake()->image('too-big.jpg')->size(5121)])
+            ->assertSessionHasErrors('receipt_proof');
+        $this->assertNull($handover->fresh()->adopter_outcome);
+
+        $this->post($url, ['outcome' => 'received', 'receipt_proof' => UploadedFile::fake()->image('valid.png')])
+            ->assertSessionHas('toast.type', 'success');
+        $firstPath = $handover->fresh()->receipt_proof_path;
+        $this->post($url, ['outcome' => 'received', 'receipt_proof' => UploadedFile::fake()->image('second.png')])
+            ->assertSessionHasErrors('outcome');
+        $this->assertSame($firstPath, $handover->fresh()->receipt_proof_path);
+        $this->assertCount(1, Storage::disk('local')->allFiles());
+        $this->assertSame(1, HandoverNotification::where('handover_id', $handover->id)->where('kind', 'completed')->count());
+        $this->assertSame(1, AuditLog::where('entity_name', 'Handover')->where('entity_id', $handover->id)->where('action', 'handover.received')->count());
+    }
+
+    public function test_receipt_proof_is_private_to_the_owner_and_verified_staff(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        $owner = $this->adopter('proof-owner@example.test');
+        $other = $this->adopter('proof-other@example.test');
+        $staff = $this->staff('proof-staff@example.test');
+        $admin = User::create([
+            'first_name' => 'Proof', 'last_name' => 'Admin', 'email' => 'proof-admin@example.test',
+            'password' => bcrypt('password'), 'role' => Role::Administrator->value,
+            'email_verified_at' => now(), 'is_active' => true,
+        ]);
+        $handover = $this->handoverFor($this->approvedApplication($owner));
+        $handover->update(['released_at' => now()]);
+        $this->post(route('adopter.confirm.submit', $handover), [
+            'outcome' => 'received', 'receipt_proof' => UploadedFile::fake()->image('receipt.png'),
+        ])->assertRedirect(); // Guest cannot submit.
+        $this->assertNull($handover->fresh()->adopter_outcome);
+
+        $this->actingAs($other)->post(route('adopter.confirm.submit', $handover), [
+            'outcome' => 'received', 'receipt_proof' => UploadedFile::fake()->image('wrong-owner.png'),
+        ])->assertForbidden();
+        $this->assertNull($handover->fresh()->adopter_outcome);
+
+        $this->actingAs($owner)->post(route('adopter.confirm.submit', $handover), [
+            'outcome' => 'received', 'receipt_proof' => UploadedFile::fake()->image('receipt.png'),
+        ])->assertSessionHas('toast.type', 'success');
+
+        $proofUrl = route('handover.receipt-proof', $handover);
+        $this->actingAs($owner)->get($proofUrl)->assertOk();
+        $this->actingAs($other)->get($proofUrl)->assertForbidden();
+        $this->actingAs($staff)->get($proofUrl)->assertOk();
+        $this->actingAs($admin)->get($proofUrl)->assertOk();
+        $this->actingAs($admin)->get(route('admin.handover.show', $handover))
+            ->assertOk()->assertSee('View adopter Proof of Receipt photo');
     }
 
     public function test_staff_can_mark_handover_released_with_the_selected_active_staff_member(): void

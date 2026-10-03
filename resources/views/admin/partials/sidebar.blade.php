@@ -123,11 +123,13 @@
                 </a>
             @endif
 
-            <a href="{{ route('admin.audit-logs.index') }}" class="menu-item {{ $isActive('admin.audit-logs.index') ? 'active' : '' }}">
-                <i class="fa-solid fa-clipboard-list fa-lg"></i> Audit Logs
-            </a>
+            @if($staff?->isAdmin())
+                <a href="{{ route('admin.audit-logs.index') }}" class="menu-item {{ $isActive('admin.audit-logs.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-clipboard-list fa-lg"></i> Audit Logs
+                </a>
+            @endif
 
-            @if (config('post_adoption.time_travel.enabled'))
+            @if (app(\App\Services\PostAdoptionClock::class)->enabled())
                 <a href="{{ route('time-travel.index') }}" class="menu-item {{ $isActive('time-travel.*') ? 'active' : '' }}">
                     <i class="fa-solid fa-clock-rotate-left fa-lg"></i> Test Time Travel
                     @if (app(\App\Services\PostAdoptionClock::class)->isActive())

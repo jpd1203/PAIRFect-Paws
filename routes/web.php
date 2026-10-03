@@ -109,7 +109,7 @@ Route::middleware('auth')->group(function () {
 
     // Account settings
     Route::get('/account/settings', [AccountController::class, 'show'])->name('account.settings');
-    Route::patch('/account/profile', fn () => back()->with('success', 'Profile updated.'))
+    Route::patch('/account/profile', [AccountController::class, 'updateProfile'])
         ->middleware('verified')
         ->name('account.profile.update');
     Route::patch('/account/password', [AccountController::class, 'updatePassword'])
@@ -261,8 +261,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/monitoring/{log}/flag', [Admin\MonitoringController::class, 'flag'])->name('monitoring.flag');
 
         // Audit Logs
-        Route::get('/audit-logs', [Admin\AuditLogController::class, 'index'])->name('audit-logs.index');
-        Route::get('/audit-logs/export', [Admin\AuditLogController::class, 'export'])->name('audit-logs.export');
+        Route::get('/audit-logs', [Admin\AuditLogController::class, 'index'])->middleware('admin')->name('audit-logs.index');
+        Route::get('/audit-logs/export', [Admin\AuditLogController::class, 'export'])->middleware('admin')->name('audit-logs.export');
 
         // ─── Admin-only routes ────────────────────────────────────────────────
         Route::middleware('admin')->group(function () {
@@ -291,4 +291,15 @@ Route::middleware(['auth', 'adopter', 'verified'])->group(function () {
     Route::get('/adopter/{handover}/notifications', [HandoverConfirmationController::class, 'notificationsView'])->name('adopter.handover.notifications');
     Route::post('/adopter/notifications/{notification}/read', [HandoverConfirmationController::class, 'markRead'])->name('adopter.handover.notification.read');
     Route::post('/adopter/{handover}/notifications/read-all', [HandoverConfirmationController::class, 'markAllRead'])->name('adopter.handover.notifications.read-all');
+});
+
+Route::get('/handover/{handover}/receipt-proof', [HandoverConfirmationController::class, 'receiptProof'])
+    ->middleware(['auth', 'verified'])
+    ->name('handover.receipt-proof');
+
+Route::middleware('auth')->prefix('notifications')->name('notifications.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\InAppNotificationController::class, 'index'])->name('index');
+    Route::get('/{notification}/open', [\App\Http\Controllers\InAppNotificationController::class, 'open'])->name('open');
+    Route::post('/{notification}/read', [\App\Http\Controllers\InAppNotificationController::class, 'markRead'])->name('read');
+    Route::post('/read-all', [\App\Http\Controllers\InAppNotificationController::class, 'markAllRead'])->name('read-all');
 });

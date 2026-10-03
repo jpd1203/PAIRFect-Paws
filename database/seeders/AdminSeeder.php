@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use RuntimeException;
 
 class AdminSeeder extends Seeder
 {
@@ -11,6 +12,10 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
+        if (app()->isProduction()) {
+            throw new RuntimeException('The sample administrator cannot be seeded in production.');
+        }
+
         $admin = \App\Models\User::firstOrCreate(
             ['email' => 'admin@pairfectpaws.com'],
             [

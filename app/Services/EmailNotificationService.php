@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Mail;
 
 class EmailNotificationService
 {
+    public function __construct(private readonly InAppNotificationService $inApp) {}
+
     /**
      * @param  list<string>  $lines
      */
@@ -23,6 +25,18 @@ class EmailNotificationService
         string $event = 'transactional_email',
         ?int $entityId = null,
     ): void {
+        if ($user && ! str_starts_with($event, 'handover_') && in_array($event, [
+            'application_received', 'document_verified_adopter', 'document_followup_manual_review_adopter',
+            'document_replacement_required', 'interview_assignment_staff', 'interview_reschedule_declined',
+            'application_queue_closed',
+        ], true)) {
+            $this->inApp->user(
+                $user, $event, $heading, $lines[0] ?? $heading, $actionUrl ?? route('notifications.index'),
+                "{$event}:{$entityId}:".hash('sha256', implode('|', $lines)),
+                'AdoptionApplication', $entityId,
+            );
+        }
+
         if (! $user?->email || ! $user->hasVerifiedEmail()) {
             return;
         }
@@ -66,6 +80,25 @@ class EmailNotificationService
         $alertAddress = strtolower(trim((string) config('mail.staff_alert_address')));
         if (filter_var($alertAddress, FILTER_VALIDATE_EMAIL) && ! $recipients->has($alertAddress)) {
             $recipients->put($alertAddress, $alertAddress);
+        }
+
+        if (in_array($event, [
+            'application_received_staff', 'document_verified_staff', 'document_followup_manual_review_staff',
+            'document_manual_review_staff', 'welfare_report_staff_alert', 'manual_welfare_flag_staff_alert',
+            'missed_checkin_staff_alert', 'missed_checkin_backstop_alert', 'checkin_reminder_delivery_blocked',
+            'reservation_queue_staff', 'handover_issue_staff', 'interview_reschedule_requested',
+        ], true)) {
+            $this->inApp->administrators(
+                $event, $heading, $lines[0] ?? $heading, $actionUrl ?? route('notifications.index'),
+                "{$event}:{$entityId}:".($entityId === null ? now('Asia/Manila')->toDateString().':' : '')
+                    .hash('sha256', implode('|', $lines)),
+                $entityId ? match (true) {
+                    str_starts_with($event, 'handover_') => 'Handover',
+                    str_contains($event, 'checkin'), str_contains($event, 'welfare') => 'PostAdoptionLog',
+                    default => 'AdoptionApplication',
+                } : null,
+                $entityId,
+            );
         }
 
         $recipients->each(function (User|string $recipient) use (

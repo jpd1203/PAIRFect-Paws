@@ -31,6 +31,7 @@
                         <div class="settings-field">
                             <label for="full_name">Full Name</label>
                             <input id="full_name" name="full_name" type="text" value="{{ old('full_name', $user->full_name) }}">
+                            @error('full_name') <p class="field-error">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="settings-field">
@@ -40,21 +41,13 @@
 
                         @if (!$user->isStaff())
                             <div class="settings-field">
-                                <label for="phone_number">Phone Number 
-                                    @if($user->phone_number)
-                                        <span class="field-hint" id="phone_hint">(<a href="#" style="color:var(--primary);text-decoration:underline;" onclick="event.preventDefault(); document.getElementById('phone_number').removeAttribute('disabled'); document.getElementById('phone_hint').style.display='none'; document.getElementById('phone_number').focus();">change</a>)</span>
-                                    @endif
-                                </label>
-                                <input id="phone_number" name="phone_number" type="text" value="{{ old('phone_number', $user->phone_number) }}" {{ $user->phone_number ? 'disabled' : '' }}>
+                                <label for="phone_number">Phone Number</label>
+                                <input id="phone_number" name="phone_number" type="text" value="{{ old('phone_number', $user->phone_number) }}">
+                                @error('phone_number') <p class="field-error">{{ $message }}</p> @enderror
                             </div>
 
                             <div class="settings-field full-width">
-                                <label for="address">Address 
-                                    @if($user->address)
-                                        <span class="field-hint" id="address_hint">(<a href="#" style="color:var(--primary);text-decoration:underline;" onclick="event.preventDefault(); document.getElementById('address').removeAttribute('disabled'); document.getElementById('address_hint').style.display='none'; document.getElementById('address').focus();">change</a>)</span>
-                                    @endif
-                                </label>
-                                <input id="address" name="address" type="text" value="{{ old('address', $user->address) }}" {{ $user->address ? 'disabled' : '' }}>
+                                <x-philippine-address-fields :address="$user->address_components" id-prefix="settings_address" />
                             </div>
                         @endif
 

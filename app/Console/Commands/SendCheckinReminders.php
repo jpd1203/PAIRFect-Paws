@@ -2,11 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\ApplicationStatus;
 use App\Jobs\SendCheckInReminder;
 use App\Models\PostAdoptionLog;
 use App\Services\EmailNotificationService;
 use App\Services\FlagEvaluationService;
 use App\Services\PostAdoptionScheduleService;
+use App\Services\InAppNotificationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +24,7 @@ class SendCheckinReminders extends Command
         PostAdoptionScheduleService $scheduleService,
         FlagEvaluationService $flagService,
         EmailNotificationService $notifications,
+        InAppNotificationService $inApp,
     ): int {
         $now = CarbonImmutable::now(PostAdoptionScheduleService::TIMEZONE);
         $today = $now->toDateString();
@@ -29,6 +32,25 @@ class SendCheckinReminders extends Command
 
         $created = $scheduleService->ensureForApprovedApplications();
         $this->info("Created {$created} missing check-in(s).");
+
+        PostAdoptionLog::query()->with(['adoptionApplication.user', 'adoptionApplication.pet'])
+            ->whereHas('adoptionApplication', fn ($query) => $query->where('status', ApplicationStatus::Approved->value))
+            ->whereNull('submitted_date')->whereDate('scheduled_date', '<=', $today)
+            ->orderBy('id')->chunkById(100, function ($logs) use ($inApp, $today): void {
+                foreach ($logs as $log) {
+                    $adopter = $log->adoptionApplication?->user;
+                    $petName = $log->adoptionApplication?->pet?->name ?? 'your pet';
+                    $overdue = $log->scheduled_date->toDateString() < $today;
+                    $kind = $overdue ? 'checkin_overdue' : 'checkin_due';
+                    $inApp->user(
+                        $adopter, $kind,
+                        $overdue ? 'Post-adoption check-in overdue' : 'Post-adoption check-in due',
+                        "A post-adoption check-in for {$petName} ".($overdue ? 'is overdue' : 'is due')
+                            .' ('.$log->scheduled_date->format('M j, Y').').',
+                        route('monitoring.my-checkins'), "{$kind}:{$log->id}", 'PostAdoptionLog', $log->id,
+                    );
+                }
+            });
 
         $backstopFlags = $flagService->flagMissedSubmissions();
         if ($backstopFlags > 0) {

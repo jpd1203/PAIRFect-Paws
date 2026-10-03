@@ -14,7 +14,8 @@ final class PostAdoptionClock
 
     public function enabled(): bool
     {
-        return (bool) config('post_adoption.time_travel.enabled', false);
+        return app()->environment(['local', 'testing'])
+            && (bool) config('post_adoption.time_travel.enabled', false);
     }
 
     public function now(): CarbonImmutable

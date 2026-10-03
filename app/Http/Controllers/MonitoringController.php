@@ -7,6 +7,7 @@ use App\Mail\WelfareReportReceiptMail;
 use App\Models\PostAdoptionLog;
 use App\Services\AuditLogService;
 use App\Services\EmailNotificationService;
+use App\Services\InAppNotificationService;
 use App\Services\FlagEvaluationService;
 use App\Services\PostAdoptionCaptureChallengeService;
 use App\Services\PostAdoptionClock;
@@ -63,6 +64,7 @@ class MonitoringController extends Controller
         private readonly PostAdoptionCaptureChallengeService $captureChallenges,
         private readonly EmailNotificationService $emailNotifications,
         private readonly VideoDurationProbe $videoDurationProbe,
+        private readonly InAppNotificationService $inApp,
     ) {}
 
     public function myCheckins(Request $request): View
@@ -303,6 +305,20 @@ class MonitoringController extends Controller
 
         $durationInspection = $this->videoDurationProbe->inspect($temporaryPath, $videoMimeType);
 
+        if ($durationInspection['status'] === 'probe_unavailable') {
+            Log::error('Post-adoption video submission blocked: ffprobe is unavailable.', [
+                'post_adoption_log_id' => $log->id,
+            ]);
+
+            $message = 'Video verification is temporarily unavailable. Please try again later or contact the shelter.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 503);
+            }
+
+            return back()->withInput()->withErrors(['video' => $message]);
+        }
+
         if (in_array($durationInspection['status'], ['invalid_container', 'invalid_video_stream', 'invalid_duration'], true)) {
             throw ValidationException::withMessages([
                 'video' => 'The recording could not be verified as a valid live camera video. Please record it again.',
@@ -311,9 +327,18 @@ class MonitoringController extends Controller
 
         $verifiedDurationMs = $durationInspection['duration_ms'];
 
+        if ($verifiedDurationMs === null) {
+            Log::error('Post-adoption video probe returned no verified duration.', [
+                'post_adoption_log_id' => $log->id,
+            ]);
+
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Video verification is temporarily unavailable.'], 503)
+                : back()->withInput()->withErrors(['video' => 'Video verification is temporarily unavailable.']);
+        }
+
         if (
-            $verifiedDurationMs !== null
-            && ($verifiedDurationMs < $minimumDurationMs || $verifiedDurationMs > $maximumDurationMs)
+            $verifiedDurationMs < $minimumDurationMs || $verifiedDurationMs > $maximumDurationMs
         ) {
             throw ValidationException::withMessages([
                 'video' => 'The live camera video must be approximately three seconds long.',
@@ -321,7 +346,7 @@ class MonitoringController extends Controller
         }
 
         $declaredDurationMs = (int) $validated['recording_duration_ms'];
-        $storedDurationMs = $verifiedDurationMs ?? $declaredDurationMs;
+        $storedDurationMs = $verifiedDurationMs;
         $videoSha256 = hash_file('sha256', $temporaryPath);
 
         if (! is_string($videoSha256)) {
@@ -464,6 +489,12 @@ class MonitoringController extends Controller
         /** @var PostAdoptionLog $log */
         $log = $result['log'];
         $newFlagReasons = $result['new_flag_reasons'];
+
+        $this->inApp->user(
+            $request->user(), 'welfare_report_received', 'Post-adoption report received',
+            'Your post-adoption check-in report has been received.',
+            route('monitoring.my-checkins'), "welfare_report_received:{$log->id}", 'PostAdoptionLog', $log->id,
+        );
 
         try {
             Mail::to($request->user())->queue(new WelfareReportReceiptMail($log));

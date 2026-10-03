@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Role;
 use App\Models\User;
+use App\Services\InAppNotificationService;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,12 @@ class EmailVerificationController extends Controller
 
         if (! $user->hasVerifiedEmail() && $user->markEmailAsVerified()) {
             event(new Verified($user));
+            app(InAppNotificationService::class)->user(
+                $user, 'account_verified', 'Email address verified',
+                'Your email address has been verified. You can now use the features available to your account.',
+                $user->isStaff() ? route('admin.dashboard') : route('animal.index'),
+                "account_verified:{$user->id}", 'User', $user->id,
+            );
         }
 
         if (! $request->user()) {

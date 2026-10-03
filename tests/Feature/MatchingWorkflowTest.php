@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\DocumentVerificationStatus;
 use App\Enums\Role;
 use App\Models\AdoptionApplication;
+use App\Models\User;
 use App\Services\DocumentVerificationService;
 use App\Services\KnnRecommendationService;
 use App\Services\Matching\ApplicantRankingService;
@@ -49,6 +50,11 @@ class MatchingWorkflowTest extends TestCase
         Storage::fake('local');
         $profile = $this->matchingAdopter();
         $pet = $this->matchingPet();
+        $admin = User::create([
+            'first_name' => 'Intake', 'last_name' => 'Admin', 'email' => 'intake-admin@example.test',
+            'password' => 'password123', 'role' => Role::Administrator->value,
+            'is_active' => true, 'email_verified_at' => now(),
+        ]);
         $verifier = \Mockery::mock(DocumentVerificationService::class);
         $verifier->shouldReceive('verify')->once()->andReturn(new DocumentVerificationResult(
             DocumentVerificationStatus::Verified, 'TEST ADOPTER ID', null, 1.0, [], 'Government ID',
@@ -58,6 +64,8 @@ class MatchingWorkflowTest extends TestCase
         $this->actingAs($profile->user)->post(route('application.submit'), $this->applicationPayload($profile->user, $pet))
             ->assertRedirect(route('application.index'));
         $application = AdoptionApplication::sole();
+        $this->assertSame(1, $profile->user->inAppNotifications()->where('kind', 'application_received')->count());
+        $this->assertSame(1, $admin->inAppNotifications()->where('kind', 'application_received_staff')->count());
         $recommendation = app(KnnRecommendationService::class)->recommendPets($profile);
         $this->assertSame(100.0, $recommendation->first()['match']->compatibilityScore);
         $this->assertSame(100.0, $application->knn_score);

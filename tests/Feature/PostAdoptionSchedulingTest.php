@@ -213,6 +213,7 @@ class PostAdoptionSchedulingTest extends TestCase
         $this->artisan('checkins:send-reminders')->assertSuccessful();
 
         Mail::assertSent(CheckInReminderMail::class, 1);
+        $this->assertSame(1, $application->user->inAppNotifications()->where('kind', 'checkin_due')->count());
         $this->assertSame(1, $log->refresh()->reminders_sent);
         $this->assertFalse($log->is_flagged);
         $this->assertNotNull($log->last_reminder_sent_at);
@@ -221,6 +222,7 @@ class PostAdoptionSchedulingTest extends TestCase
         $this->artisan('checkins:send-reminders')->assertSuccessful();
 
         Mail::assertSent(CheckInReminderMail::class, 2);
+        $this->assertSame(1, $application->user->inAppNotifications()->where('kind', 'checkin_overdue')->count());
         $this->assertSame(2, $log->refresh()->reminders_sent);
         $this->assertTrue($log->is_flagged);
         $this->assertSame('missed_check_in', $log->flag_reasons[0]['code']);

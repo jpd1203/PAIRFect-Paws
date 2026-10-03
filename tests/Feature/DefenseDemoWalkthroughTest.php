@@ -24,6 +24,31 @@ final class DefenseDemoWalkthroughTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_application_list_filters_and_csv_export_use_the_same_selection(): void
+    {
+        $this->seed(DefenseDemoSeeder::class);
+
+        $admin = User::where('email', 'evelyn.cruz@defense.pairfectpaws.test')->firstOrFail();
+        $approved = AdoptionApplication::where('status', ApplicationStatus::Approved->value)->firstOrFail();
+        $pending = AdoptionApplication::where('status', ApplicationStatus::Pending->value)->firstOrFail();
+        $date = $approved->created_at->setTimezone('Asia/Manila')->toDateString();
+        $filters = ['status' => ApplicationStatus::Approved->value, 'from' => $date, 'to' => $date];
+
+        $page = $this->actingAs($admin)->get(route('admin.applications.index', $filters))->assertOk();
+        $page->assertSee('id="application-row-'.$approved->id.'"', false)
+            ->assertDontSee('id="application-row-'.$pending->id.'"', false)
+            ->assertSee('value="'.$date.'"', false)
+            ->assertSee('value="Approved" selected', false);
+
+        $csv = $this->actingAs($admin)->get(route('admin.applications.export', $filters))->assertOk()->assertDownload();
+        $this->assertStringContainsString($approved->pet->name, $csv->streamedContent());
+        $this->assertStringNotContainsString($pending->pet->name, $csv->streamedContent());
+
+        $this->actingAs($admin)->get(route('admin.applications.index', [
+            'from' => '2026-10-03', 'to' => '2026-10-02',
+        ]))->assertSessionHasErrors('to');
+    }
+
     public function test_fictional_demo_snapshot_and_staff_export_are_consistent(): void
     {
         $this->seed(DefenseDemoSeeder::class);

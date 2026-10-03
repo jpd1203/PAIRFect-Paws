@@ -146,6 +146,12 @@
                             @endif
 
                             @if ($isReceived)
+                                <p class="mt-3 text-sm text-status-success-text">
+                                    Received {{ \App\Support\ManilaTime::format($record->received_at ?? $record->adopter_confirmed_at, 'M j, Y g:i A') }}.
+                                    @if ($record->receipt_proof_path)
+                                        <a href="{{ route('handover.receipt-proof', $record) }}" target="_blank" rel="noopener" class="underline">View your supporting photo</a>
+                                    @endif
+                                </p>
                                 <div class="mt-4">
                                     <a href="{{ route('monitoring.index') }}" class="btn btn-primary">
                                         Go to My Check-ins &rarr;
@@ -155,9 +161,9 @@
                         </div>
                     </div>
                 </div>
-            @else
+            @elseif ($record->released_at)
                 <section class="rounded-card border border-[#e2ddd7] bg-white p-6 shadow-card">
-                    <form method="POST" action="{{ route('adopter.confirm.submit', $record) }}">
+                    <form method="POST" action="{{ route('adopter.confirm.submit', $record) }}" enctype="multipart/form-data">
                         @csrf
 
                         <div class="mb-5">
@@ -167,6 +173,20 @@
                             <p class="text-sm text-text-muted m-0 leading-relaxed">
                                 Once you confirm receipt, your adoption is finalized and post-adoption check-ins will activate.
                             </p>
+                        </div>
+
+                        @if ($errors->any())
+                            <div class="mb-4 rounded-lg border border-status-danger-text/30 bg-status-danger-bg p-3 text-sm text-status-danger-text">
+                                {{ $errors->first() }}
+                            </div>
+                        @endif
+
+                        <div class="form-group mb-5">
+                            <label for="receiptProof" class="form-label">Proof of Receipt photo</label>
+                            <p class="text-sm text-text-muted mb-2">Upload a photo showing that you have received the adopted pet. This image will be stored as supporting documentation for the handover.</p>
+                            <input id="receiptProof" type="file" name="receipt_proof" accept="image/jpeg,image/png,image/webp" class="form-control" aria-describedby="receiptProofHelp">
+                            <p id="receiptProofHelp" class="text-xs text-text-muted mt-1">JPEG, PNG, or WebP; maximum 5 MB. Required when confirming receipt.</p>
+                            <img id="receiptProofPreview" class="hidden mt-3 h-32 w-32 rounded-xl object-cover border border-[#e2ddd7]" alt="Selected receipt photo preview">
                         </div>
 
                         <div class="form-group mb-6">
@@ -191,6 +211,8 @@
                         </div>
                     </form>
                 </section>
+            @else
+                <div class="rounded-card border border-[#e2ddd7] bg-white p-6 text-sm text-text-muted">Receipt confirmation becomes available after staff mark the pet as released.</div>
             @endif
 
         </div>
@@ -198,3 +220,17 @@
     </div>
 
 @endsection
+
+@push('scripts')
+<script>
+    document.getElementById('receiptProof')?.addEventListener('change', function () {
+        const preview = document.getElementById('receiptProofPreview');
+        const file = this.files?.[0];
+        if (!file) { preview?.classList.add('hidden'); return; }
+        const url = URL.createObjectURL(file);
+        preview.src = url;
+        preview.classList.remove('hidden');
+        preview.onload = () => URL.revokeObjectURL(url);
+    });
+</script>
+@endpush

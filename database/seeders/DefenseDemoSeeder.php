@@ -31,6 +31,10 @@ final class DefenseDemoSeeder extends Seeder
 
     public function run(): void
     {
+        if (app()->isProduction()) {
+            throw new RuntimeException('Defense demo data cannot be seeded in production.');
+        }
+
         if (! app()->environment(['local', 'testing'])) {
             throw new RuntimeException('Defense demo data may only be seeded in local or testing environments.');
         }

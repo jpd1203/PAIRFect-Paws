@@ -171,16 +171,25 @@ function initModalBackdrops() {
 }
 
 /** Generic live-search: [data-search-input] filters [data-search-row] by their [data-search-text]. */
+function applyRowFilters(scope) {
+    if (!scope) return;
+    const term = [...document.querySelectorAll('[data-search-input]')]
+        .find((input) => (input.dataset.searchScope || '') === scope.id)?.value.trim().toLowerCase() || '';
+    const bar = [...document.querySelectorAll('[data-filter-bar]')]
+        .find((candidate) => (candidate.dataset.filterScope || '') === scope.id);
+    const status = bar?.querySelector('[data-filter-btn].active')?.dataset.filterBtn || 'all';
+
+    scope.querySelectorAll('[data-filter-row]').forEach((row) => {
+        const text = (row.dataset.searchText || row.textContent).toLowerCase();
+        const statuses = (row.dataset.status || '').split(' ');
+        row.style.display = text.includes(term) && (status === 'all' || statuses.includes(status)) ? '' : 'none';
+    });
+}
+
 function initSearch() {
     document.querySelectorAll('[data-search-input]').forEach((input) => {
         const scope = input.dataset.searchScope ? document.getElementById(input.dataset.searchScope) : document;
-        input.addEventListener('input', () => {
-            const term = input.value.trim().toLowerCase();
-            scope.querySelectorAll('[data-search-row]').forEach((row) => {
-                const text = (row.dataset.searchText || row.textContent).toLowerCase();
-                row.style.display = text.includes(term) ? '' : 'none';
-            });
-        });
+        input.addEventListener('input', () => applyRowFilters(scope));
     });
 }
 
@@ -195,11 +204,7 @@ function initFilterButtons() {
                 bar.querySelectorAll('[data-filter-btn]').forEach((b) => b.classList.remove('active'));
                 btn.classList.add('active');
 
-                const filter = btn.dataset.filterBtn;
-                scope.querySelectorAll('[data-filter-row]').forEach((row) => {
-                    const statuses = (row.dataset.status || '').split(' ');
-                    row.style.display = (filter === 'all' || statuses.includes(filter)) ? '' : 'none';
-                });
+                applyRowFilters(scope);
             });
         });
     });

@@ -29,6 +29,7 @@ class ReservationQueueService
         private readonly EmailNotificationService $emailNotifications,
         private readonly HandoverService $handovers,
         private readonly ApplicantRankingService $ranking,
+        private readonly InAppNotificationService $inApp,
     ) {}
 
     public function schedule(
@@ -136,6 +137,14 @@ class ReservationQueueService
 
         $application->refresh()->loadMissing(['user', 'pet']);
         $this->sendStatusEmail($application, $result['event'], $result['previous_interview_date']);
+        $this->inApp->administrators(
+            $result['event'],
+            $result['event'] === 'interview_rescheduled' ? 'Interview schedule changed' : 'Interview scheduled',
+            "An interview for application #{$application->id} is scheduled for ".ManilaTime::format($scheduledAt, 'M j, Y g:i A').' (Asia/Manila).',
+            route('admin.applications.index', ['highlight' => $application->id]),
+            "staff:{$result['event']}:{$application->id}:".$scheduledAt->format('Y-m-d H:i:s'),
+            'AdoptionApplication', $application->id,
+        );
         $this->emailNotifications->user(
             $interviewer,
             $result['event'] === 'interview_rescheduled'
@@ -598,7 +607,24 @@ class ReservationQueueService
         string $event = 'status_updated',
         ?string $previousInterviewDate = null,
     ): void {
-        $application->loadMissing('user');
+        $application->loadMissing(['user', 'pet']);
+        $petName = $application->pet?->name ?? 'your pet';
+        $message = match ($event) {
+            'interview_scheduled' => "Your interview for {$petName} has been scheduled for ".ManilaTime::format($application->interview_date, 'M j, Y g:i A').' (Asia/Manila).',
+            'interview_rescheduled' => "Your interview schedule for {$petName} has been changed to ".ManilaTime::format($application->interview_date, 'M j, Y g:i A').' (Asia/Manila).',
+            'application_approved' => "Your adoption application for {$petName} has been approved.",
+            'application_rejected' => "Your adoption application for {$petName} has been updated. View its status for details.",
+            'application_waitlisted', 'queue_promoted' => "Your adoption application for {$petName} has progressed to another stage.",
+            default => "Your adoption application for {$petName} is now {$application->status_display}.",
+        };
+        $this->inApp->user(
+            $application->user, $event,
+            $event === 'interview_rescheduled' ? 'Interview schedule changed' : 'Application update',
+            $message, route('application.index'),
+            "application:{$application->id}:{$event}:{$application->status->value}:"
+                .($application->interview_date?->format('Y-m-d H:i:s') ?? $application->queue_promoted_at?->format('Y-m-d H:i:s') ?? ''),
+            'AdoptionApplication', $application->id,
+        );
         if (! $application->user?->hasVerifiedEmail()) {
             return;
         }

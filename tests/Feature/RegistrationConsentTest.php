@@ -41,7 +41,7 @@ class RegistrationConsentTest extends TestCase
         $this->get(route('legal.privacy'))
             ->assertOk()
             ->assertSee('10. Consent')
-            ->assertSee('[INSERT OFFICIAL PRIVACY CONTACT / EMAIL]');
+            ->assertDontSee('[INSERT OFFICIAL PRIVACY CONTACT / EMAIL]');
     }
 
     public function test_registration_rejects_each_missing_or_false_consent_without_creating_an_account(): void

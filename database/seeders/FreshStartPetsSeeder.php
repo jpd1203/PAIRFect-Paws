@@ -14,6 +14,10 @@ final class FreshStartPetsSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->isProduction()) {
+            throw new RuntimeException('Synthetic pet records cannot be seeded in production.');
+        }
+
         if (Pet::withoutGlobalScope('notArchived')->exists()) {
             throw new RuntimeException('Fresh-start pet seeding requires an empty pets table.');
         }

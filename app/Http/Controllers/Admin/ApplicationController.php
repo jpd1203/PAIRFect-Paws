@@ -18,6 +18,7 @@ use App\Services\EmailNotificationService;
 use App\Services\ReservationQueueService;
 use App\Services\Matching\ApplicantRankingService;
 use App\Support\ManilaTime;
+use App\Support\ApplicationListFilters;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -40,10 +41,11 @@ class ApplicationController extends Controller
     /**
      * GET /admin/applications — list all applications with applicant/pet details
      */
-    public function index()
+    public function index(Request $request)
     {
+        $filters = ApplicationListFilters::validate($request);
         // Start newest-first so pet groups and applications within each group retain recency order.
-        $applications = AdoptionApplication::with(['user', 'pet'])
+        $applications = ApplicationListFilters::apply(AdoptionApplication::with(['user', 'pet']), $filters)
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();
@@ -72,7 +74,7 @@ class ApplicationController extends Controller
             ->orderBy('last_name')
             ->get();
 
-        return view('admin.application.index', compact('applications', 'volunteers', 'historySummaries'));
+        return view('admin.application.index', compact('applications', 'volunteers', 'historySummaries', 'filters'));
     }
 
     /**

@@ -48,6 +48,9 @@
                             &ldquo;{{ $record->adopter_note }}&rdquo;
                         </p>
                     @endif
+                    @if ($isReceived && $record->receipt_proof_path)
+                        <a href="{{ route('handover.receipt-proof', $record) }}" target="_blank" rel="noopener" class="inline-block mt-2 text-xs font-semibold text-primary underline">View adopter Proof of Receipt photo</a>
+                    @endif
                 @else
                     <p class="mt-1 text-xs text-text-muted m-0">
                         Confirmation request sent to {{ $record->adopter_phone }} and {{ $record->adopter_email }}.

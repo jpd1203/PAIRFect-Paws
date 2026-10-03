@@ -19,11 +19,16 @@ use App\Models\PostAdoptionLog;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 class AdopterDummyDataSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->isProduction()) {
+            throw new RuntimeException('Adopter dummy data cannot be seeded in production.');
+        }
+
         $branch = Branch::first() ?? Branch::create([
             'name' => 'Main Shelter',
             'address' => '123 Shelter Street, Quezon City',

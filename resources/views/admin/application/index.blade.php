@@ -53,18 +53,20 @@
         <button type="button" class="btn btn-primary" onclick="openTopScheduleModal()"><i class="fa-solid fa-calendar-check"></i>Schedule Interview</button>
     </div>
 
-    <form action="{{ route('admin.applications.export') }}" method="GET" class="flex flex-wrap items-end gap-3 mb-5" aria-label="Export adoption applications report">
-        <label class="text-sm">From <input type="date" name="from" class="form-control" aria-label="Report start date"></label>
-        <label class="text-sm">To <input type="date" name="to" class="form-control" aria-label="Report end date"></label>
+    <form action="{{ route('admin.applications.index') }}" method="GET" class="flex flex-wrap items-end gap-3 mb-5" aria-label="Filter adoption applications">
+        <label class="text-sm">From <input type="date" name="from" value="{{ $filters['from'] ?? '' }}" class="form-control" aria-label="Application start date"></label>
+        <label class="text-sm">To <input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="form-control" aria-label="Application end date"></label>
         <label class="text-sm">Status
             <select name="status" class="form-select" aria-label="Report application status">
                 <option value="">All statuses</option>
                 @foreach (\App\Enums\ApplicationStatus::cases() as $reportStatus)
-                    <option value="{{ $reportStatus->value }}">{{ str($reportStatus->value)->headline() }}</option>
+                    <option value="{{ $reportStatus->value }}" @selected(($filters['status'] ?? '') === $reportStatus->value)>{{ str($reportStatus->value)->headline() }}</option>
                 @endforeach
             </select>
         </label>
-        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-download"></i> Export Applications CSV</button>
+        <button type="submit" class="btn btn-primary">Apply Filters</button>
+        <a href="{{ route('admin.applications.index') }}" class="btn btn-secondary">Clear</a>
+        <button type="submit" formaction="{{ route('admin.applications.export') }}" class="btn btn-primary"><i class="fa-solid fa-download"></i> Export Applications CSV</button>
     </form>
 
     @php

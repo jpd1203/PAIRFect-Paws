@@ -40,6 +40,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
         'terms_version',
         'privacy_notice_version',
         'branch_id',
+        'phone_number',
         'region',
         'province',
         'city_municipality',
@@ -108,6 +109,11 @@ class User extends Authenticatable implements MustVerifyEmailContract
     public function handovers()
     {
         return $this->hasMany(Handover::class);
+    }
+
+    public function inAppNotifications()
+    {
+        return $this->hasMany(HandoverNotification::class);
     }
 
     public function adopterProfile()

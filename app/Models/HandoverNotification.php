@@ -19,6 +19,10 @@ class HandoverNotification extends Model
         'action_label',
         'action_url',
         'read',
+        'read_at',
+        'entity_type',
+        'entity_id',
+        'dedupe_key',
     ];
 
     protected function casts(): array
@@ -26,6 +30,7 @@ class HandoverNotification extends Model
         return [
             'channels' => 'array',
             'read' => 'boolean',
+            'read_at' => 'datetime',
         ];
     }
 

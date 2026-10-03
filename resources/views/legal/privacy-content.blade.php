@@ -103,7 +103,15 @@ Users may contact the responsible PAIRfect Paws or shelter representative regard
 
 Privacy inquiries may be directed to:
 
-[INSERT OFFICIAL PRIVACY CONTACT / EMAIL]
+@php
+    $privacyContactEmail = config('release.privacy_contact_email');
+    abort_if(app()->isProduction() && blank($privacyContactEmail), 503);
+@endphp
+@if (filled($privacyContactEmail))
+<a href="mailto:{{ $privacyContactEmail }}">{{ $privacyContactEmail }}</a>
+@else
+The official privacy contact must be configured before public release.
+@endif
 
 10. Consent
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\PhilippineLocationService;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,9 +17,46 @@ use Illuminate\View\View;
 
 class AccountController extends Controller
 {
+    public function __construct(private readonly PhilippineLocationService $locations) {}
+
     public function show(Request $request): View
     {
         return view('account.settings', ['user' => $request->user()]);
+    }
+
+    public function updateProfile(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $rules = [
+            'full_name' => ['required', 'string', 'max:255', 'regex:/^\S+(?:\s+\S+)+$/u'],
+        ];
+
+        if ($user->isAdopter()) {
+            $rules['phone_number'] = ['nullable', 'string', 'max:50', 'regex:/^\+?[0-9 ()-]{7,50}$/'];
+            $rules = array_merge($rules, PhilippineLocationService::validationRules());
+        }
+
+        $validated = $request->validate($rules);
+        $fullName = preg_replace('/\s+/u', ' ', trim($validated['full_name']));
+        $address = $user->isAdopter() ? $this->locations->resolveAddress($validated) : [];
+
+        DB::transaction(function () use ($user, $validated, $fullName, $address): void {
+            if ($fullName !== $user->full_name) {
+                $parts = explode(' ', $fullName);
+                $user->last_name = array_pop($parts);
+                $user->first_name = implode(' ', $parts);
+            }
+
+            if ($user->isAdopter()) {
+                $user->phone_number = $validated['phone_number'] ?? null;
+                $user->fill($address);
+            }
+
+            $user->saveOrFail();
+        });
+
+        return redirect()->route('account.settings')->with('success', 'Profile updated.');
     }
 
     public function updatePassword(Request $request): RedirectResponse

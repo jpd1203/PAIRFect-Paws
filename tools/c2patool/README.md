@@ -1,6 +1,6 @@
 # c2patool deployment
 
-PAIRfect Paws verifies post-adoption photos with the official `c2patool` CLI. The executable and the C2PA trust list are deployment artifacts, so they are intentionally excluded from Git. This directory documents how to reproduce them.
+This document describes the legacy post-adoption photo verifier. The current three-second video check-in uses a single-use, session-bound challenge, server-calculated SHA-256 replay detection, and server-side `ffprobe` validation. Those checks do not cryptographically prove that the scene was captured live by a camera. The executable and C2PA trust list for legacy photos are deployment artifacts and are intentionally excluded from Git.
 
 ## Windows development/server installation
 

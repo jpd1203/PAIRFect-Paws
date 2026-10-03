@@ -160,6 +160,7 @@ final class VideoDurationProbe
         $configured = trim((string) config('post_adoption.capture.ffprobe_path', ''));
 
         if ($configured === '' || ! $this->isAbsolutePath($configured)) {
+            Log::error('FFPROBE_PATH is missing or is not an absolute path; welfare video verification is unavailable.');
             return null;
         }
 
@@ -169,9 +170,9 @@ final class VideoDurationProbe
             $binary === false
             || ! is_file($binary)
             || ! is_readable($binary)
-            || (PHP_OS_FAMILY !== 'Windows' && ! is_executable($binary))
+            || ! is_executable($binary)
         ) {
-            Log::warning('The configured ffprobe binary is unavailable.');
+            Log::error('The configured ffprobe binary is unavailable or not executable.');
 
             return null;
         }

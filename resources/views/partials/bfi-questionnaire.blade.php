@@ -13,7 +13,7 @@
                 @if ($loop->iteration <= 10)
                     <div class="form-group flex flex-col justify-between pb-3">
                         <label for="bfi_{{ $key }}">
-                            {{ $loop->iteration }}. {{ $prompt }}
+                            {{ $loop->iteration }}. {{ $prompt }} <span aria-hidden="true">*</span>
                         </label>
 
                         <div class="select-wrapper">
@@ -64,7 +64,7 @@
                 @if ($loop->iteration > 10)
                     <div class="form-group flex flex-col justify-between pb-3">
                         <label for="bfi_{{ $key }}">
-                            {{ $loop->iteration }}. {{ $prompt }}
+                            {{ $loop->iteration }}. {{ $prompt }} <span aria-hidden="true">*</span>
                         </label>
 
                         <div class="select-wrapper">
