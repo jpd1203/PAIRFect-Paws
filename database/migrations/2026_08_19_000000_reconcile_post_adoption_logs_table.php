@@ -9,6 +9,8 @@ return new class extends Migration
 {
     private const UNIQUE_INDEX = 'post_adoption_logs_application_milestone_unique';
 
+    private const FOREIGN_KEY_SUPPORT_INDEX = 'post_adoption_logs_application_fk_support_index';
+
     private const PHOTO_HASH_UNIQUE_INDEX = 'post_adoption_logs_photo_sha256_unique';
 
     private const MANIFEST_UNIQUE_INDEX = 'post_adoption_logs_c2pa_manifest_sha256_unique';
@@ -116,6 +118,12 @@ return new class extends Migration
             });
         }
 
+        if (Schema::hasIndex('post_adoption_logs', self::FOREIGN_KEY_SUPPORT_INDEX)) {
+            Schema::table('post_adoption_logs', function (Blueprint $table) {
+                $table->dropIndex(self::FOREIGN_KEY_SUPPORT_INDEX);
+            });
+        }
+
         if (! Schema::hasIndex('post_adoption_logs', self::PHOTO_HASH_UNIQUE_INDEX)) {
             Schema::table('post_adoption_logs', function (Blueprint $table) {
                 $table->unique('photo_sha256', self::PHOTO_HASH_UNIQUE_INDEX);
@@ -146,6 +154,14 @@ return new class extends Migration
         }
 
         if (Schema::hasIndex('post_adoption_logs', self::UNIQUE_INDEX)) {
+            // MySQL requires another application_id index while the foreign key
+            // remains in place; the unique index may be its only supporting index.
+            if (! Schema::hasIndex('post_adoption_logs', self::FOREIGN_KEY_SUPPORT_INDEX)) {
+                Schema::table('post_adoption_logs', function (Blueprint $table) {
+                    $table->index('application_id', self::FOREIGN_KEY_SUPPORT_INDEX);
+                });
+            }
+
             Schema::table('post_adoption_logs', function (Blueprint $table) {
                 $table->dropUnique(self::UNIQUE_INDEX);
             });

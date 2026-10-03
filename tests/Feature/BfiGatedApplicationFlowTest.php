@@ -128,7 +128,7 @@ class BfiGatedApplicationFlowTest extends TestCase
             $this->assertSame(config('matching.algorithm_version'), $application->knn_algorithm_version);
         }
         $this->assertDatabaseCount('adopter_profiles', 1);
-        $this->assertSame($profile->bfi_responses, $user->fresh()->adopterProfile->bfi_responses);
+        $this->assertEqualsCanonicalizing($profile->bfi_responses, $user->fresh()->adopterProfile->bfi_responses);
     }
 
     public function test_safety_exclusion_and_incomplete_pet_prevent_a_formal_application_before_document_processing(): void

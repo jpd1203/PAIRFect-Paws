@@ -14,10 +14,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // ngrok connects to the local development server through loopback.
-        // Trust only loopback so Laravel honors its forwarded HTTPS host and
-        // scheme without accepting spoofed proxy headers from other clients.
-        $middleware->trustProxies(at: ['127.0.0.1', '::1']);
+        // Local/ngrok uses loopback; Azure's TLS-terminating proxy is configured
+        // separately through TRUSTED_PROXIES without forcing HTTPS locally.
+        $trustedProxies = array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('TRUSTED_PROXIES', '127.0.0.1,::1')),
+        )));
+        $middleware->trustProxies(at: $trustedProxies);
 
         $middleware->alias([
             'admin' => AdminOnly::class,

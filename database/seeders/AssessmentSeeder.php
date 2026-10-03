@@ -9,11 +9,16 @@ use App\Models\User;
 use App\Services\Matching\ApplicationMatchService;
 use App\Services\Matching\BehaviorAssessmentService;
 use Illuminate\Database\Seeder;
+use RuntimeException;
 
 class AssessmentSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            throw new RuntimeException('Synthetic assessments may only be seeded in local or testing environments.');
+        }
+
         $staff1 = User::firstOrCreate(['email' => 'admin@pairfectpaws.com'], [
             'first_name' => 'Admin', 'last_name' => 'User', 'role' => Role::Administrator->value, 'password' => bcrypt('password'), 'email_verified_at' => now(), 'is_active' => true,
         ]);
