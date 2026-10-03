@@ -96,16 +96,16 @@
                     </p>
                     @php $historySummary = $historySummaries[$app->id] ?? null; @endphp
                     @if ($historySummary && $historySummary['review_status'] !== 'no_recorded_concerns')
-                        <p class="applied-date">
+                        <p class="applied-date history-row">
                             History: <span class="badge {{ $historySummary['badge_class'] }}">{{ $historySummary['review_label'] }}</span>
                             <button type="button" class="btn btn-secondary btn-sm" data-history-url="{{ route('admin.adopter-profiles.history', $app->user_id) }}" onclick="openCompatHistory(this.dataset.historyUrl)">View History</button>
                         </p>
                     @else
-                        <p class="applied-date">History: No Recorded Concerns</p>
+                        <p class="applied-date history-row">History: No Recorded Concerns</p>
                     @endif
-                    <p class="applied-date">{{ $app->queue_position ? 'Rank #'.$app->queue_position.' for this pet' : 'Not in the active ranked queue' }}</p>
+                    <p class="applied-date history-row">{{ $app->queue_position ? 'Rank #'.$app->queue_position.' for this pet' : 'Not in the active ranked queue' }}</p>
 
-                    <p class="applied-date"><i class="fa-regular fa-calendar"></i>
+                    <p class="applied-date history-row"><i class="fa-regular fa-calendar"></i>
                         Applied
                         {{ \App\Support\ManilaTime::format($app->created_at, 'M d, Y') }}
                     </p>
@@ -193,36 +193,40 @@
         </div>
 
         <div class="custom-modal-body custom-scrollbar">
-            <div class="review-section">
-                <h6>Personal Information</h6>
-                <div class="review-row"><span>Full Name</span><span id="camFullName" class="font-semibold"></span></div>
-                <div class="review-row"><span>Contact</span><span id="camContact"></span></div>
-                <div class="review-row"><span>Email</span><span id="camEmail"></span></div>
-                <div class="review-row"><span>Address</span><span id="camAddress"></span></div>
+            <div class="review-container">
+                <div class="review-section">
+                    <h6>Personal Information</h6>
+                    <div class="review-row"><span>Full Name</span><span id="camFullName" class="font-semibold"></span></div>
+                    <div class="review-row"><span>Contact</span><span id="camContact"></span></div>
+                    <div class="review-row"><span>Email</span><span id="camEmail"></span></div>
+                    <div class="review-row"><span>Address</span><span id="camAddress"></span></div>
+                </div>
             </div>
 
-            <div class="review-section">
-                <h6>Adopter Profile</h6>
-                <div class="review-row"><span>Physical Activity Level</span><span id="camActivity"></span></div>
-                <div class="review-row"><span>Time Availability</span><span id="camTime"></span></div>
-                <div class="review-row"><span>Prior Pet Experience</span><span id="camExperience"></span></div>
-                <div class="review-row"><span>Housing Type</span><span id="camHousing"></span></div>
-                <div class="review-row"><span>Household Composition</span><span id="camHousehold"></span></div>
-                <div class="review-row"><span>Monthly Income Range</span><span id="camIncome"></span></div>
-                <div class="review-row flex-col items-start gap-1 py-2">
-                    <span class="font-semibold text-text-dark">Motivation Statement</span>
-                    <p id="camMotivation" class="text-sm text-[#444] bg-[#f8f6f2] border border-[#e8e3dc] p-3 rounded-md w-full whitespace-pre-line m-0 font-normal leading-relaxed"></p>
-                </div>
-                <div class="review-row">
-                    <span>Document Upload</span>
-                    <a class="btn btn-secondary btn-sm" id="camDocLink" href="#" target="_blank"><i class="fa-solid fa-file-arrow-down"></i> View Document</a>
-                </div>
-                <div class="review-row">
-                    <span>OCR Verification</span>
-                    <span>
-                        <strong id="camDocStatus"></strong>
-                        <a class="btn btn-secondary btn-sm ml-2" id="camVerifLink" href="#" target="_blank">Details</a>
-                    </span>
+            <div class="review-container">
+                <div class="review-section">
+                    <h6>Adopter Profile</h6>
+                    <div class="review-row"><span>Physical Activity Level</span><span id="camActivity"></span></div>
+                    <div class="review-row"><span>Time Availability</span><span id="camTime"></span></div>
+                    <div class="review-row"><span>Prior Pet Experience</span><span id="camExperience"></span></div>
+                    <div class="review-row"><span>Housing Type</span><span id="camHousing"></span></div>
+                    <div class="review-row"><span>Household Composition</span><span id="camHousehold"></span></div>
+                    <div class="review-row"><span>Monthly Income Range</span><span id="camIncome"></span></div>
+                    <div class="review-row flex-col items-start gap-1 py-2">
+                        <span class="font-semibold text-text-dark">Motivation Statement</span>
+                        <p id="camMotivation" class="text-sm text-[#444] bg-white border border-gray-400 p-3 rounded-md w-full whitespace-pre-line m-0 font-normal leading-relaxed"></p>
+                    </div>
+                    <div class="review-row">
+                        <span>Document Upload (valid ID, proof of residence)</span>
+                        <a class="btn btn-secondary btn-sm" id="camDocLink" href="#" target="_blank"><i class="fa-solid fa-file-arrow-down"></i> View Document</a>
+                    </div>
+                    <div class="review-row">
+                        <span>OCR Verification</span>
+                        <span>
+                            <strong id="camDocStatus"></strong>
+                            <a class="btn btn-secondary btn-sm ml-2" id="camVerifLink" href="#" target="_blank">Details</a>
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

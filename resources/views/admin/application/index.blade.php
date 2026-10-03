@@ -64,7 +64,7 @@
                 @endforeach
             </select>
         </label>
-        <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-download"></i> Export Applications CSV</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-download"></i> Export Applications CSV</button>
     </form>
 
     @php
@@ -184,9 +184,9 @@
                                     @if ($app->reschedule_status === 'pending')
                                         <span class="badge badge-scheduled">Reschedule Requested</span>
                                     @endif
-                                    <button class="btn btn-secondary btn-sm min-w-[105px]" onclick="openReviewModal({{ $app->id }})"><i class="fa-solid fa-eye"></i>View</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="openReviewModal({{ $app->id }})"><i class="fa-solid fa-eye"></i>View</button>
                                     @if ($app->status_slug === 'scheduled')
-                                        <button class="btn btn-yellow btn-sm min-w-[105px]" onclick="openAddNoteModal({{ $app->id }})"><i class="fa-solid fa-note-sticky"></i>Add Notes</button>
+                                        <button class="btn btn-yellow btn-sm" onclick="openAddNoteModal({{ $app->id }})"><i class="fa-solid fa-note-sticky"></i>Add Notes</button>
                                     @endif
                                 </div>
                             </td>

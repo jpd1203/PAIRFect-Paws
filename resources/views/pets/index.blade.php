@@ -7,31 +7,32 @@
 
             <!-- Filters Bar -->
             <form method="GET" action="{{ route('pets.index') }}" class="mt-6 flex flex-wrap items-center gap-3">
-                <label class="relative">
-                    <span class="sr-only">Species</span>
-                    <select name="species" onchange="this.form.submit()" 
-                            class="h-9 rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-900 focus:border-maroon-600 focus:outline-none focus:ring-2 focus:ring-maroon-600/15 cursor-pointer">
-                        <option value="all" @selected(($speciesFilter ?? 'all') === 'all')>All Species</option>
-                        <option value="Dog" @selected(($speciesFilter ?? '') === 'Dog')>Dogs</option>
-                        <option value="Cat" @selected(($speciesFilter ?? '') === 'Cat')>Cats</option>
-                    </select>
-                </label>
-
-                <label class="relative">
-                    <span class="sr-only">Age</span>
-                    <select name="age" onchange="this.form.submit()" 
-                            class="h-9 rounded-md border border-gray-300 bg-white px-3 pr-8 text-sm text-gray-900 focus:border-maroon-600 focus:outline-none focus:ring-2 focus:ring-maroon-600/15 cursor-pointer">
-                        <option value="all" @selected(($ageFilter ?? 'all') === 'all')>All Ages</option>
-                        <option value="Baby" @selected(($ageFilter ?? '') === 'Baby')>Baby</option>
-                        <option value="Young" @selected(($ageFilter ?? '') === 'Young')>Young</option>
-                        <option value="Adult" @selected(($ageFilter ?? '') === 'Adult')>Adult</option>
-                        <option value="Senior" @selected(($ageFilter ?? '') === 'Senior')>Senior</option>
-                    </select>
-                </label>
+                <div class="filter-section m-0">
+                
+                    <div class="select-wrapper">
+                        <select name="species" onchange="this.form.submit()">
+                            <option value="all" @selected(($speciesFilter ?? 'all') === 'all')>All Species</option>
+                            <option value="Dog" @selected(($speciesFilter ?? '') === 'Dog')>Dogs</option>
+                            <option value="Cat" @selected(($speciesFilter ?? '') === 'Cat')>Cats</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down select-arrow"></i>
+                    </div>
+                    
+                    <div class="select-wrapper">
+                        <select name="age" onchange="this.form.submit()">
+                            <option value="all" @selected(($ageFilter ?? 'all') === 'all')>All Ages</option>
+                            <option value="Baby" @selected(($ageFilter ?? '') === 'Baby')>Baby</option>
+                            <option value="Young" @selected(($ageFilter ?? '') === 'Young')>Young</option>
+                            <option value="Adult" @selected(($ageFilter ?? '') === 'Adult')>Adult</option>
+                            <option value="Senior" @selected(($ageFilter ?? '') === 'Senior')>Senior</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down select-arrow"></i>
+                    </div>
+                </div>
 
                 @if (($speciesFilter ?? 'all') !== 'all' || ($ageFilter ?? 'all') !== 'all')
-                    <a href="{{ route('pets.index') }}" class="text-xs font-semibold text-maroon-600 hover:underline ml-2">
-                        Reset filters
+                    <a href="{{ route('pets.index') }}" class="text-sm font-semibold text-maroon-600 hover:underline ml-2">
+                        <i class="fa-solid fa-rotate-left pr-1"></i> Reset filters
                     </a>
                 @endif
 

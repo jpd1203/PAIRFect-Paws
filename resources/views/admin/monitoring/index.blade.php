@@ -273,7 +273,7 @@
                 <span class="text-sm font-primary text-muted font-medium">Sort</span>
 
                 <select id="monitoringSortSelect"
-                    class="h-9 rounded-md border border-line bg-white px-2.5 text-sm font-medium text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15 cursor-pointer"
+                    class="h-9 rounded-md border border-line bg-white px-2.5 text-xs font-medium text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15 cursor-pointer"
                 >
                     <option value="latest">Newest submission first</option>
                     <option value="due">Next due first</option>
@@ -417,11 +417,11 @@
                             <div>
                                 @php
                                     $pillClasses = match ($adoption->overall_status) {
-                                        'completed' => 'bg-completed-bg text-completed-fg',
-                                        'pending' => 'bg-pending-bg text-pending-fg',
-                                        'overdue' => 'bg-overdue-bg text-overdue-fg',
-                                        'flagged' => 'bg-flagged-bg text-flagged-fg',
-                                        default => 'bg-upcoming-bg text-upcoming-fg',
+                                        'completed' => 'bg-completed-bg text-completed-text border-completed-text',
+                                        'pending' => 'bg-pending-bg text-pending-fg border-pending-fg',
+                                        'overdue' => 'bg-overdue-bg text-overdue-fg border-overdue-fg',
+                                        'flagged' => 'bg-flagged-bg text-flagged-fg border-flagged-fg',
+                                        default => 'bg-upcoming-bg text-upcoming-fg border-upcoming-fg',
                                     };
                                 @endphp
                                 <span class="badge {{ $pillClasses }}">
@@ -434,7 +434,7 @@
                                 @if ($adoption->overall_status === 'flagged')
                                     <button
                                         type="button"
-                                        class="btn btn-secondary w-[130px] h-[36px] text-xs font-semibold"
+                                        class="btn btn-secondary w-[130px] h-[36px]"
                                         data-report="{{ json_encode($primaryReport, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}"
                                         onclick="openMonitoringViewModal(this)"
                                     >
@@ -443,7 +443,7 @@
                                 @elseif ($adoption->overall_status === 'completed')
                                     <button
                                         type="button"
-                                        class="btn btn-secondary w-[130px] h-[36px] text-xs font-semibold"
+                                        class="btn btn-secondary w-[130px] h-[36px]"
                                         data-report="{{ json_encode($primaryReport, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}"
                                         onclick="openMonitoringViewModal(this)"
                                     >
@@ -452,7 +452,7 @@
                                 @elseif ($adoption->overall_status === 'overdue' && $nextCheck)
                                     <button
                                         type="button"
-                                        class="btn w-[130px] h-[36px] text-xs font-semibold border border-overdue-bg bg-overdue-bg text-overdue-fg hover:border-overdue-fg/30 transition-colors"
+                                        class="btn w-[130px] h-[36px] font-semibold border border-overdue-fg bg-overdue-bg text-overdue-fg hover:text-overdue-bg hover:bg-overdue-fg transition-colors"
                                         data-action="{{ route('admin.monitoring.flag', $nextCheck) }}"
                                         data-summary="{{ $adopterName }} - {{ $petName }} - {{ $nextCheck->milestone_display }}"
                                         onclick="openMonitoringFlagModal(this)"
@@ -509,11 +509,11 @@
                                                 $logReport = $buildReportPayload($log);
                                                 $logSummary = "{$adopterName} - {$petName} - {$log->milestone_display}";
                                                 $badgeStyle = match ($log->status_slug) {
-                                                    'completed' => 'bg-completed-bg text-completed-fg',
-                                                    'pending' => 'bg-pending-bg text-pending-fg',
-                                                    'overdue' => 'bg-overdue-bg text-overdue-fg',
-                                                    'flagged' => 'bg-flagged-bg text-flagged-fg',
-                                                    default => 'bg-upcoming-bg text-upcoming-fg',
+                                                    'completed' => 'bg-completed-bg text-completed-fg border-completed-fg',
+                                                    'pending' => 'bg-pending-bg text-pending-fg border-pending-fg',
+                                                    'overdue' => 'bg-overdue-bg text-overdue-fg border-overdue-fg',
+                                                    'flagged' => 'bg-flagged-bg text-flagged-fg border-flagged-fg',
+                                                    default => 'bg-upcoming-bg text-upcoming-fg border-upcoming-fg',
                                                 };
                                             @endphp
                                             <tr class="hover:bg-surface/30 transition-colors text-center" data-monitoring-status="{{ $log->status_slug }}">
@@ -723,11 +723,11 @@
 
                                 <div>
                                     <span class="badge {{ match ($adoption->overall_status) {
-                                        'completed' => 'bg-completed-bg text-completed-fg',
-                                        'pending' => 'bg-pending-bg text-pending-fg',
-                                        'overdue' => 'bg-overdue-bg text-overdue-fg',
-                                        'flagged' => 'bg-flagged-bg text-flagged-fg',
-                                        default => 'bg-upcoming-bg text-upcoming-fg',
+                                        'completed' => 'bg-completed-bg text-completed-fg border-completed-text',
+                                        'pending' => 'bg-pending-bg text-pending-fg border-pending-fg',
+                                        'overdue' => 'bg-overdue-bg text-overdue-fg border-overdue-fg',
+                                        'flagged' => 'bg-flagged-bg text-flagged-fg border-flagged-fg',
+                                        default => 'bg-upcoming-bg text-upcoming-fg border-upcoming-fg',
                                     } }}">
                                         {{ ucfirst($adoption->overall_status) }}
                                     </span>
@@ -788,11 +788,11 @@
                                                     $logSummary = "{$uName} - {$petName} - {$log->milestone_display}";
 
                                                     $badgeStyle = match ($log->status_slug) {
-                                                        'completed' => 'bg-completed-bg text-completed-fg',
-                                                        'pending' => 'bg-pending-bg text-pending-fg',
-                                                        'overdue' => 'bg-overdue-bg text-overdue-fg',
-                                                        'flagged' => 'bg-flagged-bg text-flagged-fg',
-                                                        default => 'bg-upcoming-bg text-upcoming-fg',
+                                                        'completed' => 'bg-completed-bg text-completed-fg border-completed-fg',
+                                                        'pending' => 'bg-pending-bg text-pending-fg border-pending-fg',
+                                                        'overdue' => 'bg-overdue-bg text-overdue-fg border-overdue-fg',
+                                                        'flagged' => 'bg-flagged-bg text-flagged-fg border-flagged-fg',
+                                                        default => 'bg-upcoming-bg text-upcoming-fg border-upcoming-fg',
                                                     };
                                                 @endphp
 
@@ -899,7 +899,7 @@
             </div>
             <form id="monitoringReminderForm" method="POST">
                 @csrf
-                <div class="custom-modal-body">
+                <div class="custom-modal-body custom-scrollbar">
                     <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium leading-relaxed text-emerald-800">
                         The counter is updated only after the email is delivered. A check-in is automatically flagged after its second successful reminder.
                     </div>

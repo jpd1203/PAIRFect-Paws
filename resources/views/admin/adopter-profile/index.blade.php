@@ -62,7 +62,7 @@
                 <div class="profile-actions">
                     <button
                         type="button"
-                        class="btn btn-secondary btn-sm"
+                        class="btn btn-primary btn-sm"
                         data-history-url="{{ route('admin.adopter-profiles.history', $adopter) }}"
                         aria-haspopup="dialog"
                         aria-controls="profileHistoryModal"

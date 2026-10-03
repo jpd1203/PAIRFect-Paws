@@ -31,7 +31,10 @@
                 </select>
                 <i class="fa-solid fa-chevron-down select-arrow"></i>
             </div>
-            
+
+            <button type="button" id="resetFiltersBtn" class="reset-filter-btn text-sm font-semibold text-maroon-600 hover:underline flex items-center justify-center">
+                <i class="fa-solid fa-rotate-left pr-1"></i> Reset Filter
+            </button>
         </div>
     
 

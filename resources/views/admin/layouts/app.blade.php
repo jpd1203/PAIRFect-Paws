@@ -23,7 +23,7 @@
 
         @include('admin.partials.sidebar')
 
-        <div class="main-content">
+        <div class="main-content custom-scrollbar">
             @include('partials.time-travel-banner')
             @yield('content')
         </div>

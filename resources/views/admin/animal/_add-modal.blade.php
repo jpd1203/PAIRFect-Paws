@@ -116,6 +116,7 @@
                                 </select>
                                 <i class="fa-solid fa-chevron-down select-arrow"></i>
                             </div>
+                            <p class="mt-1 text-xs text-gray-500">Use the veterinary health evaluation.</p>
                         </div>
 
                         <div class="form-group">
@@ -144,7 +145,7 @@
                             </div>
                         </div>
 
-                        <div class="form-group sm:col-span-2 md:col-span-3">
+                        <div class="form-group">
                             <label class="form-label">Medical Needs Level</label>
                             <div class="select-wrapper">
                                 <select name="medical_needs" class="form-select">
@@ -266,15 +267,6 @@
                             class="form-control resize-y min-h-[85px]"
                             rows="3"
                             placeholder="Write the pet's background story, personality, rescue journey, or favorite activities..."></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Behavioral / Medical Notes</label>
-                        <textarea
-                            name="behavioral_notes"
-                            class="form-control resize-y min-h-[65px]"
-                            rows="2"
-                            placeholder="Optional behavioral or health observations..."></textarea>
                     </div>
 
                     <div class="flex justify-start pt-1">

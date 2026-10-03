@@ -90,8 +90,8 @@ function openReviewModal(id) {
     });
     document.getElementById('rFullHistoryBtn').onclick = () => openAdoptionHistoryModal(a.history_url);
 
-    document.getElementById('rHistoryRow').style.display = (a.has_history || a.history_url) ? 'flex' : 'none';
-    document.getElementById('rHistoryBtn').onclick = () => openAdoptionHistoryModal(a.history_url);
+    // document.getElementById('rHistoryRow').style.display = (a.has_history || a.history_url) ? 'flex' : 'none';
+    // document.getElementById('rHistoryBtn').onclick = () => openAdoptionHistoryModal(a.history_url);
 
     document.getElementById('rCompatRow').style.display = a.has_compatibility ? 'flex' : 'none';
     document.getElementById('rCompatBtn').onclick = () => openCompatibilityModal(a);

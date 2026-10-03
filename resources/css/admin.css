@@ -576,9 +576,9 @@
   .review-header small {
     @apply text-[#777] text-[.82rem];
   }
-  .review-section {
+  /* .review-section {
     @apply px-3 mb-[1.2rem];
-  }
+  } */
   .review-section h6 {
     @apply font-bold text-[.9rem] uppercase tracking-wide text-text-dark pb-1.5;
   }
@@ -595,6 +595,17 @@
     @apply font-semibold text-text-dark text-right;
   }
 
+  .review-container {
+    @apply bg-[#f8f6f2] border border-[#e8e3dc] rounded-md pt-3 px-3 mb-[1.2rem]
+  }
+
+  .review-container {
+    display: block;
+}
+
+.review-container[hidden] {
+    display: none;
+}
   .doc-viewer-area {
     @apply border-2 border-dashed border-[#ccc] rounded-[10px] p-5 text-center mx-6 mb-4 bg-neutral-light text-[#888] text-[.88rem];
   }
@@ -766,6 +777,34 @@
     @apply flex-1 w-full min-w-0;
   }
 
+  .compat-info .pet-title h3 {
+    @apply truncate;
+  }
+
+  .compat-info .pet-title span {
+      @apply block truncate;
+  }
+
+  .compat-info .matched-user {
+      @apply flex flex-wrap items-center gap-1 min-w-0;
+  }
+
+  .compat-info .matched-user strong {
+      @apply truncate;
+  }
+
+  .compat-info .applied-date {
+      @apply flex flex-wrap items-center gap-1.5 min-w-0;
+  }
+
+  .compat-info .applied-date .badge {
+      @apply max-w-full whitespace-normal;
+  }
+
+  .compat-info .applied-date .btn {
+      @apply shrink-0;
+  }
+
   .pet-title {
     @apply flex items-center justify-center sm:justify-start gap-2 flex-wrap;
   }
@@ -827,7 +866,7 @@
   }
 
   .score-value strong {
-      font-size: 26px;
+      font-size: 20px;
       font-weight: 700;
   }
 
@@ -897,6 +936,7 @@
   /* ============================================================
      RESPONSIVE
      ============================================================ */
+  
   @media (max-width: 1024px) {
     .stats-grid {
       grid-template-columns: repeat(2, 1fr);
@@ -976,6 +1016,13 @@
 }
 
 @media (max-width: 640px) {
+    .matched-user {
+        @apply justify-center items-center text-center;
+    }
+
+    .compat-info .history-row .badge {
+        @apply max-w-full;
+    }
     .compat-card-footer {
         justify-content: center;
         gap: 0.4rem;

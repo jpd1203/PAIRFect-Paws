@@ -17,22 +17,41 @@
     @endif
     <a class="btn btn-secondary mb-4" href="{{ route('recommendation.intake') }}">Update My Profile</a>
     <form method="GET" action="{{ route('recommendation.results') }}" class="flex flex-wrap gap-4 mb-5">
-        <label>Species
-            <select name="species" class="rounded border p-2">
-                <option value="">All cats and dogs</option>
-                @foreach (['Dog', 'Cat'] as $species)
-                    <option @selected(request('species') === $species)>{{ $species }}</option>
-                @endforeach
-            </select>
-        </label>
-        <label>Size
-            <select name="size" class="rounded border p-2">
-                <option value="">All sizes</option>
-                @foreach (array_keys(config('matching.size_levels')) as $size)
-                    <option @selected(request('size') === $size)>{{ $size }}</option>
-                @endforeach
-            </select>
-        </label>
+        <div class="filter-section m-0">
+            <div class="select-wrapper">
+                <select name="species" class="rounded border p-2">
+                    <option value="">All Species</option>
+                    @foreach (['Dog', 'Cat'] as $species)
+                        <option @selected(request('species') === $species)>{{ $species }}</option>
+                    @endforeach
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
+
+            <div class="select-wrapper">
+                <select name="size" class="rounded border p-2">
+                    <option value="">All sizes</option>
+                    @foreach (array_keys(config('matching.size_levels')) as $size)
+                        <option @selected(request('size') === $size)>{{ $size }}</option>
+                    @endforeach
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
+        </div>
+
+        <!-- <div class="filter-section">
+            <label>Size
+                <div class="select-wrapper">
+                    <select name="size" class="rounded border p-2">
+                        <option value="">All sizes</option>
+                        @foreach (array_keys(config('matching.size_levels')) as $size)
+                            <option @selected(request('size') === $size)>{{ $size }}</option>
+                        @endforeach
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-arrow"></i>
+                </div>
+            </label>
+        </div> -->
         <button class="btn btn-primary" type="submit">Filter Recommendations</button>
     </form>
     @if ($errors->any())

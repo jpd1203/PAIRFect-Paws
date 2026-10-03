@@ -11,60 +11,68 @@
 
         <div class="custom-modal-body custom-scrollbar">
 
-            <div class="review-section">
-                <h6>Personal Information</h6>
-                <div class="review-row"><span>Full Name</span><span id="rFullName"></span></div>
-                <div class="review-row"><span>Contact</span><span id="rContact"></span></div>
-                <div class="review-row"><span>Email</span><span id="rEmail"></span></div>
-                <div class="review-row"><span>Address</span><span id="rAddress"></span></div>
+            <div class="review-container">
+                <div class="review-section">
+                    <h6>Personal Information</h6>
+                    <div class="review-row"><span>Full Name</span><span id="rFullName"></span></div>
+                    <div class="review-row"><span>Contact</span><span id="rContact"></span></div>
+                    <div class="review-row"><span>Email</span><span id="rEmail"></span></div>
+                    <div class="review-row"><span>Address</span><span id="rAddress"></span></div>
+                </div>
             </div>
 
-            <div class="review-section">
-                <h6>Reservation Queue</h6>
-                <div class="review-row"><span>Queue position</span><span id="rQueuePosition"></span></div>
-                <div class="review-row"><span>Candidate role</span><span id="rCandidateRole"></span></div>
-                <div class="review-row" id="rTimeoutRow"><span>72-hour timeout</span><span class="text-amber-700 font-semibold">Flagged for administrative review</span></div>
+            <div class="review-container">
+                <div class="review-section">
+                    <h6>Reservation Queue</h6>
+                    <div class="review-row"><span>Queue position</span><span id="rQueuePosition"></span></div>
+                    <div class="review-row"><span>Candidate role</span><span id="rCandidateRole"></span></div>
+                    <div class="review-row" id="rTimeoutRow"><span>72-hour timeout</span><span class="text-amber-700 font-semibold">Flagged for administrative review</span></div>
+                </div>
             </div>
 
-            <div class="review-section" aria-label="Applicant history screening">
-                <h6>Applicant History</h6>
-                <div class="review-row"><span>Review status</span><span id="rHistoryStatus" class="badge"></span></div>
-                <div class="review-row"><span>Previous applications</span><span id="rHistoryApplications"></span></div>
-                <div class="review-row"><span>Approved placements</span><span id="rHistoryPlacements"></span></div>
-                <div class="review-row"><span>Flagged welfare reports</span><span id="rHistoryFlags"></span></div>
-                <div class="review-row"><span>Missed / late check-ins</span><span id="rHistoryCheckins"></span></div>
-                <ul id="rHistoryReasons" class="text-sm text-[#555] list-disc pl-5"></ul>
-                <p class="text-xs text-[#777] mt-2">Decision support only. Compatibility ranking is unchanged; staff review the underlying records.</p>
-                <button type="button" class="btn btn-secondary btn-sm mt-2" id="rFullHistoryBtn"><i class="fa-solid fa-clock-rotate-left mr-1"></i> View Full History</button>
+            <div class="review-container">
+                <div class="review-section" aria-label="Applicant history screening">
+                    <h6>Applicant History</h6>
+                    <div class="review-row"><span>Review status</span><span id="rHistoryStatus" class="badge"></span></div>
+                    <div class="review-row"><span>Previous applications</span><span id="rHistoryApplications"></span></div>
+                    <div class="review-row"><span>Approved placements</span><span id="rHistoryPlacements"></span></div>
+                    <div class="review-row"><span>Flagged welfare reports</span><span id="rHistoryFlags"></span></div>
+                    <div class="review-row"><span>Missed / late check-ins</span><span id="rHistoryCheckins"></span></div>
+                    <ul id="rHistoryReasons" class="text-sm text-[#555] list-disc pl-5"></ul>
+                    <p class="text-xs text-[#777] mt-2">Decision support only. Compatibility ranking is unchanged; staff review the underlying records.</p>
+                    <button type="button" class="btn btn-secondary btn-sm my-2" id="rFullHistoryBtn"><i class="fa-solid fa-clock-rotate-left mr-1"></i> View Full History</button>
+                </div>
             </div>
 
-            <div class="review-section">
-                <h6>Adopter Profile</h6>
-                <div class="review-row"><span>Physical Activity Level</span><span id="rActivity"></span></div>
-                <div class="review-row"><span>Time Availability</span><span id="rTime"></span></div>
-                <div class="review-row"><span>Prior Pet Experience</span><span id="rExperience"></span></div>
-                <div class="review-row"><span>Housing Type</span><span id="rHousing"></span></div>
-                <div class="review-row"><span>Household Composition</span><span id="rHousehold"></span></div>
-                <div class="review-row"><span>Monthly Income Range</span><span id="rIncome"></span></div>
-                <div class="review-row flex-col items-start gap-1 py-2">
-                    <span class="font-semibold text-text-dark">Motivation Statement</span>
-                    <p id="rMotivation" class="text-sm text-[#444] bg-[#f8f6f2] border border-[#e8e3dc] p-3 rounded-md w-full whitespace-pre-line m-0 font-normal leading-relaxed"></p>
+            <div class="review-container">
+                <div class="review-section">
+                    <h6>Adopter Profile</h6>
+                    <div class="review-row"><span>Physical Activity Level</span><span id="rActivity"></span></div>
+                    <div class="review-row"><span>Time Availability</span><span id="rTime"></span></div>
+                    <div class="review-row"><span>Prior Pet Experience</span><span id="rExperience"></span></div>
+                    <div class="review-row"><span>Housing Type</span><span id="rHousing"></span></div>
+                    <div class="review-row"><span>Household Composition</span><span id="rHousehold"></span></div>
+                    <div class="review-row"><span>Monthly Income Range</span><span id="rIncome"></span></div>
+                    <div class="review-row flex-col items-start gap-1 py-2">
+                        <span class="font-semibold text-text-dark">Motivation Statement</span>
+                        <p id="rMotivation" class="text-sm text-[#444] bg-white border border-gray-400 p-3 rounded-md w-full whitespace-pre-line m-0 font-normal leading-relaxed"></p>
+                    </div>
                 </div>
 
-                <div class="review-row" id="rHistoryRow">
+                <!-- <div class="review-row" id="rHistoryRow">
                     <span>Adoption Record History</span>
                     <button type="button" class="btn btn-secondary btn-sm" id="rHistoryBtn"><i class="fa-solid fa-clock-rotate-left mr-1"></i> View History</button>
-                </div>
+                </div> -->
 
                 <div class="review-row">
                     <span>Document upload (valid ID, proof of residence)</span>
-                    <a class="btn btn-secondary btn-sm" id="rDocumentLink" href="#" target="_blank">View</a>
+                    <a class="btn btn-secondary btn-sm" id="rDocumentLink" href="#" target="_blank"><i class="fa-solid fa-file-arrow-down"></i>View Document</a>
                 </div>
                 <div class="review-row">
                     <span>OCR Verification</span>
                     <span>
                         <strong id="rDocumentStatus"></strong>
-                        <a class="btn btn-secondary btn-sm ml-2" id="rVerificationLink" href="#" target="_blank">Details</a>
+                        <a class="btn btn-secondary btn-sm ml-2" id="rVerificationLink" href="#" target="_blank"><i class="fa-solid fa-file-lines"></i>Details</a>
                     </span>
                 </div>
 
@@ -74,14 +82,16 @@
                 </div>
             </div>
 
-            <div class="review-section" id="rInterviewSection">
-                <h6>Interview</h6>
-                <div class="review-row"><span>Interview Date</span><span id="rInterviewDate"></span></div>
-                <div class="review-row"><span>Conducted By</span><span id="rConductedBy"></span></div>
-                <div class="review-row" id="rInterviewNotesRow">
-                    <span>Interview Notes</span>
+            <div class="review-container">
+                <div class="review-section" id="rInterviewSection">
+                    <h6>Interview</h6>
+                    <div class="review-row"><span>Interview Date</span><span id="rInterviewDate"></span></div>
+                    <div class="review-row"><span>Conducted By</span><span id="rConductedBy"></span></div>
+                    <div class="review-row" id="rInterviewNotesRow">
+                        <span>Interview Notes</span>
+                    </div>
+                    <p id="rInterviewNotesText" class="text-[.88rem] text-[#555] bg-white border border-gray-400 rounded-lg p-3 my-2"></p>
                 </div>
-                <p id="rInterviewNotesText" class="text-[.88rem] text-[#555] bg-neutral-light rounded-lg p-3 mt-2"></p>
             </div>
 
             <div class="review-section" id="rRescheduleSection" hidden>
@@ -111,9 +121,11 @@
                 <form id="rRescheduleDeclineForm" method="POST" class="hidden">@csrf</form>
             </div>
 
-            <div id="rDecisionRemarksSection" class="review-section">
-                <h6>Decision Remarks</h6>
-                <p id="rDecisionRemarksText" class="text-[.88rem] text-[#555] bg-neutral-light rounded-lg p-3"></p>
+            <div class="review-container">
+                <div id="rDecisionRemarksSection" class="review-section">
+                    <h6>Decision Remarks</h6>
+                    <p id="rDecisionRemarksText" class="text-[.88rem] text-[#555] bg-white border border-gray-400 rounded-lg p-3 mb-3"></p>
+                </div>
             </div>
 
             <div id="rCompatBanner" class="mx-6 mb-2 rounded-full py-2.5 text-center text-white font-bold text-[.9rem]"></div>
