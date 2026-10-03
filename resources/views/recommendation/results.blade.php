@@ -2,9 +2,12 @@
 @section('title', 'Pet Recommendation - PAIRfect Paws')
 @section('content')
 <div class="nonsticky-header custom-scrollbar">
-    <div class="heading-text">
-        <h2>Pet Recommendation</h2>
-        <p>Available pets recommended from your completed personality and household profile.</p>
+    <div class="main-content-header">
+        <div class="heading-text">
+            <h2>Pet Recommendation</h2>
+            <p>Available pets recommended from your completed personality and household profile.</p>
+        </div>
+        @include('partials.notification-bell')
     </div>
     <div class="reco-banner my-3">
         Compatibility supports your decision. Shelter staff review every application and make the final adoption decision.

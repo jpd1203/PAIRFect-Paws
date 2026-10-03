@@ -35,6 +35,47 @@
     @apply text-[#777] text-base m-0;
   }
 
+  .main-content-header {
+    @apply flex items-center justify-between gap-4 mb-4;
+  }
+
+  .main-content-header .heading-text {
+      @apply min-w-0 flex-1;
+  }
+
+  .main-content-header .notification-bell {
+      @apply shrink-0;
+  }
+
+  @media (max-width: 640px) {
+    .main-content-header {
+        @apply items-start gap-2;
+    }
+
+    .main-content-header .heading-text {
+        @apply min-w-0;
+    }
+
+    .main-content-header .heading-text h2 {
+        @apply mb-1;
+    }
+
+    .main-content-header .heading-text p {
+        @apply text-sm;
+    }
+
+    .main-content-header .notification-bell {
+        @apply shrink-0;
+    }
+    .notification-label {
+        display: none;
+    }
+
+    .notification-bell .btn {
+        @apply px-3;
+    }
+  }
+
   /* ---------- Topbar (mobile) ---------- */
   .topbar {
     @apply fixed top-0 left-0 right-0 h-topbar bg-primary text-white flex items-center gap-3.5 px-4 z-[1100];

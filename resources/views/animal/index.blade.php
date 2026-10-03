@@ -3,11 +3,14 @@
 @section('title', 'Browse Pets - PAIRfect Paws')
 
 @section('content')
+    <div class="nonsticky-header">
+        <div class="main-content-header">
+            <div class="heading-text">
+                <h2>Available Pets</h2>
+                <p>Browse animals ready for adoption</p>
+            </div>
 
-    <div class="nonsticky-header custom-scrollbar">
-        <div class="heading-text">
-            <h2>Available Pets</h2>
-            <p>Browse animals ready for adoption</p>
+            @include('partials.notification-bell')
         </div>
 
         <!-- Filters -->
@@ -43,7 +46,8 @@
                 @include('animal._pet-grid', ['pets' => $pets])
             </div>
         </div>
-    </div>
+        </div>
+
 
     <!-- Modal Overlay -->
     <div class="modal-overlay" id="petModal">

@@ -3,46 +3,14 @@
 @section('title', 'Handover & Release - PAIRfect Paws Admin')
 
 @section('content')
+    <div class="main-content-header">
+        <div class="heading-text">
+            <h2>Handover &amp; Release</h2>
+            <p>Approved applications waiting on verified physical transfer and release.</p>
+        </div>
 
-    <div class="heading-text">
-        <h2>Handover &amp; Release</h2>
-        <p>Approved applications waiting on verified physical transfer and release.</p>
+        @include('partials.notification-bell')
     </div>
-
-    <!-- Queue Summary Cards -->
-    <!-- <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5 mt-5">
-        <div class="stat-card">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-box-archive stat-icon text-text-dark"></i>
-                <h6>Needs Handover</h6>
-            </div>
-            <h1>{{ $stats['needs_handover'] }}</h1>
-        </div>
-
-        <div class="stat-card">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-clock stat-icon text-status-processing-text"></i>
-                <h6>Awaiting Adopter</h6>
-            </div>
-            <h1 class="text-status-processing-text">{{ $stats['awaiting'] }}</h1>
-        </div>
-
-        <div class="stat-card">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-triangle-exclamation stat-icon text-status-danger-text"></i>
-                <h6>Reported Failed</h6>
-            </div>
-            <h1 class="text-status-danger-text">{{ $stats['reported_failed'] }}</h1>
-        </div>
-
-        <div class="stat-card">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-circle-check stat-icon text-status-success-text"></i>
-                <h6>Monitoring Active</h6>
-            </div>
-            <h1 class="text-status-success-text">{{ $stats['monitoring_active'] }}</h1>
-        </div>
-    </div> -->
 
     <!-- Filters & Search Toolbar -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 my-5 flex-wrap">

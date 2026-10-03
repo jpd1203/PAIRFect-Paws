@@ -4,9 +4,13 @@
 
 @section('content')
 
-    <div class="heading-text">
-        <h2>Assessment Record</h2>
-        <p>Behavioral assessments for each pet. Matching requires {{ config('matching.min_observers') }} distinct observers.</p>
+    <div class="main-content-header">
+        <div class="heading-text">
+            <h2>Assessment Record</h2>
+            <p>Behavioral assessments for each pet. Matching requires {{ config('matching.min_observers') }} distinct observers.</p>
+        </div>
+
+        @include('partials.notification-bell')
     </div>
 
     @if (session('success'))

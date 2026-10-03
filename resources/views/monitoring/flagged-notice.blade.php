@@ -4,9 +4,12 @@
 
 @section('content')
     <div class="nonsticky-header">
-        <div class="heading-text">
-            <h2>Flagged Welfare Notice</h2>
-            <p>See post-adoption check-ins that are currently being reviewed by shelter staff.</p>
+        <div class="main-content-header">
+            <div class="heading-text">
+                <h2>Flagged Welfare Notice</h2>
+                <p>See post-adoption check-ins that are currently being reviewed by shelter staff.</p>
+            </div>
+            @include('partials.notification-bell')
         </div>
     
 

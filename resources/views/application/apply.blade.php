@@ -179,7 +179,7 @@
     <div class="modal-overlay" id="termsModal">
         <div class="pet-modal report-modal" style="max-width: 600px; padding: 30px; text-align: left; background: #fff; border-radius: 8px;">
             <div class="modal-header" style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
-                <h3 style="margin: 0; color: #333;">Adoption and Data Processing Agreement</h3>
+                <h3 style="margin: 0; color: #333; font-weight: bold;">Adoption and Data Processing Agreement</h3>
             </div>
             <div class="modal-body custom-scrollbar" style="max-height: 50vh; overflow-y: auto; font-size: 0.95rem; line-height: 1.6; color: #555; padding-right: 10px;">
                 <p>By submitting this application, you are making a formal commitment to the welfare of the animal and agreeing to our shelter protocols. Please read and agree to the following terms:</p>

@@ -3,9 +3,13 @@
 @section('title', 'Flagged Cases - PAIRfect Paws Admin')
 
 @section('content')
-    <div class="heading-text">
-        <h2>Flagged Post-Adoption Cases</h2>
-        <p>Review unresolved welfare concerns and record the action taken before closing each flag.</p>
+    <div class="main-content-header">
+        <div class="heading-text">
+            <h2>Flagged Post-Adoption Cases</h2>
+            <p>Review unresolved welfare concerns and record the action taken before closing each flag.</p>
+        </div>
+
+        @include('partials.notification-bell')
     </div>
 
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3">

@@ -5,18 +5,18 @@
 @section('content')
 
     <div class="nonsticky-header">
-        <div class="heading-text">
-            <h2>My Check-ins</h2>
-
-            {{-- Get the adopted pet name from the first check-in --}}
-            <p>
-                Your post-adoption reporting schedule
+        <div class="main-content-header">
+            <div class="heading-text">
+                <h2>My Check-ins</h2>
+                <p>Your post-adoption reporting schedule
                 @if($logs->isNotEmpty())
                     for {{ $logs->first()->adoptionApplication->pet->name }}.
                 @else
                     .
-                @endif
-            </p>
+                @endif</p>
+            </div>
+
+            @include('partials.notification-bell')
         </div>
 
         <div class="content-area !p-0">

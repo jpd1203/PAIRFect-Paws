@@ -24,7 +24,6 @@
         @include('admin.partials.sidebar')
 
         <div class="main-content custom-scrollbar">
-            @include('partials.notification-bell')
             @include('partials.time-travel-banner')
             @yield('content')
         </div>

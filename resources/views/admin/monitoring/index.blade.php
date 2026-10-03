@@ -166,11 +166,14 @@
 
     <div class="mx-auto">
         {{-- Header matching Magic Patterns --}}
-        <div class="heading-text">
-            <h2>Post-Adoption Monitoring</h2>
-            <p>Track welfare check-ins for every adopted pet. Newest submissions appear first.</p>
-        </div>
+        <div class="main-content-header">
+            <div class="heading-text">
+                <h2>Post-Adoption Monitoring</h2>
+                <p>Track welfare check-ins for every adopted pet. Newest submissions appear first.</p>
+            </div>
 
+            @include('partials.notification-bell')
+        </div>
 
         @if (isset($errors) && $errors->any())
             <div class="mb-5 rounded-xl border border-status-danger-text bg-status-danger-bg p-4 text-sm text-status-danger-text" role="alert">

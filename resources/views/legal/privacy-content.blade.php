@@ -1,121 +1,485 @@
-    <article class="mx-auto max-w-3xl px-5 py-10 text-gray-900 sm:py-14">
-        <h1 id="privacy-dialog-title" class="mb-6 font-primary text-3xl font-bold">PAIRfect Paws Privacy Notice</h1>
-        <div class="whitespace-pre-wrap font-secondary text-sm leading-7">PAIRfect Paws processes personal information necessary to support account management, adopter profiling, adoption screening, pet-adopter recommendations, applicant evaluation, identity and document verification, and post-adoption monitoring.
+<article
+    class="mx-auto max-w-4xl px-5 py-8 text-gray-800 sm:px-8 sm:py-12"
+    aria-labelledby="privacy-dialog-title"
+>
+    <!-- Header -->
+    <header class="mb-5 border-b border-gray-200 pb-6">
+        <div class="mb-3 flex items-center gap-3">
 
-Personal information processed through PAIRfect Paws will be handled only for legitimate system, shelter, academic, security, and animal welfare-related purposes associated with the operation and evaluation of the platform.
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl text-xl text-primary" aria-hidden="true">
+                <img src="/images/rcpp-logo-2.png" alt="">
+            </div>
 
-1. Information That May Be Collected
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-primary">
+                    PAIRfect Paws
+                </p>
 
-Depending on the user's role and activities in PAIRfect Paws, the system may process information such as:
+                <h1 id="privacy-dialog-title" class="font-primary text-2xl font-bold text-gray-900 sm:text-3xl">
+                    Privacy Notice
+                </h1>
+            </div>
+        </div>
 
-- name;
-- email address and contact information;
-- account credentials;
-- address and housing information;
-- household information;
-- pet care experience;
-- adopter profile information;
-- personality assessment responses and resulting trait scores;
-- adoption application information;
-- uploaded identification and supporting documents;
-- information extracted during document verification;
-- application status and screening information;
-- interview-related information;
-- pet-adopter compatibility scores and recommendation results;
-- adoption history;
-- post-adoption welfare reports;
-- photographs or videos submitted for post-adoption monitoring;
-- post-adoption compliance information; and
-- system activity and audit records necessary for security and accountability.
+        <p class="mt-4 max-w-3xl font-secondary text-sm leading-7 text-gray-600">
+            This Privacy Notice explains what personal information PAIRfect Paws
+            may collect and process, why it is needed, how it is used and
+            protected, and the rights available to users regarding their
+            personal information.
+        </p>
+    </header>
 
-2. Purpose of Processing
 
-Personal information may be processed for the following purposes:
+    <!-- Introduction -->
+    <section class="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
+        <h2 class="mb-2 font-primary text-base font-bold text-gray-900">
+            How We Handle Your Information
+        </h2>
 
-- creating and managing user accounts;
-- authenticating users;
-- maintaining adopter profiles;
-- administering personality assessments used for adopter profiling;
-- processing adoption applications;
-- verifying submitted information and supporting documents;
-- generating pet-adopter compatibility recommendations;
-- ranking eligible applicants when multiple applicants apply for the same pet;
-- supporting shelter screening and interview procedures;
-- communicating application status updates;
-- recording adoption decisions;
-- conducting scheduled post-adoption welfare monitoring;
-- reviewing welfare concerns and adopter compliance;
-- protecting the security and integrity of PAIRfect Paws;
-- maintaining appropriate audit records; and
-- supporting the academic evaluation and improvement of the PAIRfect Paws capstone system.
+        <p class="font-secondary text-sm leading-7 text-gray-700">
+            PAIRfect Paws processes personal information necessary to support
+            account management, adopter profiling, adoption screening,
+            pet-adopter recommendations, applicant evaluation, document
+            verification, communication, and post-adoption monitoring.
+        </p>
 
-3. Pet-Adopter Matching
+        <p class="mt-3 font-secondary text-sm leading-7 text-gray-700">
+            Personal information will be processed only for declared,
+            legitimate, and relevant purposes associated with the operation,
+            administration, security, evaluation, and improvement of PAIRfect
+            Paws and the shelter's adoption and animal welfare activities.
+        </p>
+    </section>
 
-Adopter profile information and personality assessment results may be processed together with pet characteristics to calculate compatibility-based recommendations using the K-Nearest Neighbors (KNN) algorithm.
 
-Compatibility results are used only as decision-support information.
+    <div class="space-y-8 font-secondary text-sm leading-7">
+        <!-- 1 -->
+        <section>
+            <h2 class="mb-3 flex items-start gap-3 font-primary text-lg font-bold text-gray-900">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-muted text-sm font-bold text-primary">
+                    1
+                </span>
+                Information That May Be Collected
+            </h2>
 
-PAIRfect Paws does not automatically make the final adoption decision.
+            <div class="pl-0 sm:pl-10">
+                <p class="text-gray-700">
+                    The information processed by PAIRfect Paws depends on the
+                    user's role and activities within the system. This may
+                    include:
+                </p>
 
-Authorized shelter personnel remain responsible for evaluating and approving adoption applications.
+                <ul class="mt-3 list-disc space-y-2 pl-5 text-gray-700">
+                    <li>name, email address, contact information, and account information;</li>
+                    <li>address, housing conditions, and household information;</li>
+                    <li>pet ownership or pet care experience;</li>
+                    <li>adopter profile information;</li>
+                    <li>personality assessment responses and resulting trait scores;</li>
+                    <li>adoption application information;</li>
+                    <li>identification documents and other supporting documents;</li>
+                    <li>information extracted or reviewed during document verification;</li>
+                    <li>application status, screening, and interview-related information;</li>
+                    <li>pet-adopter compatibility scores and recommendation results;</li>
+                    <li>adoption history and adoption records;</li>
+                    <li>post-adoption welfare reports and compliance information;</li>
+                    <li>photographs or videos submitted for post-adoption monitoring; and</li>
+                    <li>system activity, security, and audit records necessary for accountability and system protection.</li>
 
-4. Identity and Document Verification
+                </ul>
+            </div>
+        </section>
 
-Applicants may be required to submit identification documents and other supporting documents.
+        <!-- 2 -->
+        <section>
+            <h2 class="mb-3 flex items-start gap-3 font-primary text-lg font-bold text-gray-900">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-muted text-sm font-bold text-primary">
+                    2
+                </span>
+                Purpose of Processing
+            </h2>
 
-PAIRfect Paws may process submitted documents and extracted information to check whether application information is complete and consistent.
+            <div class="pl-0 sm:pl-10">
+                <p class="text-gray-700">
+                    Personal information may be collected and processed for
+                    purposes necessary to operate PAIRfect Paws and support the
+                    shelter's adoption activities, including:
+                </p>
 
-Document verification results may be reviewed by authorized shelter personnel as part of the adoption screening process.
+                <ul class="mt-3 list-disc space-y-2 pl-5 text-gray-700">
+                    <li>creating, authenticating, and managing user accounts;</li>
+                    <li>maintaining adopter profiles;</li>
+                    <li>administering personality assessments used for adopter profiling and recommendation features;</li>
+                    <li>processing and evaluating adoption applications;</li>
+                    <li>verifying submitted information and supporting documents;</li>
+                    <li>generating pet-adopter compatibility recommendations;</li>
+                    <li>organizing eligible applicants when multiple applicants apply for the same pet;</li>
+                    <li>supporting shelter screening and interview procedures;</li>
+                    <li>communicating application status updates and other relevant notifications;</li>
+                    <li>recording adoption decisions and adoption history;</li>
+                    <li>conducting scheduled post-adoption welfare monitoring;</li>
+                    <li>reviewing potential animal welfare concerns and adopter compliance;</li>
+                    <li>protecting the security, integrity, and proper operation of PAIRfect Paws;</li>
+                    <li>maintaining appropriate activity and audit records; and</li>
+                    <li>supporting the academic evaluation, testing, and improvement of the PAIRfect Paws capstone system.</li>
 
-5. Post-Adoption Monitoring
+                </ul>
+            </div>
+        </section>
 
-After an adoption is approved, PAIRfect Paws may process welfare reports, photographs, videos, check-in status, and other information submitted during scheduled post-adoption monitoring.
+        <!-- 3 -->
+        <section>
+            <h2 class="mb-3 flex items-start gap-3 font-primary text-lg font-bold text-gray-900">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-muted text-sm font-bold text-primary">
+                    3
+                </span>
+                Pet-Adopter Matching and Profiling
+            </h2>
 
-These records are used to help the shelter monitor the condition and adjustment of the adopted animal and identify possible welfare concerns that may require follow-up.
+            <div class="pl-0 sm:pl-10">
+                <p class="text-gray-700">
+                    PAIRfect Paws may process adopter profile information,
+                    personality assessment results, and relevant pet
+                    characteristics to generate compatibility-based
+                    recommendations using a K-Nearest Neighbors (KNN)-based
+                    recommendation process.
+                </p>
 
-6. Access to Personal Information
+                <div
+                    class="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
+                    <p class="font-semibold text-gray-900">
+                        Decision-Support Only
+                    </p>
 
-Access to personal information is limited according to the responsibilities and permissions assigned to each system role.
+                    <p class="mt-1 text-gray-700">
+                        Compatibility scores and recommendation results are
+                        intended to assist the adoption process. They do not
+                        automatically approve or reject an adoption application.
+                    </p>
 
-Authorized Administrators and shelter personnel may access information required to manage adoption applications, animal records, applicant screening, and post-adoption monitoring.
+                    <p class="mt-2 text-gray-700">
+                        Authorized shelter personnel remain responsible for
+                        reviewing applications and making final adoption
+                        decisions.
+                    </p>
+                </div>
 
-Authorized Volunteers may access information necessary to perform their assigned shelter responsibilities.
+            </div>
+        </section>
 
-Ordinary users must not be given access to another user's private adopter or application information.
+        <!-- 4 -->
+        <section>
+            <h2 class="mb-3 flex items-start gap-3 font-primary text-lg font-bold text-gray-900">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-muted text-sm font-bold text-primary">
+                    4
+                </span>
 
-7. Protection of Information
+                Identity and Document Verification
+            </h2>
 
-PAIRfect Paws uses access restrictions and system security measures intended to reduce unauthorized access, disclosure, modification, or misuse of personal information.
+            <div class="pl-0 sm:pl-10">
 
-These measures may include authenticated user accounts, role-based access control, secure password handling, controlled database access, and system activity or audit logging where implemented.
+                <p class="text-gray-700">
+                    Applicants may be required to submit identification and
+                    other supporting documents as part of the adoption
+                    screening process.
+                </p>
 
-8. Data Retention
+                <p class="mt-3 text-gray-700">
+                    PAIRfect Paws may process submitted documents and extracted
+                    information to help determine whether information provided
+                    in an adoption application appears complete and consistent.
+                </p>
 
-Personal information will be retained only for as long as reasonably necessary to support the purposes for which it was collected, applicable shelter operational requirements, academic research requirements, security and audit requirements, or applicable legal obligations.
+                <p class="mt-3 text-gray-700">
+                    Automated document verification results are used only as
+                    decision-support information and may be reviewed manually
+                    by authorized shelter personnel before any adoption-related
+                    decision is made.
+                </p>
 
-Records that are no longer required should be handled in accordance with the project's approved data handling and retention procedures.
+            </div>
+        </section>
 
-9. Rights of Users
+        <!-- 5 -->
+        <section>
+            <h2 class="mb-3 flex items-start gap-3 font-primary text-lg font-bold text-gray-900">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-muted text-sm font-bold text-primary">
+                    5
+                </span>
+                Post-Adoption Monitoring
+            </h2>
 
-Users may exercise applicable rights concerning their personal information under Republic Act No. 10173, or the Data Privacy Act of 2012, subject to applicable requirements and limitations.
+            <div class="pl-0 sm:pl-10">
+                <p class="text-gray-700">
+                    After an adoption is approved, PAIRfect Paws may process
+                    information submitted through scheduled post-adoption
+                    monitoring activities.
+                </p>
 
-Users may contact the responsible PAIRfect Paws or shelter representative regarding questions, corrections, access requests, or other concerns involving their personal information.
+                <p class="mt-3 text-gray-700">
+                    This information may include:
+                </p>
 
-Privacy inquiries may be directed to:
+                <ul class="mt-2 list-disc space-y-2 pl-5 text-gray-700">
+                    <li>welfare check-in responses;</li>
+                    <li>information about the animal's health, behavior, adjustment, and living environment;</li>
+                    <li>photographs or videos of the adopted animal;</li>
+                    <li>monitoring completion and compliance records; and</li>
+                    <li>information relating to potential animal welfare concerns.</li>
 
-@php
-    $privacyContactEmail = config('release.privacy_contact_email');
-    abort_if(app()->isProduction() && blank($privacyContactEmail), 503);
-@endphp
-@if (filled($privacyContactEmail))
-<a href="mailto:{{ $privacyContactEmail }}">{{ $privacyContactEmail }}</a>
-@else
-The official privacy contact must be configured before public release.
-@endif
+                </ul>
 
-10. Consent
+                <p class="mt-3 text-gray-700">
+                    These records help authorized shelter personnel assess the
+                    adopted animal's condition and adjustment after placement and determine whether follow-up may be necessary.
+                </p>
 
-By selecting the Privacy Notice consent checkbox during registration, the user confirms that they have read this notice and consent to the processing of their personal information for the purposes described above.
+            </div>
+        </section>
 
-Consent may be subject to applicable legal and operational requirements associated with records that must be retained for legitimate shelter, security, research, or legal purposes.</div>
-    </article>
+        <!-- 6 -->
+        <section>
+            <h2 class="mb-3 flex items-start gap-3 font-primary text-lg font-bold text-gray-900">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-muted text-sm font-bold text-primary">
+                    6
+                </span>
+                Access to Personal Information
+            </h2>
+
+            <div class="pl-0 sm:pl-10">
+                <p class="text-gray-700">
+                    Access to personal information is limited according to the
+                    roles, responsibilities, and permissions assigned within PAIRfect Paws.
+                </p>
+
+                <ul class="mt-3 list-disc space-y-2 pl-5 text-gray-700">
+
+                    <li>
+                        <strong>Administrators and authorized shelter personnel</strong> may access information necessary to manage adoption
+                        applications, animal records, applicant screening, verification, adoption processing, and post-adoption monitoring.
+                    </li>
+
+                    <li>
+                        <strong>Authorized volunteers</strong> may access only information necessary to perform their assigned shelter responsibilities, subject to their system permissions.
+                    </li>
+
+                    <li>
+                        <strong>Prospective adopters and other ordinary users</strong> must not be given access to 
+                        another user's private profile, application, documents, or other protected personal information.
+                    </li>
+
+                </ul>
+
+            </div>
+        </section>
+
+        <!-- 7 -->
+        <section>
+            <h2 class="mb-3 flex items-start gap-3 font-primary text-lg font-bold text-gray-900">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-muted text-sm font-bold text-primary">
+                    7
+                </span>
+                Protection of Personal Information
+            </h2>
+
+            <div class="pl-0 sm:pl-10">
+
+                <p class="text-gray-700">
+                    PAIRfect Paws uses administrative and technical measures
+                    intended to protect personal information against
+                    unauthorized access, disclosure, alteration, loss, misuse,
+                    or other unauthorized processing.
+                </p>
+
+                <p class="mt-3 text-gray-700">
+                    Depending on the system configuration, these measures may
+                    include:
+                </p>
+
+                <ul class="mt-2 list-disc space-y-2 pl-5 text-gray-700">
+                    <li>authenticated user accounts;</li>
+                    <li>secure password handling;</li>
+                    <li>role-based access control;</li>
+                    <li>controlled access to database information;</li>
+                    <li>restricted access to uploaded documents;</li>
+                    <li>system activity and audit logging; and</li>
+                    <li>other safeguards implemented to support system security and accountability.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 8 -->
+        <section>
+            <h2 class="mb-3 flex items-start gap-3 font-primary text-lg font-bold text-gray-900">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-muted text-sm font-bold text-primary">
+                    8
+                </span>
+                Data Retention
+            </h2>
+
+            <div class="pl-0 sm:pl-10">
+                <p class="text-gray-700">
+                    Personal information should be retained only for as long as
+                    reasonably necessary to fulfill the purposes for which it
+                    was collected and processed, subject to applicable shelter
+                    requirements, academic evaluation requirements, security
+                    and audit requirements, and applicable legal obligations.
+                </p>
+
+                <p class="mt-3 text-gray-700">
+                    Information that is no longer required for a legitimate
+                    purpose should be securely deleted, anonymized, archived,
+                    or otherwise handled in accordance with the project's
+                    approved data retention and disposal procedures.
+                </p>
+            </div>
+        </section>
+
+        <!-- 9 -->
+        <section>
+            <h2 class="mb-3 flex items-start gap-3 font-primary text-lg font-bold text-gray-900">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-muted text-sm font-bold text-primary">
+                    9
+                </span>
+                Rights of Users
+            </h2>
+
+            <div class="pl-0 sm:pl-10">
+
+                <p class="text-gray-700">
+                    Users may exercise applicable rights concerning their
+                    personal information under Republic Act No. 10173, or the
+                    Data Privacy Act of 2012, and its applicable implementing
+                    rules and regulations.
+                </p>
+
+                <p class="mt-3 text-gray-700">
+                    Depending on the circumstances and applicable requirements, these rights may include the right to:
+                </p>
+
+                <ul class="mt-2 list-disc space-y-2 pl-5 text-gray-700">
+                    <li>be informed about the collection and processing of personal information;</li>
+                    <li>request access to personal information concerning the user;</li>
+                    <li>request correction of inaccurate or incomplete information;</li>
+                    <li>object to certain types of personal information processing where applicable;</li>
+                    <li>request appropriate action concerning personal information subject to applicable requirements and limitations; and</li>
+                    <li>raise a privacy concern or complaint regarding the processing of personal information.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 10 -->
+        <section>
+            <h2 class="mb-3 flex items-start gap-3 font-primary text-lg font-bold text-gray-900">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-muted text-sm font-bold text-primary">
+                    10
+                </span>
+                Privacy Inquiries and Requests
+            </h2>
+
+            <div class="pl-0 sm:pl-10">
+                <p class="text-gray-700">
+                    Users may contact the responsible PAIRfect Paws or shelter
+                    representative regarding privacy questions, requests to
+                    access or correct personal information, or other concerns
+                    involving the processing of their personal information.
+                </p>
+
+                <!-- Privacy Contact -->
+                <div class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <p class="font-semibold text-gray-900">
+                        Privacy Contact
+                    </p>
+
+                    <div class="mt-1 text-gray-700">
+
+                        @php
+                            $privacyContactEmail = config('release.privacy_contact_email');
+                            abort_if(
+                                app()->isProduction() && blank($privacyContactEmail),
+                                503
+                            );
+                        @endphp
+
+
+                        @if (filled($privacyContactEmail))
+                            <a href="mailto:{{ $privacyContactEmail }}" class="font-semibold text-primary underline underline-offset-2 hover:opacity-80">
+                                {{ $privacyContactEmail }}
+                            </a>
+                        @else
+                            <p class="text-amber-700">
+                                The official privacy contact must be configured
+                                before public release.
+                            </p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 11 -->
+        <section>
+            <h2 class="mb-3 flex items-start gap-3 font-primary text-lg font-bold text-gray-900">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-muted text-sm font-bold text-primary">
+                    11
+                </span>
+                Consent and Acknowledgment
+            </h2>
+
+            <div class="pl-0 sm:pl-10">
+                <p class="text-gray-700">
+                    By selecting the Privacy Notice acknowledgment and consent
+                    checkbox during registration, the user confirms that they
+                    have read and understood this Privacy Notice and, where
+                    consent is the appropriate basis for processing, agrees to
+                    the collection and processing of their personal information
+                    for the purposes described in this notice.
+                </p>
+
+                <p class="mt-3 text-gray-700">
+                    Certain information may still need to be processed or
+                    retained where permitted or required under applicable law,
+                    shelter operational requirements, security requirements,
+                    contractual obligations, or other applicable lawful grounds.
+                </p>
+
+                <p class="mt-3 text-gray-700">
+                    Where processing is based on consent and withdrawal is
+                    permitted, users may contact the designated privacy
+                    representative regarding their request. Withdrawal does not
+                    affect processing that was lawful before the withdrawal and
+                    may affect access to system features that require the
+                    information concerned.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- Final Notice -->
+        <section
+            class="rounded-2xl border border-gray-200 bg-gray-50 p-5 sm:p-6">
+            <h2 class="mb-2 font-primary text-base font-bold text-gray-900">
+                User Acknowledgment
+            </h2>
+
+            <p class="text-gray-700">
+                Please review this Privacy Notice before creating an account.
+                If you have questions about how your information will be
+                processed, you may contact the designated privacy representative
+                before proceeding.
+            </p>
+        </section>
+                                
+        <!-- Privacy Actions -->
+         <div class="mt-10 flex flex-col-reverse gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:justify-end">
+            <button type="btn btn-secondary" data-close-legal-dialog class="rounded-xl border border-gray-300 bg-white px-6 py-3 font-secondary text-sm font-semibold text-gray-700 transition hover:bg-accent-light hover:border-black focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2">
+                Close
+            </button>
+            <button type="btn btn-primary" data-accept-privacy class="rounded-xl bg-maroon-600 px-6 py-3 font-secondary text-sm font-semibold text-white shadow-sm transition hover:bg-maroon-700 focus:outline-none focus:ring-2 focus:ring-maroon-500 focus:ring-offset-2">
+                I Agree
+            </button>
+        </div>
+
+    </div>
+
+</article>

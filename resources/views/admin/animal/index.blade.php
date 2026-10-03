@@ -4,11 +4,15 @@
 
 @section('content')
 
-    <div class="heading-text">
-        <h2>Animal Records</h2>
-        <p>Manage all shelter animal profiles</p>
-    </div>
+    <div class="main-content-header">
+        <div class="heading-text">
+            <h2>Animal Records</h2>
+            <p>Manage all shelter animal profiles</p>
+        </div>
 
+        @include('partials.notification-bell')
+    </div>
+    
     @if (session('success'))
         <script>
             document.addEventListener('DOMContentLoaded', function () {
