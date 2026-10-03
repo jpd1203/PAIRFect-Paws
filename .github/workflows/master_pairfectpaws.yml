@@ -17,6 +17,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          node-version: '26/x'
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Vite frontend
+        run: npm run build
+
+      - name: Verify Vite manifest
+        run: |
+          test -f public/build/manifest.json
+          echo "Vite manifest exists"
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
