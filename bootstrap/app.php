@@ -14,13 +14,23 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Local/ngrok uses loopback; Azure's TLS-terminating proxy is configured
-        // separately through TRUSTED_PROXIES without forcing HTTPS locally.
-        $trustedProxies = array_values(array_filter(array_map(
-            'trim',
-            explode(',', (string) env('TRUSTED_PROXIES', '127.0.0.1,::1')),
-        )));
-        $middleware->trustProxies(at: $trustedProxies);
+        // Local development trusts loopback only. Azure App Service terminates
+        // TLS at a reverse proxy, so TRUSTED_PROXIES=* can be used there to
+        // honor X-Forwarded-* headers and generate HTTPS URLs correctly.
+        $trustedProxies = trim(
+            (string) env('TRUSTED_PROXIES', '127.0.0.1,::1')
+        );
+
+        if ($trustedProxies === '*') {
+            $middleware->trustProxies(at: '*');
+        } else {
+            $middleware->trustProxies(
+                at: array_values(array_filter(array_map(
+                    'trim',
+                    explode(',', $trustedProxies),
+                )))
+            );
+        }
 
         $middleware->alias([
             'admin' => AdminOnly::class,
