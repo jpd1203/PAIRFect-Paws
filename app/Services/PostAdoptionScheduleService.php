@@ -24,6 +24,7 @@ class PostAdoptionScheduleService
 
         AdoptionApplication::query()
             ->where('status', ApplicationStatus::Approved->value)
+            ->whereHas('handover', fn ($query) => $query->where('adopter_outcome', 'received'))
             ->orderBy('id')
             ->chunkById(100, function ($applications) use (&$created) {
                 foreach ($applications as $application) {
@@ -43,6 +44,10 @@ class PostAdoptionScheduleService
     {
         if ($application->status !== ApplicationStatus::Approved) {
             throw new \InvalidArgumentException('Post-adoption check-ins can only be scheduled for an approved application.');
+        }
+
+        if (! $application->hasCompletedHandover()) {
+            return collect();
         }
 
         $adoptionDate = $this->adoptionDate($application);

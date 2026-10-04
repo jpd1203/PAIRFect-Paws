@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\Role;
 use App\Models\Pet;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,7 +18,7 @@ class PublicPageTitleTest extends TestCase
 
         $this->get(route('landing'))
             ->assertOk()
-            ->assertSee('<title>PAIRfect Paws - Compassion Make Us Human</title>', false);
+            ->assertSee('<title>PAIRfect Paws</title>', false);
 
         $this->get(route('donate'))
             ->assertOk()
@@ -35,5 +37,31 @@ class PublicPageTitleTest extends TestCase
         $this->get(route('pets.show', $pet))
             ->assertOk()
             ->assertSee('<title>Title Test Pet - PAIRfect Paws</title>', false);
+
+        $this->get(route('access-denied'))
+            ->assertOk()
+            ->assertSee('<title>Access Denied | PAIRfect Paws</title>', false);
+    }
+
+    public function test_admin_page_titles_add_the_brand_only_when_it_is_missing(): void
+    {
+        $admin = User::create([
+            'first_name' => 'Title',
+            'last_name' => 'Admin',
+            'email' => 'title-admin@example.test',
+            'password' => 'password123',
+            'role' => Role::Administrator->value,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.volunteers.create'))
+            ->assertOk()
+            ->assertSee('<title>Create Staff Account | PAIRfect Paws</title>', false);
+
+        $this->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('<title>Dashboard - PAIRfect Paws Admin</title>', false);
     }
 }

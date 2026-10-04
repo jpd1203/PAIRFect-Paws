@@ -9,6 +9,7 @@ use App\Enums\Role;
 use App\Mail\TransactionalMail;
 use App\Mail\WelfareReportReceiptMail;
 use App\Models\AdoptionApplication;
+use App\Models\Handover;
 use App\Models\Pet;
 use App\Models\PostAdoptionCaptureChallenge;
 use App\Models\PostAdoptionLog;
@@ -545,6 +546,17 @@ class PostAdoptionMonitoringTest extends TestCase
             'status' => $status->value,
             'queue_closed_at' => now(),
         ]);
+        if ($status === ApplicationStatus::Approved) {
+            Handover::create([
+                'code' => 'HV-TEST-'.$application->id,
+                'application_id' => $application->id,
+                'pet_id' => $pet->id,
+                'user_id' => $adopter->id,
+                'released_at' => now(),
+                'adopter_outcome' => 'received',
+                'received_at' => now(),
+            ]);
+        }
         $log = PostAdoptionLog::create([
             'application_id' => $application->id,
             'milestone' => Milestone::ThreeDays,

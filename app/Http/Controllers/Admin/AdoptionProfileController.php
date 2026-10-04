@@ -8,8 +8,9 @@ use App\Http\Controllers\Controller;
 use App\Models\AdoptionApplication;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
-use App\Services\PostAdoptionClock;
 use App\Services\AdopterHistoryService;
+use App\Services\DocumentVerificationService;
+use App\Services\PostAdoptionClock;
 use App\Services\PostAdoptionScheduleService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -48,7 +49,7 @@ class AdoptionProfileController extends Controller
     public function history(Request $request, User $user, AdopterHistoryService $history)
     {
         $applications = $user->adoptionApplications()
-            ->with(['pet', 'postAdoptionLogs'])
+            ->with(['pet', 'postAdoptionLogs', 'handover'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();
@@ -77,21 +78,21 @@ class AdoptionProfileController extends Controller
         );
 
         $isApprovedPlacement = $selectedPlacement?->status === ApplicationStatus::Approved;
+        $monitoringReady = $selectedPlacement?->hasCompletedHandover() ?? false;
         $adoptionDate = $isApprovedPlacement
             ? $this->adoptionDate($selectedPlacement)
             : null;
 
-        $monitoringLogs = $isApprovedPlacement
+        $monitoringLogs = $monitoringReady
             ? $this->orderedMonitoringLogs($selectedPlacement)
             : collect();
 
-        $monitoringTimeline = $this->monitoringTimeline(
-            $monitoringLogs,
-            $adoptionDate,
-        );
+        $monitoringTimeline = $monitoringReady
+            ? $this->monitoringTimeline($monitoringLogs, $adoptionDate)
+            : collect();
         $monitoringMetrics = $this->monitoringMetrics(
             $monitoringTimeline,
-            $isApprovedPlacement,
+            $monitoringReady,
         );
         $historySummary = $history->summarize($applications);
         $historyEvents = $history->timeline($applications);
@@ -105,6 +106,7 @@ class AdoptionProfileController extends Controller
             'monitoringLogs',
             'monitoringTimeline',
             'monitoringMetrics',
+            'monitoringReady',
             'historySummary',
             'historyEvents',
         ));
@@ -359,8 +361,16 @@ class AdoptionProfileController extends Controller
         );
     }
 
-    public function verification(AdoptionApplication $application)
+    public function verification(AdoptionApplication $application, DocumentVerificationService $verificationService)
     {
-        return view('admin.application.document-verification', compact('application'));
+        $ocrBreakdown = filled($application->ocr_extracted_text)
+            ? $verificationService->crossReferenceBreakdown($application->ocr_extracted_text, [
+                'first_name' => $application->first_name,
+                'last_name' => $application->last_name,
+                ...$application->ocr_address_payload,
+            ])
+            : null;
+
+        return view('admin.application.document-verification', compact('application', 'ocrBreakdown'));
     }
 }

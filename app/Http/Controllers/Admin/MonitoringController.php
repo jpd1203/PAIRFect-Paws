@@ -22,6 +22,7 @@ class MonitoringController extends Controller
     public function index()
     {
         $checkIns = PostAdoptionLog::query()
+            ->afterCompletedHandover()
             ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
             ->orderByRaw('CASE WHEN is_flagged = 1 AND resolved_at IS NULL THEN 0 ELSE 1 END')
             ->orderByDesc('scheduled_date')
@@ -38,6 +39,7 @@ class MonitoringController extends Controller
     public function flagged()
     {
         $flagged = PostAdoptionLog::query()
+            ->afterCompletedHandover()
             ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
             ->where('is_flagged', true)
             ->whereNull('resolved_at')
@@ -51,6 +53,7 @@ class MonitoringController extends Controller
     /** Stream a submitted welfare photo through a staff-authenticated route. */
     public function photo(PostAdoptionLog $log)
     {
+        abort_unless($log->adoptionApplication?->hasCompletedHandover(), 404);
         $path = $log->photo_path;
 
         abort_unless(
@@ -83,6 +86,7 @@ class MonitoringController extends Controller
     /** Stream a submitted welfare video through a staff-authenticated route. */
     public function video(PostAdoptionLog $log)
     {
+        abort_unless($log->adoptionApplication?->hasCompletedHandover(), 404);
         $path = $log->video_path;
 
         abort_unless($this->isSafePrivatePath($path), 404);
@@ -126,6 +130,7 @@ class MonitoringController extends Controller
     /** Queue one staff-requested reminder; the job records only SMTP-accepted deliveries. */
     public function sendReminder(Request $request, PostAdoptionLog $log)
     {
+        abort_unless($log->adoptionApplication?->hasCompletedHandover(), 404);
         $validated = $request->validate([
             'custom_message' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -208,6 +213,7 @@ class MonitoringController extends Controller
     /** Manually flag a monitoring case and retain the reason in its audit data. */
     public function flag(Request $request, PostAdoptionLog $log)
     {
+        abort_unless($log->adoptionApplication?->hasCompletedHandover(), 404);
         $validated = $request->validate([
             'reason' => ['required', 'string', 'max:2000'],
         ]);
@@ -263,6 +269,7 @@ class MonitoringController extends Controller
     /** Resolve an open flag while preserving its historical reasons. */
     public function resolve(Request $request, PostAdoptionLog $log)
     {
+        abort_unless($log->adoptionApplication?->hasCompletedHandover(), 404);
         $validated = $request->validate([
             'resolution_note' => ['required', 'string', 'max:2000'],
         ]);
@@ -339,5 +346,4 @@ class MonitoringController extends Controller
             && preg_match('~^[A-Za-z]:[\\\\/]~', $path) !== 1;
     }
 }
-
 

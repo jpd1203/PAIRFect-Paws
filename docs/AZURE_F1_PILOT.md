@@ -82,6 +82,17 @@ Vision service-account JSON outside the deployed/public tree and point
 fall back to staff review, but cannot prove automatic verification without
 working credentials and the Vision API. Do not put these values into GitHub.
 
+PAIRfect Paws automatic OCR cross-referencing accepts only supported
+government-issued IDs visibly containing the applicant's full name and current
+residential address. Philippine National IDs and LTO driver's licenses are the
+configured supported categories; passports, bills, and other proof-of-address
+documents cannot pass automatically. Incomplete or mismatched readable documents
+require resubmission; provider failures go to staff manual review. OCR does not
+establish document authenticity. Run `php artisan ocr:health` after deployment
+to test ADC authentication and Vision reachability with a synthetic image.
+`php artisan release:check` checks the OCR provider and credential file locally,
+without depending on Google's availability.
+
 For a controlled F1 pilot, `QUEUE_CONNECTION=sync` is an **explicit choice**:
 transactional mail then runs during requests, so slow SMTP can delay them.
 Verification mail already uses the sync connection. `QUEUE_CONNECTION=database`

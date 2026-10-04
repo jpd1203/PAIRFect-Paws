@@ -24,7 +24,8 @@ class AdoptionApplication extends Model
         'ocr_extracted_text', 'ocr_confidence', 'document_match_score',
         'document_verification_reasons', 'document_uploaded_at',
         'document_verified_at', 'document_reupload_count',
-        'interview_date', 'interview_notes', 'conducted_by', 'decision_remarks', 'version',
+        'interview_date', 'interview_mode', 'interview_meeting_url', 'interview_location',
+        'interview_notes', 'conducted_by', 'decision_remarks', 'version',
         'is_primary_candidate', 'queue_promoted_at', 'admin_review_flagged_at',
         'queue_closed_at', 'adopted_at', 'override_reason',
         'reschedule_options', 'reschedule_reason', 'reschedule_status',
@@ -86,6 +87,17 @@ class AdoptionApplication extends Model
     public function handover()
     {
         return $this->hasOne(Handover::class, 'application_id');
+    }
+
+    public function hasCompletedHandover(): bool
+    {
+        if ($this->status !== ApplicationStatus::Approved) {
+            return false;
+        }
+
+        return $this->relationLoaded('handover')
+            ? $this->handover?->adopter_outcome === 'received'
+            : $this->handover()->where('adopter_outcome', 'received')->exists();
     }
 
     // ─── Accessors used by frontend Blade templates ────────────────────────

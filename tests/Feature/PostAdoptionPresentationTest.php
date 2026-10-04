@@ -8,6 +8,7 @@ use App\Enums\DocumentVerificationStatus;
 use App\Enums\Milestone;
 use App\Enums\Role;
 use App\Models\AdoptionApplication;
+use App\Models\Handover;
 use App\Models\Pet;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
@@ -112,6 +113,8 @@ class PostAdoptionPresentationTest extends TestCase
                 'interview_date' => '2026-08-25',
                 'interview_time' => '09:30',
                 'staff_id' => $staff->id,
+                'interview_mode' => 'InPerson',
+                'interview_location' => 'PAIRfect Paws shelter reception',
             ])
             ->assertSessionHas('success');
 
@@ -147,12 +150,25 @@ class PostAdoptionPresentationTest extends TestCase
                 : AvailabilityStatus::Available->value,
         ]);
 
-        return AdoptionApplication::create([
+        $application = AdoptionApplication::create([
             'user_id' => $adopter->id,
             'pet_id' => $pet->id,
             'status' => $status->value,
             'adopted_at' => '2026-08-25 00:00:00',
         ]);
+        if ($status === ApplicationStatus::Approved) {
+            Handover::create([
+                'code' => 'HV-TEST-'.$application->id,
+                'application_id' => $application->id,
+                'pet_id' => $pet->id,
+                'user_id' => $adopter->id,
+                'released_at' => now(),
+                'adopter_outcome' => 'received',
+                'received_at' => now(),
+            ]);
+        }
+
+        return $application;
     }
 
     private function log(

@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\ApplicationStatus;
 use App\Enums\Milestone;
 use App\Enums\PetCurrentStatus;
 use App\Services\PostAdoptionClock;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class PostAdoptionLog extends Model
@@ -43,6 +45,14 @@ class PostAdoptionLog extends Model
     public function adoptionApplication()
     {
         return $this->belongsTo(AdoptionApplication::class, 'application_id');
+    }
+
+    /** Only completed handovers enter the active post-adoption workflow. */
+    public function scopeAfterCompletedHandover(Builder $query): Builder
+    {
+        return $query->whereHas('adoptionApplication', fn (Builder $application) => $application
+            ->where('status', ApplicationStatus::Approved->value)
+            ->whereHas('handover', fn (Builder $handover) => $handover->where('adopter_outcome', 'received')));
     }
 
     public function resolvedBy()

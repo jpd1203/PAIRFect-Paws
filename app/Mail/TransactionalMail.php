@@ -46,6 +46,6 @@ class TransactionalMail extends Mailable implements ShouldBeEncrypted, ShouldQue
 
     public function content(): Content
     {
-        return new Content(view: 'mail.transactional');
+        return new Content(view: 'mail.transactional', text: 'mail.transactional-text');
     }
 }
