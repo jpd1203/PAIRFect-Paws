@@ -219,10 +219,10 @@ class HandoverConfirmationController extends Controller
             return redirect()->route('adopter.handover.status', $handover);
         }
 
-        return redirect()->route('application.index')->with(
-            'info',
-            'Handover Status becomes available after an adoption has been approved.'
-        );
+        return redirect()->route('application.index')->with('toast', [
+            'type' => 'error',
+            'message' => 'You have no pending handovers. Handover Status becomes available after an adoption is approved.',
+        ]);
     }
 
     private function authorizeOwnedHandover(Request $request, Handover $handover): void

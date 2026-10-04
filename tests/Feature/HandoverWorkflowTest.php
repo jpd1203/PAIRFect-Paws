@@ -24,12 +24,33 @@ class HandoverWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_adopter_without_approved_adoption_sees_handover_unavailable_notice(): void
+    {
+        $adopter = $this->adopter('new-owner@example.test');
+
+        $this->actingAs($adopter)
+            ->get(route('animal.index'))
+            ->assertOk()
+            ->assertSee('data-handover-unavailable', false);
+
+        $this->get(route('adopter.handover.my'))
+            ->assertRedirect(route('application.index'))
+            ->assertSessionHas('toast', [
+                'type' => 'error',
+                'message' => 'You have no pending handovers. Handover Status becomes available after an adoption is approved.',
+            ]);
+    }
+
     public function test_adopter_handover_status_backfills_their_approved_application_and_shows_the_status_view(): void
     {
         $adopter = $this->adopter('owner@example.test');
         $application = $this->approvedApplication($adopter);
 
         $response = $this->actingAs($adopter)->get(route('adopter.handover.my'));
+
+        $this->get(route('animal.index'))
+            ->assertOk()
+            ->assertDontSee('data-handover-unavailable', false);
 
         $handover = Handover::where('application_id', $application->id)->firstOrFail();
         $response->assertRedirect(route('adopter.handover.status', $handover));
