@@ -42,6 +42,18 @@ final class ValidateProductionRelease extends Command
             $errors[] = 'PRIVACY_CONTACT_EMAIL must be configured with a valid address.';
         }
 
+        if (config('document_verification.provider') !== 'google_vision') {
+            $errors[] = 'DOCUMENT_OCR_PROVIDER must be google_vision.';
+        }
+        $credentialPath = trim((string) config('document_verification.google_application_credentials'));
+        $absoluteCredentialPath = str_starts_with($credentialPath, '/')
+            || str_starts_with($credentialPath, '\\\\')
+            || preg_match('/^[A-Za-z]:[\\\\\/]/', $credentialPath) === 1;
+        $credentialFile = $absoluteCredentialPath ? $credentialPath : base_path($credentialPath);
+        if ($credentialPath === '' || ! is_file($credentialFile) || ! is_readable($credentialFile)) {
+            $errors[] = 'GOOGLE_APPLICATION_CREDENTIALS must point to a readable private service-account file.';
+        }
+
         $probePath = (string) config('post_adoption.capture.ffprobe_path');
         $absoluteProbePath = str_starts_with($probePath, '/')
             || preg_match('/^[A-Za-z]:[\\\\\/]/', $probePath) === 1;

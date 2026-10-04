@@ -47,6 +47,7 @@ class ApplicationController extends Controller
                 'id', 'user_id', 'pet_id', 'status', 'created_at', 'updated_at',
                 'document_verification_status', 'document_verification_reasons',
                 'document_reupload_count', 'interview_date', 'conducted_by',
+                'interview_mode', 'interview_meeting_url', 'interview_location',
                 'reschedule_status', 'reschedule_options',
             ])
             ->where('user_id', Auth::id())

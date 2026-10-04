@@ -20,8 +20,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
-use Tests\TestCase;
 use Tests\Concerns\BuildsMatchingFixtures;
+use Tests\TestCase;
 
 class DocumentVerificationTest extends TestCase
 {
@@ -71,6 +71,76 @@ class DocumentVerificationTest extends TestCase
         $this->assertSame(DocumentVerificationStatus::Verified, $result->status);
         $this->assertSame('Philippine National ID', $result->documentType);
         $this->assertGreaterThanOrEqual(0.72, $result->matchScore);
+    }
+
+    public function test_passport_is_recognized_but_never_automatically_verified_even_with_a_perfect_match(): void
+    {
+        $result = app(DocumentVerificationService::class)->crossReference(
+            "PASSPORT\nJUAN CRUZ\nADDRESS 123 RIZAL STREET QUEZON CITY",
+            ['first_name' => 'Juan', 'last_name' => 'Cruz', 'address' => '123 Rizal Street Quezon City'],
+        );
+
+        $this->assertSame('Passport', $result->documentType);
+        $this->assertSame(1.0, $result->matchScore);
+        $this->assertSame(DocumentVerificationStatus::NeedsResubmission, $result->status);
+        $this->assertStringContainsString('not supported for automatic verification', implode(' ', $result->reasons));
+    }
+
+    public function test_proof_of_address_only_is_not_a_supported_identity_document(): void
+    {
+        $result = app(DocumentVerificationService::class)->crossReference(
+            "UTILITY BILL\nJUAN CRUZ\nADDRESS 123 RIZAL STREET QUEZON CITY",
+            ['first_name' => 'Juan', 'last_name' => 'Cruz', 'address' => '123 Rizal Street Quezon City'],
+        );
+
+        $this->assertSame('Proof of Address', $result->documentType);
+        $this->assertSame(DocumentVerificationStatus::NeedsResubmission, $result->status);
+        $this->assertStringContainsString('not supported for automatic verification', implode(' ', $result->reasons));
+    }
+
+    public function test_supported_id_without_residential_address_requests_resubmission(): void
+    {
+        $result = app(DocumentVerificationService::class)->crossReference(
+            "REPUBLIC OF THE PHILIPPINES\nPHILIPPINE IDENTIFICATION CARD\nJUAN CRUZ\nIDENTIFICATION NUMBER 123456789012",
+            ['first_name' => 'Juan', 'last_name' => 'Cruz', 'address' => '123 Rizal Street Quezon City'],
+        );
+
+        $this->assertSame('Philippine National ID', $result->documentType);
+        $this->assertSame(DocumentVerificationStatus::NeedsResubmission, $result->status);
+        $this->assertStringContainsString('does not contain enough residential address information', implode(' ', $result->reasons));
+    }
+
+    public function test_generic_government_id_is_not_assumed_to_show_an_address(): void
+    {
+        $result = app(DocumentVerificationService::class)->crossReference(
+            "REPUBLIC OF THE PHILIPPINES\nIDENTIFICATION CARD\nJUAN CRUZ\n123 RIZAL STREET QUEZON CITY",
+            ['first_name' => 'Juan', 'last_name' => 'Cruz', 'address' => '123 Rizal Street Quezon City'],
+        );
+
+        $this->assertSame('Government ID', $result->documentType);
+        $this->assertSame(DocumentVerificationStatus::NeedsResubmission, $result->status);
+    }
+
+    public function test_lto_drivers_license_with_name_and_address_is_supported(): void
+    {
+        $result = app(DocumentVerificationService::class)->crossReference(
+            "REPUBLIC OF THE PHILIPPINES\nLAND TRANSPORTATION OFFICE\nDRIVER'S LICENSE\nJUAN CRUZ\nADDRESS 123 RIZAL STREET QUEZON CITY",
+            ['first_name' => 'Juan', 'last_name' => 'Cruz', 'address' => '123 Rizal Street Quezon City'],
+        );
+
+        $this->assertSame('Philippine Driver License', $result->documentType);
+        $this->assertSame(DocumentVerificationStatus::Verified, $result->status);
+    }
+
+    public function test_wrong_last_name_cannot_be_compensated_by_matching_address(): void
+    {
+        $result = app(DocumentVerificationService::class)->crossReference(
+            "PHILIPPINE IDENTIFICATION CARD\nJUAN SANTOS\n123 RIZAL STREET QUEZON CITY",
+            ['first_name' => 'Juan', 'last_name' => 'Cruz', 'address' => '123 Rizal Street Quezon City'],
+        );
+
+        $this->assertSame(DocumentVerificationStatus::NeedsResubmission, $result->status);
+        $this->assertStringContainsString('name extracted from the document does not consistently match', implode(' ', $result->reasons));
     }
 
     public function test_mismatched_or_unclear_text_requests_a_replacement(): void
@@ -126,7 +196,7 @@ class DocumentVerificationTest extends TestCase
     public function test_equivalent_philippine_address_abbreviations_still_match(): void
     {
         $result = app(DocumentVerificationService::class)->crossReference(
-            "REPUBLIC OF THE PHILIPPINES\nIDENTIFICATION CARD\nTEST APPLICANT\n4489 V. FRANCISCO ST. STA. MESA\nBARANGAY 590 CITY OF MANILA PHL",
+            "REPUBLIC OF THE PHILIPPINES\nPHILIPPINE IDENTIFICATION CARD\nTEST APPLICANT\n4489 V. FRANCISCO ST. STA. MESA\nBARANGAY 590 CITY OF MANILA PHL",
             [
                 'first_name' => 'Test',
                 'last_name' => 'Applicant',
@@ -137,10 +207,20 @@ class DocumentVerificationTest extends TestCase
         $this->assertSame(DocumentVerificationStatus::Verified, $result->status);
     }
 
+    public function test_ncr_and_national_capital_region_are_equivalent_without_weakening_street_matching(): void
+    {
+        $result = app(DocumentVerificationService::class)->crossReference(
+            "PHILIPPINE IDENTIFICATION CARD\nJUAN CRUZ\n123 RIZAL ST CITY OF MANILA NCR",
+            ['first_name' => 'Juan', 'last_name' => 'Cruz', 'address' => '123 Rizal Street Manila National Capital Region'],
+        );
+
+        $this->assertSame(DocumentVerificationStatus::Verified, $result->status);
+    }
+
     public function test_missing_district_is_allowed_when_house_street_and_city_match(): void
     {
         $result = app(DocumentVerificationService::class)->crossReference(
-            "REPUBLIC OF THE PHILIPPINES\nIDENTIFICATION CARD\nTEST APPLICANT\n1200 LUNA STREET MANILA",
+            "REPUBLIC OF THE PHILIPPINES\nPHILIPPINE IDENTIFICATION CARD\nTEST APPLICANT\n1200 LUNA STREET MANILA",
             [
                 'first_name' => 'Test',
                 'last_name' => 'Applicant',
@@ -154,7 +234,7 @@ class DocumentVerificationTest extends TestCase
     public function test_structured_address_allows_an_omitted_barangay_and_district_when_core_address_matches(): void
     {
         $result = app(DocumentVerificationService::class)->crossReference(
-            "REPUBLIC OF THE PHILIPPINES\nIDENTIFICATION CARD\nTEST APPLICANT\n4489 V FRANCISCO ST CITY OF MANILA",
+            "REPUBLIC OF THE PHILIPPINES\nPHILIPPINE IDENTIFICATION CARD\nTEST APPLICANT\n4489 V FRANCISCO ST CITY OF MANILA",
             $this->structuredOcrApplicant(),
         );
 
@@ -214,6 +294,27 @@ class DocumentVerificationTest extends TestCase
         $this->assertFalse($result->isVerified());
     }
 
+    public function test_ocr_health_checks_configured_credentials_and_live_vision_without_printing_secrets(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('credentials.json', '{}');
+        config()->set('document_verification.google_application_credentials', Storage::disk('local')->path('credentials.json'));
+        Http::fake(['vision.googleapis.com/*' => Http::response(['responses' => [[]]])]);
+
+        $this->artisan('ocr:health')->assertSuccessful()->expectsOutput('Result: HEALTHY');
+        Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Bearer adc-test-token')
+            && $request->data()['requests'][0]['features'] === [['type' => 'DOCUMENT_TEXT_DETECTION']]);
+    }
+
+    public function test_ocr_health_fails_without_configured_credentials_and_does_not_call_vision(): void
+    {
+        config()->set('document_verification.google_application_credentials', null);
+        Http::fake();
+
+        $this->artisan('ocr:health')->assertFailed()->expectsOutput('Result: CONFIGURATION OR PROVIDER ERROR');
+        Http::assertNothingSent();
+    }
+
     public function test_provider_request_uses_document_text_detection_only(): void
     {
         Storage::fake('local');
@@ -222,7 +323,7 @@ class DocumentVerificationTest extends TestCase
             'vision.googleapis.com/*' => Http::response([
                 'responses' => [[
                     'fullTextAnnotation' => [
-                        'text' => "REPUBLIC OF THE PHILIPPINES\nIDENTIFICATION CARD\nJUAN CRUZ\n123 RIZAL STREET QUEZON CITY",
+                        'text' => "REPUBLIC OF THE PHILIPPINES\nPHILIPPINE IDENTIFICATION CARD\nJUAN CRUZ\n123 RIZAL STREET QUEZON CITY",
                     ],
                 ]],
             ]),
@@ -284,7 +385,7 @@ class DocumentVerificationTest extends TestCase
                 'responses' => [[
                     'responses' => [[
                         'fullTextAnnotation' => [
-                            'text' => "REPUBLIC OF THE PHILIPPINES\nIDENTIFICATION CARD\nJUAN CRUZ\n123 RIZAL STREET QUEZON CITY",
+                            'text' => "REPUBLIC OF THE PHILIPPINES\nPHILIPPINE IDENTIFICATION CARD\nJUAN CRUZ\n123 RIZAL STREET QUEZON CITY",
                         ],
                     ]],
                 ]],
@@ -426,6 +527,15 @@ class DocumentVerificationTest extends TestCase
             ['The address extracted from the document does not consistently match the application.'],
             'Government ID',
         ));
+        $verifier->shouldReceive('crossReferenceBreakdown')->andReturn([
+            'text_quality_pass' => true,
+            'supported_document_type' => false,
+            'first_name_pass' => true,
+            'last_name_pass' => true,
+            'address_pass' => false,
+            'address_evidence' => true,
+            'hard_address_conflict' => false,
+        ]);
         $this->app->instance(DocumentVerificationService::class, $verifier);
 
         $this->actingAs($adopter)
@@ -554,6 +664,42 @@ class DocumentVerificationTest extends TestCase
             ->assertRedirect(route('access-denied'));
     }
 
+    public function test_staff_verification_screen_shows_independent_gates_but_adopter_cannot_access_it(): void
+    {
+        [$adopter, $pet] = $this->adopterAndPet();
+        $application = AdoptionApplication::create([
+            'user_id' => $adopter->id,
+            'pet_id' => $pet->id,
+            'applicant_first_name' => 'Juan',
+            'applicant_last_name' => 'Cruz',
+            ...$this->applicationAddressAttributes(),
+            'status' => ApplicationStatus::DocumentFlagged->value,
+            'document_verification_status' => DocumentVerificationStatus::NeedsResubmission->value,
+            'document_type' => 'Passport',
+            'ocr_extracted_text' => "PASSPORT\nJUAN CRUZ\n123 RIZAL STREET QUEZON CITY",
+        ]);
+        $staff = User::create([
+            'first_name' => 'Document',
+            'last_name' => 'Reviewer',
+            'email' => 'document-reviewer@example.test',
+            'password' => bcrypt('password'),
+            'role' => Role::Administrator->value,
+            'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($staff)
+            ->get(route('admin.applications.document-verification', $application))
+            ->assertOk()
+            ->assertSee('Automatic OCR Cross-Reference (Current Policy)')
+            ->assertSee('Supported ID type')
+            ->assertSee('First name')
+            ->assertSee('Residential address');
+
+        $this->actingAs($adopter)
+            ->get(route('admin.applications.document-verification', $application))
+            ->assertRedirect(route('access-denied'));
+    }
+
     private function adopterAndPet(): array
     {
         $adopter = User::create([
@@ -617,5 +763,3 @@ class DocumentVerificationTest extends TestCase
         ];
     }
 }
-
-

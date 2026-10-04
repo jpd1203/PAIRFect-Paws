@@ -272,7 +272,6 @@ final class DefenseDemoSeeder extends Seeder
             'queue_closed_at' => $date->setTime(15, 0)->utc(),
         ]);
         $application->pet->update(['availability_status' => AvailabilityStatus::Adopted->value]);
-        app(PostAdoptionScheduleService::class)->ensureForApplication($application);
         $handover = app(HandoverService::class)->forApprovedApplication($application);
         $handover->update([
             'release_method' => 'pickup', 'release_date' => $date->toDateString(),
@@ -280,6 +279,7 @@ final class DefenseDemoSeeder extends Seeder
             'released_at' => $date->setTime(15, 0)->utc(),
             'adopter_outcome' => 'received', 'adopter_confirmed_at' => $date->setTime(16, 0)->utc(),
         ]);
+        app(PostAdoptionScheduleService::class)->ensureForApplication($application);
         DB::table('handovers')->where('id', $handover->id)->update(['created_at' => $date->setTime(15, 0)->utc()]);
         DB::table('post_adoption_logs')->where('application_id', $application->id)->update([
             'created_at' => $date->setTime(15, 0)->utc(),

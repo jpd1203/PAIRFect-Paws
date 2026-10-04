@@ -4,6 +4,7 @@
     
     // Flagged cases count (persistent, not dismissible)
     $unresolvedMonitoringFlags = \App\Models\PostAdoptionLog::query()
+        ->afterCompletedHandover()
         ->where('is_flagged', true)
         ->whereNull('resolved_at')
         ->count();
@@ -18,6 +19,7 @@
         ->count();
 
     $pendingMonitoringCount = \App\Models\PostAdoptionLog::query()
+        ->afterCompletedHandover()
         ->whereNull('submitted_date')
         ->count();
 @endphp

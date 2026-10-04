@@ -70,6 +70,8 @@ class VolunteerRbacTest extends TestCase
             'staff_id' => $volunteer->id,
             'interview_date' => $scheduledAt->format('Y-m-d'),
             'interview_time' => $scheduledAt->format('H:i'),
+            'interview_mode' => 'InPerson',
+            'interview_location' => 'PAIRfect Paws shelter reception',
         ])->assertRedirect()->assertSessionHas('success');
 
         $this->assertSame(ApplicationStatus::InterviewScheduled, $application->refresh()->status);
@@ -161,6 +163,15 @@ class VolunteerRbacTest extends TestCase
             'user_id' => $adopter->id,
             'pet_id' => $pet->id,
             'status' => ApplicationStatus::Approved->value,
+        ]);
+        \App\Models\Handover::create([
+            'code' => 'HV-TEST-'.$application->id,
+            'application_id' => $application->id,
+            'pet_id' => $pet->id,
+            'user_id' => $adopter->id,
+            'released_at' => now(),
+            'adopter_outcome' => 'received',
+            'received_at' => now(),
         ]);
         $log = PostAdoptionLog::create([
             'application_id' => $application->id,

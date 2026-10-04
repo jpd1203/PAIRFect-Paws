@@ -8,5 +8,7 @@ return [
     'minimum_match_score' => (float) env('DOCUMENT_OCR_MINIMUM_MATCH_SCORE', 0.72),
     'minimum_name_similarity' => (float) env('DOCUMENT_OCR_MINIMUM_NAME_SIMILARITY', 0.82),
     'minimum_address_similarity' => (float) env('DOCUMENT_OCR_MINIMUM_ADDRESS_SIMILARITY', 0.60),
+    // Recognition alone is not enough: these Philippine IDs can carry both name and residence.
+    'automatically_supported_document_types' => ['Philippine National ID', 'Philippine Driver License'],
     'maximum_adopter_reuploads' => (int) env('DOCUMENT_MAX_ADOPTER_REUPLOADS', 1),
 ];

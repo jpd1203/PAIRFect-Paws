@@ -7,6 +7,7 @@ use App\Enums\DocumentVerificationStatus;
 use App\Enums\Milestone;
 use App\Enums\Role;
 use App\Models\AdoptionApplication;
+use App\Models\Handover;
 use App\Models\Pet;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
@@ -169,6 +170,17 @@ class AdopterHistoryScreeningTest extends TestCase
             'user_id' => $user->id, 'pet_id' => $pet->id, 'status' => $status->value,
             'document_verification_status' => DocumentVerificationStatus::Verified->value,
         ]);
+        if ($status === ApplicationStatus::Approved) {
+            Handover::create([
+                'code' => 'HV-TEST-'.$application->id,
+                'application_id' => $application->id,
+                'pet_id' => $pet->id,
+                'user_id' => $user->id,
+                'released_at' => now(),
+                'adopter_outcome' => 'received',
+                'received_at' => now(),
+            ]);
+        }
         $application->timestamps = false;
         $application->forceFill([
             'created_at' => now()->addDays($daysAgo),

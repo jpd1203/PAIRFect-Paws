@@ -1,6 +1,38 @@
 /** Applications — drives Review / Schedule Interview / Interview Notes / History / Compatibility modals. */
 const APPLICATIONS = JSON.parse(document.getElementById('applicationData')?.textContent || '[]');
 
+function syncInterviewFields(form) {
+    const mode = form.querySelector('[name="interview_mode"]')?.value;
+    form.querySelectorAll('[data-interview-field]').forEach((field) => {
+        const active = field.dataset.interviewField === mode;
+        field.hidden = !active;
+        field.style.display = active ? '' : 'none';
+        const input = field.querySelector('input, textarea');
+        if (!input) return;
+        input.disabled = !active;
+        input.required = active;
+        if (!active) input.value = '';
+    });
+}
+
+function setInterviewFields(form, application) {
+    form.querySelector('[name="interview_mode"]').value = application?.interview_mode ?? '';
+    form.querySelector('[name="interview_meeting_url"]').value = application?.interview_meeting_url ?? '';
+    form.querySelector('[name="interview_location"]').value = application?.interview_location ?? '';
+    syncInterviewFields(form);
+}
+
+function safeMeetUrl(value) {
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' && url.hostname.toLowerCase() === 'meet.google.com'
+            && !url.username && !url.password && !url.port && url.pathname !== '/'
+            ? url.href : null;
+    } catch {
+        return null;
+    }
+}
+
 function getSchedulableApplications() {
     const raw = document.getElementById('applicationData')?.textContent;
     const apps = raw ? JSON.parse(raw) : (Array.isArray(APPLICATIONS) ? APPLICATIONS : []);
@@ -129,6 +161,14 @@ function openReviewModal(id) {
     if (a.interview_date) {
         interviewSection.style.display = 'block';
         document.getElementById('rInterviewDate').textContent = `${a.interview_date} at ${a.interview_time ?? ''}`;
+        document.getElementById('rInterviewMode').textContent = a.interview_mode === 'Online' ? 'Online'
+            : (a.interview_mode === 'InPerson' ? 'In-person' : 'Not specified');
+        const meetUrl = a.interview_mode === 'Online' ? safeMeetUrl(a.interview_meeting_url) : null;
+        document.getElementById('rInterviewMeetingRow').style.display = meetUrl ? 'flex' : 'none';
+        document.getElementById('rInterviewMeetingLink').href = meetUrl ?? '#';
+        const location = a.interview_mode === 'InPerson' ? a.interview_location : null;
+        document.getElementById('rInterviewLocationRow').style.display = location ? 'flex' : 'none';
+        document.getElementById('rInterviewLocation').textContent = location ?? '';
         document.getElementById('rConductedBy').textContent = a.conducted_by ?? '—';
         document.getElementById('rInterviewNotesRow').style.display = a.interview_notes ? 'flex' : 'none';
         document.getElementById('rInterviewNotesText').style.display = a.interview_notes ? 'block' : 'none';
@@ -228,6 +268,7 @@ function openReviewModal(id) {
         interviewer.value = '';
         const matchingStaff = Array.from(interviewer.options).find((option) => option.dataset.staffName === a.conducted_by);
         if (matchingStaff) interviewer.value = matchingStaff.value;
+        setInterviewFields(document.getElementById('rRescheduleAcceptForm'), a);
         document.getElementById('rRescheduleAcceptBtn').onclick = () => {
             const selected = choices.querySelector('input:checked');
             if (!selected || !interviewer.value) {
@@ -443,11 +484,13 @@ function openScheduleModal(a) {
     modal.querySelector('button[type="submit"]').textContent = a.status === 'scheduled' ? 'Confirm Reschedule' : 'Confirm';
     modal.querySelector('input[name="interview_date"]').value = a.interview_date_input ?? '';
     modal.querySelector('input[name="interview_time"]').value = a.interview_time_input ?? '';
+    setInterviewFields(modal.querySelector('form[data-interview-details]'), a);
     openModal('scheduleInterviewModal');
 }
 
 function openTopScheduleModal() {
     clearSelectedApplicant(false);
+    setInterviewFields(document.getElementById('topScheduleForm'), null);
     openModal('scheduleNewInterviewTopModal');
     window.setTimeout(() => {
         const search = document.getElementById('applicantSearch');
@@ -552,8 +595,12 @@ function renderApplicantMatches(query) {
 function selectApplicant(application) {
     const search = document.getElementById('applicantSearch');
     const results = document.getElementById('applicantSearchResults');
+    const form = document.getElementById('topScheduleForm');
 
     document.getElementById('topScheduleAppId').value = application.id;
+    form.querySelector('[name="interview_date"]').value = application.interview_date_input ?? '';
+    form.querySelector('[name="interview_time"]').value = application.interview_time_input ?? '';
+    setInterviewFields(form, application);
     document.getElementById('selectedApplicantName').textContent = application.full_name;
     document.getElementById('selectedApplicantDetails').textContent = `${application.email || 'No email'} · Applying for ${application.pet || 'Unknown pet'}`;
     document.getElementById('selectedApplicant').hidden = false;
@@ -608,6 +655,10 @@ function highlightApplicant(direction) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('form[data-interview-details]').forEach((form) => {
+        form.querySelector('[name="interview_mode"]')?.addEventListener('change', () => syncInterviewFields(form));
+        syncInterviewFields(form);
+    });
     const search = document.getElementById('applicantSearch');
     const results = document.getElementById('applicantSearchResults');
     const form = document.getElementById('topScheduleForm');

@@ -93,55 +93,92 @@ class DocumentVerificationService
 
     public function crossReference(string $text, array $applicant): DocumentVerificationResult
     {
+        $assessment = $this->crossReferenceBreakdown($text, $applicant);
+
+        return new DocumentVerificationResult(
+            $assessment['status'],
+            $text ?: null,
+            null,
+            $assessment['match_score'],
+            $assessment['reasons'],
+            $assessment['document_type'],
+        );
+    }
+
+    /**
+     * Explain the same independent OCR gates used for automatic verification.
+     * This derives staff-facing details from text already visible to authorized staff.
+     */
+    public function crossReferenceBreakdown(string $text, array $applicant): array
+    {
         $normalizedText = $this->normalize($text);
-        $minimumLength = config('document_verification.minimum_text_length', 25);
+        $minimumLength = (int) config('document_verification.minimum_text_length', 25);
 
         if (mb_strlen($normalizedText) < $minimumLength) {
-            return new DocumentVerificationResult(
-                DocumentVerificationStatus::NeedsResubmission,
-                $text ?: null,
-                null,
-                0,
-                ['The document text is incomplete or unclear. Please upload a sharper, well-lit image.'],
-            );
+            return [
+                'status' => DocumentVerificationStatus::NeedsResubmission,
+                'document_type' => null,
+                'supported_document_type' => false,
+                'text_quality_pass' => false,
+                'first_name_pass' => false,
+                'last_name_pass' => false,
+                'address_pass' => false,
+                'address_evidence' => false,
+                'hard_address_conflict' => false,
+                'match_score' => 0.0,
+                'reasons' => ['The document text is incomplete or unclear. Please upload a sharper, well-lit image.'],
+            ];
         }
 
         $documentType = $this->detectDocumentType($normalizedText);
+        $supportedType = in_array(
+            $documentType,
+            (array) config('document_verification.automatically_supported_document_types', []),
+            true,
+        );
         $firstNameScore = $this->textSimilarity($normalizedText, (string) ($applicant['first_name'] ?? ''));
         $lastNameScore = $this->textSimilarity($normalizedText, (string) ($applicant['last_name'] ?? ''));
         $nameScore = ($firstNameScore + $lastNameScore) / 2;
         $addressComparison = $this->compareApplicantAddress($text, $applicant);
         $addressScore = $addressComparison['score'];
+        $addressEvidence = $this->hasResidentialAddressEvidence($text);
         $typeScore = $documentType === null ? 0 : 1;
         $matchScore = round(($nameScore * 0.45) + ($addressScore * 0.45) + ($typeScore * 0.10), 4);
 
         $reasons = [];
-        $minimumName = config('document_verification.minimum_name_similarity', 0.82);
-        if ($firstNameScore < $minimumName || $lastNameScore < $minimumName) {
+        $minimumName = (float) config('document_verification.minimum_name_similarity', 0.82);
+        $firstNamePass = $firstNameScore >= $minimumName;
+        $lastNamePass = $lastNameScore >= $minimumName;
+        if (! $firstNamePass || ! $lastNamePass) {
             $reasons[] = 'The name extracted from the document does not consistently match the application.';
         }
         if ($documentType === null) {
-            $reasons[] = 'The document type could not be identified as a government ID or proof of address.';
+            $reasons[] = 'The document type could not be identified. Please upload a government-issued ID that clearly shows both your full name and current residential address.';
+        } elseif (! $supportedType) {
+            $reasons[] = 'This document type is not supported for automatic verification. Please upload a government-issued ID that clearly shows both your full name and current residential address.';
         }
-        if (! $addressComparison['consistent']) {
+        if (! $addressEvidence) {
+            $reasons[] = 'The uploaded ID does not contain enough residential address information for automatic verification.';
+        } elseif (! $addressComparison['consistent']) {
             $reasons[] = 'The address extracted from the document does not consistently match the application.';
         }
         if ($matchScore < config('document_verification.minimum_match_score', 0.72)) {
             $reasons[] = 'The extracted details do not provide a sufficiently consistent match.';
         }
 
-        $status = $reasons === []
-            ? DocumentVerificationStatus::Verified
-            : DocumentVerificationStatus::NeedsResubmission;
-
-        return new DocumentVerificationResult(
-            $status,
-            $text,
-            null,
-            $matchScore,
-            array_values(array_unique($reasons)),
-            $documentType,
-        );
+        return [
+            'status' => $reasons === [] ? DocumentVerificationStatus::Verified : DocumentVerificationStatus::NeedsResubmission,
+            'document_type' => $documentType,
+            'supported_document_type' => $supportedType,
+            'text_quality_pass' => true,
+            'first_name_pass' => $firstNamePass,
+            'last_name_pass' => $lastNamePass,
+            'address_pass' => $addressEvidence && $addressComparison['consistent'],
+            'address_evidence' => $addressEvidence,
+            'hard_address_conflict' => $addressComparison['hard_conflict'] ?? false,
+            'match_score' => $matchScore,
+            'reasons' => array_values(array_unique($reasons)),
+        ];
     }
 
     private function providerRequest(string $bytes, string $mimeType): ?array
@@ -210,23 +247,57 @@ class DocumentVerificationService
 
     private function detectDocumentType(string $text): ?string
     {
-        $types = [
-            'Passport' => ['passport', 'passeport'],
-            'Driver License' => ['driver license', 'drivers license', 'land transportation office'],
-            'Philippine National ID' => ['philippine identification card', 'philsys', 'national id'],
-            'Government ID' => ['republic of the philippines', 'philhealth', 'sss', 'umid', 'voters id', 'postal id', 'identification card'],
-            'Proof of Address' => ['proof of address', 'utility bill', 'billing statement', 'barangay certificate', 'statement of account'],
-        ];
-
-        foreach ($types as $type => $keywords) {
-            foreach ($keywords as $keyword) {
-                if (str_contains($text, $keyword)) {
-                    return $type;
-                }
+        // An issuer's country heading alone cannot establish an ID's type.
+        // Check unsupported documents first so incidental ID wording cannot approve them.
+        if (str_contains($text, 'passport') || str_contains($text, 'passeport')) {
+            return 'Passport';
+        }
+        if (str_contains($text, 'proof of address') || str_contains($text, 'utility bill')
+            || str_contains($text, 'billing statement') || str_contains($text, 'barangay certificate')
+            || str_contains($text, 'statement of account')) {
+            return 'Proof of Address';
+        }
+        if (str_contains($text, 'philippine identification card') || str_contains($text, 'philsys')
+            || str_contains($text, 'philippine national id')) {
+            return 'Philippine National ID';
+        }
+        if (str_contains($text, 'national id')) {
+            return 'National ID';
+        }
+        if (str_contains($text, 'driver license') || str_contains($text, 'drivers license')
+            || str_contains($text, 'driver s license')) {
+            return str_contains($text, 'land transportation office')
+                ? 'Philippine Driver License'
+                : 'Driver License';
+        }
+        foreach (['philhealth', 'sss', 'umid', 'voters id', 'postal id', 'identification card'] as $keyword) {
+            if (str_contains($text, $keyword)) {
+                return 'Government ID';
             }
         }
 
         return null;
+    }
+
+    private function hasResidentialAddressEvidence(string $text): bool
+    {
+        $lines = array_values(array_filter(
+            preg_split('/\R+/u', $text) ?: [],
+            fn (string $line) => trim($line) !== ''
+        ));
+
+        foreach ($lines as $index => $line) {
+            $window = $line.' '.($lines[$index + 1] ?? '');
+            $tokens = $this->addressTokens($window);
+            $hasHouseNumber = (bool) preg_match('/\b\d{1,5}\b/u', $window);
+            $hasAddressLabel = (bool) preg_match('/\b(?:address|residence|residential)\b/iu', $window);
+            $hasStreetMarker = (bool) preg_match('/\b(?:street|st|road|rd|avenue|ave|drive|dr|boulevard|blvd)\b\.?/iu', $window);
+            if (count($tokens) >= 3 && ($hasAddressLabel || ($hasHouseNumber && $hasStreetMarker))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function textSimilarity(string $haystack, string $value): float
@@ -263,8 +334,9 @@ class DocumentVerificationService
         }
 
         $comparison = $this->compareAddress($text, $coreAddress);
-        if ($comparison['consistent'] && $this->hasExplicitStructuredAddressConflict($text, $components)) {
+        if ($this->hasExplicitStructuredAddressConflict($text, $components)) {
             $comparison['consistent'] = false;
+            $comparison['hard_conflict'] = true;
         }
 
         return $comparison;
@@ -321,7 +393,7 @@ class DocumentVerificationService
         if ($applicationTokens === []
             || $applicationWords === []
             || ($applicationNumbers === [] && count($applicationWords) < 2)) {
-            return ['score' => 0.0, 'consistent' => false];
+            return ['score' => 0.0, 'consistent' => false, 'hard_conflict' => false];
         }
 
         $lines = array_values(array_filter(
@@ -411,13 +483,14 @@ class DocumentVerificationService
         return [
             'score' => round($bestConsistentScore ?? $bestScore, 4),
             'consistent' => $bestConsistentScore !== null,
+            'hard_conflict' => false,
         ];
     }
 
     private function addressTokens(string $value): array
     {
         $tokens = [];
-        foreach (explode(' ', $this->normalize($value)) as $token) {
+        foreach (explode(' ', $this->normalizeAddress($value)) as $token) {
             $token = $this->canonicalAddressToken($token);
             if ($token === '' || $this->isGenericAddressToken($token)) {
                 continue;
@@ -435,7 +508,7 @@ class DocumentVerificationService
     {
         $tokens = array_map(
             fn (string $token) => $this->canonicalAddressToken($token),
-            array_values(array_filter(explode(' ', $this->normalize($value))))
+            array_values(array_filter(explode(' ', $this->normalizeAddress($value))))
         );
         $streetMarkers = ['street', 'st', 'road', 'rd', 'avenue', 'ave', 'extension', 'ext', 'highway', 'hwy', 'drive', 'dr', 'lane', 'ln', 'boulevard', 'blvd'];
         $markerIndex = null;
@@ -498,6 +571,12 @@ class DocumentVerificationService
             'santo' => 'sto',
             default => $token,
         };
+    }
+
+    private function normalizeAddress(string $value): string
+    {
+        // These are explicit administrative aliases, not fuzzy geographic matches.
+        return str_replace('national capital region', 'ncr', $this->normalize($value));
     }
 
     private function isGenericAddressToken(string $token): bool

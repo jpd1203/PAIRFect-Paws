@@ -26,7 +26,7 @@ class TimeTravelController extends Controller
         $this->schedules->ensureForApprovedApplications();
 
         $today = $this->clock->today();
-        $incomplete = PostAdoptionLog::query()->whereNull('submitted_date');
+        $incomplete = PostAdoptionLog::query()->afterCompletedHandover()->whereNull('submitted_date');
         $dueCount = (clone $incomplete)->whereDate('scheduled_date', '<=', $today->toDateString())->count();
         $upcomingCount = (clone $incomplete)->whereDate('scheduled_date', '>', $today->toDateString())->count();
         $nextDate = (clone $incomplete)
@@ -122,6 +122,7 @@ class TimeTravelController extends Controller
     private function nextIncompleteDateAfter(CarbonImmutable $date): ?CarbonImmutable
     {
         $value = PostAdoptionLog::query()
+            ->afterCompletedHandover()
             ->whereNull('submitted_date')
             ->whereDate('scheduled_date', '>', $date->toDateString())
             ->min('scheduled_date');
@@ -132,7 +133,7 @@ class TimeTravelController extends Controller
     private function lastIncompleteDate(): ?CarbonImmutable
     {
         return $this->parseDatabaseDate(
-            PostAdoptionLog::query()->whereNull('submitted_date')->max('scheduled_date')
+            PostAdoptionLog::query()->afterCompletedHandover()->whereNull('submitted_date')->max('scheduled_date')
         );
     }
 

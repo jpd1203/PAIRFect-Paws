@@ -7,6 +7,7 @@ use App\Enums\AvailabilityStatus;
 use App\Enums\Milestone;
 use App\Enums\Role;
 use App\Models\AdoptionApplication;
+use App\Models\Handover;
 use App\Models\Pet;
 use App\Models\User;
 use App\Services\PostAdoptionScheduleService;
@@ -441,6 +442,18 @@ class AdopterProfileHistoryTest extends TestCase
             'household_composition' => 'Two adults',
             'income_range' => 'PHP 25,000-PHP 50,000',
         ], $attributes));
+
+        if ($status === ApplicationStatus::Approved) {
+            Handover::create([
+                'code' => 'HV-TEST-'.$application->id,
+                'application_id' => $application->id,
+                'pet_id' => $pet->id,
+                'user_id' => $adopter->id,
+                'released_at' => now(),
+                'adopter_outcome' => 'received',
+                'received_at' => now(),
+            ]);
+        }
 
         return $this->timestamp($application, $createdAt);
     }

@@ -24,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ApplicationController extends Controller
@@ -105,6 +106,30 @@ class ApplicationController extends Controller
             'interview_date' => 'required|date_format:Y-m-d',
             'interview_time' => 'required|date_format:H:i',
             'staff_id' => 'required|integer|exists:users,id',
+            'interview_mode' => ['required', Rule::in(['Online', 'InPerson'])],
+            'interview_meeting_url' => [
+                'nullable', 'required_if:interview_mode,Online', 'prohibited_if:interview_mode,InPerson',
+                'string', 'url', 'max:2048',
+                function (string $attribute, mixed $value, $fail): void {
+                    if (! filled($value)) {
+                        return;
+                    }
+
+                    $parts = parse_url((string) $value);
+                    if (! is_array($parts)
+                        || strtolower($parts['scheme'] ?? '') !== 'https'
+                        || strtolower($parts['host'] ?? '') !== 'meet.google.com'
+                        || isset($parts['user']) || isset($parts['pass'])
+                        || isset($parts['port'])
+                        || trim($parts['path'] ?? '', '/') === '') {
+                        $fail('Enter a valid HTTPS Google Meet link on meet.google.com.');
+                    }
+                },
+            ],
+            'interview_location' => [
+                'nullable', 'required_if:interview_mode,InPerson', 'prohibited_if:interview_mode,Online',
+                'string', 'max:1000',
+            ],
         ]);
 
         $scheduledAt = Carbon::createFromFormat(
@@ -134,7 +159,16 @@ class ApplicationController extends Controller
             && $application->is_primary_candidate
             && $application->interview_date !== null;
 
-        $this->reservationQueue->schedule($application, $scheduledAt, $interviewer, Auth::id());
+        $mode = $validated['interview_mode'];
+        $this->reservationQueue->schedule(
+            $application,
+            $scheduledAt,
+            $interviewer,
+            Auth::id(),
+            $mode,
+            $mode === 'Online' ? trim($validated['interview_meeting_url']) : null,
+            $mode === 'InPerson' ? trim($validated['interview_location']) : null,
+        );
 
         return back()->with('success', $wasRescheduled
             ? 'Interview rescheduled. Updated notifications were queued for the adopter and interviewer.'

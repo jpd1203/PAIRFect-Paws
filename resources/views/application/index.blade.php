@@ -100,7 +100,7 @@
                                             <form method="POST" action="{{ route('applications.document.replace', $application) }}" enctype="multipart/form-data" class="mt-4 pt-4 border-t border-red-200/80">
                                                 @csrf
                                                 <label class="block text-xs font-bold text-gray-800 mb-2" for="replacement_document_{{ $application->id }}">
-                                                    Upload a matching government ID or proof of address
+                                                    Upload a government-issued ID showing your full name and current residential address
                                                 </label>
                                                 <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                                                     <div class="flex-1 min-w-0">
@@ -160,6 +160,23 @@
                                             @endif
                                         </span>
                                     </div>
+                                    @if ($application->interview_mode)
+                                        <div class="detail-row">
+                                            <span class="label">Interview Type</span>
+                                            <span class="value">{{ $application->interview_mode === 'InPerson' ? 'In-person' : 'Online' }}</span>
+                                        </div>
+                                        @if ($application->interview_mode === 'Online' && $application->interview_meeting_url)
+                                            <div class="detail-row">
+                                                <span class="label">Google Meet</span>
+                                                <span class="value"><a href="{{ $application->interview_meeting_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">Join Google Meet</a></span>
+                                            </div>
+                                        @elseif ($application->interview_mode === 'InPerson' && $application->interview_location)
+                                            <div class="detail-row">
+                                                <span class="label">Interview Location</span>
+                                                <span class="value whitespace-pre-line">{{ $application->interview_location }}</span>
+                                            </div>
+                                        @endif
+                                    @endif
                                 @endif
                                 @if ($status === 'InterviewScheduled' && $application->interview_date)
                                     <div id="reschedule-{{ $application->id }}" class="note-section">

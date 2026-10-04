@@ -142,6 +142,8 @@ class ReservationQueueTest extends TestCase
             'interview_date' => $date,
             'interview_time' => '15:00',
             'staff_id' => $staff->id,
+            'interview_mode' => 'InPerson',
+            'interview_location' => 'PAIRfect Paws shelter reception',
         ])->assertSessionHas('success');
 
         $this->assertSame('approved', $first->refresh()->reschedule_status);
@@ -452,7 +454,7 @@ class ReservationQueueTest extends TestCase
         $this->assertNotNull($first->adopted_at);
         $this->assertSame(ApplicationStatus::Closed, $second->refresh()->status);
         $this->assertSame(AvailabilityStatus::Adopted, $pet->refresh()->availability_status);
-        $this->assertCount(3, $first->postAdoptionLogs()->get());
+        $this->assertCount(0, $first->postAdoptionLogs()->get());
         Mail::assertQueued(StatusUpdateMail::class, fn (StatusUpdateMail $mail): bool => $mail->hasTo($first->user->email) && $mail->event === 'application_approved'
         );
         Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool => $mail->hasTo($second->user->email) && $mail->subjectLine === 'Adoption queue closed'

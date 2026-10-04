@@ -9,6 +9,7 @@ use App\Enums\Role;
 use App\Mail\CheckInReminderMail;
 use App\Mail\TransactionalMail;
 use App\Models\AdoptionApplication;
+use App\Models\Handover;
 use App\Models\Pet;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
@@ -482,6 +483,16 @@ class PostAdoptionSchedulingTest extends TestCase
         }
 
         $application = AdoptionApplication::create($applicationAttributes);
+
+        Handover::create([
+            'code' => 'HV-TEST-'.$application->id,
+            'application_id' => $application->id,
+            'pet_id' => $pet->id,
+            'user_id' => $adopter->id,
+            'released_at' => now(),
+            'adopter_outcome' => 'received',
+            'received_at' => now(),
+        ]);
 
         return [$adopter, $application];
     }
