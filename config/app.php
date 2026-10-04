@@ -13,7 +13,10 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'PAIRfect Paws'),
+
+    // Public-facing branding stays consistent even if APP_NAME is misconfigured.
+    'brand_name' => 'PAIRfect Paws',
 
     /*
     |--------------------------------------------------------------------------

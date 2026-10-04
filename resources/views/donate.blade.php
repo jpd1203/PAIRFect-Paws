@@ -1,4 +1,4 @@
-<x-public-layout :title="'Donate - '.config('app.name')">
+<x-public-layout :title="'Donate - '.config('app.brand_name')">
 
     <section class="bg-white">
         <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">

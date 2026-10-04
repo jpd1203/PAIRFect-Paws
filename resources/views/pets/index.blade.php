@@ -1,4 +1,4 @@
-<x-public-layout :title="'Available Pets - '.config('app.name')">
+<x-public-layout :title="'Available Pets - '.config('app.brand_name')">
     <div class="bg-white min-h-[calc(100vh-140px)]">
         <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-1 py-10">
             <!-- Page Title & Subtitle -->

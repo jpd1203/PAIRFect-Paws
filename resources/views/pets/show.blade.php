@@ -27,7 +27,7 @@
     $temperamentVal = $pet->temperament_display;
 @endphp
 
-<x-public-layout :title="$pet->name . ' - ' . config('app.name')">
+<x-public-layout :title="$pet->name . ' - ' . config('app.brand_name')">
     <main class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
         @php
             $fromMatching = request('from') === 'matching' || str_contains(url()->previous(), 'recommendation');
