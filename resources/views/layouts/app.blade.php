@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'PAIRfect Paws')</title>
+    @php
+        $pageTitle = trim($__env->yieldContent('title'));
+        $brandName = config('app.brand_name');
+    @endphp
+    <title>{{ $pageTitle === '' ? $brandName : (str_contains($pageTitle, $brandName) ? $pageTitle : $pageTitle.' | '.$brandName) }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
