@@ -40,10 +40,21 @@ class HandoverWorkflowTest extends TestCase
             'title' => 'Your adoption has been approved',
         ]);
 
-        $this->actingAs($adopter)
+        $status = $this->actingAs($adopter)
             ->get(route('adopter.handover.status', $handover))
             ->assertOk()
-            ->assertSee('Handover Status');
+            ->assertSee('Handover Status')
+            ->assertSee('main-content-header', false)
+            ->assertDontSee(route('adopter.handover.notifications', $handover));
+
+        $this->assertSame(1, substr_count($status->getContent(), 'class="notification-bell'));
+
+        $confirmation = $this->actingAs($adopter)
+            ->get(route('adopter.confirm', $handover))
+            ->assertOk()
+            ->assertDontSee(route('adopter.handover.notifications', $handover));
+
+        $this->assertSame(1, substr_count($confirmation->getContent(), 'class="notification-bell'));
     }
 
     public function test_new_handover_queues_one_preparation_email_even_if_requested_again(): void

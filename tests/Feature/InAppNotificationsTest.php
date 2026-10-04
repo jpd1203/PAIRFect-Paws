@@ -14,12 +14,12 @@ final class InAppNotificationsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_notification_bell_remains_available_without_duplicate_header_bells(): void
+    public function test_notification_bell_is_hidden_on_feed_but_available_on_other_pages(): void
     {
         $adopter = $this->user('adopter@example.test', Role::Adopter);
         $feed = $this->actingAs($adopter)->get(route('notifications.index'))->assertOk();
 
-        $this->assertSame(1, substr_count($feed->getContent(), 'class="notification-bell'));
+        $this->assertSame(0, substr_count($feed->getContent(), 'class="notification-bell'));
         $feed->assertDontSee('<article onclick=', false);
 
         $admin = $this->user('admin@example.test', Role::Administrator);
@@ -43,7 +43,7 @@ final class InAppNotificationsTest extends TestCase
 
         $this->actingAs($owner)->get(route('notifications.index'))->assertOk()
             ->assertSee('Update 18')->assertDontSee('Private update')
-            ->assertSee('18 unread');
+            ->assertSee('Mark all as read');
         $this->get(route('notifications.index', ['page' => 2]))->assertOk()
             ->assertSee('Update 1')->assertSee('Showing');
 

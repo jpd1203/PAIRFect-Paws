@@ -2,12 +2,17 @@
 
 @section('title', ($record->pet?->name ?? 'Pet') . ' Handover Status - PAIRfect Paws')
 
+@section('notification-bell-in-header', true)
 @section('content')
 
     <div class="nonsticky-header custom-scrollbar">
-        <div class="heading-text">
-            <h2>Handover Status</h2>
-            <p>Track the physical transfer and delivery progress of {{ $record->pet?->name ?? 'your pet' }}.</p>
+        <div class="main-content-header">
+            <div class="heading-text">
+                <h2>Handover Status</h2>
+                <p>Track the physical transfer and delivery progress of {{ $record->pet?->name ?? 'your pet' }}.</p>
+            </div>
+
+            @include('partials.notification-bell')
         </div>
     
         <div class="content-area">
@@ -18,15 +23,6 @@
                 <div class="flex items-center gap-2 border-b border-[#e2ddd7] pb-3 flex-wrap">
                     <a href="{{ route('adopter.handover.status', $record) }}" class="btn btn-primary btn-sm">
                         <i class="fa-solid fa-shield-cat mr-1"></i> Handover Status
-                    </a>
-
-                    <a href="{{ route('adopter.handover.notifications', $record) }}" class="btn btn-secondary btn-sm">
-                        <i class="fa-solid fa-bell mr-1"></i> Notifications
-                        @if (($unreadCount ?? 0) > 0)
-                            <span class="rounded-full px-1.5 py-0.2 text-xs font-bold bg-primary text-white ml-1">
-                                {{ $unreadCount }}
-                            </span>
-                        @endif
                     </a>
 
                     @if (!$record->adopter_outcome)
@@ -305,43 +301,6 @@
                         @endif
 
                     </div>
-                </section>
-
-                <!-- LATEST UPDATES / NOTIFICATIONS Section -->
-                <section aria-label="Latest updates" class="space-y-3">
-                    <div class="flex items-center justify-between">
-                        <h3 class="flex items-center gap-1.5 text-base font-bold text-text-dark font-primary m-0">
-                            <i class="fa-solid fa-bell text-xs text-primary"></i> Latest Updates
-                        </h3>
-                        <a href="{{ route('adopter.handover.notifications', $record) }}"
-                        class="btn btn-secondary btn-sm">
-                            All notifications <i class="fa-solid fa-chevron-right text-[10px] ml-1"></i>
-                        </a>
-                    </div>
-
-                    @if ($latestUpdates->isEmpty())
-                        <p class="rounded-card border border-dashed border-[#ccc] bg-white px-4 py-6 text-center text-sm text-[#777] shadow-card m-0">
-                            No updates yet. We'll notify you as soon as your handover is scheduled.
-                        </p>
-                    @else
-                        <div class="space-y-2.5">
-                            @foreach ($latestUpdates as $notif)
-                                @php $meta = $notif->meta; @endphp
-                                <div class="flex items-start gap-3 rounded-card border border-[#e2ddd7] bg-white p-4 shadow-card">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ $meta['chip'] }} {{ $meta['chipText'] }}">
-                                        <i class="{{ $meta['icon'] }} text-xs"></i>
-                                    </span>
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex items-center justify-between gap-2">
-                                            <h4 class="text-xs font-bold text-text-dark m-0">{{ $notif->title }}</h4>
-                                            <span class="text-[10px] text-[#9e9e9e] shrink-0">{{ $notif->created_at->diffForHumans() }}</span>
-                                        </div>
-                                        <p class="mt-0.5 text-xs text-text-muted m-0">{{ $notif->body }}</p>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
                 </section>
 
             </div>
