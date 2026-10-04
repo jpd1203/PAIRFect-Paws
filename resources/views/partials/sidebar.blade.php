@@ -10,6 +10,7 @@
 
     $adopterApplicationsCount = 0;
     $adopterHandoverCount = 0;
+    $hasHandoverAccess = false;
     $adopterDueReportsCount = 0;
     $adopterOverdueCount = 0;
     $adopterFlaggedCount = 0;
@@ -27,6 +28,10 @@
         $adopterHandoverCount = \App\Models\Handover::where('user_id', $user->id)
             ->whereNull('adopter_confirmed_at')
             ->count();
+        $hasHandoverAccess = \App\Models\Handover::where('user_id', $user->id)->exists()
+            || $user->adoptionApplications()
+                ->where('status', \App\Enums\ApplicationStatus::Approved->value)
+                ->exists();
 
         $today = app(\App\Services\PostAdoptionClock::class)->today()->toDateString();
         $approvedLogsBase = \App\Models\PostAdoptionLog::query()
@@ -95,6 +100,7 @@
 
             <a href="{{ route('adopter.handover.my') }}"
                class="menu-item {{ $isActive('adopter.handover.my', 'adopter.handover.status', 'adopter.confirm', 'adopter.handover.notifications') ? 'active' : '' }}"
+               @if (! $hasHandoverAccess) data-handover-unavailable @endif
                data-sidebar-dismissible="adopter_handover"
                data-badge-count="{{ $adopterHandoverCount }}">
                 <i class="fa-solid fa-truck-ramp-box fa-lg"></i> Handover Status

@@ -14,6 +14,20 @@ final class InAppNotificationsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_notification_bell_is_hidden_on_feed_but_available_on_other_pages(): void
+    {
+        $adopter = $this->user('adopter@example.test', Role::Adopter);
+        $feed = $this->actingAs($adopter)->get(route('notifications.index'))->assertOk();
+
+        $this->assertSame(0, substr_count($feed->getContent(), 'class="notification-bell'));
+        $feed->assertDontSee('<article onclick=', false);
+
+        $admin = $this->user('admin@example.test', Role::Administrator);
+        $dashboard = $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk();
+
+        $this->assertSame(1, substr_count($dashboard->getContent(), 'class="notification-bell'));
+    }
+
     public function test_shared_feed_is_private_paginated_and_marks_only_the_owner_records_read(): void
     {
         $owner = $this->user('owner@example.test', Role::Adopter);
@@ -29,7 +43,7 @@ final class InAppNotificationsTest extends TestCase
 
         $this->actingAs($owner)->get(route('notifications.index'))->assertOk()
             ->assertSee('Update 18')->assertDontSee('Private update')
-            ->assertSee('18 unread');
+            ->assertSee('Mark all as read');
         $this->get(route('notifications.index', ['page' => 2]))->assertOk()
             ->assertSee('Update 1')->assertSee('Showing');
 

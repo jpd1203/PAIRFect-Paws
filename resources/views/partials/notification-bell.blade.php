@@ -1,10 +1,11 @@
+@auth
 @php
     $bellUser = auth()->user();
     $unreadNotifications = $bellUser->inAppNotifications()->whereNull('read_at')->count();
     $recentNotifications = $bellUser->inAppNotifications()->orderByDesc('created_at')->orderByDesc('id')->limit(5)->get();
 @endphp
 
-<div class="notification-bell relative z-[9999]">
+<div class="notification-bell relative z-[500]">
     <details class="relative group">
         <summary class="btn btn-secondary cursor-pointer list-none relative" aria-label="Notifications ({{ $unreadNotifications }} unread)">
             <i class="fa-solid fa-bell"></i><span class="ml-2 notification-label">Notifications</span>
@@ -12,7 +13,8 @@
                 <span class="ml-2 rounded-full bg-primary text-white text-xs font-bold px-2 py-0.5">{{ $unreadNotifications > 99 ? '99+' : $unreadNotifications }}</span>
             @endif
         </summary>
-        <div class="absolute right-0 top-full z-[99999] mt-2 w-[min(22rem,calc(100vw-2rem))] max-h-[70vh] overflow-y-auto rounded-xl border border-[#e2ddd7] bg-white shadow-xl p-3">            <h2 class="font-bold text-text-dark text-sm px-2 py-1">Recent notifications</h2>
+        <div class="absolute right-0 top-full z-[99999] mt-2 w-[min(22rem,calc(100vw-2rem))] max-h-[70vh] overflow-y-auto rounded-xl border border-[#e2ddd7] bg-white shadow-xl p-3">
+            <h2 class="font-bold text-text-dark text-sm px-2 py-1">Recent notifications</h2>
             @forelse ($recentNotifications as $notice)
                 <a href="{{ route('notifications.open', $notice) }}" class="block rounded-lg p-2 my-1 hover:bg-neutral-light {{ $notice->read_at ? '' : 'bg-primary-muted/30' }} no-underline">
                     <span class="block text-sm font-bold text-text-dark break-words">{{ $notice->title }}</span>
@@ -42,3 +44,4 @@ document.addEventListener('click', function (event) {
     }
 });
 </script>
+@endauth

@@ -9,11 +9,16 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 class HandoverSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            throw new RuntimeException('Fictional handovers may only be seeded in local or testing environments.');
+        }
+
         $jessa = User::where('email', 'jessa@example.com')->first();
         if (!$jessa) {
             $jessa = User::create([

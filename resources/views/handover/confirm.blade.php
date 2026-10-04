@@ -2,12 +2,17 @@
 
 @section('title', 'Confirm Receipt - ' . ($record->pet?->name ?? 'Pet') . ' - PAIRfect Paws')
 
+@section('notification-bell-in-header', true)
 @section('content')
 
     <div class="sticky-header">
-        <div class="heading-text">
-            <h2>Confirm Pet Receipt</h2>
-            <p>Verify that {{ $record->pet?->name ?? 'your pet' }} has arrived safely in your care.</p>
+        <div class="main-content-header">
+            <div class="heading-text">
+                <h2>Confirm Pet Receipt</h2>
+                <p>Verify that {{ $record->pet?->name ?? 'your pet' }} has arrived safely in your care.</p>
+            </div>
+
+            @include('partials.notification-bell')
         </div>
     </div>
 
@@ -19,15 +24,6 @@
             <div class="flex items-center gap-2 border-b border-[#e2ddd7] pb-3 flex-wrap">
                 <a href="{{ route('adopter.handover.status', $record) }}" class="btn btn-secondary btn-sm">
                     <i class="fa-solid fa-arrow-left mr-1"></i> Back to Handover Status
-                </a>
-
-                <a href="{{ route('adopter.handover.notifications', $record) }}" class="btn btn-secondary btn-sm">
-                    <i class="fa-solid fa-bell mr-1"></i> Notifications
-                    @if (($unreadCount ?? 0) > 0)
-                        <span class="rounded-full px-1.5 py-0.2 text-xs font-bold bg-primary text-white ml-1">
-                            {{ $unreadCount }}
-                        </span>
-                    @endif
                 </a>
 
                 <span class="btn btn-primary btn-sm pointer-events-none">

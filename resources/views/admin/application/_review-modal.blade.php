@@ -94,43 +94,45 @@
                 </div>
             </div>
 
-            <div class="review-section" id="rRescheduleSection" hidden>
-                <h6>Interview Reschedule Requested</h6>
-                <p class="text-sm">The current interview time remains official until staff confirms a new one.</p>
-                <div class="review-row"><span>Current schedule</span><span id="rRescheduleCurrent"></span></div>
-                <div class="review-row"><span>Adopter availability</span><div id="rRescheduleOptions"></div></div>
-                <div class="review-row"><span>Reason</span><span id="rRescheduleReason"></span></div>
-                <form id="rRescheduleAcceptForm" action="{{ route('admin.applications.schedule') }}" method="POST" class="mt-3">
-                    @csrf
-                    <input type="hidden" name="application_id" id="rRescheduleAppId">
-                    <input type="hidden" name="interview_date" id="rRescheduleDate">
-                    <input type="hidden" name="interview_time" id="rRescheduleTime">
-                    <label class="form-label" for="rRescheduleStaff">Confirmed interviewer</label>
-                    <select class="form-select" name="staff_id" id="rRescheduleStaff" required>
-                        <option value="">Select Interviewer</option>
-                        @foreach ($volunteers as $volunteer)
-                            <option value="{{ $volunteer->id }}" data-staff-name="{{ $volunteer->full_name }}">{{ $volunteer->full_name }} ({{ $volunteer->role->value }})</option>
-                        @endforeach
-                    </select>
-                    <div class="flex flex-wrap gap-2 mt-3">
-                        <button type="button" class="btn btn-blue" id="rRescheduleAcceptBtn">Accept Selected Time</button>
-                        <button type="button" class="btn btn-secondary" id="rRescheduleDifferentBtn">Set Different Time</button>
-                        <button type="submit" class="btn btn-danger" id="rRescheduleDeclineBtn" form="rRescheduleDeclineForm">Decline Request</button>
-                    </div>
-                </form>
-                <form id="rRescheduleDeclineForm" method="POST" class="hidden">@csrf</form>
-            </div>
-
             <div class="review-container">
-                <div id="rDecisionRemarksSection" class="review-section">
-                    <h6>Decision Remarks</h6>
-                    <p id="rDecisionRemarksText" class="text-[.88rem] text-[#555] bg-white border border-gray-400 rounded-lg p-3 mb-3"></p>
+                <div class="review-section" id="rRescheduleSection" hidden>
+                    <h6>Interview Reschedule Requested</h6>
+                    <p class="text-sm">The current interview time remains official until staff confirms a new one.</p>
+                    <div class="review-row"><span>Current schedule</span><span id="rRescheduleCurrent"></span></div>
+                    <div class="review-row"><span>Adopter availability</span><div id="rRescheduleOptions"></div></div>
+                    <div class="review-row"><span>Reason</span><span id="rRescheduleReason"></span></div>
+                    <form id="rRescheduleAcceptForm" action="{{ route('admin.applications.schedule') }}" method="POST" class="mt-3">
+                        @csrf
+                        <input type="hidden" name="application_id" id="rRescheduleAppId">
+                        <input type="hidden" name="interview_date" id="rRescheduleDate">
+                        <input type="hidden" name="interview_time" id="rRescheduleTime">
+                        <label class="form-label" for="rRescheduleStaff">Confirmed interviewer</label>
+                        <select class="form-select" name="staff_id" id="rRescheduleStaff" required>
+                            <option value="">Select Interviewer</option>
+                            @foreach ($volunteers as $volunteer)
+                                <option value="{{ $volunteer->id }}" data-staff-name="{{ $volunteer->full_name }}">{{ $volunteer->full_name }} ({{ $volunteer->role->value }})</option>
+                            @endforeach
+                        </select>
+                        <div class="flex flex-wrap justify-end gap-2 my-3">
+                            <button type="button" class="btn btn-blue" id="rRescheduleAcceptBtn">Accept Selected Time</button>
+                            <button type="button" class="btn btn-secondary" id="rRescheduleDifferentBtn">Set Different Time</button>
+                            <button type="submit" class="btn btn-danger" id="rRescheduleDeclineBtn" form="rRescheduleDeclineForm">Decline Request</button>
+                        </div>
+                    </form>
+                    <form id="rRescheduleDeclineForm" method="POST" class="hidden">@csrf</form>
                 </div>
+
+                </div>
+                <div class="review-container">
+                    <div id="rDecisionRemarksSection" class="review-section">
+                        <h6>Decision Remarks</h6>
+                        <p id="rDecisionRemarksText" class="text-[.88rem] text-[#555] bg-white border border-gray-400 rounded-lg p-3 mb-3"></p>
+                    </div>
+                </div>
+        
+                <div id="rCompatBanner" class="mx-6 mb-2 rounded-full py-2.5 text-center text-white font-bold text-[.9rem]"></div>
             </div>
-
-            <div id="rCompatBanner" class="mx-6 mb-2 rounded-full py-2.5 text-center text-white font-bold text-[.9rem]"></div>
-
-        </div>
+        
 
         <div class="custom-modal-footer" id="rActionsRow">
             <button type="button" class="btn btn-secondary" onclick="closeModal('applicationReviewModal')">Close</button>

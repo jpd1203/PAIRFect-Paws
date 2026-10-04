@@ -1,4 +1,4 @@
-<x-public-layout :title="config('app.name').' - Compassion Make Us Human'">
+<x-public-layout :title="config('app.brand_name').' - Compassion Make Us Human'">
 
     {{-- HERO --}}
     <section class="relative overflow-hidden bg-white min-h-[calc(100vh-68px)] pt-14 sm:pt-20 pb-20">

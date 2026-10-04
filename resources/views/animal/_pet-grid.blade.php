@@ -14,9 +14,15 @@
             <a href="javascript:void(0);"
             onclick="openPetModal({{ $pet->id }})"
             class="relative block overflow-hidden rounded-lg aspect-square bg-gray-100 cursor-pointer border">
-                <img src="{{ $pet->image_url }}"
-                    alt="{{ $pet->name }}"
-                    class="w-full h-full object-cover rounded-lg transition-transform duration-500 ease-out group-hover:scale-110 hover:border-[#777]">
+                @if ($pet->photo_path)
+                    <img src="{{ $pet->image_url }}"
+                        alt="{{ $pet->name }}"
+                        class="w-full h-full object-cover rounded-lg transition-transform duration-500 ease-out group-hover:scale-110 hover:border-[#777]">
+                @else
+                    <div class="w-full h-full flex items-center justify-center bg-maroon-50 text-maroon-600" role="img" aria-label="No photo available for {{ $pet->name }}">
+                        <i class="fa-solid fa-{{ strtolower($pet->species?->value ?? $pet->species) === 'cat' ? 'cat' : 'dog' }} text-5xl" aria-hidden="true"></i>
+                    </div>
+                @endif
 
                 {{-- Meet Pet Overlay --}}
                 <div class="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/45 via-black/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">

@@ -15,8 +15,13 @@ class MatchingDemoSeederTest extends TestCase
     {
         Mail::fake();
         // Never allow this destructive QA command to target the developer's real database.
-        $this->assertSame('sqlite', config('database.default'));
-        $this->assertSame(':memory:', config('database.connections.sqlite.database'));
+        if (config('database.default') === 'sqlite') {
+            $this->assertSame(':memory:', config('database.connections.sqlite.database'));
+        } else {
+            $this->assertSame('mysql', config('database.default'));
+            $this->assertSame(env('PAIRFECT_DISPOSABLE_MYSQL_DB'), config('database.connections.mysql.database'));
+            $this->assertNotEmpty(env('PAIRFECT_DISPOSABLE_MYSQL_DB'));
+        }
         $this->artisan('migrate:fresh', ['--seed' => true, '--force' => true])->assertSuccessful();
         $this->seed(MatchingDemoSeeder::class);
         $this->seed(MatchingDemoSeeder::class);

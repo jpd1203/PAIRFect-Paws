@@ -2,6 +2,7 @@
 
 @section('title', 'Notifications - PAIRfect Paws')
 
+@section('notification-bell-in-header', true)
 @section('content')
 <div class="nonsticky-header">
     <div class="mb-2"> 
@@ -23,7 +24,7 @@
         @endif
 
         @forelse ($notifications as $notice)
-            <article onclick="window.location.href='{{ route('notifications.open', $notice) }}'" class="rounded-card border border-[#e2ddd7] bg-white p-4 shadow-card transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.01] hover:shadow-lg hover:border-primary/30 {{ $notice->read_at ? '' : 'border-primary/40' }}">
+            <article class="rounded-card border border-[#e2ddd7] bg-white p-4 shadow-card transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.01] hover:shadow-lg hover:border-primary/30 {{ $notice->read_at ? '' : 'border-primary/40' }}">
                 <div class="flex flex-wrap items-start justify-between gap-2">
                     <div class="min-w-0 flex-1">
                         <h3 class="font-bold text-text-dark text-m m-0 break-words"><i class="fa-solid fa-bell mr-2 text-primary"></i>{{ $notice->title }}</h3>

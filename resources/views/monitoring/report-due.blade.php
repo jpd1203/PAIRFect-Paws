@@ -2,6 +2,7 @@
 
 @section('title', 'Submit Post-Adoption Report')
 
+@section('notification-bell-in-header', true)
 @section('content')
     <div class="nonsticky-header">
         <div class="main-content-header">

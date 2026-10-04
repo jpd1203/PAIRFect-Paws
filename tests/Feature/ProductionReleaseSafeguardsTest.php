@@ -5,7 +5,10 @@ namespace Tests\Feature;
 use App\Enums\Role;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
+use Database\Seeders\AssessmentSeeder;
+use Database\Seeders\DemoPetsSeeder;
 use Database\Seeders\FreshStartPetsSeeder;
+use Database\Seeders\HandoverSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use RuntimeException;
 use Tests\TestCase;
@@ -70,6 +73,33 @@ class ProductionReleaseSafeguardsTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Synthetic pet records cannot be seeded in production.');
         (new FreshStartPetsSeeder())->run();
+    }
+
+    public function test_legacy_demo_pet_seeding_is_rejected_before_writing_in_production(): void
+    {
+        $this->app->instance('env', 'production');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Demo pets may only be seeded in local or testing environments.');
+        (new DemoPetsSeeder())->run();
+    }
+
+    public function test_synthetic_assessments_are_rejected_before_deleting_records_in_production(): void
+    {
+        $this->app->instance('env', 'production');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Synthetic assessments may only be seeded in local or testing environments.');
+        (new AssessmentSeeder())->run();
+    }
+
+    public function test_fictional_handovers_are_rejected_before_writing_in_production(): void
+    {
+        $this->app->instance('env', 'production');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Fictional handovers may only be seeded in local or testing environments.');
+        (new HandoverSeeder())->run();
     }
 
     public function test_release_check_reports_missing_production_configuration(): void

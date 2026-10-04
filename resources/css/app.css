@@ -663,7 +663,7 @@
 
   /* ---------- Toasts ---------- */
   .toast-host {
-    @apply fixed top-5 right-5 z-[2000] flex flex-col gap-2.5;
+    @apply fixed top-28 right-5 z-[100000] flex flex-col gap-2.5 max-[991px]:top-32;
   }
   .toast {
     @apply bg-white border border-[#d9d9d9] border-l-4 border-l-status-success-text rounded-lg px-4 py-3 shadow-card text-sm text-text-dark min-w-[240px] max-w-[360px];

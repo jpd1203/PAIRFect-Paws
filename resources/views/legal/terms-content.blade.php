@@ -573,10 +573,10 @@
 
         <!-- Terms Actions -->
         <div class="mt-10 flex flex-col-reverse gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:justify-end">
-            <button type="btn btn-secondary" data-close-legal-dialog class="rounded-xl border border-gray-300 bg-white px-6 py-3 font-secondary text-sm font-semibold text-gray-700 transition hover:bg-accent-light hover:border-black focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2">
+            <button type="button" data-close-legal-dialog class="rounded-xl border border-gray-300 bg-white px-6 py-3 font-secondary text-sm font-semibold text-gray-700 transition hover:bg-accent-light hover:border-black focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2">
                 Close
             </button>
-            <button type="btn btn-primary" data-accept-terms class="rounded-xl bg-maroon-600 px-6 py-3 font-secondary text-sm font-semibold text-white shadow-sm transition hover:bg-maroon-700 focus:outline-none focus:ring-2 focus:ring-maroon-500 focus:ring-offset-2">
+            <button type="button" data-accept-terms class="rounded-xl bg-maroon-600 px-6 py-3 font-secondary text-sm font-semibold text-white shadow-sm transition hover:bg-maroon-700 focus:outline-none focus:ring-2 focus:ring-maroon-500 focus:ring-offset-2">
                 I Agree
             </button>
         </div>

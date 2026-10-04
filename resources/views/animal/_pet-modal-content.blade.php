@@ -44,22 +44,28 @@
 <div class="flex flex-col sm:flex-row items-stretch gap-5 mb-6 pb-5 border-b border-[#eee8df]">
     <!-- Left: Interactive Pet Picture (Equal height to story box, hover zoom & lightbox) -->
     <div class="w-full sm:w-[170px] md:w-[195px] shrink-0 self-stretch flex flex-col">
-        <div class="relative w-full h-full min-h-[140px] rounded-2xl overflow-hidden border border-gray-200 shadow-sm cursor-pointer group bg-[#f5f3ef]"
-             onclick="openPetPhotoLightbox('{{ $pet->image_url }}', '{{ addslashes($pet->name) }}')"
-             title="Click to view full photo">
-            <img src="{{ $pet->image_url }}" 
-                 alt="{{ $pet->name }}" 
-                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-            <!-- Interactive Hover Overlay -->
-            <div class="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-1 text-white text-xs font-semibold backdrop-blur-[1px]">
-                <i class="fa-solid fa-magnifying-glass-plus text-base"></i>
-                <span>View Full Photo</span>
+        @if ($pet->photo_path)
+            <div class="relative w-full h-full min-h-[140px] rounded-2xl overflow-hidden border border-gray-200 shadow-sm cursor-pointer group bg-[#f5f3ef]"
+                 onclick="openPetPhotoLightbox('{{ $pet->image_url }}', '{{ addslashes($pet->name) }}')"
+                 title="Click to view full photo">
+                <img src="{{ $pet->image_url }}"
+                     alt="{{ $pet->name }}"
+                     class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                <!-- Interactive Hover Overlay -->
+                <div class="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-1 text-white text-xs font-semibold backdrop-blur-[1px]">
+                    <i class="fa-solid fa-magnifying-glass-plus text-base"></i>
+                    <span>View Full Photo</span>
+                </div>
+                <span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm pointer-events-none flex items-center gap-1">
+                    <i class="fa-regular fa-image"></i>
+                    <span>Enlarge</span>
+                </span>
             </div>
-            <span class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm pointer-events-none flex items-center gap-1">
-                <i class="fa-regular fa-image"></i>
-                <span>Enlarge</span>
-            </span>
-        </div>
+        @else
+            <div class="w-full h-full min-h-[140px] rounded-2xl border border-maroon-100 bg-maroon-50 text-maroon-600 flex items-center justify-center" role="img" aria-label="No photo available for {{ $pet->name }}">
+                <i class="fa-solid fa-{{ strtolower($pet->species?->value ?? $pet->species) === 'cat' ? 'cat' : 'dog' }} text-5xl" aria-hidden="true"></i>
+            </div>
+        @endif
     </div>
 
     <!-- Right: Story Box (Adjusts height based on content; photo matches automatically) -->

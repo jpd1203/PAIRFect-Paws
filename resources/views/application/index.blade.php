@@ -2,6 +2,7 @@
 
 @section('title', 'My Applications - PAIRfect Paws')
 
+@section('notification-bell-in-header', true)
 @section('content')
 
     <div class="nonsticky-header custom-scrollbar">
@@ -171,27 +172,90 @@
                                                 <p>Staff could not approve your last reschedule request. The current interview time remains in effect.</p>
                                             @endif
                                             @if ($application->interview_date->isFuture())
-                                                <details class="mt-2" {{ request('reschedule') == $application->id ? 'open' : '' }}>
-                                                    <summary class="cursor-pointer font-semibold">Request Reschedule</summary>
-                                                    <p class="my-2 text-sm">Suggest up to three future dates and times. Staff will confirm the final schedule.</p>
-                                                    <form method="POST" action="{{ route('applications.reschedule.request', $application) }}" class="space-y-3">
-                                                        @csrf
-                                                        <label class="block text-sm">Reason (optional)
-                                                            <textarea name="reason" maxlength="1000" rows="2" class="form-control w-full">{{ old('reason') }}</textarea>
-                                                        </label>
-                                                        @for ($option = 0; $option < 3; $option++)
-                                                            <div class="flex flex-wrap gap-2 items-end">
-                                                                <span class="text-sm font-medium">Option {{ $option + 1 }}{{ $option === 0 ? ' (required)' : '' }}</span>
-                                                                <label class="text-sm">Date
-                                                                    <input type="date" name="options[{{ $option }}][date]" value="{{ old("options.{$option}.date") }}" min="{{ \App\Support\ManilaTime::now()->format('Y-m-d') }}" class="form-control" {{ $option === 0 ? 'required' : '' }}>
+                                                <details class="group mt-3 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm" @if(request('reschedule') == $application->id) open @endif>
+                                                    <summary class="flex cursor-pointer list-none items-center justify-between px-4 py-2.5 font-semibold text-gray-900 hover:bg-gray-50">
+                                                        <div>
+                                                            <p class="text-m font-bold">Request Reschedule</p>
+                                                            <p class="text-sm font-normal text-gray-500">Suggest up to three preferred schedules.</p>
+                                                        </div>
+
+                                                        <span class="text-gray-400 transition group-open:rotate-180">
+                                                            ▾
+                                                        </span>
+                                                    </summary>
+
+                                                    <div class="border-t border-gray-200 bg-gray-50/40 px-4 py-3">
+                                                        <p class="mb-3 text-sm leading-5 text-gray-600">
+                                                            Option 1 is required. Staff will review your preferred dates and confirm the final schedule.
+                                                        </p>
+
+                                                        <form method="POST" action="{{ route('applications.reschedule.request', $application) }}" class="space-y-3">
+                                                            @csrf
+                                                            <!-- Reason -->
+                                                            <div>
+                                                                <label for="reschedule_reason_{{ $application->id }}" class="mb-1 block text-sm font-semibold text-gray-700">
+                                                                    Reason
+                                                                    <span class="font-normal text-gray-400">(optional)</span>
                                                                 </label>
-                                                                <label class="text-sm">Time
-                                                                    <input type="time" name="options[{{ $option }}][time]" value="{{ old("options.{$option}.time") }}" class="form-control" {{ $option === 0 ? 'required' : '' }}>
-                                                                </label>
+
+                                                                <textarea id="reschedule_reason_{{ $application->id }}" name="reason" maxlength="1000" rows="2" placeholder="Reason for rescheduling..."
+                                                                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-maroon-600 focus:outline-none focus:ring-1 focus:ring-maroon-600"
+                                                                >{{ old('reason') }}</textarea>
                                                             </div>
-                                                        @endfor
-                                                        <button type="submit" class="btn btn-blue">Send Reschedule Request</button>
-                                                    </form>
+
+                                                            <!-- Schedule Options -->
+                                                            <div class="space-y-2">
+                                                                @for ($option = 0; $option < 3; $option++)
+                                                                    <div class="rounded-lg border border-gray-200 bg-white p-3">
+                                                                        <div class="mb-2 flex items-center justify-between">
+                                                                            <span class="text-sm font-semibold text-gray-900">Option {{ $option + 1 }}</span>
+                                                                            @if ($option === 0)
+                                                                                <span class="text-xs font-semibold text-primary">Required</span>
+                                                                            @else
+                                                                                <span class="text-xs text-gray-400">Optional</span>
+                                                                            @endif
+
+                                                                        </div>
+
+                                                                        <!-- Date -->
+                                                                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                                                            <div>
+                                                                                <label for="reschedule_date_{{ $application->id }}_{{ $option }}" class="mb-1 block text-[11px] font-medium text-gray-600">
+                                                                                    Date
+                                                                                </label>
+
+                                                                                <input id="reschedule_date_{{ $application->id }}_{{ $option }}" type="date" name="options[{{ $option }}][date]" value="{{ old('options.' . $option . '.date') }}"
+                                                                                    min="{{ \App\Support\ManilaTime::now()->format('Y-m-d') }}"
+                                                                                    class="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-2 text-sm focus:border-maroon-600 focus:outline-none focus:ring-1 focus:ring-maroon-600"
+                                                                                    @if ($option === 0) required @endif
+                                                                                >
+                                                                            </div>
+
+                                                                            <!-- Time -->
+                                                                            <div>
+                                                                                <label for="reschedule_time_{{ $application->id }}_{{ $option }}" class="mb-1 block text-[11px] font-medium text-gray-600">
+                                                                                    Time
+                                                                                </label>
+
+                                                                                <input id="reschedule_time_{{ $application->id }}_{{ $option }}" type="time" name="options[{{ $option }}][time]"
+                                                                                    value="{{ old('options.' . $option . '.time') }}"
+                                                                                    class="w-full rounded-lg border border-gray-300 bg-white px-2.5 py-2 text-sm focus:border-maroon-600 focus:outline-none focus:ring-1 focus:ring-maroon-600"
+                                                                                    @if ($option === 0) required @endif
+                                                                                >
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                @endfor
+                                                            </div>
+
+                                                            <!-- Submit -->
+                                                            <div class="flex justify-end pt-1">
+                                                                <button type="submit" class="rounded-lg bg-maroon-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-maroon-700 focus:outline-none focus:ring-2 focus:ring-maroon-500 focus:ring-offset-1">
+                                                                    Send Request
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
                                                 </details>
                                             @endif
                                         @endif

@@ -194,7 +194,9 @@ class EmailVerificationTest extends TestCase
             ->assertSee('See pet recommendations');
         $this->get(route('animal.index'))
             ->assertSee('View Pet')
-            ->assertDontSee('Adopt Me!');
+            ->assertDontSee('Adopt Me!')
+            ->assertSee('fa-solid fa-dog text-5xl', false)
+            ->assertDontSee('rcpp-logo.png');
         $this->get(route('pets.show', $pet))
             ->assertOk()
             ->assertSee('Verify your email address before you can apply to adopt a pet.')
@@ -202,6 +204,8 @@ class EmailVerificationTest extends TestCase
             ->assertDontSee('href="'.route('application.apply', $pet).'"', false);
         $this->get(route('pets.modal', $pet))
             ->assertOk()
+            ->assertSee('fa-solid fa-dog text-5xl', false)
+            ->assertDontSee('rcpp-logo.png')
             ->assertSee('Verify your email address before you can apply to adopt a pet.')
             ->assertDontSee('href="'.route('application.apply', $pet).'"', false);
         $this->get(route('application.apply', $pet))->assertRedirect(route('verification.notice'));

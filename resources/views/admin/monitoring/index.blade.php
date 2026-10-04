@@ -2,6 +2,7 @@
 
 @section('title', 'Monitoring - PAIRfect Paws Admin')
 
+@section('notification-bell-in-header', true)
 @section('content')
     @php
         $now = \Carbon\Carbon::now('Asia/Manila');
@@ -1420,4 +1421,3 @@
         });
     </script>
 @endpush
-

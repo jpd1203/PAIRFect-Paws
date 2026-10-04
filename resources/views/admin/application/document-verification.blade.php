@@ -13,9 +13,12 @@
             && !$application->is_primary_candidate;
     @endphp
 
-    <div class="heading-text">
-        <h2>Document Verification</h2>
-        <p>Application #{{ $application->id }} — {{ $application->first_name }} {{ $application->last_name }}</p>
+    <div class="main-content-header">
+        <div class="heading-text">
+            <h2>Document Verification</h2>
+            <p>Application #{{ $application->id }} — {{ $application->first_name }} {{ $application->last_name }}</p>
+        </div>
+        @include('partials.notification-bell')
     </div>
 
     @if(session('success'))

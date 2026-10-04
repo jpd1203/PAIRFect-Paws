@@ -48,6 +48,11 @@ function initSidebar() {
     closeBtn?.addEventListener('click', close);
     overlay?.addEventListener('click', close);
 
+    sidebar?.querySelector('[data-handover-unavailable]')?.addEventListener('click', event => {
+        event.preventDefault();
+        showToast('You have no pending handovers. Handover Status becomes available after an adoption is approved.', 'error');
+    });
+
     sidebar?.querySelectorAll('.menu-item').forEach(item => {
         item.addEventListener('click', () => {
             if (window.innerWidth <= 991) close();

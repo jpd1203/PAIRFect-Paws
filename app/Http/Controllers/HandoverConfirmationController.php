@@ -27,13 +27,10 @@ class HandoverConfirmationController extends Controller
     public function confirmView(Request $request, Handover $handover)
     {
         $this->authorizeOwnedHandover($request, $handover);
-        $handover->load(['pet', 'notifications']);
-
-        $unreadCount = $handover->notifications()->where('read', false)->count();
+        $handover->load('pet');
 
         return view('handover.confirm', [
             'record' => $handover,
-            'unreadCount' => $unreadCount,
         ]);
     }
 
@@ -149,15 +146,10 @@ class HandoverConfirmationController extends Controller
     public function statusView(Request $request, Handover $handover)
     {
         $this->authorizeOwnedHandover($request, $handover);
-        $handover->load(['pet', 'notifications']);
-
-        $unreadCount = $handover->notifications()->where('read', false)->count();
-        $latestUpdates = $handover->notifications()->take(2)->get();
+        $handover->load('pet');
 
         return view('handover.status', [
             'record' => $handover,
-            'unreadCount' => $unreadCount,
-            'latestUpdates' => $latestUpdates,
         ]);
     }
 
@@ -227,10 +219,10 @@ class HandoverConfirmationController extends Controller
             return redirect()->route('adopter.handover.status', $handover);
         }
 
-        return redirect()->route('application.index')->with(
-            'info',
-            'Handover Status becomes available after an adoption has been approved.'
-        );
+        return redirect()->route('application.index')->with('toast', [
+            'type' => 'error',
+            'message' => 'You have no pending handovers. Handover Status becomes available after an adoption is approved.',
+        ]);
     }
 
     private function authorizeOwnedHandover(Request $request, Handover $handover): void

@@ -2,6 +2,7 @@
 
 @section('title', 'My Check-ins - PAIRfect Paws')
 
+@section('notification-bell-in-header', true)
 @section('content')
 
     <div class="nonsticky-header">

@@ -351,7 +351,7 @@ class DocumentVerificationTest extends TestCase
         $this->assertSame('JUAN CRUZ QUEZON CITY IDENTIFICATION CARD', $application->ocr_extracted_text);
         $this->assertNotSame(
             'JUAN CRUZ QUEZON CITY IDENTIFICATION CARD',
-            DB::table('adoption_applications')->whereKey($application->id)->value('ocr_extracted_text')
+            DB::table('adoption_applications')->where('id', $application->id)->value('ocr_extracted_text')
         );
         Storage::disk('local')->assertExists($application->document_path);
     }

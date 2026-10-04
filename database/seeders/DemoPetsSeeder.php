@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Models\Pet;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class DemoPetsSeeder extends Seeder
 {
@@ -14,6 +15,10 @@ class DemoPetsSeeder extends Seeder
      */
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            throw new RuntimeException('Demo pets may only be seeded in local or testing environments.');
+        }
+
         Storage::disk('public')->makeDirectory('pets');
         
         // Delete previously added demo pets that started with "Demo Pet"
