@@ -3,10 +3,13 @@
 @section('title', 'Applications - PAIRfect Paws Admin')
 
 @section('content')
+    <div class="main-content-header">
+        <div class="heading-text">
+            <h2>Applications</h2>
+            <p>Review adoption applications and manage the interview pipeline.</p>
+        </div>
 
-    <div class="heading-text">
-        <h2>Applications</h2>
-        <p>Review adoption applications and manage the interview pipeline.</p>
+        @include('partials.notification-bell')
     </div>
 
     @php

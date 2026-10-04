@@ -31,7 +31,6 @@
         @endif
 
         <div class="main-content">
-            @include('partials.notification-bell')
             @include('partials.time-travel-banner')
             @include('partials.email-verification-banner')
             @yield('content')

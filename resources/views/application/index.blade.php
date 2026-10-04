@@ -5,9 +5,13 @@
 @section('content')
 
     <div class="nonsticky-header custom-scrollbar">
-        <div class="heading-text">
-            <h2>My Applications</h2>
-            <p>Track the progress of all your adoption applications</p>
+        <div class="main-content-header">
+            <div class="heading-text">
+                <h2>My Applications</h2>
+                <p>Track the progress of all your adoption applications</p>
+            </div>
+
+            @include('partials.notification-bell')
         </div>
     
         <div class="content-area-nonsticky">

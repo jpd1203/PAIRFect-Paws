@@ -3,12 +3,13 @@
 @section('title', 'Audit Logs - PAIRfect Paws Admin')
 
 @section('content')
-
-    <div class="flex justify-between items-start flex-wrap gap-3">
+    <div class="main-content-header">
         <div class="heading-text">
             <h2>Audit Logs</h2>
             <p>A record of every meaningful staff action across the system.</p>
         </div>
+
+        @include('partials.notification-bell')
     </div>
 
     <div class="flex flex-wrap gap-3 items-center my-5">

@@ -4,9 +4,13 @@
 
 @section('content')
     <div class="nonsticky-header">
-        <div class="heading-text">
-            <h2>Submit Post-Adoption Report</h2>
-            <p>Choose a welfare check-in that is ready for submission.</p>
+        <div class="main-content-header">
+            <div class="heading-text">
+                <h2>Submit Post-Adoption Report</h2>
+                <p>Choose a welfare check-in that is ready for submission.</p>
+            </div>
+
+            @include('partials.notification-bell')
         </div>
     
         <div class="content-area-nonsticky custom-scrollbar">

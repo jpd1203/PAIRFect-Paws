@@ -3,12 +3,15 @@
 @section('title', 'Compatibility - PAIRfect Paws Admin')
 
 @section('content')
+    <div class="main-content-header">
+        <div class="heading-text">
+            <h2>Compatibility</h2>
+            <p>Application matches for each pet, ranked by full compatibility score. Shelter staff make the final adoption decision.</p>
+        </div>
 
-<div class="heading-text">
-    <h2>Compatibility</h2>
-    <p>Application matches for each pet, ranked by full compatibility score. Shelter staff make the final adoption decision.</p>
-</div>
-
+        @include('partials.notification-bell')
+    </div>
+    
 @php
     $compatCounts = [
         'all' => $applications->count(),

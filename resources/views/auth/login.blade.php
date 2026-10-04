@@ -181,18 +181,16 @@
 
     </main>
 
-    <dialog id="termsDialog" aria-labelledby="terms-dialog-title" class="w-[90vw] max-w-3xl max-h-[85vh] overflow-y-auto rounded-xl bg-white p-0 shadow-2xl backdrop:bg-black/60">
-        <div class="sticky top-0 z-10 flex justify-end border-b border-gray-200 bg-white px-5 py-3">
-            <button type="button" data-close-legal-dialog class="rounded-md px-3 py-1 text-sm font-semibold text-maroon-700 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-maroon-600" aria-label="Close Terms and Conditions">Close</button>
-        </div>
-        @include('legal.terms-content')
+    <dialog id="termsDialog" aria-labelledby="terms-dialog-title" class="w-[90vw] max-w-3xl max-h-[85vh] overflow-hidden rounded-2xl bg-white p-0 shadow-2xl backdrop:bg-black/60">
+        <div class="max-h-[85vh] overflow-y-auto custom-scrollbar">
+            @include('legal.terms-content')    
+        </div> 
     </dialog>
 
     <dialog id="privacyDialog" aria-labelledby="privacy-dialog-title" class="w-[90vw] max-w-3xl max-h-[85vh] overflow-y-auto rounded-xl bg-white p-0 shadow-2xl backdrop:bg-black/60">
-        <div class="sticky top-0 z-10 flex justify-end border-b border-gray-200 bg-white px-5 py-3">
-            <button type="button" data-close-legal-dialog class="rounded-md px-3 py-1 text-sm font-semibold text-maroon-700 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-maroon-600" aria-label="Close Privacy Notice">Close</button>
-        </div>
-        @include('legal.privacy-content')
+       <div class="max-h-[85vh] overflow-y-auto custom-scrollbar">
+            @include('legal.privacy-content')    
+        </div> 
     </dialog>
 
     <script>
@@ -215,25 +213,78 @@
             }
         }
 
-        // Auto-switch to register tab if query param ?tab=register or validation error on register form
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('[data-legal-dialog]').forEach((link) => {
-                const dialog = document.getElementById(link.dataset.legalDialog);
-                if (!dialog || typeof dialog.showModal !== 'function') return;
+            const dialog = document.getElementById(link.dataset.legalDialog);
+            if (!dialog || typeof dialog.showModal !== 'function') return;
 
-                link.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    dialog.showModal();
+            link.addEventListener('click', (event) => { event.preventDefault(); dialog.showModal();});
+            dialog.addEventListener('close', () => {link.focus();});
+
+            const closeButton = dialog.querySelector('[data-close-legal-dialog]');
+
+            if (closeButton) { closeButton.addEventListener('click', () => {
+                    dialog.close();
                 });
+            }
 
-                dialog.addEventListener('close', () => link.focus());
-                dialog.querySelector('[data-close-legal-dialog]').addEventListener('click', () => dialog.close());
-                dialog.addEventListener('click', (event) => {
-                    const bounds = dialog.getBoundingClientRect();
-                    if (event.target === dialog && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) {
-                        dialog.close();
+            const acceptTermsButton = dialog.querySelector('[data-accept-terms]');
+
+            if (acceptTermsButton) {
+                acceptTermsButton.addEventListener('click', () => {
+
+                    const termsCheckbox =
+                        document.getElementById('terms_accepted');
+
+                    if (termsCheckbox) {termsCheckbox.checked = true;
+                        termsCheckbox.dispatchEvent(
+                            new Event('change', {bubbles: true})
+                        );
                     }
+                    dialog.close();
                 });
+            }
+            
+            const acceptPrivacyButton =
+                dialog.querySelector('[data-accept-privacy]');
+
+            if (acceptPrivacyButton) {
+
+                acceptPrivacyButton.addEventListener('click', () => {
+
+                    const privacyCheckbox =
+                        document.getElementById('privacy_consent');
+
+                    if (privacyCheckbox) {
+
+                        privacyCheckbox.checked = true;
+
+                        privacyCheckbox.dispatchEvent(
+                            new Event('change', {
+                                bubbles: true
+                            })
+                        );
+                    }
+
+                    dialog.close();
+                });
+            }
+
+                dialog.addEventListener('click', (event) => {
+
+                    const bounds = dialog.getBoundingClientRect();
+                    const clickedOutside =
+                        event.target === dialog &&
+                        (
+                            event.clientX < bounds.left ||
+                            event.clientX > bounds.right ||
+                            event.clientY < bounds.top ||
+                            event.clientY > bounds.bottom
+                        );
+
+                    if (clickedOutside) {dialog.close();}
+                });
+
             });
 
             const urlParams = new URLSearchParams(window.location.search);

@@ -3,10 +3,12 @@
 @section('title', 'Dashboard - PAIRfect Paws Admin')
 
 @section('content')
-
-    <div class="heading-text">
-        <h2>Dashboard</h2>
-        <p>Overview of shelter activity and pending work.</p>
+    <div class="main-content-header">
+        <div class="heading-text">
+            <h2>Dashboard</h2>
+            <p>Overview of shelter activity and pending work.</p>
+        </div>
+        @include('partials.notification-bell')
     </div>
 
     <div class="stats-grid">

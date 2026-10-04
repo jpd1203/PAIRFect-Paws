@@ -4,9 +4,13 @@
 
 @section('content')
     <div class="nonsticky-header">
-        <div class="heading-text">
-            <h2>Overdue Check-in Notice</h2>
-            <p>Review any welfare reports that have passed their scheduled date.</p>
+        <div class="main-content-header">
+            <div class="heading-text">
+                <h2>Overdue Check-in Notice</h2>
+                <p>Review any welfare reports that have passed their scheduled date.</p>
+            </div>
+
+            @include('partials.notification-bell')
         </div>
 
         <div class="content-area-nonsticky">

@@ -3,10 +3,13 @@
 @section('title', 'Volunteers - PAIRfect Paws Admin')
 
 @section('content')
+    <div class="main-content-header">
+        <div class="heading-text">
+            <h2>Volunteers</h2>
+            <p>Manage staff and volunteer accounts.</p>
+        </div>
 
-    <div class="heading-text">
-        <h2>Volunteers</h2>
-        <p>Manage staff and volunteer accounts.</p>
+        @include('partials.notification-bell')
     </div>
 
     @if (session('success'))

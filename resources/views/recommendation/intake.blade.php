@@ -5,9 +5,13 @@
 @section('content')
 
     <div class="nonsticky-header">
-        <div class="heading-text">
-            <h2>{{ $isOnboarding ? 'Your Adoption Profile' : 'Pet Recommendation' }}</h2>
-            <p>{{ $isOnboarding ? 'Get started with the 20-question personality assessment, or skip it for now and browse pets.' : 'Complete your personality questionnaire and household information to find compatible pets.' }}</p>
+        <div class="main-content-header">
+            <div class="heading-text">
+                <h2>{{ $isOnboarding ? 'Your Adoption Profile' : 'Pet Recommendation' }}</h2>
+                <p>{{ $isOnboarding ? 'Get started with the 20-question personality assessment, or skip it for now and browse pets.' : 'Complete your personality questionnaire and household information to find compatible pets.' }}</p>
+            </div>
+
+            @include('partials.notification-bell')
         </div>
     
         <div class="content-area-nonsticky custom-scrollbar">

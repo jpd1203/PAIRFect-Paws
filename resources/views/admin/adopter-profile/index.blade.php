@@ -3,10 +3,13 @@
 @section('title', 'Adopter Profiles - PAIRfect Paws Admin')
 
 @section('content')
+    <div class="main-content-header">
+        <div class="heading-text">
+            <h2>Adopter Profiles</h2>
+            <p>Review each adopter account and its complete application history.</p>
+        </div>
 
-    <div class="heading-text">
-        <h2>Adopter Profiles</h2>
-        <p>Review each adopter account and its complete application history.</p>
+        @include('partials.notification-bell')
     </div>
 
     <div class="my-5">
