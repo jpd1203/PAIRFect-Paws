@@ -278,6 +278,7 @@ class EmailHealth extends Command
 
         try {
             $blocked = PostAdoptionLog::query()
+                ->afterCompletedHandover()
                 ->with('adoptionApplication.user:id,email,email_verified_at')
                 ->whereNull('submitted_date')
                 ->whereDate('scheduled_date', '<=', $clock->today()->toDateString())

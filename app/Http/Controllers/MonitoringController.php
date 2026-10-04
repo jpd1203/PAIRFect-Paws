@@ -70,6 +70,7 @@ class MonitoringController extends Controller
     public function myCheckins(Request $request): View
     {
         $logs = PostAdoptionLog::query()
+            ->afterCompletedHandover()
             ->with(['adoptionApplication.pet'])
             ->whereHas('adoptionApplication', function ($query) use ($request) {
                 $query->where('user_id', $request->user()->id)
@@ -545,6 +546,7 @@ class MonitoringController extends Controller
             422,
             'Post-adoption reports are available only for approved adoptions.'
         );
+        abort_unless($application->hasCompletedHandover(), 404);
     }
 
     /**
@@ -556,6 +558,7 @@ class MonitoringController extends Controller
     private function ownedApprovedLogs(Request $request): Builder
     {
         return PostAdoptionLog::query()
+            ->afterCompletedHandover()
             ->select(self::ADOPTER_LOG_COLUMNS)
             ->with(['adoptionApplication.pet'])
             ->whereHas('adoptionApplication', function (Builder $query) use ($request): void {

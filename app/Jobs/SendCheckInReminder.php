@@ -156,7 +156,8 @@ class SendCheckInReminder implements ShouldBeEncrypted, ShouldBeUnique, ShouldQu
 
     private function canDeliver(PostAdoptionLog $log, CarbonImmutable $now): bool
     {
-        return $log->submitted_date === null
+        return ($log->adoptionApplication?->hasCompletedHandover() ?? false)
+            && $log->submitted_date === null
             && $log->reminders_sent < 2
             && ! $log->scheduled_date->gt($now->endOfDay())
             && ! ($log->last_reminder_sent_at

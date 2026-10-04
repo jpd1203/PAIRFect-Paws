@@ -49,7 +49,7 @@ class AdoptionProfileController extends Controller
     public function history(Request $request, User $user, AdopterHistoryService $history)
     {
         $applications = $user->adoptionApplications()
-            ->with(['pet', 'postAdoptionLogs'])
+            ->with(['pet', 'postAdoptionLogs', 'handover'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();
@@ -78,21 +78,21 @@ class AdoptionProfileController extends Controller
         );
 
         $isApprovedPlacement = $selectedPlacement?->status === ApplicationStatus::Approved;
+        $monitoringReady = $selectedPlacement?->hasCompletedHandover() ?? false;
         $adoptionDate = $isApprovedPlacement
             ? $this->adoptionDate($selectedPlacement)
             : null;
 
-        $monitoringLogs = $isApprovedPlacement
+        $monitoringLogs = $monitoringReady
             ? $this->orderedMonitoringLogs($selectedPlacement)
             : collect();
 
-        $monitoringTimeline = $this->monitoringTimeline(
-            $monitoringLogs,
-            $adoptionDate,
-        );
+        $monitoringTimeline = $monitoringReady
+            ? $this->monitoringTimeline($monitoringLogs, $adoptionDate)
+            : collect();
         $monitoringMetrics = $this->monitoringMetrics(
             $monitoringTimeline,
-            $isApprovedPlacement,
+            $monitoringReady,
         );
         $historySummary = $history->summarize($applications);
         $historyEvents = $history->timeline($applications);
@@ -106,6 +106,7 @@ class AdoptionProfileController extends Controller
             'monitoringLogs',
             'monitoringTimeline',
             'monitoringMetrics',
+            'monitoringReady',
             'historySummary',
             'historyEvents',
         ));

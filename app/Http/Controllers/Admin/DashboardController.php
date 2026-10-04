@@ -52,10 +52,12 @@ class DashboardController extends Controller
             ->count();
 
         $activeMonitoring = PostAdoptionLog::query()
+            ->afterCompletedHandover()
             ->whereNull('submitted_date')
             ->count();
 
         $flaggedMonitoring = PostAdoptionLog::query()
+            ->afterCompletedHandover()
             ->where('is_flagged', true)
             ->whereNull('resolved_at')
             ->count();
@@ -74,6 +76,7 @@ class DashboardController extends Controller
             ->get();
 
         $overdueCheckIns = PostAdoptionLog::query()
+            ->afterCompletedHandover()
             ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
             ->whereNull('submitted_date')
             ->whereDate('scheduled_date', '<', $today)
@@ -82,6 +85,7 @@ class DashboardController extends Controller
             ->get();
 
         $unresolvedFlags = PostAdoptionLog::query()
+            ->afterCompletedHandover()
             ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
             ->where('is_flagged', true)
             ->whereNull('resolved_at')

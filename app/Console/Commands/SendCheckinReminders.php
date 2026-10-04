@@ -2,13 +2,12 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\ApplicationStatus;
 use App\Jobs\SendCheckInReminder;
 use App\Models\PostAdoptionLog;
 use App\Services\EmailNotificationService;
 use App\Services\FlagEvaluationService;
-use App\Services\PostAdoptionScheduleService;
 use App\Services\InAppNotificationService;
+use App\Services\PostAdoptionScheduleService;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +17,7 @@ class SendCheckinReminders extends Command
 {
     protected $signature = 'checkins:send-reminders';
 
-    protected $description = 'Create approved-adoption check-ins and queue due reminder deliveries.';
+    protected $description = 'Create completed-handover check-ins and queue due reminder deliveries.';
 
     public function handle(
         PostAdoptionScheduleService $scheduleService,
@@ -33,8 +32,8 @@ class SendCheckinReminders extends Command
         $created = $scheduleService->ensureForApprovedApplications();
         $this->info("Created {$created} missing check-in(s).");
 
-        PostAdoptionLog::query()->with(['adoptionApplication.user', 'adoptionApplication.pet'])
-            ->whereHas('adoptionApplication', fn ($query) => $query->where('status', ApplicationStatus::Approved->value))
+        PostAdoptionLog::query()->afterCompletedHandover()
+            ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
             ->whereNull('submitted_date')->whereDate('scheduled_date', '<=', $today)
             ->orderBy('id')->chunkById(100, function ($logs) use ($inApp, $today): void {
                 foreach ($logs as $log) {
@@ -72,6 +71,7 @@ class SendCheckinReminders extends Command
         $failed = 0;
 
         PostAdoptionLog::query()
+            ->afterCompletedHandover()
             ->whereNull('submitted_date')
             ->where('reminders_sent', '<', 2)
             ->whereDate('scheduled_date', '<=', $today)

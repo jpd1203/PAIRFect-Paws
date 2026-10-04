@@ -35,6 +35,7 @@
 
         $today = app(\App\Services\PostAdoptionClock::class)->today()->toDateString();
         $approvedLogsBase = \App\Models\PostAdoptionLog::query()
+            ->afterCompletedHandover()
             ->whereHas('adoptionApplication', function ($q) use ($user) {
                 $q->where('user_id', $user->id)
                   ->where('status', \App\Enums\ApplicationStatus::Approved->value);
@@ -57,6 +58,7 @@
     }
 
     $hasReceivedPet = $user && $user->adoptionApplications()
+        ->where('status', \App\Enums\ApplicationStatus::Approved->value)
         ->whereHas('handover', function ($query) {
             $query->where('adopter_outcome', 'received');
         })->exists();

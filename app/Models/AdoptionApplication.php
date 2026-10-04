@@ -88,6 +88,17 @@ class AdoptionApplication extends Model
         return $this->hasOne(Handover::class, 'application_id');
     }
 
+    public function hasCompletedHandover(): bool
+    {
+        if ($this->status !== ApplicationStatus::Approved) {
+            return false;
+        }
+
+        return $this->relationLoaded('handover')
+            ? $this->handover?->adopter_outcome === 'received'
+            : $this->handover()->where('adopter_outcome', 'received')->exists();
+    }
+
     // ─── Accessors used by frontend Blade templates ────────────────────────
 
     public function getFirstNameAttribute(): string

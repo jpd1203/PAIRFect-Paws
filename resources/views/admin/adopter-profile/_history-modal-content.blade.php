@@ -16,10 +16,12 @@
         </small>
     </div>
     <div class="flex items-center gap-3">
-        @if ($hasPlacement)
+        @if ($hasPlacement && $monitoringReady)
             <span class="badge {{ $monitoringMetrics['header_badge_class'] }}">
                 {{ $monitoringMetrics['header_badge_label'] }}
             </span>
+        @elseif ($hasPlacement)
+            <span class="badge badge-upcoming">Handover pending</span>
         @else
             <span class="badge badge-upcoming">No placement</span>
         @endif
@@ -69,7 +71,7 @@
         </ol>
     </details>
 
-    @if ($hasPlacement)
+    @if ($hasPlacement && $monitoringReady)
         <section
             data-selected-application-id="{{ $selectedPlacement->id }}"
             data-monitoring-status="{{ $monitoringMetrics['overall_status'] }}"
@@ -204,10 +206,15 @@
                 @endforeach
             </ul>
         </section>
+    @elseif ($hasPlacement)
+        <div class="modal-note caution">
+            <strong>Post-adoption monitoring has not started.</strong>
+            Check-in records become available after the adopter confirms receipt and the handover is complete.
+        </div>
     @else
         <div class="modal-note caution">
             <strong>No completed adoption placement yet.</strong>
-            Post-adoption welfare monitoring becomes available after one of this account's applications is approved.
+            Post-adoption welfare monitoring becomes available after an approved adoption's handover is complete.
         </div>
     @endif
 

@@ -25,7 +25,6 @@ class ReservationQueueService
     ];
 
     public function __construct(
-        private readonly PostAdoptionScheduleService $postAdoptionSchedule,
         private readonly EmailNotificationService $emailNotifications,
         private readonly HandoverService $handovers,
         private readonly ApplicantRankingService $ranking,
@@ -405,7 +404,6 @@ class ReservationQueueService
             // their last valid compatibility snapshots remain in adoption history.
             $pet->update(['availability_status' => AvailabilityStatus::Adopted->value]);
 
-            $this->postAdoptionSchedule->ensureForApplication($candidate);
             $this->handovers->forApprovedApplication($candidate);
 
             AuditLogService::log(

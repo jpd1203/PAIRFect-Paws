@@ -143,7 +143,7 @@ class AdoptionPipelineStateMachineTest extends TestCase
         $this->assertNotNull($application->queue_closed_at);
         $this->assertTrue($application->adopted_at->equalTo($application->queue_closed_at));
         $this->assertSame(AvailabilityStatus::Adopted, $pet->refresh()->availability_status);
-        $this->assertCount(3, $application->postAdoptionLogs()->get());
+        $this->assertCount(0, $application->postAdoptionLogs()->get());
         $this->assertDatabaseHas('handovers', [
             'application_id' => $application->id,
             'pet_id' => $pet->id,

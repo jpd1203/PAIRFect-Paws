@@ -25,7 +25,7 @@ final class AdopterHistoryService
 
         $historyByUser = AdoptionApplication::query()
             ->whereIn('user_id', $userIds)
-            ->with('postAdoptionLogs')
+            ->with(['postAdoptionLogs', 'handover'])
             ->get()
             ->groupBy('user_id');
 
@@ -43,7 +43,7 @@ final class AdopterHistoryService
     /** @return array<string, mixed> */
     public function getSummary(User $adopter): array
     {
-        return $this->summarize($adopter->adoptionApplications()->with('postAdoptionLogs')->get());
+        return $this->summarize($adopter->adoptionApplications()->with(['postAdoptionLogs', 'handover'])->get());
     }
 
     /** @param Collection<int, AdoptionApplication> $applications
@@ -52,7 +52,7 @@ final class AdopterHistoryService
     public function summarize(Collection $applications): array
     {
         $logs = $applications->flatMap(
-            fn (AdoptionApplication $application) => $application->status === ApplicationStatus::Approved
+            fn (AdoptionApplication $application) => $application->hasCompletedHandover()
                 ? $application->postAdoptionLogs
                 : collect()
         );
@@ -129,7 +129,7 @@ final class AdopterHistoryService
                 'reasons' => [],
             ]);
 
-            if ($application->status !== ApplicationStatus::Approved) {
+            if (! $application->hasCompletedHandover()) {
                 continue;
             }
             foreach ($application->postAdoptionLogs as $log) {

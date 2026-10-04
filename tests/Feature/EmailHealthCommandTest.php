@@ -8,6 +8,7 @@ use App\Enums\Milestone;
 use App\Enums\Role;
 use App\Enums\Species;
 use App\Models\AdoptionApplication;
+use App\Models\Handover;
 use App\Models\Pet;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
@@ -189,6 +190,15 @@ class EmailHealthCommandTest extends TestCase
             'pet_id' => $pet->id,
             'status' => ApplicationStatus::Approved,
             'adopted_at' => '2026-08-20 00:00:00',
+        ]);
+        Handover::create([
+            'code' => 'HV-TEST-'.$application->id,
+            'application_id' => $application->id,
+            'pet_id' => $pet->id,
+            'user_id' => $adopter->id,
+            'released_at' => now(),
+            'adopter_outcome' => 'received',
+            'received_at' => now(),
         ]);
 
         return PostAdoptionLog::create([

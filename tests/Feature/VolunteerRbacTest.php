@@ -162,6 +162,15 @@ class VolunteerRbacTest extends TestCase
             'pet_id' => $pet->id,
             'status' => ApplicationStatus::Approved->value,
         ]);
+        \App\Models\Handover::create([
+            'code' => 'HV-TEST-'.$application->id,
+            'application_id' => $application->id,
+            'pet_id' => $pet->id,
+            'user_id' => $adopter->id,
+            'released_at' => now(),
+            'adopter_outcome' => 'received',
+            'received_at' => now(),
+        ]);
         $log = PostAdoptionLog::create([
             'application_id' => $application->id,
             'milestone' => Milestone::ThreeDays,

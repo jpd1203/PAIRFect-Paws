@@ -28,14 +28,6 @@ class PostAdoptionAdopterNavigationTest extends TestCase
 
         $adopter = $this->user(Role::Adopter, 'sidebar-adopter');
         $dueLog = $this->logFor($adopter, 'Sidebar Pet', '2026-08-25');
-        Handover::create([
-            'code' => 'sidebar-received',
-            'application_id' => $dueLog->application_id,
-            'pet_id' => $dueLog->adoptionApplication->pet_id,
-            'user_id' => $adopter->id,
-            'adopter_outcome' => 'received',
-            'adopter_confirmed_at' => now(),
-        ]);
 
         $submitPage = $this->actingAs($adopter)
             ->get(route('monitoring.submit-report'))
@@ -251,6 +243,18 @@ class PostAdoptionAdopterNavigationTest extends TestCase
                 PostAdoptionScheduleService::TIMEZONE,
             )->subDays(3),
         ]);
+
+        if ($applicationStatus === ApplicationStatus::Approved) {
+            Handover::create([
+                'code' => 'HV-TEST-'.$application->id,
+                'application_id' => $application->id,
+                'pet_id' => $pet->id,
+                'user_id' => $adopter->id,
+                'released_at' => now(),
+                'adopter_outcome' => 'received',
+                'received_at' => now(),
+            ]);
+        }
 
         return PostAdoptionLog::create(array_merge([
             'application_id' => $application->id,
