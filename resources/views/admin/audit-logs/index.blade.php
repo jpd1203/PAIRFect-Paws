@@ -14,7 +14,10 @@
     </div>
 
     <div class="flex flex-wrap gap-3 items-center my-5">
-        <input type="text" data-search-input data-search-scope="auditTableBody" class="search-input flex-1 min-w-[220px]" placeholder="Search by user or action…">
+        <div class="relative flex-1 min-w-[220px]">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+            <input type="text" data-search-input data-search-scope="auditTableBody" class="search-input !pl-10 flex-1 min-w-[220px]" placeholder="Search by user, role, action, or details…">
+        </div>
         <a href="{{ route('admin.audit-logs.export') }}" class="btn btn-primary"><i class="fa-solid fa-download"></i> Export CSV</a>
     </div>
 
@@ -26,8 +29,8 @@
                 </thead>
                 <tbody id="auditTableBody">
                     @forelse ($logs as $log)
-                        <tr data-search-row data-search-text="{{ $log->user_name }} {{ $log->display_action }} {{ $log->notes }}">
-                            <td>{{ $log->timestamp->format('M j, Y g:i A') }}</td>
+                        <tr data-search-row data-filter-row data-search-text="{{ $log->user_name }} {{ $log->role }} {{ $log->display_action }} {{ $log->notes }} {{ $log->timestamp?->format('M j, Y') }}">
+                            <td>{{ $log->timestamp?->format('M j, Y g:i A') ?? '—' }}</td>
                             <td class="font-semibold">{{ $log->user_name }}</td>
                             <td><span class="badge {{ match (strtolower($log->role ?? '')) {
                                 'administrator', 'admin' => 'badge-pending',
@@ -43,8 +46,11 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" class="text-[#888] py-6">No activity recorded yet.</td></tr>
+                        <tr><td colspan="4" class="text-[#888] py-6 text-center">No activity recorded yet.</td></tr>
                     @endforelse
+                    <tr class="search-empty-row" style="display: none;">
+                        <td colspan="4" class="text-center text-[#888] py-6">No matching logs found.</td>
+                    </tr>
                 </tbody>
             </table>
         </div>

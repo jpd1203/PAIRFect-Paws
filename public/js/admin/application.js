@@ -54,8 +54,23 @@ function openReviewModal(id) {
     document.getElementById('rHousing').textContent = a.housing_type ?? '—';
     document.getElementById('rHousehold').textContent = a.household_composition ?? '—';
     document.getElementById('rIncome').textContent = a.monthly_income_range ?? '—';
-    document.getElementById('rMotivation').textContent = a.motivation_statement || 'No statement provided.';
-    document.getElementById('rDocumentLink').href = a.document_url;
+
+    const hasMotivation = Boolean(a.motivation_statement && a.motivation_statement.trim());
+    const motivationRow = document.getElementById('rMotivationRow');
+    const motivationText = document.getElementById('rMotivation');
+    if (motivationRow) {
+        motivationRow.style.display = hasMotivation ? 'flex' : 'none';
+    }
+    if (motivationText && hasMotivation) {
+        motivationText.textContent = a.motivation_statement;
+    }
+
+    const docRow = document.getElementById('rDocumentRow');
+    if (docRow) {
+        docRow.style.display = a.document_url ? 'flex' : 'none';
+    }
+    document.getElementById('rDocumentLink').href = a.document_url || '#';
+
     const docStatusDisplay = {
         'NeedsResubmission': 'Needs Resubmission',
         'ManualReview': 'Manual Review',
@@ -64,7 +79,11 @@ function openReviewModal(id) {
         'Pending': 'Pending',
     }[a.document_verification_status] || a.document_verification_status || '—';
     document.getElementById('rDocumentStatus').textContent = docStatusDisplay;
-    document.getElementById('rVerificationLink').href = a.verification_url;
+    document.getElementById('rVerificationLink').href = a.verification_url || '#';
+    const verifRow = document.getElementById('rVerificationRow');
+    if (verifRow) {
+        verifRow.style.display = (a.verification_url || a.document_verification_status) ? 'flex' : 'none';
+    }
     document.getElementById('rQueuePosition').textContent = a.queue_position
         ? `#${a.queue_position}`
         : ['approved', 'rejected', 'withdrawn', 'noshow', 'closed'].includes(a.status)
@@ -90,59 +109,102 @@ function openReviewModal(id) {
     });
     document.getElementById('rFullHistoryBtn').onclick = () => openAdoptionHistoryModal(a.history_url);
 
-    // document.getElementById('rHistoryRow').style.display = (a.has_history || a.history_url) ? 'flex' : 'none';
-    // document.getElementById('rHistoryBtn').onclick = () => openAdoptionHistoryModal(a.history_url);
+    // Compatibility: Only show row and banner if a valid numeric score is present
+    const hasValidCompat = Boolean(
+        a.has_compatibility &&
+        a.compatibility &&
+        a.compatibility.overall !== null &&
+        a.compatibility.overall !== undefined &&
+        !isNaN(Number(a.compatibility.overall))
+    );
 
-    document.getElementById('rCompatRow').style.display = a.has_compatibility ? 'flex' : 'none';
-    document.getElementById('rCompatBtn').onclick = () => openCompatibilityModal(a);
+    const compatRow = document.getElementById('rCompatRow');
+    if (compatRow) {
+        compatRow.style.display = hasValidCompat ? 'flex' : 'none';
+    }
+    const compatBtn = document.getElementById('rCompatBtn');
+    if (compatBtn) {
+        compatBtn.onclick = () => openCompatibilityModal(a);
+    }
 
     const compatBanner = document.getElementById('rCompatBanner');
+    if (compatBanner) {
+        if (hasValidCompat) {
+            const overall = Number(a.compatibility.overall);
+            const label = overall >= 80 ? 'High Match' : overall >= 60 ? 'Good Match' : overall >= 40 ? 'Fair Match' : 'Low Match';
+            compatBanner.style.display = 'block';
+            const filledColor =
+                overall >= 80 ? '#295F51' :
+                overall >= 60 ? '#2A4877' :
+                overall >= 40 ? '#614E34' :
+                '#773E47';
 
-    if (a.has_compatibility) {
-        const overall = a.compatibility.overall;
-        const label = overall >= 80 ? 'High Match' : overall >= 60 ? 'Good Match' : overall >= 40 ? 'Fair Match' : 'Low Match';
-        compatBanner.style.display = 'block';
-        const filledColor =
-        overall >= 80 ? '#295F51' :
-        overall >= 60 ? '#2A4877' :
-        overall >= 40 ? '#614E34' :
-        '#773E47';
+            const lightColor =
+                overall >= 80 ? '#E5F0EC' :
+                overall >= 60 ? '#E8EDF5' :
+                overall >= 40 ? '#FAEEDA' :
+                '#FCEBEB';
 
-    const lightColor =
-        overall >= 80 ? '#E5F0EC' :
-        overall >= 60 ? '#E8EDF5' :
-        overall >= 40 ? '#FAEEDA' :
-        '#FCEBEB';
+            compatBanner.style.background =
+                `linear-gradient(to right, ${filledColor} ${overall}%, ${lightColor} ${overall}%)`;
 
-    compatBanner.style.background =
-        `linear-gradient(to right, ${filledColor} ${overall}%, ${lightColor} ${overall}%)`;
-
-    compatBanner.style.color = overall >= 60 ? '#FFFFFF' : '#614E34';
             compatBanner.style.color = overall >= 80 ? '#E5F0EC' : overall >= 60 ? '#E8EDF5' : overall >= 40 ? '#FFFFFF' : '#773E47';
             compatBanner.textContent = `${label} – ${overall}/100`;
         } else {
             compatBanner.style.display = 'none';
+            compatBanner.textContent = '';
+            compatBanner.style.background = 'none';
         }
-
-    // Interview section only shown once an interview has actually happened
-    const interviewSection = document.getElementById('rInterviewSection');
-    if (a.interview_date) {
-        interviewSection.style.display = 'block';
-        document.getElementById('rInterviewDate').textContent = `${a.interview_date} at ${a.interview_time ?? ''}`;
-        document.getElementById('rConductedBy').textContent = a.conducted_by ?? '—';
-        document.getElementById('rInterviewNotesRow').style.display = a.interview_notes ? 'flex' : 'none';
-        document.getElementById('rInterviewNotesText').style.display = a.interview_notes ? 'block' : 'none';
-        document.getElementById('rInterviewNotesText').textContent = a.interview_notes ?? '';
-    } else {
-        interviewSection.style.display = 'none';
     }
 
-    document.getElementById('rDecisionRemarksSection').style.display = a.decision_remarks ? 'block' : 'none';
-    document.getElementById('rDecisionRemarksText').textContent = a.decision_remarks ?? '';
+    // Interview section: only show container and content if interview date is present
+    const interviewContainer = document.getElementById('rInterviewContainer');
+    const interviewSection = document.getElementById('rInterviewSection');
+    const hasInterview = Boolean(a.interview_date);
+    if (interviewContainer) {
+        interviewContainer.style.display = hasInterview ? 'block' : 'none';
+    }
+    if (interviewSection) {
+        interviewSection.style.display = hasInterview ? 'block' : 'none';
+    }
+    if (hasInterview) {
+        document.getElementById('rInterviewDate').textContent = `${a.interview_date} at ${a.interview_time ?? ''}`;
+        document.getElementById('rConductedBy').textContent = a.conducted_by ?? '—';
+        const hasNotes = Boolean(a.interview_notes && a.interview_notes.trim());
+        const notesRow = document.getElementById('rInterviewNotesRow');
+        const notesText = document.getElementById('rInterviewNotesText');
+        if (notesRow) notesRow.style.display = hasNotes ? 'flex' : 'none';
+        if (notesText) {
+            notesText.style.display = hasNotes ? 'block' : 'none';
+            notesText.textContent = a.interview_notes ?? '';
+        }
+    }
 
+    // Decision remarks: only show container and text if remarks exist
+    const decisionRemarksContainer = document.getElementById('rDecisionRemarksContainer');
+    const decisionRemarksSection = document.getElementById('rDecisionRemarksSection');
+    const hasRemarks = Boolean(a.decision_remarks && a.decision_remarks.trim());
+    if (decisionRemarksContainer) {
+        decisionRemarksContainer.style.display = hasRemarks ? 'block' : 'none';
+    }
+    if (decisionRemarksSection) {
+        decisionRemarksSection.style.display = hasRemarks ? 'block' : 'none';
+    }
+    if (hasRemarks) {
+        document.getElementById('rDecisionRemarksText').textContent = a.decision_remarks;
+    }
+
+    // Reschedule section: only show container if reschedule request exists
+    const rescheduleContainer = document.getElementById('rRescheduleContainer');
     const rescheduleSection = document.getElementById('rRescheduleSection');
     const hasRescheduleRequest = a.reschedule_status === 'pending' && a.status === 'scheduled' && a.is_primary;
-    rescheduleSection.style.display = hasRescheduleRequest ? 'block' : 'none';
+    if (rescheduleContainer) {
+        rescheduleContainer.style.display = hasRescheduleRequest ? 'block' : 'none';
+    }
+    if (rescheduleSection) {
+        rescheduleSection.style.display = hasRescheduleRequest ? 'block' : 'none';
+        rescheduleSection.hidden = !hasRescheduleRequest;
+    }
     if (hasRescheduleRequest) {
         document.getElementById('rRescheduleCurrent').textContent = `${a.interview_date} at ${a.interview_time}`;
         document.getElementById('rRescheduleReason').textContent = a.reschedule_reason || 'No reason provided';
@@ -344,6 +406,17 @@ function openReviewModal(id) {
         scheduleBtn.style.display = 'none';
         scheduleBtn.onclick = null;
     }
+
+    // Safety fallback: ensure NO empty .review-container renders with a background
+    document.querySelectorAll('#applicationReviewModal .review-container').forEach((container) => {
+        if (container.style.display === 'none') return;
+        const visibleElements = Array.from(container.querySelectorAll('.review-section, .review-row, p, div')).filter((el) => {
+            return el.style.display !== 'none' && !el.hidden && (el.innerText ? el.innerText.trim().length > 0 : false);
+        });
+        if (visibleElements.length === 0 || !container.innerText.trim()) {
+            container.style.display = 'none';
+        }
+    });
 
     openModal('applicationReviewModal');
 }
@@ -781,9 +854,12 @@ function closeProfileHistory() {
 }
 
 function openCompatibilityModal(a) {
+    if (!a.compatibility || a.compatibility.overall === null || a.compatibility.overall === undefined) {
+        return;
+    }
+    const overall = Number(a.compatibility.overall);
     document.getElementById('compatSubheading').textContent = `${a.full_name} · ${a.pet ?? ''}`;
-    document.getElementById('compatOverall').textContent = `${a.compatibility.overall}/100`;
-    const overall = a.compatibility.overall;
+    document.getElementById('compatOverall').textContent = `${overall}/100`;
     document.getElementById('compatLabel').textContent = overall >= 80 ? 'High Match' : overall >= 60 ? 'Good Match' : overall >= 40 ? 'Fair Match' : 'Low Match';
 
     const rowsHost = document.getElementById('compatRows');
@@ -849,3 +925,235 @@ window.selectApplicant = selectApplicant;
 window.openAdoptionHistoryModal = openAdoptionHistoryModal;
 window.switchProfileHistory = switchProfileHistory;
 window.closeProfileHistory = closeProfileHistory;
+
+/** Interactive application live-filter controller */
+function initInteractiveApplicationFilters() {
+    const scope = document.getElementById('applicationTableBody');
+    if (!scope) return;
+
+    const form = document.getElementById('applicationFilterForm');
+    const searchInput = document.getElementById('appSearchInput');
+    const fromInput = document.getElementById('appFromDate');
+    const toInput = document.getElementById('appToDate');
+    const statusSelect = document.getElementById('appStatusSelect');
+    const clearBtn = document.getElementById('clearFiltersBtn');
+    const filterBar = document.querySelector('[data-filter-bar][data-filter-scope="applicationTableBody"]');
+    const countDisplay = document.getElementById('visibleAppCount');
+    const noResultsRow = document.getElementById('noFilterResultsRow');
+
+    function runFilters() {
+        const term = (searchInput?.value || '').trim().toLowerCase();
+        const fromDate = fromInput?.value || '';
+        const toDate = toInput?.value || '';
+        const selectedStatus = (statusSelect?.value || '').trim();
+        const activeTabBtn = filterBar?.querySelector('[data-filter-btn].active');
+        const tabStatus = activeTabBtn?.dataset.filterBtn || 'all';
+
+        const rows = scope.querySelectorAll('tr[data-filter-row]');
+        let visibleCount = 0;
+
+        rows.forEach((row) => {
+            const text = (row.dataset.searchText || row.textContent).toLowerCase();
+            const rowStatusRaw = row.dataset.statusRaw || '';
+            const rowStatusSlug = (row.dataset.status || '').toLowerCase();
+            const rowDate = row.dataset.date || '';
+
+            // Search term check
+            const matchesSearch = !term || text.includes(term);
+
+            // Status check
+            let matchesStatus = true;
+            if (selectedStatus) {
+                matchesStatus = rowStatusRaw.toLowerCase() === selectedStatus.toLowerCase()
+                    || rowStatusSlug.includes(selectedStatus.toLowerCase())
+                    || (selectedStatus === 'InterviewScheduled' && rowStatusSlug.includes('scheduled'));
+            } else if (tabStatus !== 'all') {
+                matchesStatus = rowStatusSlug.split(' ').includes(tabStatus);
+            }
+
+            // Date range check
+            let matchesDate = true;
+            if (fromDate && rowDate) {
+                matchesDate = matchesDate && (rowDate >= fromDate);
+            }
+            if (toDate && rowDate) {
+                matchesDate = matchesDate && (rowDate <= toDate);
+            }
+
+            const isVisible = matchesSearch && matchesStatus && matchesDate;
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
+        });
+
+        if (countDisplay) {
+            countDisplay.textContent = visibleCount;
+        }
+
+        if (noResultsRow) {
+            noResultsRow.style.display = (visibleCount === 0 && rows.length > 0) ? '' : 'none';
+        }
+    }
+
+    // Attach real-time input and change listeners
+    searchInput?.addEventListener('input', runFilters);
+    fromInput?.addEventListener('input', runFilters);
+    fromInput?.addEventListener('change', runFilters);
+    toInput?.addEventListener('input', runFilters);
+    toInput?.addEventListener('change', runFilters);
+
+    statusSelect?.addEventListener('change', () => {
+        const val = statusSelect.value;
+        if (filterBar) {
+            filterBar.querySelectorAll('[data-filter-btn]').forEach((b) => b.classList.remove('active'));
+            if (!val) {
+                filterBar.querySelector('[data-filter-btn="all"]')?.classList.add('active');
+            } else {
+                const slug = val === 'InterviewScheduled' ? 'scheduled' : val.toLowerCase().replace(/[\s_]/g, '');
+                const matchingTab = filterBar.querySelector(`[data-filter-btn="${slug}"]`);
+                if (matchingTab) {
+                    matchingTab.classList.add('active');
+                }
+            }
+        }
+        runFilters();
+    });
+
+    // When clicking a tab on filter-bar, sync the Status dropdown
+    if (filterBar) {
+        filterBar.querySelectorAll('[data-filter-btn]').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                filterBar.querySelectorAll('[data-filter-btn]').forEach((b) => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const btnFilter = btn.dataset.filterBtn;
+                if (statusSelect) {
+                    if (btnFilter === 'all') {
+                        statusSelect.value = '';
+                    } else {
+                        const opt = [...statusSelect.options].find((o) => {
+                            const s = o.value === 'InterviewScheduled' ? 'scheduled' : o.value.toLowerCase().replace(/[\s_]/g, '');
+                            return s === btnFilter;
+                        });
+                        statusSelect.value = opt ? opt.value : '';
+                    }
+                }
+                runFilters();
+            });
+        });
+    }
+
+    // Reset / Clear function
+    window.resetApplicationFilters = function () {
+        if (searchInput) searchInput.value = '';
+        if (fromInput) fromInput.value = '';
+        if (toInput) toInput.value = '';
+        if (statusSelect) statusSelect.value = '';
+        if (filterBar) {
+            filterBar.querySelectorAll('[data-filter-btn]').forEach((b) => b.classList.remove('active'));
+            filterBar.querySelector('[data-filter-btn="all"]')?.classList.add('active');
+        }
+        if (window.location.search) {
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+        runFilters();
+    };
+
+    clearBtn?.addEventListener('click', window.resetApplicationFilters);
+
+    // Form submit:
+    form?.addEventListener('submit', (e) => {
+        // If clicking Export, let it submit naturally to download CSV
+        if (e.submitter && e.submitter.getAttribute('formaction')) {
+            return;
+        }
+        e.preventDefault();
+        runFilters();
+
+        const params = new URLSearchParams();
+        if (fromInput?.value) params.set('from', fromInput.value);
+        if (toInput?.value) params.set('to', toInput.value);
+        if (statusSelect?.value) params.set('status', statusSelect.value);
+        if (searchInput?.value) params.set('search', searchInput.value);
+
+        const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        window.history.replaceState({}, '', newUrl);
+    });
+
+    // Check if initial query parameters were in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('from') && fromInput) fromInput.value = urlParams.get('from');
+    if (urlParams.get('to') && toInput) toInput.value = urlParams.get('to');
+    if (urlParams.get('status') && statusSelect) {
+        statusSelect.value = urlParams.get('status');
+        const slug = statusSelect.value === 'InterviewScheduled' ? 'scheduled' : statusSelect.value.toLowerCase().replace(/[\s_]/g, '');
+        if (filterBar) {
+            filterBar.querySelectorAll('[data-filter-btn]').forEach((b) => b.classList.remove('active'));
+            filterBar.querySelector(`[data-filter-btn="${slug}"]`)?.classList.add('active');
+        }
+    }
+    if (urlParams.get('search') && searchInput) searchInput.value = urlParams.get('search');
+
+    runFilters();
+    initFilterBarScrollArrows();
+}
+
+/** Overflow scroll arrow controls for filter bar */
+function initFilterBarScrollArrows() {
+    const containers = document.querySelectorAll('.filter-bar-container');
+    containers.forEach((container) => {
+        const bar = container.querySelector('.filter-bar');
+        const leftBtn = container.querySelector('.tab-scroll-left');
+        const rightBtn = container.querySelector('.tab-scroll-right');
+        if (!bar || !leftBtn || !rightBtn) return;
+
+        function updateArrows() {
+            // Show only when container is smaller and tabs overflow
+            const hasOverflow = bar.scrollWidth > bar.clientWidth + 2;
+            if (!hasOverflow) {
+                leftBtn.style.display = 'none';
+                rightBtn.style.display = 'none';
+                return;
+            }
+
+            const atStart = bar.scrollLeft <= 5;
+            leftBtn.style.display = atStart ? 'none' : 'flex';
+
+            const atEnd = bar.scrollLeft >= bar.scrollWidth - bar.clientWidth - 5;
+            rightBtn.style.display = atEnd ? 'none' : 'flex';
+        }
+
+        leftBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            bar.scrollBy({ left: -180, behavior: 'smooth' });
+            setTimeout(updateArrows, 250);
+        });
+
+        rightBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            bar.scrollBy({ left: 180, behavior: 'smooth' });
+            setTimeout(updateArrows, 250);
+        });
+
+        bar.addEventListener('scroll', updateArrows, { passive: true });
+        window.addEventListener('resize', updateArrows);
+
+        if (window.ResizeObserver) {
+            new ResizeObserver(updateArrows).observe(container);
+            new ResizeObserver(updateArrows).observe(bar);
+        }
+
+        updateArrows();
+        setTimeout(updateArrows, 150);
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initInteractiveApplicationFilters();
+        initFilterBarScrollArrows();
+    });
+} else {
+    initInteractiveApplicationFilters();
+    initFilterBarScrollArrows();
+}

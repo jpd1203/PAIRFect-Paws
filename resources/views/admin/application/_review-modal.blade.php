@@ -53,7 +53,7 @@
                     <div class="review-row"><span>Housing Type</span><span id="rHousing"></span></div>
                     <div class="review-row"><span>Household Composition</span><span id="rHousehold"></span></div>
                     <div class="review-row"><span>Monthly Income Range</span><span id="rIncome"></span></div>
-                    <div class="review-row flex-col items-start gap-1 py-2">
+                    <div class="review-row flex-col items-start gap-1 py-2" id="rMotivationRow">
                         <span class="font-semibold text-text-dark">Motivation Statement</span>
                         <p id="rMotivation" class="text-sm text-[#444] bg-white border border-gray-400 p-3 rounded-md w-full whitespace-pre-line m-0 font-normal leading-relaxed"></p>
                     </div>
@@ -64,11 +64,11 @@
                     <button type="button" class="btn btn-secondary btn-sm" id="rHistoryBtn"><i class="fa-solid fa-clock-rotate-left mr-1"></i> View History</button>
                 </div> -->
 
-                <div class="review-row">
+                <div class="review-row" id="rDocumentRow">
                     <span>Document upload (valid ID, proof of residence)</span>
                     <a class="btn btn-secondary btn-sm" id="rDocumentLink" href="#" target="_blank"><i class="fa-solid fa-file-arrow-down"></i>View Document</a>
                 </div>
-                <div class="review-row">
+                <div class="review-row" id="rVerificationRow">
                     <span>OCR Verification</span>
                     <span>
                         <strong id="rDocumentStatus"></strong>
@@ -82,7 +82,7 @@
                 </div>
             </div>
 
-            <div class="review-container">
+            <div class="review-container" id="rInterviewContainer" style="display: none;">
                 <div class="review-section" id="rInterviewSection">
                     <h6>Interview</h6>
                     <div class="review-row"><span>Interview Date</span><span id="rInterviewDate"></span></div>
@@ -94,7 +94,7 @@
                 </div>
             </div>
 
-            <div class="review-container">
+            <div class="review-container" id="rRescheduleContainer" style="display: none;">
                 <div class="review-section" id="rRescheduleSection" hidden>
                     <h6>Interview Reschedule Requested</h6>
                     <p class="text-sm">The current interview time remains official until staff confirms a new one.</p>
@@ -121,16 +121,16 @@
                     </form>
                     <form id="rRescheduleDeclineForm" method="POST" class="hidden">@csrf</form>
                 </div>
+            </div>
 
+            <div class="review-container" id="rDecisionRemarksContainer" style="display: none;">
+                <div id="rDecisionRemarksSection" class="review-section">
+                    <h6>Decision Remarks</h6>
+                    <p id="rDecisionRemarksText" class="text-[.88rem] text-[#555] bg-white border border-gray-400 rounded-lg p-3 mb-3"></p>
                 </div>
-                <div class="review-container">
-                    <div id="rDecisionRemarksSection" class="review-section">
-                        <h6>Decision Remarks</h6>
-                        <p id="rDecisionRemarksText" class="text-[.88rem] text-[#555] bg-white border border-gray-400 rounded-lg p-3 mb-3"></p>
-                    </div>
-                </div>
-        
-                <div id="rCompatBanner" class="mx-6 mb-2 rounded-full py-2.5 text-center text-white font-bold text-[.9rem]"></div>
+            </div>
+
+            <div id="rCompatBanner" class="mx-6 mb-2 rounded-full py-2.5 text-center text-white font-bold text-[.9rem]" style="display: none;"></div>
             </div>
         
 

@@ -316,6 +316,56 @@
 
   /* ---------- Filter bar ---------- */
 
+  .filter-bar-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin: 0.75rem 0;
+  }
+  .filter-bar-container .filter-bar {
+    margin: 0 !important;
+    scroll-behavior: smooth;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+  .tab-scroll-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 9999px;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+    cursor: pointer;
+    z-index: 20;
+    transition: all 0.15s ease-in-out;
+    font-size: 0.75rem;
+    padding: 0;
+  }
+  .tab-scroll-arrow:hover {
+    background: #881337;
+    color: #ffffff;
+    border-color: #881337;
+    box-shadow: 0 4px 12px rgba(136, 19, 55, 0.25);
+    transform: translateY(-50%) scale(1.1);
+  }
+  .tab-scroll-arrow:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+  .tab-scroll-arrow.tab-scroll-left {
+    left: -0.25rem;
+  }
+  .tab-scroll-arrow.tab-scroll-right {
+    right: -0.25rem;
+  }
+
   .filter-bar {
     @apply flex items-center gap-1.5 my-4 flex-nowrap overflow-x-auto max-w-full pb-1;
     -webkit-overflow-scrolling: touch;
@@ -637,16 +687,13 @@
   }
 
   .review-container {
-    @apply bg-[#f8f6f2] border border-[#e8e3dc] rounded-md pt-3 px-3 mb-[1.2rem]
+    @apply bg-[#f8f6f2] border border-[#e8e3dc] rounded-md pt-3 px-3 mb-[1.2rem];
   }
 
-  .review-container {
-    display: block;
-}
-
-.review-container[hidden] {
-    display: none;
-}
+  .review-container[hidden],
+  .review-container:empty {
+    display: none !important;
+  }
   .doc-viewer-area {
     @apply border-2 border-dashed border-[#ccc] rounded-[10px] p-5 text-center mx-6 mb-4 bg-neutral-light text-[#888] text-[.88rem];
   }

@@ -52,25 +52,66 @@
     @endif
 
 
-    <div class="flex flex-wrap gap-3 items-center my-5">
-        <input type="text" data-search-input data-search-scope="applicationTableBody" class="search-input flex-1 min-w-[220px]" placeholder="Search by applicant or pet name…">
-        <button type="button" class="btn btn-primary" onclick="openTopScheduleModal()"><i class="fa-solid fa-calendar-check"></i>Schedule Interview</button>
-    </div>
+    {{-- Unified Single-Line Interactive Toolbar --}}
+    <form action="{{ route('admin.applications.index') }}" method="GET" id="applicationFilterForm"
+          class="flex flex-wrap items-center gap-2.5 my-4 p-2.5 bg-white border border-gray-200/90 rounded-2xl shadow-xs"
+          aria-label="Filter adoption applications">
 
-    <form action="{{ route('admin.applications.index') }}" method="GET" class="flex flex-wrap items-end gap-3 mb-5" aria-label="Filter adoption applications">
-        <label class="text-sm">From <input type="date" name="from" value="{{ $filters['from'] ?? '' }}" class="form-control" aria-label="Application start date"></label>
-        <label class="text-sm">To <input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="form-control" aria-label="Application end date"></label>
-        <label class="text-sm">Status
-            <select name="status" class="form-select" aria-label="Report application status">
+        {{-- Live Search Input --}}
+        <div class="relative flex-1 min-w-[200px]">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+            <input type="text" id="appSearchInput" data-search-input data-search-scope="applicationTableBody"
+                   class="search-input !pl-9 !pr-3 !py-1.5 !h-10 text-sm w-full bg-gray-50/60 hover:bg-white focus:bg-white border-gray-300 rounded-xl transition"
+                   placeholder="Search applicant or pet…" aria-label="Search applications">
+        </div>
+
+        {{-- From Date --}}
+        <div class="flex items-center gap-1.5 shrink-0 bg-gray-50/60 hover:bg-white border border-gray-300 rounded-xl px-2.5 h-10 text-sm transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white">
+            <label for="appFromDate" class="text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer select-none">From</label>
+            <input type="date" id="appFromDate" name="from" value="{{ $filters['from'] ?? '' }}"
+                   class="border-0 p-0 text-sm focus:outline-none focus:ring-0 text-gray-700 bg-transparent cursor-pointer"
+                   aria-label="Application start date">
+        </div>
+
+        {{-- To Date --}}
+        <div class="flex items-center gap-1.5 shrink-0 bg-gray-50/60 hover:bg-white border border-gray-300 rounded-xl px-2.5 h-10 text-sm transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white">
+            <label for="appToDate" class="text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer select-none">To</label>
+            <input type="date" id="appToDate" name="to" value="{{ $filters['to'] ?? '' }}"
+                   class="border-0 p-0 text-sm focus:outline-none focus:ring-0 text-gray-700 bg-transparent cursor-pointer"
+                   aria-label="Application end date">
+        </div>
+
+        {{-- Status Dropdown --}}
+        <div class="shrink-0 min-w-[145px]">
+            <select id="appStatusSelect" name="status"
+                    class="form-select !h-10 !py-1.5 !px-3 text-sm font-medium border-gray-300 rounded-xl bg-gray-50/60 hover:bg-white focus:bg-white transition"
+                    aria-label="Filter application status">
                 <option value="">All statuses</option>
                 @foreach (\App\Enums\ApplicationStatus::cases() as $reportStatus)
                     <option value="{{ $reportStatus->value }}" @selected(($filters['status'] ?? '') === $reportStatus->value)>{{ str($reportStatus->value)->headline() }}</option>
                 @endforeach
             </select>
-        </label>
-        <button type="submit" class="btn btn-primary">Apply Filters</button>
-        <a href="{{ route('admin.applications.index') }}" class="btn btn-secondary">Clear</a>
-        <button type="submit" formaction="{{ route('admin.applications.export') }}" class="btn btn-primary"><i class="fa-solid fa-download"></i> Export Applications CSV</button>
+        </div>
+
+        {{-- Action Buttons --}}
+        <div class="flex items-center gap-1.5 shrink-0">
+            <button type="submit" id="applyFiltersBtn" class="btn btn-primary !h-10 !px-3.5 text-sm whitespace-nowrap shadow-xs hover:shadow transition" title="Apply filters">
+                <i class="fa-solid fa-filter text-xs"></i> Apply
+            </button>
+            <button type="button" id="clearFiltersBtn" class="btn btn-secondary !h-10 !px-3 text-sm whitespace-nowrap hover:bg-gray-100 transition" title="Reset all filters">
+                <i class="fa-solid fa-rotate-left text-xs"></i> Clear
+            </button>
+            <button type="submit" formaction="{{ route('admin.applications.export') }}" class="btn btn-secondary !h-10 !px-3 text-sm whitespace-nowrap border-gray-300 hover:border-gray-400 transition" title="Export Applications CSV">
+                <i class="fa-solid fa-download text-xs"></i> Export
+            </button>
+        </div>
+
+        {{-- Schedule Interview CTA in same row --}}
+        <div class="ml-auto shrink-0">
+            <button type="button" class="btn btn-primary !h-10 !px-3.5 text-sm whitespace-nowrap shadow-xs hover:shadow transition" onclick="openTopScheduleModal()">
+                <i class="fa-solid fa-calendar-check text-xs"></i> Schedule Interview
+            </button>
+        </div>
     </form>
 
     @php
@@ -89,18 +130,26 @@
         ];
     @endphp
 
-    <div class="filter-bar" data-filter-bar data-filter-scope="applicationTableBody">
-        <button class="filter-btn filter-all active" data-filter-btn="all">All ({{ $appCounts['all'] }})</button>
-        <button class="filter-btn badge-pending" data-filter-btn="pending">Pending ({{ $appCounts['pending'] }})</button>
-        <button class="filter-btn badge-documentflagged" data-filter-btn="documentflagged">Document Update ({{ $appCounts['documentflagged'] }})</button>
-        <button class="filter-btn badge-primarycandidate" data-filter-btn="primarycandidate">Primary ({{ $appCounts['primarycandidate'] }})</button>
-        <button class="filter-btn badge-waitlisted" data-filter-btn="waitlisted">Waitlisted ({{ $appCounts['waitlisted'] }})</button>
-        <button class="filter-btn badge-scheduled" data-filter-btn="scheduled">Scheduled ({{ $appCounts['scheduled'] }})</button>
-        <button class="filter-btn badge-underreview" data-filter-btn="underreview">Under Review ({{ $appCounts['underreview'] }})</button>
-        <button class="filter-btn badge-approved" data-filter-btn="approved">Approved ({{ $appCounts['approved'] }})</button>
-        <button class="filter-btn badge-rejected" data-filter-btn="rejected">Rejected ({{ $appCounts['rejected'] }})</button>
-        <button class="filter-btn badge-withdrawn" data-filter-btn="withdrawn">Withdrawn ({{ $appCounts['withdrawn'] }})</button>
-        <button class="filter-btn badge-noshow" data-filter-btn="noshow">No Show ({{ $appCounts['noshow'] }})</button>
+    <div class="filter-bar-container">
+        <button type="button" class="tab-scroll-arrow tab-scroll-left" aria-label="Scroll tabs left" style="display: none;">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <div class="filter-bar" data-filter-bar data-filter-scope="applicationTableBody">
+            <button class="filter-btn filter-all active" data-filter-btn="all">All ({{ $appCounts['all'] }})</button>
+            <button class="filter-btn badge-pending" data-filter-btn="pending">Pending ({{ $appCounts['pending'] }})</button>
+            <button class="filter-btn badge-documentflagged" data-filter-btn="documentflagged">Document Update ({{ $appCounts['documentflagged'] }})</button>
+            <button class="filter-btn badge-primarycandidate" data-filter-btn="primarycandidate">Primary ({{ $appCounts['primarycandidate'] }})</button>
+            <button class="filter-btn badge-waitlisted" data-filter-btn="waitlisted">Waitlisted ({{ $appCounts['waitlisted'] }})</button>
+            <button class="filter-btn badge-scheduled" data-filter-btn="scheduled">Scheduled ({{ $appCounts['scheduled'] }})</button>
+            <button class="filter-btn badge-underreview" data-filter-btn="underreview">Under Review ({{ $appCounts['underreview'] }})</button>
+            <button class="filter-btn badge-approved" data-filter-btn="approved">Approved ({{ $appCounts['approved'] }})</button>
+            <button class="filter-btn badge-rejected" data-filter-btn="rejected">Rejected ({{ $appCounts['rejected'] }})</button>
+            <button class="filter-btn badge-withdrawn" data-filter-btn="withdrawn">Withdrawn ({{ $appCounts['withdrawn'] }})</button>
+            <button class="filter-btn badge-noshow" data-filter-btn="noshow">No Show ({{ $appCounts['noshow'] }})</button>
+        </div>
+        <button type="button" class="tab-scroll-arrow tab-scroll-right" aria-label="Scroll tabs right" style="display: none;">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
     </div>
 
     <div class="records-container">
@@ -117,13 +166,27 @@
                     </tr>
                 </thead>
                 <tbody id="applicationTableBody">
+                    <tr id="noFilterResultsRow" style="display: none;">
+                        <td colspan="6" class="text-center py-12 text-gray-500">
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <i class="fa-solid fa-filter-circle-xmark text-3xl text-gray-400"></i>
+                                <p class="font-medium text-gray-700">No applications match your filter criteria.</p>
+                                <p class="text-xs text-gray-400">Try adjusting your date range, search query, or status.</p>
+                                <button type="button" class="btn btn-secondary text-xs !py-1.5 !px-3 mt-1" onclick="resetApplicationFilters()">
+                                    <i class="fa-solid fa-rotate-left mr-1"></i>Reset filters
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
                     @forelse ($applications as $app)
                         @php
                             $highlightTarget = request('highlight') ?? request('application_id') ?? request('app');
                             $isHighlighted = $highlightTarget && (string) $highlightTarget === (string) $app->id;
                         @endphp
-                        <tr data-search-row data-search-text="{{ $app->pet?->name }} {{ $app->first_name }} {{ $app->last_name }}"
-                            data-filter-row data-status="{{ $app->status_slug }}{{ $app->is_primary_candidate ? ' primarycandidate' : '' }}"
+                        <tr data-search-row data-search-text="{{ $app->pet?->name }} {{ $app->first_name }} {{ $app->last_name }} {{ $app->email }}"
+                            data-filter-row data-status="{{ $app->status_slug }} {{ strtolower($app->status->value) }}{{ $app->is_primary_candidate ? ' primarycandidate' : '' }}"
+                            data-status-raw="{{ $app->status->value }}"
+                            data-date="{{ $app->created_at->format('Y-m-d') }}"
                             id="application-row-{{ $app->id }}"
                             class="{{ $isHighlighted ? 'highlighted-application-row' : '' }}">
                             <td class="px-5 py-3.5 text-left">

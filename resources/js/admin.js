@@ -170,7 +170,7 @@ function initModalBackdrops() {
     });
 }
 
-/** Generic live-search: [data-search-input] filters [data-search-row] by their [data-search-text]. */
+/** Generic live-search: [data-search-input] filters [data-search-row] and [data-filter-row] by their [data-search-text]. */
 function applyRowFilters(scope) {
     if (!scope) return;
     const term = [...document.querySelectorAll('[data-search-input]')]
@@ -179,11 +179,23 @@ function applyRowFilters(scope) {
         .find((candidate) => (candidate.dataset.filterScope || '') === scope.id);
     const status = bar?.querySelector('[data-filter-btn].active')?.dataset.filterBtn || 'all';
 
-    scope.querySelectorAll('[data-filter-row]').forEach((row) => {
+    let visibleCount = 0;
+    const searchTerms = term.split(/\s+/).filter(Boolean);
+    const rows = scope.querySelectorAll('[data-search-row], [data-filter-row]');
+    rows.forEach((row) => {
         const text = (row.dataset.searchText || row.textContent).toLowerCase();
-        const statuses = (row.dataset.status || '').split(' ');
-        row.style.display = text.includes(term) && (status === 'all' || statuses.includes(status)) ? '' : 'none';
+        const statuses = (row.dataset.status || '').split(' ').filter(Boolean);
+        const matchesStatus = (status === 'all' || !row.dataset.status || statuses.includes(status));
+        const matchesSearch = searchTerms.length === 0 || searchTerms.every((t) => text.includes(t));
+        const isVisible = matchesSearch && matchesStatus;
+        row.style.display = isVisible ? '' : 'none';
+        if (isVisible) visibleCount++;
     });
+
+    const emptyRow = scope.querySelector('.search-empty-row');
+    if (emptyRow) {
+        emptyRow.style.display = visibleCount === 0 && rows.length > 0 ? '' : 'none';
+    }
 }
 
 function initSearch() {
@@ -210,12 +222,63 @@ function initFilterButtons() {
     });
 }
 
+/** Overflow scroll arrow controls for filter bar */
+function initFilterBarScrollArrows() {
+    const containers = document.querySelectorAll('.filter-bar-container');
+    containers.forEach((container) => {
+        const bar = container.querySelector('.filter-bar');
+        const leftBtn = container.querySelector('.tab-scroll-left');
+        const rightBtn = container.querySelector('.tab-scroll-right');
+        if (!bar || !leftBtn || !rightBtn) return;
+
+        function updateArrows() {
+            // Show only when container is smaller and tabs overflow
+            const hasOverflow = bar.scrollWidth > bar.clientWidth + 2;
+            if (!hasOverflow) {
+                leftBtn.style.display = 'none';
+                rightBtn.style.display = 'none';
+                return;
+            }
+
+            const atStart = bar.scrollLeft <= 5;
+            leftBtn.style.display = atStart ? 'none' : 'flex';
+
+            const atEnd = bar.scrollLeft >= bar.scrollWidth - bar.clientWidth - 5;
+            rightBtn.style.display = atEnd ? 'none' : 'flex';
+        }
+
+        leftBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            bar.scrollBy({ left: -180, behavior: 'smooth' });
+            setTimeout(updateArrows, 250);
+        });
+
+        rightBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            bar.scrollBy({ left: 180, behavior: 'smooth' });
+            setTimeout(updateArrows, 250);
+        });
+
+        bar.addEventListener('scroll', updateArrows, { passive: true });
+        window.addEventListener('resize', updateArrows);
+
+        if (window.ResizeObserver) {
+            new ResizeObserver(updateArrows).observe(container);
+            new ResizeObserver(updateArrows).observe(bar);
+        }
+
+        updateArrows();
+        setTimeout(updateArrows, 150);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
     initModalBackdrops();
     initSearch();
     initFilterButtons();
     initDragToScroll();
+    initFilterBarScrollArrows();
 
     // Automatically keep body and html scroll lock in sync whenever any modal backdrop toggles active
     const modalObserver = new MutationObserver(() => {
