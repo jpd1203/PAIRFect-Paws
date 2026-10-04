@@ -8,12 +8,28 @@
 
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:20px 0;background-color:#faf5f5;">
         <tr><td style="padding:12px;color:#6b7280;font-size:14px;">New Status</td><td style="padding:12px;"><strong>{{ $statusDisplay }}</strong></td></tr>
-        @if($interviewDate)
-            <tr><td style="padding:12px;color:#6b7280;font-size:14px;">Interview Date</td><td style="padding:12px;">{{ $interviewDate }} (Asia/Manila)</td></tr>
+        @if($interviewDay)
+            <tr><td style="padding:12px;color:#6b7280;font-size:14px;">Interview Date</td><td style="padding:12px;">{{ $interviewDay }} (Asia/Manila)</td></tr>
+            <tr><td style="padding:12px;color:#6b7280;font-size:14px;">Interview Time</td><td style="padding:12px;">{{ $interviewTime }}</td></tr>
+        @endif
+        @if(in_array($event, ['interview_scheduled', 'interview_rescheduled'], true) && $status === 'InterviewScheduled')
+            @if($interviewMode)
+                <tr><td style="padding:12px;color:#6b7280;font-size:14px;">Interview Type</td><td style="padding:12px;">{{ $interviewMode === 'InPerson' ? 'In-person' : 'Online' }}</td></tr>
+            @endif
+            @if($conductedBy)
+                <tr><td style="padding:12px;color:#6b7280;font-size:14px;">Conducted By</td><td style="padding:12px;">{{ $conductedBy }}</td></tr>
+            @endif
+            @if($interviewMode === 'InPerson' && $interviewLocation)
+                <tr><td style="padding:12px;color:#6b7280;font-size:14px;">Location</td><td style="padding:12px;white-space:pre-line;">{{ $interviewLocation }}</td></tr>
+            @endif
         @endif
     </table>
 
     @if($status === 'InterviewScheduled')
+        @if(in_array($event, ['interview_scheduled', 'interview_rescheduled'], true) && $interviewMode === 'Online' && $interviewMeetingUrl)
+            <p style="margin:20px 0;"><a href="{{ $interviewMeetingUrl }}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#991b1b;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 18px;border-radius:8px;">Join Google Meet</a></p>
+            <p style="margin:0 0 14px;word-break:break-all;">If the button does not work, open this link: <a href="{{ $interviewMeetingUrl }}" style="color:#7f1d1d;">{{ $interviewMeetingUrl }}</a></p>
+        @endif
         @if($event === 'interview_rescheduled')
             <p style="margin:0 0 14px;">Your interview has been rescheduled. Please use the updated date and time above.</p>
         @else

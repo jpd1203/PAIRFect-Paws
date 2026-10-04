@@ -87,6 +87,9 @@
                     <h6>Interview</h6>
                     <div class="review-row"><span>Interview Date</span><span id="rInterviewDate"></span></div>
                     <div class="review-row"><span>Conducted By</span><span id="rConductedBy"></span></div>
+                    <div class="review-row" id="rInterviewModeRow"><span>Interview Type</span><span id="rInterviewMode"></span></div>
+                    <div class="review-row" id="rInterviewMeetingRow"><span>Google Meet</span><a id="rInterviewMeetingLink" href="#" target="_blank" rel="noopener noreferrer">Open Google Meet</a></div>
+                    <div class="review-row" id="rInterviewLocationRow"><span>Location</span><span id="rInterviewLocation" class="whitespace-pre-line"></span></div>
                     <div class="review-row" id="rInterviewNotesRow">
                         <span>Interview Notes</span>
                     </div>
@@ -100,7 +103,7 @@
                 <div class="review-row"><span>Current schedule</span><span id="rRescheduleCurrent"></span></div>
                 <div class="review-row"><span>Adopter availability</span><div id="rRescheduleOptions"></div></div>
                 <div class="review-row"><span>Reason</span><span id="rRescheduleReason"></span></div>
-                <form id="rRescheduleAcceptForm" action="{{ route('admin.applications.schedule') }}" method="POST" class="mt-3">
+                <form id="rRescheduleAcceptForm" action="{{ route('admin.applications.schedule') }}" method="POST" class="mt-3" data-interview-details>
                     @csrf
                     <input type="hidden" name="application_id" id="rRescheduleAppId">
                     <input type="hidden" name="interview_date" id="rRescheduleDate">
@@ -112,6 +115,22 @@
                             <option value="{{ $volunteer->id }}" data-staff-name="{{ $volunteer->full_name }}">{{ $volunteer->full_name }} ({{ $volunteer->role->value }})</option>
                         @endforeach
                     </select>
+                    <div class="form-group mt-3">
+                        <label class="form-label" for="rRescheduleMode">Interview Type *</label>
+                        <select class="form-select" name="interview_mode" id="rRescheduleMode" required>
+                            <option value="">Select interview type</option>
+                            <option value="Online">Online</option>
+                            <option value="InPerson">In-person</option>
+                        </select>
+                    </div>
+                    <div class="form-group mt-3" data-interview-field="Online" hidden>
+                        <label class="form-label" for="rRescheduleMeet">Google Meet Link *</label>
+                        <input class="form-control" type="url" name="interview_meeting_url" id="rRescheduleMeet" placeholder="https://meet.google.com/abc-defg-hij" disabled>
+                    </div>
+                    <div class="form-group mt-3" data-interview-field="InPerson" hidden>
+                        <label class="form-label" for="rRescheduleLocation">Interview Location *</label>
+                        <textarea class="form-control" name="interview_location" id="rRescheduleLocation" maxlength="1000" rows="3" disabled></textarea>
+                    </div>
                     <div class="flex flex-wrap gap-2 mt-3">
                         <button type="button" class="btn btn-blue" id="rRescheduleAcceptBtn">Accept Selected Time</button>
                         <button type="button" class="btn btn-secondary" id="rRescheduleDifferentBtn">Set Different Time</button>

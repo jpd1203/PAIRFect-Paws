@@ -35,14 +35,17 @@ class ReservationQueueService
         AdoptionApplication $application,
         Carbon $scheduledAt,
         User $interviewer,
-        ?int $actorId
+        ?int $actorId,
+        ?string $interviewMode = null,
+        ?string $interviewMeetingUrl = null,
+        ?string $interviewLocation = null,
     ): AdoptionApplication {
         // Interview form values are entered in Asia/Manila. Normalize the
         // instant before persistence; mail and UI formatting convert it back
         // at the presentation boundary.
         $scheduledAt = $scheduledAt->copy()->utc();
 
-        $result = DB::transaction(function () use ($application, $scheduledAt, $interviewer, $actorId): array {
+        $result = DB::transaction(function () use ($application, $scheduledAt, $interviewer, $actorId, $interviewMode, $interviewMeetingUrl, $interviewLocation): array {
             $pet = Pet::withoutGlobalScope('notArchived')->lockForUpdate()->findOrFail($application->pet_id);
             $candidate = AdoptionApplication::where('pet_id', $pet->id)->lockForUpdate()->findOrFail($application->id);
 
@@ -92,11 +95,21 @@ class ReservationQueueService
             }
 
             $previousInterviewDate = $candidate->interview_date?->copy();
+            // Legacy internal callers may omit interview type; a reschedule by
+            // such a caller retains any details already recorded on the case.
+            $mode = $interviewMode ?? $candidate->interview_mode;
 
             $candidate->update([
                 'status' => ApplicationStatus::InterviewScheduled->value,
                 'is_primary_candidate' => true,
                 'interview_date' => $scheduledAt,
+                'interview_mode' => $mode,
+                'interview_meeting_url' => $interviewMode === null
+                    ? $candidate->interview_meeting_url
+                    : ($mode === 'Online' ? $interviewMeetingUrl : null),
+                'interview_location' => $interviewMode === null
+                    ? $candidate->interview_location
+                    : ($mode === 'InPerson' ? $interviewLocation : null),
                 'conducted_by' => $interviewer->full_name,
                 'admin_review_flagged_at' => null,
                 ...($isReschedule && $candidate->reschedule_status === 'pending' ? [
@@ -121,7 +134,7 @@ class ReservationQueueService
                 'Interview Scheduled — Pet Soft-Reserved',
                 'AdoptionApplication',
                 $candidate->id,
-                'Interview set for '.ManilaTime::format($scheduledAt, 'Y-m-d H:i')
+                'Interview set'.($mode ? " as {$mode}" : '').' for '.ManilaTime::format($scheduledAt, 'Y-m-d H:i')
                     ." Asia/Manila with {$interviewer->full_name}; pet ID {$pet->id} soft-reserved."
             );
 
@@ -144,16 +157,25 @@ class ReservationQueueService
             "staff:{$result['event']}:{$application->id}:".$scheduledAt->format('Y-m-d H:i:s'),
             'AdoptionApplication', $application->id,
         );
+        $staffEmailLines = [
+            "Application #{$application->id} for {$application->pet?->name} is scheduled for ".ManilaTime::format($scheduledAt, 'F j, Y \\a\\t g:i A').' (Asia/Manila).',
+        ];
+        if ($application->interview_mode === 'Online' && $application->interview_meeting_url) {
+            $staffEmailLines[] = 'Interview type: Online';
+            $staffEmailLines[] = 'Google Meet link: '.$application->interview_meeting_url;
+        } elseif ($application->interview_mode === 'InPerson' && $application->interview_location) {
+            $staffEmailLines[] = 'Interview type: In-person';
+            $staffEmailLines[] = 'Location: '.$application->interview_location;
+        }
+        $staffEmailLines[] = 'Sign in to the staff application queue for applicant details.';
+
         $this->emailNotifications->user(
             $interviewer,
             $result['event'] === 'interview_rescheduled'
                 ? "Interview rescheduled - application #{$application->id}"
                 : "Interview assigned - application #{$application->id}",
             $result['event'] === 'interview_rescheduled' ? 'An assigned interview was rescheduled' : 'An interview was assigned to you',
-            [
-                "Application #{$application->id} for {$application->pet?->name} is scheduled for ".ManilaTime::format($scheduledAt, 'F j, Y \\a\\t g:i A').' (Asia/Manila).',
-                'Sign in to the staff application queue for applicant details.',
-            ],
+            $staffEmailLines,
             'Open Applications',
             route('admin.applications.index', ['highlight' => $application->id]) . '#application-row-' . $application->id,
             'interview_assignment_staff',

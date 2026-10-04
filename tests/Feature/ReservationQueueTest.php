@@ -142,6 +142,8 @@ class ReservationQueueTest extends TestCase
             'interview_date' => $date,
             'interview_time' => '15:00',
             'staff_id' => $staff->id,
+            'interview_mode' => 'InPerson',
+            'interview_location' => 'PAIRfect Paws shelter reception',
         ])->assertSessionHas('success');
 
         $this->assertSame('approved', $first->refresh()->reschedule_status);

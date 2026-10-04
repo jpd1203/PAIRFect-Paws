@@ -7,7 +7,7 @@
                 <small id="scheduleSubheading">Applicant: · Pet: · Submitted:</small>
             </div>
         </div>
-        <form action="{{ route('admin.applications.schedule') }}" method="POST">
+        <form action="{{ route('admin.applications.schedule') }}" method="POST" data-interview-details>
             @csrf
             <input type="hidden" name="application_id" id="scheduleAppId">
             <div class="custom-modal-body">
@@ -19,6 +19,22 @@
                     <div class="form-group">
                         <label class="form-label">Interview Time</label>
                         <input type="time" name="interview_time" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="scheduleInterviewMode">Interview Type *</label>
+                        <select name="interview_mode" id="scheduleInterviewMode" class="form-select" required>
+                            <option value="">Select interview type</option>
+                            <option value="Online">Online</option>
+                            <option value="InPerson">In-person</option>
+                        </select>
+                    </div>
+                    <div class="form-group" data-interview-field="Online" hidden>
+                        <label class="form-label" for="scheduleMeetLink">Google Meet Link *</label>
+                        <input type="url" name="interview_meeting_url" id="scheduleMeetLink" class="form-control" placeholder="https://meet.google.com/abc-defg-hij" disabled>
+                    </div>
+                    <div class="form-group" data-interview-field="InPerson" hidden>
+                        <label class="form-label" for="scheduleLocation">Interview Location *</label>
+                        <textarea name="interview_location" id="scheduleLocation" class="form-control" maxlength="1000" rows="3" disabled></textarea>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Conducted By</label>
@@ -48,7 +64,7 @@
                 Scheduling an interview will move this application to &ldquo;Interview Scheduled&rdquo; status. An email notification will be sent to the applicant.
             </div>
         </div>
-        <form action="{{ route('admin.applications.schedule') }}" method="POST" id="topScheduleForm">
+        <form action="{{ route('admin.applications.schedule') }}" method="POST" id="topScheduleForm" data-interview-details>
             @csrf
             <input type="hidden" name="application_id" id="topScheduleAppId" required>
             <div class="space-y-4">
@@ -92,6 +108,23 @@
                         <label class="block text-xs font-bold text-gray-700 mb-1">Interview Time</label>
                         <input type="time" name="interview_time" class="w-full rounded-xl border border-gray-800 px-3.5 py-2 text-sm font-medium focus:border-emerald-600 focus:outline-none" required>
                     </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1" for="topScheduleMode">Interview Type *</label>
+                    <select name="interview_mode" id="topScheduleMode" class="w-full rounded-xl border border-gray-800 px-3.5 py-2.5 text-sm font-medium focus:border-emerald-600 focus:outline-none" required>
+                        <option value="">Select interview type</option>
+                        <option value="Online">Online</option>
+                        <option value="InPerson">In-person</option>
+                    </select>
+                </div>
+                <div data-interview-field="Online" hidden>
+                    <label class="block text-xs font-bold text-gray-700 mb-1" for="topScheduleMeet">Google Meet Link *</label>
+                    <input type="url" name="interview_meeting_url" id="topScheduleMeet" class="w-full rounded-xl border border-gray-800 px-3.5 py-2 text-sm font-medium focus:border-emerald-600 focus:outline-none" placeholder="https://meet.google.com/abc-defg-hij" disabled>
+                </div>
+                <div data-interview-field="InPerson" hidden>
+                    <label class="block text-xs font-bold text-gray-700 mb-1" for="topScheduleLocation">Interview Location *</label>
+                    <textarea name="interview_location" id="topScheduleLocation" class="w-full rounded-xl border border-gray-800 px-3.5 py-2 text-sm font-medium focus:border-emerald-600 focus:outline-none" maxlength="1000" rows="3" disabled></textarea>
                 </div>
 
                 <div>

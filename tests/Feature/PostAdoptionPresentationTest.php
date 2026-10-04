@@ -113,6 +113,8 @@ class PostAdoptionPresentationTest extends TestCase
                 'interview_date' => '2026-08-25',
                 'interview_time' => '09:30',
                 'staff_id' => $staff->id,
+                'interview_mode' => 'InPerson',
+                'interview_location' => 'PAIRfect Paws shelter reception',
             ])
             ->assertSessionHas('success');
 

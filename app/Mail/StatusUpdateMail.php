@@ -34,6 +34,18 @@ class StatusUpdateMail extends Mailable implements ShouldBeEncrypted, ShouldQueu
 
     public ?string $interviewDate;
 
+    public ?string $interviewDay;
+
+    public ?string $interviewTime;
+
+    public ?string $conductedBy;
+
+    public ?string $interviewMode;
+
+    public ?string $interviewMeetingUrl;
+
+    public ?string $interviewLocation;
+
     public string $actionUrl;
 
     public string $rescheduleUrl;
@@ -51,6 +63,20 @@ class StatusUpdateMail extends Mailable implements ShouldBeEncrypted, ShouldQueu
         $this->interviewDate = $application->interview_date
             ? ManilaTime::format($application->interview_date, 'F j, Y \\a\\t g:i A')
             : null;
+        $this->interviewDay = $application->interview_date
+            ? ManilaTime::format($application->interview_date, 'F j, Y')
+            : null;
+        $this->interviewTime = $application->interview_date
+            ? ManilaTime::format($application->interview_date, 'g:i A')
+            : null;
+        $this->conductedBy = $application->conducted_by;
+        $this->interviewMode = $application->interview_mode;
+        $isInterviewNotice = in_array($event, ['interview_scheduled', 'interview_rescheduled'], true)
+            && $application->status->value === 'InterviewScheduled';
+        $this->interviewMeetingUrl = $isInterviewNotice && $application->interview_mode === 'Online'
+            ? $application->interview_meeting_url : null;
+        $this->interviewLocation = $isInterviewNotice && $application->interview_mode === 'InPerson'
+            ? $application->interview_location : null;
         $this->actionUrl = route('application.index');
         $this->rescheduleUrl = route('application.index', ['reschedule' => $application->id]).'#reschedule-'.$application->id;
         $this->initializeDeliveryIdempotency();

@@ -70,6 +70,8 @@ class VolunteerRbacTest extends TestCase
             'staff_id' => $volunteer->id,
             'interview_date' => $scheduledAt->format('Y-m-d'),
             'interview_time' => $scheduledAt->format('H:i'),
+            'interview_mode' => 'InPerson',
+            'interview_location' => 'PAIRfect Paws shelter reception',
         ])->assertRedirect()->assertSessionHas('success');
 
         $this->assertSame(ApplicationStatus::InterviewScheduled, $application->refresh()->status);

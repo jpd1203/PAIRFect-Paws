@@ -160,6 +160,23 @@
                                             @endif
                                         </span>
                                     </div>
+                                    @if ($application->interview_mode)
+                                        <div class="detail-row">
+                                            <span class="label">Interview Type</span>
+                                            <span class="value">{{ $application->interview_mode === 'InPerson' ? 'In-person' : 'Online' }}</span>
+                                        </div>
+                                        @if ($application->interview_mode === 'Online' && $application->interview_meeting_url)
+                                            <div class="detail-row">
+                                                <span class="label">Google Meet</span>
+                                                <span class="value"><a href="{{ $application->interview_meeting_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">Join Google Meet</a></span>
+                                            </div>
+                                        @elseif ($application->interview_mode === 'InPerson' && $application->interview_location)
+                                            <div class="detail-row">
+                                                <span class="label">Interview Location</span>
+                                                <span class="value whitespace-pre-line">{{ $application->interview_location }}</span>
+                                            </div>
+                                        @endif
+                                    @endif
                                 @endif
                                 @if ($status === 'InterviewScheduled' && $application->interview_date)
                                     <div id="reschedule-{{ $application->id }}" class="note-section">
