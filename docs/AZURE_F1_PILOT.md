@@ -91,6 +91,20 @@ not present queued email or scheduled reminders as automated on F1.
 
 ## Features limited by F1
 
+For a controlled **synthetic-data-only** pilot that already has exactly six
+sample pets, the explicit one-time exception is:
+
+```sh
+php artisan pilot:seed-assessed-pets --expect-pets=6 --confirm-pilot
+```
+
+Check the database backup and pet count before running it in App Service SSH.
+The command preserves the six existing pets and transactionally adds 15
+clearly labeled demo pets, 45 synthetic assessments, and three disabled
+assessor accounts with random, unusable-to-operators passwords. It refuses a
+count mismatch or a partial previous run and is a no-op after a complete run.
+Never use it for real animal records or present these assessments as genuine.
+
 The scheduler in `routes/console.php` runs check-in reminders daily, reservation
 timeouts hourly, matching recomputation hourly, and capture-challenge cleanup
 daily. `php artisan schedule:run` must be invoked every minute by reliable
@@ -134,5 +148,6 @@ assume a GitHub deployment preserves user-uploaded files in `wwwroot`.
 
 Do not call the pilot complete on local build/tests alone. Keep
 `POST_ADOPTION_TIME_TRAVEL_ENABLED=false`; its route is also environment-guarded.
-Do not run demo seeders in Azure. Upgrade hosting/background infrastructure and
+Do not run general demo seeders in Azure; only use the explicit guarded pilot
+command above for a synthetic-data-only demonstration. Upgrade hosting/background infrastructure and
 durable storage before real adopter data or a B1/domain production launch.
