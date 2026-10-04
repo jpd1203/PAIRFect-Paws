@@ -14,6 +14,20 @@ final class InAppNotificationsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_notification_bell_remains_available_without_duplicate_header_bells(): void
+    {
+        $adopter = $this->user('adopter@example.test', Role::Adopter);
+        $feed = $this->actingAs($adopter)->get(route('notifications.index'))->assertOk();
+
+        $this->assertSame(1, substr_count($feed->getContent(), 'class="notification-bell'));
+        $feed->assertDontSee('<article onclick=', false);
+
+        $admin = $this->user('admin@example.test', Role::Administrator);
+        $dashboard = $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk();
+
+        $this->assertSame(1, substr_count($dashboard->getContent(), 'class="notification-bell'));
+    }
+
     public function test_shared_feed_is_private_paginated_and_marks_only_the_owner_records_read(): void
     {
         $owner = $this->user('owner@example.test', Role::Adopter);

@@ -24,8 +24,8 @@ class RegistrationConsentTest extends TestCase
             ->assertSee('data-legal-dialog="privacyDialog"', false)
             ->assertSee('<dialog id="termsDialog"', false)
             ->assertSee('<dialog id="privacyDialog"', false)
-            ->assertSee('12. Changes to these Terms')
-            ->assertSee('10. Consent')
+            ->assertSee('Changes to These Terms')
+            ->assertSee('Consent and Acknowledgment')
             ->assertSee('You must agree to the Terms and Conditions and acknowledge the Privacy Notice before creating an account.')
             ->assertSee(route('legal.terms'))
             ->assertSee(route('legal.privacy'))
@@ -35,12 +35,12 @@ class RegistrationConsentTest extends TestCase
 
         $this->get(route('legal.terms'))
             ->assertOk()
-            ->assertSee('12. Changes to these Terms')
+            ->assertSee('Changes to These Terms')
             ->assertSee('Republic Act No. 10631');
 
         $this->get(route('legal.privacy'))
             ->assertOk()
-            ->assertSee('10. Consent')
+            ->assertSee('Consent and Acknowledgment')
             ->assertDontSee('[INSERT OFFICIAL PRIVACY CONTACT / EMAIL]');
     }
 

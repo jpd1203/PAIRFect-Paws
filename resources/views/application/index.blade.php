@@ -2,6 +2,7 @@
 
 @section('title', 'My Applications - PAIRfect Paws')
 
+@section('notification-bell-in-header', true)
 @section('content')
 
     <div class="nonsticky-header custom-scrollbar">

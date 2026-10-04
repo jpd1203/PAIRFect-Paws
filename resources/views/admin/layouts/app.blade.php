@@ -24,6 +24,9 @@
         @include('admin.partials.sidebar')
 
         <div class="main-content custom-scrollbar">
+            @if (! $__env->hasSection('notification-bell-in-header'))
+                @include('partials.notification-bell')
+            @endif
             @include('partials.time-travel-banner')
             @yield('content')
         </div>

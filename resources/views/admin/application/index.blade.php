@@ -2,6 +2,7 @@
 
 @section('title', 'Applications - PAIRfect Paws Admin')
 
+@section('notification-bell-in-header', true)
 @section('content')
     <div class="main-content-header">
         <div class="heading-text">

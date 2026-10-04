@@ -1,5 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Pet Recommendation - PAIRfect Paws')
+@section('notification-bell-in-header', true)
 @section('content')
 <div class="nonsticky-header custom-scrollbar">
     <div class="main-content-header">
