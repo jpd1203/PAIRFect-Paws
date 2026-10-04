@@ -38,10 +38,9 @@ class QueuedResetPassword extends ResetPassword implements ShouldBeEncrypted, Sh
 
         return (new MailMessage)
             ->subject('Reset your PAIRfect Paws password')
-            ->greeting('Password reset requested')
-            ->line('We received a request to reset the password for your PAIRfect Paws account.')
-            ->action('Reset Password', $url)
-            ->line("This secure link expires in {$expiresIn} minutes and can only be used once.")
-            ->line('If you did not request this reset, you can ignore this email. Your password will remain unchanged.');
+            ->view(['html' => 'mail.password-reset', 'text' => 'mail.password-reset-text'], [
+                'actionUrl' => $url,
+                'expiresIn' => $expiresIn,
+            ]);
     }
 }

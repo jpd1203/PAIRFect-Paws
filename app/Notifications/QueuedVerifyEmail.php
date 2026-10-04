@@ -30,10 +30,9 @@ class QueuedVerifyEmail extends VerifyEmail implements ShouldBeEncrypted, Should
     {
         return (new MailMessage)
             ->subject('Verify your PAIRfect Paws email address')
-            ->greeting('Welcome to PAIRfect Paws!')
-            ->line('Please verify your email address to submit adoption applications and use protected account features.')
-            ->action('Verify Email Address', $url)
-            ->line('This verification link expires in 60 minutes.')
-            ->line('If you did not create this account, you can ignore this email.');
+            ->view(['html' => 'mail.verification', 'text' => 'mail.verification-text'], [
+                'actionUrl' => $url,
+                'expiresIn' => (int) config('auth.verification.expire', 60),
+            ]);
     }
 }
