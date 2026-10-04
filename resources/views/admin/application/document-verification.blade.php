@@ -84,7 +84,7 @@
                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-rotate-right"></i>Retry Google OCR</button>
                 </form>
             @endif
-            <a href="{{ route('admin.applications.index') }}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i>Back to Applications</a>
+            <a href="{{ route('admin.applications.index', ['highlight' => $application->id]) }}#application-row-{{ $application->id }}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i>Back to Applications</a>
         </div>
 
         @if(!$application->is_primary_candidate && !in_array($application->status->value, ['Approved', 'Rejected', 'Withdrawn', 'NoShow', 'Closed'], true))
