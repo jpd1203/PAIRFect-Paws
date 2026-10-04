@@ -31,9 +31,9 @@
         @endif
 
         <div class="main-content">
-            @if (! $__env->hasSection('notification-bell-in-header'))
+            <!-- @if (! $__env->hasSection('notification-bell-in-header'))
                 @include('partials.notification-bell')
-            @endif
+            @endif -->
             @include('partials.time-travel-banner')
             @include('partials.email-verification-banner')
             @yield('content')

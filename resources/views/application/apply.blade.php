@@ -5,9 +5,19 @@
 @section('content')
 
     <div class="nonsticky-header custom-scrollbar">
-        <div class="heading-text">
-            <h2>Apply to Adopt {{ $pet->name }}</h2>
-            <p>Complete all fields to submit your application</p>
+        <div class="mb-2"> 
+            <button type="button" onclick="window.history.back()" 
+                class="inline-flex items-center gap-2 text-sm font-semibold text-text-muted hover:text-primary transition-colors" > 
+                <i class="fa-solid fa-arrow-left"></i><span>Back</span> 
+            </button> 
+        </div>
+        <div class="main-content-header">
+            <div class="heading-text">
+                <h2>Apply to Adopt {{ $pet->name }}</h2>
+                <p>Complete all fields to submit your application</p>
+            </div>
+
+            @include('partials.notification-bell')
         </div>
 
         <div class="content-area custom-scrollbar">

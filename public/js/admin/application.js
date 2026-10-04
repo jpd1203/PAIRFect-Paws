@@ -150,18 +150,81 @@ function openReviewModal(id) {
         document.getElementById('rRescheduleDeclineForm').action = a.reschedule_decline_action;
         const choices = document.getElementById('rRescheduleOptions');
         choices.replaceChildren();
+
         (a.reschedule_options || []).forEach((option, index) => {
             const label = document.createElement('label');
-            label.className = 'block cursor-pointer py-1';
+
+            label.className = 'flex cursor-pointer items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm transition';
             const radio = document.createElement('input');
             radio.type = 'radio';
             radio.name = 'preferred_reschedule_option';
             radio.value = index;
             radio.checked = index === 0;
-            label.append(radio, document.createTextNode(` Option ${index + 1}: ${option.date} at ${option.time} (Asia/Manila)`));
+            radio.className = 'hidden';
+
+            const text = document.createElement('span');
+            text.className = 'w-full';
+            const formattedDate = new Date(option.date + 'T00:00:00')
+            .toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            const [hours, minutes] = option.time.split(':');
+            const timeDate = new Date();
+            timeDate.setHours(Number(hours), Number(minutes));
+
+            const formattedTime = timeDate.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+            text.textContent =
+                `Option ${index + 1}: ${formattedDate} at ${formattedTime}`;
+
+            const updateSelectedStyle = () => {
+                document
+                    .querySelectorAll('#rRescheduleOptions label')
+                    .forEach((item) => {
+                        item.classList.remove(
+                            'bg-primary-muted',
+                            'border-[#A61D24]',
+                            'text-[#A61D24]'
+                        );
+
+                        item.classList.add(
+                            'bg-white',
+                            'border-gray-200',
+                            'text-gray-700'
+                        );
+                    });
+
+                if (radio.checked) {
+                    label.classList.remove(
+                        'bg-white',
+                        'border-gray-200',
+                        'text-gray-700'
+                    );
+
+                    label.classList.add(
+                        'bg-primary-muted',
+                        'border-[#A61D24]',
+                        'text-[#A61D24]'
+                    );
+                }
+            };
+
+            radio.addEventListener('change', updateSelectedStyle);
+
+            label.append(radio, text);
             choices.append(label);
+
+            // Apply selected style to first/default option
+            if (radio.checked) {
+                updateSelectedStyle();
+            }
         });
-        const interviewer = document.getElementById('rRescheduleStaff');
+                const interviewer = document.getElementById('rRescheduleStaff');
         interviewer.value = '';
         const matchingStaff = Array.from(interviewer.options).find((option) => option.dataset.staffName === a.conducted_by);
         if (matchingStaff) interviewer.value = matchingStaff.value;

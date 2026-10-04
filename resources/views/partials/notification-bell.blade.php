@@ -5,7 +5,7 @@
     $recentNotifications = $bellUser->inAppNotifications()->orderByDesc('created_at')->orderByDesc('id')->limit(5)->get();
 @endphp
 
-<div class="notification-bell relative z-[9999]">
+<div class="notification-bell relative z-[500]">
     <details class="relative group">
         <summary class="btn btn-secondary cursor-pointer list-none relative" aria-label="Notifications ({{ $unreadNotifications }} unread)">
             <i class="fa-solid fa-bell"></i><span class="ml-2 notification-label">Notifications</span>
