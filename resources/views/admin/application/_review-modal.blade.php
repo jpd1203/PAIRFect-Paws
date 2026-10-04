@@ -65,7 +65,7 @@
                 </div> -->
 
                 <div class="review-row">
-                    <span>Document upload (valid ID, proof of residence)</span>
+                    <span>Government ID upload (name and residential address)</span>
                     <a class="btn btn-secondary btn-sm" id="rDocumentLink" href="#" target="_blank"><i class="fa-solid fa-file-arrow-down"></i>View Document</a>
                 </div>
                 <div class="review-row">

@@ -45,6 +45,21 @@
             <p class="text-xs text-[#777] mt-2">The name, address, and document type must each pass independently. The composite percentage alone cannot approve a document.</p>
         </div>
 
+        @if($ocrBreakdown)
+            <div class="review-section">
+                <h6>Automatic OCR Cross-Reference (Current Policy)</h6>
+                <p class="text-xs text-[#777] mb-2">These are the independent automatic checks against the current application details. A prior manual staff decision may differ from this re-evaluation.</p>
+                <div class="review-row"><span>Readable text</span><strong>{{ $ocrBreakdown['text_quality_pass'] ? 'Pass' : 'Fail' }}</strong></div>
+                <div class="review-row"><span>Supported ID type</span><strong>{{ $ocrBreakdown['supported_document_type'] ? 'Pass' : 'Fail' }}</strong></div>
+                <div class="review-row"><span>First name</span><strong>{{ $ocrBreakdown['first_name_pass'] ? 'Pass' : 'Fail' }}</strong></div>
+                <div class="review-row"><span>Last name</span><strong>{{ $ocrBreakdown['last_name_pass'] ? 'Pass' : 'Fail' }}</strong></div>
+                <div class="review-row"><span>Residential address</span><strong>{{ $ocrBreakdown['address_pass'] ? 'Pass' : ($ocrBreakdown['address_evidence'] ? 'Mismatch' : 'Missing or unclear') }}</strong></div>
+                @if($ocrBreakdown['hard_address_conflict'])
+                    <div class="review-row"><span>Explicit address conflict</span><strong>Detected</strong></div>
+                @endif
+            </div>
+        @endif
+
         @if($application->document_verification_reasons)
             <div class="review-section">
                 <h6>Verification Notes</h6>

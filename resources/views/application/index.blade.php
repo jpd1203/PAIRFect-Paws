@@ -100,7 +100,7 @@
                                             <form method="POST" action="{{ route('applications.document.replace', $application) }}" enctype="multipart/form-data" class="mt-4 pt-4 border-t border-red-200/80">
                                                 @csrf
                                                 <label class="block text-xs font-bold text-gray-800 mb-2" for="replacement_document_{{ $application->id }}">
-                                                    Upload a matching government ID or proof of address
+                                                    Upload a government-issued ID showing your full name and current residential address
                                                 </label>
                                                 <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                                                     <div class="flex-1 min-w-0">

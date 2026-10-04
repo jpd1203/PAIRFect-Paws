@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Enums\Role;
 use App\Models\User;
-use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\AssessmentSeeder;
+use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoPetsSeeder;
 use Database\Seeders\FreshStartPetsSeeder;
 use Database\Seeders\HandoverSeeder;
@@ -60,7 +60,7 @@ class ProductionReleaseSafeguardsTest extends TestCase
     {
         $this->app->instance('env', 'production');
 
-        (new DatabaseSeeder())->run();
+        (new DatabaseSeeder)->run();
 
         $this->assertDatabaseCount('pets', 0);
         $this->assertDatabaseCount('users', 0);
@@ -72,7 +72,7 @@ class ProductionReleaseSafeguardsTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Synthetic pet records cannot be seeded in production.');
-        (new FreshStartPetsSeeder())->run();
+        (new FreshStartPetsSeeder)->run();
     }
 
     public function test_legacy_demo_pet_seeding_is_rejected_before_writing_in_production(): void
@@ -81,7 +81,7 @@ class ProductionReleaseSafeguardsTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Demo pets may only be seeded in local or testing environments.');
-        (new DemoPetsSeeder())->run();
+        (new DemoPetsSeeder)->run();
     }
 
     public function test_synthetic_assessments_are_rejected_before_deleting_records_in_production(): void
@@ -90,7 +90,7 @@ class ProductionReleaseSafeguardsTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Synthetic assessments may only be seeded in local or testing environments.');
-        (new AssessmentSeeder())->run();
+        (new AssessmentSeeder)->run();
     }
 
     public function test_fictional_handovers_are_rejected_before_writing_in_production(): void
@@ -99,7 +99,7 @@ class ProductionReleaseSafeguardsTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Fictional handovers may only be seeded in local or testing environments.');
-        (new HandoverSeeder())->run();
+        (new HandoverSeeder)->run();
     }
 
     public function test_release_check_reports_missing_production_configuration(): void
@@ -111,6 +111,16 @@ class ProductionReleaseSafeguardsTest extends TestCase
         config()->set('post_adoption.capture.ffprobe_path', '');
 
         $this->artisan('release:check')
+            ->assertFailed();
+    }
+
+    public function test_release_check_fails_when_ocr_credentials_are_missing_without_calling_google(): void
+    {
+        config()->set('document_verification.google_application_credentials', null);
+        config()->set('document_verification.provider', 'google_vision');
+
+        $this->artisan('release:check')
+            ->expectsOutput('GOOGLE_APPLICATION_CREDENTIALS must point to a readable private service-account file.')
             ->assertFailed();
     }
 }

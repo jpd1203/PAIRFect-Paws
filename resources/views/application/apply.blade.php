@@ -146,10 +146,11 @@
 
                     <div class="form-group">
                         <label>
-                            Upload Valid ID / Proof of Residence*
+                            Upload Government ID Showing Your Name and Residential Address*
                         </label>
 
                         <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
+                        <p class="mt-2 text-[.72rem] text-[#777]">For automatic verification, use a Philippine National ID or LTO driver's license showing your full name and current residential address. Passports, bills, and other proof-of-address documents are not eligible for automatic verification.</p>
                         <small class="text-[.72rem] text-[#777]">PDF, JPG, or PNG — max 10MB. OCR extracts text only; PAIRfect Paws does not use facial recognition or biometric matching.</small>
                         <p class="mt-2 text-[.72rem] text-[#777]">Your document and extracted text are stored privately and are accessible only to authorized shelter personnel.</p>
                     </div>
@@ -224,4 +225,3 @@
     </script>
 
 @endsection
-
