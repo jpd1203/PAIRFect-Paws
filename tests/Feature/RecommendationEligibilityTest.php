@@ -55,7 +55,7 @@ class RecommendationEligibilityTest extends TestCase
 
         $this->actingAs($user)->get(route('recommendation.results', ['species' => 'Dog']))
             ->assertOk()
-            ->assertSee('page=2', false)
+            ->assertSeeInOrder(['Showing 1 to 5 of 7 eligible pet matches', 'page=2', 'id="matchResults"'], false)
             ->assertDontSee('Filtered Cat')
             ->assertDontSee('Reserved Dog')
             ->assertViewHas('matches', fn ($page): bool => $page instanceof LengthAwarePaginator
@@ -65,6 +65,7 @@ class RecommendationEligibilityTest extends TestCase
 
         $this->get(route('recommendation.results', ['species' => 'Dog', 'page' => 2]))
             ->assertOk()
+            ->assertSee('Showing 6 to 7 of 7 eligible pet matches')
             ->assertViewHas('matches', fn ($page): bool => $page->total() === 7
                 && $page->getCollection()->pluck('pet.id')->all() === array_slice($ids, 5));
 

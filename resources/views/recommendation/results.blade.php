@@ -61,6 +61,14 @@
     @if ($errors->any())
         <p class="text-red-700">{{ $errors->first() }}</p>
     @endif
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <p class="m-0 text-sm text-text-muted">
+            Showing {{ $matches->firstItem() ?? 0 }} to {{ $matches->lastItem() ?? 0 }} of {{ $matches->total() }} eligible pet matches
+        </p>
+        @if ($matches->hasPages())
+            {{ $matches->links() }}
+        @endif
+    </div>
     <div id="matchResults" class="flex flex-col gap-4">
         @forelse ($matches as $match)
             @include('recommendation._match-card', ['pet' => $match['pet'], 'result' => $match['result'], 'matcher' => $matcher])
