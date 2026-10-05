@@ -32,7 +32,7 @@ final class InAppNotificationService
             'body' => $message,
             'channels' => ['In-app'],
             'action_label' => 'View details',
-            'action_url' => $actionUrl,
+            'action_url' => $this->normalizeActionUrl($actionUrl),
             'entity_type' => $entityType,
             'entity_id' => $entityId,
             'read' => false,
@@ -79,5 +79,33 @@ final class InAppNotificationService
                 'exception' => $exception::class,
             ]);
         }
+    }
+
+    private function normalizeActionUrl(string $url): string
+    {
+        $parts = parse_url($url);
+        if (! is_array($parts) || str_starts_with($url, '//')) {
+            return $url;
+        }
+
+        $path = $parts['path'] ?? (isset($parts['host']) ? '/' : '');
+        if (! str_starts_with($path, '/') || str_starts_with($path, '//') || str_starts_with($path, '/\\')) {
+            return $url;
+        }
+        if (! isset($parts['host']) && ! isset($parts['scheme'])) {
+            return $url;
+        }
+
+        $configuredHost = strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST));
+        $baseHost = preg_replace('/^www\./', '', $configuredHost);
+        if (! $baseHost || ! in_array(strtolower($parts['host'] ?? ''), [$baseHost, 'www.'.$baseHost], true)
+            || ! in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)
+            || isset($parts['user']) || isset($parts['pass'])) {
+            return $url;
+        }
+
+        return $path
+            .(isset($parts['query']) ? '?'.$parts['query'] : '')
+            .(isset($parts['fragment']) ? '#'.$parts['fragment'] : '');
     }
 }
