@@ -63,7 +63,7 @@ final class MatchingProfileMapper
         foreach ($pet->assessmentRecords as $record) {
             if (($record->responses['species'] ?? null) === strtolower($pet->species->value)) {
                 $records[] = [
-                    'id' => $record->id, 'observer_id' => $record->id ?? spl_object_id($record),
+                    'id' => $record->id, 'observer_id' => $record->assessor_id,
                     'recorded_at' => $record->created_at?->toISOString() ?? '',
                     'responses' => $record->responses['answers'] ?? [],
                 ];

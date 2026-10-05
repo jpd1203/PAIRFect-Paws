@@ -118,7 +118,7 @@ class AssessmentKnnIntegrationTest extends TestCase
         $this->assertDatabaseCount('assessment_records', 1);
     }
 
-    public function test_staff_can_assess_multiple_times_until_three_assessments_are_completed(): void
+    public function test_each_staff_account_can_assess_a_pet_only_once_until_three_distinct_observers_complete_it(): void
     {
         $pet = $this->matchingPet([], 0);
         $admin = $this->matchingUser(Role::Administrator);
@@ -133,21 +133,31 @@ class AssessmentKnnIntegrationTest extends TestCase
 
         $this->get(route('admin.assessments.record'))
             ->assertOk()
+            ->assertSee('Your assessment complete')
+            ->assertDontSee(route('admin.assessments.create', $pet));
+        $this->get(route('admin.assessments.create', $pet))
+            ->assertRedirect(route('admin.assessments.record'))
+            ->assertSessionHasErrors('assessment');
+        $this->post(route('admin.assessments.store', $pet), $payload)
+            ->assertRedirect(route('admin.assessments.record'))
+            ->assertSessionHasErrors('assessment');
+        $this->postJson(route('admin.assessments.store', $pet), $payload)
+            ->assertStatus(409);
+        $this->assertSame(1, $pet->assessmentRecords()->count());
+
+        $volunteer = $this->matchingUser(Role::Volunteer);
+        $this->actingAs($volunteer)->get(route('admin.assessments.record'))
+            ->assertOk()
             ->assertSee(route('admin.assessments.create', $pet))
             ->assertSee('#2');
-
-        $this->get(route('admin.assessments.create', $pet))->assertOk();
         $this->post(route('admin.assessments.store', $pet), $payload)
             ->assertRedirect(route('admin.assessments.record'));
         $this->assertSame(2, $pet->assessmentRecords()->count());
         $this->assertSame(2, $pet->fresh()->assessment_count);
 
-        $this->get(route('admin.assessments.record'))
-            ->assertOk()
-            ->assertSee(route('admin.assessments.create', $pet))
-            ->assertSee('#3');
-
-        $this->get(route('admin.assessments.create', $pet))->assertOk();
+        $third = $this->matchingUser(Role::Volunteer);
+        $this->actingAs($third)->get(route('admin.assessments.record'))
+            ->assertOk()->assertSee('#3');
         $this->post(route('admin.assessments.store', $pet), $payload)
             ->assertRedirect(route('admin.assessments.record'));
         $this->assertSame(3, $pet->assessmentRecords()->count());
@@ -159,13 +169,13 @@ class AssessmentKnnIntegrationTest extends TestCase
             ->assertSee('Complete')
             ->assertDontSee(route('admin.assessments.create', $pet));
 
-        $this->post(route('admin.assessments.store', $pet), $payload)
+        $this->actingAs($this->matchingUser(Role::Volunteer))->post(route('admin.assessments.store', $pet), $payload)
             ->assertRedirect(route('admin.assessments.record'))
             ->assertSessionHasErrors('assessment');
 
         $this->postJson(route('admin.assessments.store', $pet), $payload)
             ->assertStatus(409)
-            ->assertJsonPath('message', "Assessment for {$pet->name} is already complete.");
+            ->assertJsonPath('message', "You have already assessed {$pet->name}, or this pet already has enough distinct observers.");
         $this->assertSame(3, $pet->assessmentRecords()->count());
     }
 

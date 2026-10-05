@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\Role;
+use App\Models\AssessmentRecord;
+use App\Models\Pet;
 use App\Services\Matching\ApplicationMatchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\BuildsMatchingFixtures;
@@ -44,6 +47,25 @@ class PetCatalogAssessmentVisibilityTest extends TestCase
             ->assertSee('Assessed Reserved')
             ->assertDontSee('Partially Assessed')
             ->assertDontSee('No Assessment Records');
+    }
+
+    public function test_three_records_from_one_staff_account_do_not_make_a_pet_fully_assessed(): void
+    {
+        $pet = $this->matchingPet(['name' => 'Repeated Observer'], 0);
+        $staff = $this->matchingUser(Role::Volunteer);
+        for ($i = 0; $i < 3; $i++) {
+            AssessmentRecord::create([
+                'pet_id' => $pet->id,
+                'assessor_id' => $staff->id,
+                'responses' => ['species' => 'dog', 'answers' => $this->behaviorResponses('dog')],
+                'scoring_version' => config('matching.algorithm_version'),
+            ]);
+        }
+
+        app(ApplicationMatchService::class)->refreshPetSummary($pet);
+        $this->assertSame(1, $pet->fresh()->assessment_count);
+        $this->assertFalse(Pet::fullyAssessed()->whereKey($pet->id)->exists());
+        $this->get(route('pets.index'))->assertOk()->assertDontSee('Repeated Observer');
     }
 
     public function test_browse_pets_filters_by_young_adult_senior_and_does_not_contain_baby(): void
