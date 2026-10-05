@@ -79,9 +79,12 @@ class FlagEvaluationService
         $log->update([
             'is_flagged' => true,
             'flag_reasons' => $mergedReasons,
-            'resolved_at' => null,
-            'resolved_by_user_id' => null,
-            'resolution_note' => null,
+            ...($wasOpen ? [] : [
+                'resolved_at' => null,
+                'resolved_by_user_id' => null,
+                'resolution_note' => null,
+                'resolution_outcome' => null,
+            ]),
         ]);
 
         if (! $wasOpen || count($mergedReasons) > count($existingReasons)) {
@@ -105,7 +108,7 @@ class FlagEvaluationService
         $flagged = 0;
         $today = today(PostAdoptionScheduleService::TIMEZONE)->toDateString();
 
-        PostAdoptionLog::afterCompletedHandover()->whereNull('submitted_date')
+        PostAdoptionLog::afterCompletedHandover()->beforeRecordedReturn()->whereNull('submitted_date')
             ->whereDate('scheduled_date', '<=', $today)
             ->where('is_flagged', false)
             ->where('reminders_sent', '>=', 2)
@@ -117,6 +120,7 @@ class FlagEvaluationService
                     if (
                         ! $lockedLog
                         || ! $lockedLog->adoptionApplication?->hasCompletedHandover()
+                        || $lockedLog->adoptionApplication->hasRecordedReturn()
                         || $lockedLog->submitted_date !== null
                         || $lockedLog->is_flagged
                         || $lockedLog->reminders_sent < 2

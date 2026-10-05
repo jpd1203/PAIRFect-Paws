@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ApplicationStatus;
 use App\Enums\Milestone;
+use App\Enums\ResolutionOutcome;
 use App\Models\AdoptionApplication;
 use App\Models\PostAdoptionLog;
 use Carbon\CarbonImmutable;
@@ -25,6 +26,7 @@ class PostAdoptionScheduleService
         AdoptionApplication::query()
             ->where('status', ApplicationStatus::Approved->value)
             ->whereHas('handover', fn ($query) => $query->where('adopter_outcome', 'received'))
+            ->whereDoesntHave('postAdoptionLogs', fn ($query) => $query->where('resolution_outcome', ResolutionOutcome::PetReturned->value))
             ->orderBy('id')
             ->chunkById(100, function ($applications) use (&$created) {
                 foreach ($applications as $application) {
@@ -46,7 +48,7 @@ class PostAdoptionScheduleService
             throw new \InvalidArgumentException('Post-adoption check-ins can only be scheduled for an approved application.');
         }
 
-        if (! $application->hasCompletedHandover()) {
+        if (! $application->hasCompletedHandover() || $application->hasRecordedReturn()) {
             return collect();
         }
 

@@ -87,6 +87,7 @@ class EmailNotificationService
             'document_manual_review_staff', 'welfare_report_staff_alert', 'manual_welfare_flag_staff_alert',
             'missed_checkin_staff_alert', 'missed_checkin_backstop_alert', 'checkin_reminder_delivery_blocked',
             'reservation_queue_staff', 'handover_issue_staff', 'interview_reschedule_requested',
+            'welfare_resolution_staff_alert',
         ], true)) {
             $this->inApp->administrators(
                 $event, $heading, $lines[0] ?? $heading, $actionUrl ?? route('notifications.index'),

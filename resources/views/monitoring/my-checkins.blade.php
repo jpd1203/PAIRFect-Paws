@@ -49,7 +49,7 @@
                                             completed
                                         @elseif($log->display_status === 'Overdue')
                                             overdue
-                                        @elseif($log->display_status === 'Upcoming')
+                                        @elseif(in_array($log->display_status, ['Upcoming', 'Placement ended'], true))
                                             upcoming
                                         @else
                                             pending
@@ -65,6 +65,7 @@
                                             'Submitted' => 'badge-completed',
                                             'Overdue'   => 'badge-overdue',
                                             'Upcoming'  => 'badge-upcoming',
+                                            'Placement ended' => 'badge-upcoming',
                                             default     => 'badge-pending',
                                         };
                                     @endphp
@@ -84,6 +85,8 @@
                                         </a>
                                     @elseif($log->display_status === 'Upcoming')
                                         <span class="text-[#888] text-sm">Opens {{ $log->scheduled_date->format('M d') }}</span>
+                                    @elseif($log->display_status === 'Placement ended')
+                                        <span class="text-[#888] text-sm">No further report is required</span>
                                     @else
                                         <span class="text-[#888] text-sm">Submitted {{ \App\Support\ManilaTime::format($log->submitted_date, 'M d, Y') }}</span>
                                     @endif

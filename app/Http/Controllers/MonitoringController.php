@@ -7,11 +7,11 @@ use App\Mail\WelfareReportReceiptMail;
 use App\Models\PostAdoptionLog;
 use App\Services\AuditLogService;
 use App\Services\EmailNotificationService;
-use App\Services\InAppNotificationService;
 use App\Services\FlagEvaluationService;
+use App\Services\InAppNotificationService;
 use App\Services\PostAdoptionCaptureChallengeService;
-use App\Services\PostAdoptionWebDemoService;
 use App\Services\PostAdoptionScheduleService;
+use App\Services\PostAdoptionWebDemoService;
 use App\Services\VideoDurationProbe;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -95,6 +95,7 @@ class MonitoringController extends Controller
     public function reportDue(Request $request): View
     {
         $logs = $this->ownedApprovedLogs($request)
+            ->beforeRecordedReturn()
             ->whereNull('submitted_date')
             ->orderBy('scheduled_date')
             ->orderBy('id')
@@ -109,6 +110,7 @@ class MonitoringController extends Controller
     public function overdueNotice(Request $request): View
     {
         $overdueLogs = $this->ownedApprovedLogs($request)
+            ->beforeRecordedReturn()
             ->whereNull('submitted_date')
             ->orderByDesc('scheduled_date')
             ->orderByDesc('id')
@@ -590,6 +592,10 @@ class MonitoringController extends Controller
             return 'Submitted';
         }
 
+        if ($log->adoptionApplication?->hasRecordedReturn()) {
+            return 'Placement ended';
+        }
+
         $today = $this->webDemo->dateFor($log);
         $scheduledDate = CarbonImmutable::parse(
             $log->scheduled_date->toDateString(),
@@ -605,6 +611,7 @@ class MonitoringController extends Controller
 
     private function ensureLogIsDue(PostAdoptionLog $log): void
     {
+        abort_if($log->adoptionApplication?->hasRecordedReturn(), 422, 'This placement has ended after the pet returned to the shelter.');
         $today = $this->webDemo->dateFor($log);
         $scheduledDate = CarbonImmutable::parse(
             $log->scheduled_date->toDateString(),

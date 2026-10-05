@@ -8,8 +8,10 @@ use App\Enums\DocumentVerificationStatus;
 use App\Enums\Milestone;
 use App\Enums\Role;
 use App\Models\AdoptionApplication;
+use App\Models\Handover;
 use App\Models\Pet;
 use App\Models\PostAdoptionLog;
+use App\Support\ManilaTime;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -63,7 +65,7 @@ class VolunteerRbacTest extends TestCase
             'status' => ApplicationStatus::Pending->value,
             'document_verification_status' => DocumentVerificationStatus::Verified->value,
         ]);
-        $scheduledAt = \App\Support\ManilaTime::now()->addDay();
+        $scheduledAt = ManilaTime::now()->addDay();
 
         $this->actingAs($volunteer)->post(route('admin.applications.schedule'), [
             'application_id' => $application->id,
@@ -164,7 +166,7 @@ class VolunteerRbacTest extends TestCase
             'pet_id' => $pet->id,
             'status' => ApplicationStatus::Approved->value,
         ]);
-        \App\Models\Handover::create([
+        Handover::create([
             'code' => 'HV-TEST-'.$application->id,
             'application_id' => $application->id,
             'pet_id' => $pet->id,
@@ -187,8 +189,9 @@ class VolunteerRbacTest extends TestCase
         ])->assertSessionHas('toast.type', 'success');
         $this->get(route('admin.monitoring.flagged'))
             ->assertOk()
-            ->assertDontSee('Mark Resolved');
+            ->assertDontSee('Record Outcome');
         $this->post(route('admin.monitoring.resolve', $log), [
+            'resolution_outcome' => 'resolved',
             'resolution_note' => 'Unauthorized final intervention.',
         ])->assertRedirect(route('access-denied'));
         $this->assertNull($log->refresh()->resolved_at);
@@ -196,8 +199,9 @@ class VolunteerRbacTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.monitoring.flagged'))
             ->assertOk()
-            ->assertSee('Mark Resolved');
+            ->assertSee('Record Outcome');
         $this->post(route('admin.monitoring.resolve', $log), [
+            'resolution_outcome' => 'resolved',
             'resolution_note' => 'Reviewed the case and recorded the final intervention.',
         ])->assertSessionHas('toast.type', 'success');
         $this->assertNotNull($log->refresh()->resolved_at);

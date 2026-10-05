@@ -50,6 +50,19 @@
                 'vet' => $checkIn->vet_visit_details ?? data_get($survey, 'vet_visit_details') ?? 'Not reported',
                 'concerns' => $concerns,
                 'flag_reasons' => $flagReasonText ?: 'No flag reasons recorded.',
+                'resolution_outcome' => $checkIn->resolution_outcome_label,
+                'resolution_note' => $checkIn->resolution_note ?: 'Not recorded.',
+                'resolved_by' => $checkIn->resolvedBy?->full_name ?: 'Not recorded',
+                'resolved_at' => $checkIn->resolved_at
+                    ? \App\Support\ManilaTime::format($checkIn->resolved_at, 'M j, Y g:i A')
+                    : 'Not resolved',
+                'return_date' => $checkIn->return_date?->format('M j, Y') ?: 'Not recorded',
+                'return_reason' => $checkIn->return_reason ?: 'Not recorded',
+                'return_condition' => $checkIn->return_condition ?: 'Not recorded',
+                'return_handled_by' => $checkIn->returnHandledBy?->full_name ?: 'Not recorded',
+                'is_returned' => $checkIn->resolution_outcome === \App\Enums\ResolutionOutcome::PetReturned,
+                'can_resolve' => $checkIn->is_flagged && !$checkIn->resolved_at,
+                'resolve_url' => route('admin.monitoring.resolve', $checkIn),
                 'verification_method' => data_get($verification, 'method') ?: 'Not available',
                 'challenge_id' => data_get($verification, 'capture_challenge_id') ?: 'Not available',
                 'challenge_issued_at' => \App\Support\ManilaTime::parseAndFormat(
@@ -540,6 +553,9 @@
                                                     <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold {{ $badgeStyle }}">
                                                         {{ $log->status_display }}
                                                     </span>
+                                                    @if ($log->resolution_outcome)
+                                                        <span class="mt-1 block text-xs font-semibold text-amber-900">{{ $log->resolution_outcome->label() }}</span>
+                                                    @endif
                                                 </td>
                                                 <td class="py-2.5 pr-4 text-muted">
                                                     @if($log->has_presentation_demo)
@@ -829,6 +845,9 @@
                                                         <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold {{ $badgeStyle }}">
                                                             {{ $log->status_display }}
                                                         </span>
+                                                        @if ($log->resolution_outcome)
+                                                            <span class="mt-1 block text-xs font-semibold text-amber-900">{{ $log->resolution_outcome->label() }}</span>
+                                                        @endif
                                                     </td>
 
                                                     <td class="py-2.5 pr-4 text-muted">
@@ -1009,6 +1028,20 @@
                     <p id="monitoringViewFlagReasons" class="mt-0.5 text-xs leading-relaxed text-amber-900"></p>
                 </div>
 
+                <div class="rounded-lg border border-gray-200 bg-white p-3 text-sm">
+                    <strong class="block">Resolution Status</strong>
+                    <div>Outcome: <span id="monitoringViewResolutionOutcome"></span></div>
+                    <div>Resolved By: <span id="monitoringViewResolvedBy"></span></div>
+                    <div>Resolved At: <span id="monitoringViewResolvedAt"></span></div>
+                    <div class="mt-2">Resolution Note: <p id="monitoringViewResolutionNote" class="whitespace-pre-wrap"></p></div>
+                    <div id="monitoringViewReturnDetails" class="mt-2 hidden border-t border-gray-200 pt-2">
+                        <div>Return Date: <span id="monitoringViewReturnDate"></span></div>
+                        <div>Return Reason: <span id="monitoringViewReturnReason"></span></div>
+                        <div>Condition Upon Return: <span id="monitoringViewReturnCondition"></span></div>
+                        <div>Handled By: <span id="monitoringViewReturnHandledBy"></span></div>
+                    </div>
+                </div>
+
                 <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
                     <strong class="block text-gray-800">Capture verification</strong>
                     <span class="block">Method: <span id="monitoringViewVerificationMethod"></span></span>
@@ -1039,12 +1072,21 @@
                 <a id="monitoringViewPhoto" class="btn btn-secondary hidden w-full justify-center" href="#" target="_blank" rel="noopener">
                     <i class="fa-solid fa-camera"></i> View Legacy Welfare Photo
                 </a>
+                @if (auth()->user()->isAdmin())
+                    <form id="monitoringViewResolveForm" method="POST" data-resolution-form class="hidden rounded-lg border border-amber-200 bg-amber-50 p-4">
+                        @csrf
+                        <h3 class="mb-3 font-semibold">Resolve Case</h3>
+                        @include('admin.monitoring._resolution-fields', ['fieldPrefix' => 'monitoring-view'])
+                        <button type="submit" class="btn btn-primary mt-3">Record Outcome</button>
+                    </form>
+                @endif
             </div>
             <div class="custom-modal-footer-1">
                 <button type="button" class="btn btn-secondary" onclick="closeMonitoringViewModal()">Close</button>
             </div>
         </div>
     </div>
+    @include('admin.monitoring._return-confirmation')
 @endsection
 
 @push('scripts')
@@ -1356,6 +1398,22 @@
             setMonitoringText('monitoringViewLiving', data.living);
             setMonitoringText('monitoringViewConcerns', data.concerns);
             setMonitoringText('monitoringViewFlagReasons', data.flag_reasons);
+            setMonitoringText('monitoringViewResolutionOutcome', data.resolution_outcome);
+            setMonitoringText('monitoringViewResolutionNote', data.resolution_note);
+            setMonitoringText('monitoringViewResolvedBy', data.resolved_by);
+            setMonitoringText('monitoringViewResolvedAt', data.resolved_at);
+            setMonitoringText('monitoringViewReturnDate', data.return_date);
+            setMonitoringText('monitoringViewReturnReason', data.return_reason);
+            setMonitoringText('monitoringViewReturnCondition', data.return_condition);
+            setMonitoringText('monitoringViewReturnHandledBy', data.return_handled_by);
+            document.getElementById('monitoringViewReturnDetails').classList.toggle('hidden', !data.is_returned);
+            const resolutionForm = document.getElementById('monitoringViewResolveForm');
+            if (resolutionForm) {
+                resolutionForm.classList.toggle('hidden', !data.can_resolve);
+                resolutionForm.action = data.resolve_url;
+                resolutionForm.reset();
+                resolutionForm.querySelector('[data-resolution-outcome]').dispatchEvent(new Event('change'));
+            }
             setMonitoringText('monitoringViewVerificationMethod', data.verification_method);
             setMonitoringText('monitoringViewChallenge', data.challenge_id);
             setMonitoringText('monitoringViewChallengeIssued', data.challenge_issued_at);

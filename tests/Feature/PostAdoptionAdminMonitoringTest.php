@@ -5,14 +5,17 @@ namespace Tests\Feature;
 use App\Enums\ApplicationStatus;
 use App\Enums\AvailabilityStatus;
 use App\Enums\Milestone;
+use App\Enums\ResolutionOutcome;
 use App\Enums\Role;
 use App\Mail\CheckInReminderMail;
+use App\Mail\TransactionalMail;
 use App\Models\AdoptionApplication;
 use App\Models\Handover;
 use App\Models\Pet;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -201,22 +204,193 @@ class PostAdoptionAdminMonitoringTest extends TestCase
             'entity_id' => $log->id,
         ]);
 
-        $this->post(route('admin.monitoring.resolve', $log), ['resolution_note' => ''])
+        $this->post(route('admin.monitoring.resolve', $log), ['resolution_outcome' => 'resolved', 'resolution_note' => ''])
             ->assertSessionHasErrors('resolution_note');
         $this->assertNull($log->refresh()->resolved_at);
 
         $this->post(route('admin.monitoring.resolve', $log), [
+            'resolution_outcome' => 'resolved',
             'resolution_note' => 'A home visit confirmed that the pet is safe and receiving veterinary care.',
         ])->assertSessionHas('toast.type', 'success');
 
         $log->refresh();
         $this->assertNotNull($log->resolved_at);
         $this->assertSame($staff->id, $log->resolved_by_user_id);
+        $this->assertSame(ResolutionOutcome::Resolved, $log->resolution_outcome);
         $this->assertTrue($log->is_flagged, 'Historical flag state must be retained after resolution.');
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'Post-Adoption Flag Resolved',
             'entity_id' => $log->id,
         ]);
+    }
+
+    public function test_outcomes_are_validated_and_follow_up_remains_in_the_staff_queue(): void
+    {
+        [, $application] = $this->approvedApplication();
+        $staff = $this->user(Role::Administrator, 'outcomes');
+        $log = $this->flaggedLog($application);
+        Mail::fake();
+
+        $this->actingAs($staff)->post(route('admin.monitoring.resolve', $log), [
+            'resolution_outcome' => 'invented', 'resolution_note' => 'Test note',
+        ])->assertSessionHasErrors('resolution_outcome');
+        $this->assertNull($log->fresh()->resolved_at);
+
+        $sensitiveNote = 'Private welfare observation: unique-secret-example';
+        $this->post(route('admin.monitoring.resolve', $log), [
+            'resolution_outcome' => 'follow_up_required', 'resolution_note' => $sensitiveNote,
+        ])->assertSessionHas('toast.type', 'success');
+
+        $this->assertSame(ResolutionOutcome::FollowUpRequired, $log->fresh()->resolution_outcome);
+        $this->assertNull($log->fresh()->resolved_at);
+        $this->get(route('admin.monitoring.flagged'))->assertOk()
+            ->assertSee('Follow-up Required')->assertSee($sensitiveNote);
+        $this->get(route('admin.monitoring.index'))->assertOk()->assertSee('Follow-up Required');
+        $this->actingAs($application->user)->get(route('monitoring.my-checkins'))
+            ->assertOk()->assertDontSee($sensitiveNote);
+        $this->actingAs($staff);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'Post-Adoption Follow-Up Required', 'entity_id' => $log->id]);
+        $this->assertDatabaseHas('handover_notifications', ['kind' => 'welfare_resolution_staff_alert', 'entity_id' => $log->id]);
+        $this->assertDatabaseMissing('handover_notifications', ['body' => $sensitiveNote]);
+        Mail::assertQueued(TransactionalMail::class, function (TransactionalMail $mail) use ($sensitiveNote): bool {
+            return ! str_contains(implode(' ', $mail->lines).' '.$mail->heading, $sensitiveNote);
+        });
+
+        $this->post(route('admin.monitoring.resolve', $log), [
+            'resolution_outcome' => 'veterinary_attention',
+            'resolution_note' => 'Recommended a veterinary evaluation; no visit has been confirmed.',
+        ])->assertSessionHas('toast.type', 'success');
+        $this->assertSame(ResolutionOutcome::VeterinaryAttention, $log->fresh()->resolution_outcome);
+        $this->assertNotNull($log->fresh()->resolved_at);
+        $this->get(route('admin.monitoring.index'))->assertOk()->assertSee('Veterinary Attention Recommended');
+    }
+
+    public function test_return_recommendation_does_not_change_pet_status_and_legacy_resolution_renders(): void
+    {
+        [, $application] = $this->approvedApplication();
+        $staff = $this->user(Role::Administrator, 'recommend-return');
+        $log = $this->flaggedLog($application);
+        Mail::fake();
+
+        $this->actingAs($staff)->post(route('admin.monitoring.resolve', $log), [
+            'resolution_outcome' => 'return_recommended',
+            'resolution_note' => 'Recommend discussing a shelter return; no transfer has occurred.',
+        ])->assertSessionHas('toast.type', 'success');
+        $this->assertSame(AvailabilityStatus::Adopted, $application->pet->fresh()->availability_status);
+        $this->assertSame(ResolutionOutcome::ReturnRecommended, $log->fresh()->resolution_outcome);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'Return to Shelter Recommended', 'entity_id' => $log->id]);
+
+        $log->update(['resolution_outcome' => null]);
+        $this->assertSame('Resolved', $log->fresh()->resolution_outcome_label);
+        $this->get(route('admin.monitoring.index'))->assertOk()->assertSee('Resolved');
+    }
+
+    public function test_physical_return_requires_complete_fields_and_confirmation(): void
+    {
+        [, $application] = $this->approvedApplication();
+        $staff = $this->user(Role::Administrator, 'return-validation');
+        $log = $this->flaggedLog($application);
+        $base = ['resolution_outcome' => 'pet_returned', 'resolution_note' => 'Physical return confirmed.'];
+        $complete = $base + [
+            'return_date' => today('Asia/Manila')->toDateString(),
+            'return_reason' => 'Adopter could no longer provide care.',
+            'return_condition' => 'Stable on arrival.',
+            'return_handled_by_user_id' => $staff->id,
+            'confirm_return' => '1',
+        ];
+
+        foreach (['return_date', 'return_reason', 'return_condition', 'return_handled_by_user_id', 'confirm_return'] as $field) {
+            $input = $complete;
+            unset($input[$field]);
+            $this->actingAs($staff)->post(route('admin.monitoring.resolve', $log), $input)
+                ->assertSessionHasErrors($field);
+            $this->assertSame(AvailabilityStatus::Adopted, $application->pet->fresh()->availability_status);
+        }
+
+        $input = $complete;
+        $input['return_handled_by_user_id'] = $this->user(Role::Adopter, 'invalid-handler')->id;
+        $this->post(route('admin.monitoring.resolve', $log), $input)
+            ->assertSessionHasErrors('return_handled_by_user_id');
+    }
+
+    public function test_physical_return_is_admin_only_preserves_adoption_history_and_prevents_duplicate(): void
+    {
+        [$adopter, $application] = $this->approvedApplication();
+        $admin = $this->user(Role::Administrator, 'return-admin');
+        $volunteer = $this->user(Role::Volunteer, 'return-volunteer');
+        $log = $this->flaggedLog($application);
+        Mail::fake();
+        $input = $this->returnInput($admin);
+
+        $this->actingAs($volunteer)->post(route('admin.monitoring.resolve', $log), $input)
+            ->assertRedirect(route('access-denied'));
+        $this->assertSame(AvailabilityStatus::Adopted, $application->pet->fresh()->availability_status);
+
+        $this->actingAs($admin)->post(route('admin.monitoring.resolve', $log), $input)
+            ->assertSessionHas('toast.type', 'success');
+        $this->assertSame(AvailabilityStatus::Returned, $application->pet->fresh()->availability_status);
+        $this->assertSame(ApplicationStatus::Approved, $application->fresh()->status);
+        $this->assertSame($adopter->id, $application->fresh()->user_id);
+        $this->assertSame('received', $application->handover->fresh()->adopter_outcome);
+        $this->assertSame('Pet returned to shelter', $application->handover->fresh()->history[0]['label']);
+        $this->assertSame(ResolutionOutcome::PetReturned, $log->fresh()->resolution_outcome);
+        $this->assertSame($admin->id, $log->fresh()->return_handled_by_user_id);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'Pet Returned to Shelter', 'entity_id' => $log->id]);
+        $this->get(route('admin.monitoring.index'))->assertOk()->assertSee('Pet Returned to Shelter');
+        $this->get(route('admin.dashboard'))->assertOk()->assertViewHas('activeMonitoring', 0);
+        $this->actingAs($adopter)->get(route('monitoring.my-checkins'))
+            ->assertOk()->assertSee('Placement ended');
+        $this->actingAs($admin);
+
+        $this->post(route('admin.monitoring.resolve', $log), $input)
+            ->assertSessionHas('toast.type', 'error');
+        $this->post(route('admin.monitoring.flag', $log), ['reason' => 'Reopen returned case'])
+            ->assertSessionHasErrors('reason');
+        $this->artisan('checkins:send-reminders')->assertSuccessful();
+        Mail::assertNotSent(CheckInReminderMail::class);
+        $this->post(route('admin.monitoring.reminder', $log))
+            ->assertSessionHas('toast.type', 'error');
+        $this->assertSame(1, DB::table('post_adoption_logs')->where('resolution_outcome', 'pet_returned')->count());
+        $this->assertSame(AvailabilityStatus::Returned, $application->pet->fresh()->availability_status);
+    }
+
+    public function test_return_transaction_rolls_back_if_handover_history_cannot_be_saved(): void
+    {
+        [, $application] = $this->approvedApplication();
+        $admin = $this->user(Role::Administrator, 'return-rollback');
+        $log = $this->flaggedLog($application);
+        Handover::saving(function (): void {
+            throw new RuntimeException('History storage failed.');
+        });
+
+        $this->actingAs($admin)->post(route('admin.monitoring.resolve', $log), $this->returnInput($admin))
+            ->assertStatus(500);
+        $this->assertSame(AvailabilityStatus::Adopted, $application->pet->fresh()->availability_status);
+        $this->assertNull($log->fresh()->resolution_outcome);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'Pet Returned to Shelter', 'entity_id' => $log->id]);
+    }
+
+    public function test_same_placement_cannot_be_returned_twice_even_if_pet_status_is_manually_reset(): void
+    {
+        [, $application] = $this->approvedApplication();
+        $admin = $this->user(Role::Administrator, 'duplicate-return');
+        $firstLog = $this->flaggedLog($application);
+        Mail::fake();
+
+        $this->actingAs($admin)->post(route('admin.monitoring.resolve', $firstLog), $this->returnInput($admin))
+            ->assertSessionHas('toast.type', 'success');
+        $application->pet->update(['availability_status' => AvailabilityStatus::Adopted]);
+        $secondLog = PostAdoptionLog::create([
+            'application_id' => $application->id,
+            'milestone' => Milestone::ThreeWeeks,
+            'scheduled_date' => now()->toDateString(),
+            'is_flagged' => true,
+        ]);
+
+        $this->post(route('admin.monitoring.resolve', $secondLog), $this->returnInput($admin))
+            ->assertSessionHasErrors('resolution_outcome');
+        $this->assertNull($secondLog->fresh()->resolution_outcome);
+        $this->assertSame(1, DB::table('post_adoption_logs')->where('resolution_outcome', 'pet_returned')->count());
     }
 
     public function test_second_successful_manual_reminder_flags_the_incomplete_log(): void
@@ -351,5 +525,30 @@ class PostAdoptionAdminMonitoringTest extends TestCase
             'email_verified_at' => now(),
             'is_active' => true,
         ]);
+    }
+
+    private function flaggedLog(AdoptionApplication $application): PostAdoptionLog
+    {
+        return PostAdoptionLog::create([
+            'application_id' => $application->id,
+            'milestone' => Milestone::ThreeDays,
+            'scheduled_date' => now()->toDateString(),
+            'is_flagged' => true,
+            'flag_reasons' => [['code' => 'welfare_concern', 'message' => 'Staff review required.']],
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function returnInput(User $staff): array
+    {
+        return [
+            'resolution_outcome' => 'pet_returned',
+            'resolution_note' => 'Physical return confirmed by shelter staff.',
+            'return_date' => today('Asia/Manila')->toDateString(),
+            'return_reason' => 'Adopter could no longer provide care.',
+            'return_condition' => 'Stable on arrival.',
+            'return_handled_by_user_id' => $staff->id,
+            'confirm_return' => '1',
+        ];
     }
 }

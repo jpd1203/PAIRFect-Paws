@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ApplicationStatus;
 use App\Enums\DocumentVerificationStatus;
+use App\Enums\ResolutionOutcome;
 use App\Support\ManilaTime;
 use App\Support\PhilippineAddress;
 use Illuminate\Database\Eloquent\Model;
@@ -82,6 +83,12 @@ class AdoptionApplication extends Model
     public function postAdoptionLogs()
     {
         return $this->hasMany(PostAdoptionLog::class, 'application_id');
+    }
+
+    public function hasRecordedReturn(): bool
+    {
+        return $this->postAdoptionLogs()
+            ->where('resolution_outcome', ResolutionOutcome::PetReturned->value)->exists();
     }
 
     public function handover()
@@ -192,9 +199,12 @@ class AdoptionApplication extends Model
 
     public function getPriorHistoryAttribute()
     {
-        if (!$this->user_id) return 0;
+        if (! $this->user_id) {
+            return 0;
+        }
+
         return $this->user->adoptionApplications()
-            ->where('status', \App\Enums\ApplicationStatus::Approved->value)
+            ->where('status', ApplicationStatus::Approved->value)
             ->where('id', '!=', $this->id)
             ->count();
     }

@@ -157,6 +157,7 @@ class SendCheckInReminder implements ShouldBeEncrypted, ShouldBeUnique, ShouldQu
     private function canDeliver(PostAdoptionLog $log, CarbonImmutable $now): bool
     {
         return ($log->adoptionApplication?->hasCompletedHandover() ?? false)
+            && ! $log->adoptionApplication->hasRecordedReturn()
             && $log->submitted_date === null
             && $log->reminders_sent < 2
             && ! $log->scheduled_date->gt($now->endOfDay())
@@ -184,9 +185,12 @@ class SendCheckInReminder implements ShouldBeEncrypted, ShouldBeUnique, ShouldQu
 
             if ($newlyFlagged) {
                 $updates['is_flagged'] = true;
-                $updates['resolved_at'] = null;
-                $updates['resolved_by_user_id'] = null;
-                $updates['resolution_note'] = null;
+                if (! ($log->is_flagged && $log->resolved_at === null)) {
+                    $updates['resolved_at'] = null;
+                    $updates['resolved_by_user_id'] = null;
+                    $updates['resolution_note'] = null;
+                    $updates['resolution_outcome'] = null;
+                }
                 $updates['flag_reasons'] = $this->appendMissedCheckInReason(
                     $log->flag_reasons,
                     $now,
@@ -251,9 +255,12 @@ class SendCheckInReminder implements ShouldBeEncrypted, ShouldBeUnique, ShouldQu
             $log->update([
                 'is_flagged' => true,
                 'flag_reasons' => array_values($reasons),
-                'resolved_at' => null,
-                'resolved_by_user_id' => null,
-                'resolution_note' => null,
+                ...($log->is_flagged && $log->resolved_at === null ? [] : [
+                    'resolved_at' => null,
+                    'resolved_by_user_id' => null,
+                    'resolution_note' => null,
+                    'resolution_outcome' => null,
+                ]),
             ]);
 
             return true;

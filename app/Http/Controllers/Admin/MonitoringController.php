@@ -2,17 +2,27 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ApplicationStatus;
+use App\Enums\AvailabilityStatus;
+use App\Enums\ResolutionOutcome;
+use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendCheckInReminder;
+use App\Models\AdoptionApplication;
+use App\Models\Pet;
 use App\Models\PostAdoptionLog;
+use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\EmailNotificationService;
+use App\Services\PostAdoptionClock;
 use App\Services\PostAdoptionScheduleService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class MonitoringController extends Controller
@@ -23,7 +33,7 @@ class MonitoringController extends Controller
     {
         $checkIns = PostAdoptionLog::query()
             ->afterCompletedHandover()
-            ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
+            ->with(['adoptionApplication.user', 'adoptionApplication.pet', 'resolvedBy', 'returnHandledBy'])
             ->orderByRaw('CASE WHEN is_flagged = 1 AND resolved_at IS NULL THEN 0 ELSE 1 END')
             ->orderByDesc('scheduled_date')
             ->orderByDesc('id')
@@ -33,20 +43,26 @@ class MonitoringController extends Controller
             ->countBy(fn (PostAdoptionLog $log): string => $log->status_slug)
             ->all();
 
-        return view('admin.monitoring.index', compact('checkIns', 'statusCounts'));
+        $staffHandlers = User::query()->whereIn('role', [Role::Administrator->value, Role::Volunteer->value])
+            ->where('is_active', true)->orderBy('first_name')->orderBy('last_name')->get();
+
+        return view('admin.monitoring.index', compact('checkIns', 'statusCounts', 'staffHandlers'));
     }
 
     public function flagged()
     {
         $flagged = PostAdoptionLog::query()
             ->afterCompletedHandover()
-            ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
+            ->with(['adoptionApplication.user', 'adoptionApplication.pet', 'resolvedBy', 'returnHandledBy'])
             ->orderByDesc('scheduled_date')
             ->orderByDesc('id')
             ->get()
             ->filter(fn (PostAdoptionLog $log): bool => $log->display_is_flagged);
 
-        return view('admin.monitoring.flagged', compact('flagged'));
+        $staffHandlers = User::query()->whereIn('role', [Role::Administrator->value, Role::Volunteer->value])
+            ->where('is_active', true)->orderBy('first_name')->orderBy('last_name')->get();
+
+        return view('admin.monitoring.flagged', compact('flagged', 'staffHandlers'));
     }
 
     /** Stream a submitted welfare photo through a staff-authenticated route. */
@@ -135,8 +151,11 @@ class MonitoringController extends Controller
         ]);
 
         $log->refresh()->loadMissing('adoptionApplication.user');
+        if ($log->adoptionApplication?->hasRecordedReturn()) {
+            return back()->with('toast', ['type' => 'error', 'message' => 'This pet has been returned; no further check-in reminders may be sent.']);
+        }
         $adopter = $log->adoptionApplication?->user;
-        $now = app(\App\Services\PostAdoptionClock::class)->now();
+        $now = app(PostAdoptionClock::class)->now();
         $scheduledDate = CarbonImmutable::parse(
             $log->scheduled_date->toDateString(),
             PostAdoptionScheduleService::TIMEZONE,
@@ -217,12 +236,16 @@ class MonitoringController extends Controller
             'reason' => ['required', 'string', 'max:2000'],
         ]);
 
-        $now = app(\App\Services\PostAdoptionClock::class)->now();
+        $now = app(PostAdoptionClock::class)->now();
         $reason = trim($validated['reason']);
 
         DB::transaction(function () use ($log, $reason, $now, $request): void {
             $lockedLog = PostAdoptionLog::query()->lockForUpdate()->findOrFail($log->id);
-            $lockedLog->update([
+            if ($lockedLog->resolution_outcome === ResolutionOutcome::PetReturned) {
+                throw ValidationException::withMessages(['reason' => 'A recorded physical return cannot be reopened as a monitoring flag.']);
+            }
+
+            $updates = [
                 'is_flagged' => true,
                 'flag_reasons' => $this->appendFlagReason(
                     $lockedLog->flag_reasons,
@@ -231,10 +254,16 @@ class MonitoringController extends Controller
                     $now,
                     ['flagged_by_user_id' => $request->user()?->id]
                 ),
-                'resolved_at' => null,
-                'resolved_by_user_id' => null,
-                'resolution_note' => null,
-            ]);
+            ];
+            if ($lockedLog->resolved_at !== null) {
+                $updates += [
+                    'resolved_at' => null,
+                    'resolved_by_user_id' => null,
+                    'resolution_note' => null,
+                    'resolution_outcome' => null,
+                ];
+            }
+            $lockedLog->update($updates);
         });
 
         AuditLogService::log(
@@ -270,21 +299,68 @@ class MonitoringController extends Controller
     {
         abort_unless($log->adoptionApplication?->hasCompletedHandover(), 404);
         $validated = $request->validate([
+            'resolution_outcome' => ['required', Rule::enum(ResolutionOutcome::class)],
             'resolution_note' => ['required', 'string', 'max:2000'],
+            'return_date' => ['required_if:resolution_outcome,pet_returned', 'nullable', 'date', 'before_or_equal:today'],
+            'return_reason' => ['required_if:resolution_outcome,pet_returned', 'nullable', 'string', 'max:2000'],
+            'return_condition' => ['required_if:resolution_outcome,pet_returned', 'nullable', 'string', 'max:2000'],
+            'return_handled_by_user_id' => [
+                'required_if:resolution_outcome,pet_returned', 'nullable', 'integer',
+                Rule::exists('users', 'id')->where(fn ($query) => $query
+                    ->whereIn('role', [Role::Administrator->value, Role::Volunteer->value])->where('is_active', true)),
+            ],
+            'confirm_return' => ['required_if:resolution_outcome,pet_returned', 'accepted_if:resolution_outcome,pet_returned'],
         ]);
 
-        $resolved = DB::transaction(function () use ($log, $validated, $request): bool {
+        $outcome = ResolutionOutcome::from($validated['resolution_outcome']);
+        $resolved = DB::transaction(function () use ($log, $validated, $request, $outcome): bool {
             $lockedLog = PostAdoptionLog::query()->lockForUpdate()->findOrFail($log->id);
 
             if (! $lockedLog->is_flagged || $lockedLog->resolved_at !== null) {
                 return false;
             }
 
+            if ($outcome === ResolutionOutcome::PetReturned) {
+                $application = AdoptionApplication::query()->lockForUpdate()->findOrFail($lockedLog->application_id);
+                $pet = Pet::withoutGlobalScope('notArchived')->lockForUpdate()->findOrFail($application->pet_id);
+                if ($application->status !== ApplicationStatus::Approved
+                    || ! $application->hasCompletedHandover()
+                    || $pet->availability_status !== AvailabilityStatus::Adopted
+                    || $application->hasRecordedReturn()) {
+                    throw ValidationException::withMessages([
+                        'resolution_outcome' => 'This placement cannot be returned again or is no longer an adopted, completed handover.',
+                    ]);
+                }
+
+                $pet->update(['availability_status' => AvailabilityStatus::Returned]);
+                $handover = $application->handover()->lockForUpdate()->firstOrFail();
+                $handover->recordHistory('Pet returned to shelter', $request->user()->full_name);
+                $handover->save();
+            }
+
             $lockedLog->update([
                 'resolution_note' => trim($validated['resolution_note']),
-                'resolved_at' => now(),
-                'resolved_by_user_id' => $request->user()?->id,
+                'resolution_outcome' => $outcome,
+                'resolved_at' => $outcome === ResolutionOutcome::FollowUpRequired ? null : now(),
+                'resolved_by_user_id' => $outcome === ResolutionOutcome::FollowUpRequired ? null : $request->user()->id,
+                'return_date' => $outcome === ResolutionOutcome::PetReturned ? $validated['return_date'] : null,
+                'return_reason' => $outcome === ResolutionOutcome::PetReturned ? trim($validated['return_reason']) : null,
+                'return_condition' => $outcome === ResolutionOutcome::PetReturned ? trim($validated['return_condition']) : null,
+                'return_handled_by_user_id' => $outcome === ResolutionOutcome::PetReturned ? $validated['return_handled_by_user_id'] : null,
             ]);
+
+            AuditLogService::log(
+                $request->user()->id,
+                match ($outcome) {
+                    ResolutionOutcome::FollowUpRequired => 'Post-Adoption Follow-Up Required',
+                    ResolutionOutcome::ReturnRecommended => 'Return to Shelter Recommended',
+                    ResolutionOutcome::PetReturned => 'Pet Returned to Shelter',
+                    default => 'Post-Adoption Flag Resolved',
+                },
+                'PostAdoptionLog',
+                $lockedLog->id,
+                'Outcome: '.$outcome->value.'; application #'.$lockedLog->application_id.'.',
+            );
 
             return true;
         });
@@ -296,17 +372,28 @@ class MonitoringController extends Controller
             ]);
         }
 
-        AuditLogService::log(
-            $request->user()?->id,
-            'Post-Adoption Flag Resolved',
-            'PostAdoptionLog',
-            $log->id,
-            trim($validated['resolution_note'])
-        );
+        if (in_array($outcome, [ResolutionOutcome::FollowUpRequired, ResolutionOutcome::ReturnRecommended, ResolutionOutcome::PetReturned], true)) {
+            $this->notifications->staff(
+                "Post-adoption case #{$log->id} requires staff attention",
+                match ($outcome) {
+                    ResolutionOutcome::FollowUpRequired => 'Post-adoption case requires follow-up',
+                    ResolutionOutcome::ReturnRecommended => 'A shelter return was recommended',
+                    default => 'A pet return was recorded',
+                },
+                ['Review the protected monitoring case for the next staff action.'],
+                'Open Monitoring',
+                route('admin.monitoring.index'),
+                $outcome !== ResolutionOutcome::FollowUpRequired,
+                'welfare_resolution_staff_alert',
+                $log->id,
+            );
+        }
 
         return back()->with('toast', [
             'type' => 'success',
-            'message' => 'The flagged case was resolved successfully.',
+            'message' => $outcome === ResolutionOutcome::FollowUpRequired
+                ? 'Follow-up recorded. The case remains open for staff action.'
+                : 'The welfare outcome was recorded successfully.',
         ]);
     }
 

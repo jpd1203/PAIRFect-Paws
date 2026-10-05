@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ApplicationStatus;
+use App\Enums\ResolutionOutcome;
 use App\Models\AdoptionApplication;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
@@ -14,7 +15,7 @@ use Illuminate\Support\Collection;
 final class AdopterHistoryService
 {
     /** @param Collection<int, AdoptionApplication> $applications
-     *  @return array<int, array<string, mixed>> Indexed by the application being reviewed.
+     * @return array<int, array<string, mixed>> Indexed by the application being reviewed.
      */
     public function summariesForApplications(Collection $applications): array
     {
@@ -47,7 +48,7 @@ final class AdopterHistoryService
     }
 
     /** @param Collection<int, AdoptionApplication> $applications
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     public function summarize(Collection $applications): array
     {
@@ -113,7 +114,7 @@ final class AdopterHistoryService
     }
 
     /** @param Collection<int, AdoptionApplication> $applications
-     *  @return Collection<int, array<string, mixed>>
+     * @return Collection<int, array<string, mixed>>
      */
     public function timeline(Collection $applications): Collection
     {
@@ -139,6 +140,7 @@ final class AdopterHistoryService
                     && $log->scheduled_date !== null
                     && ManilaTime::at($log->submitted_date)->toDateString() > $log->scheduled_date->toDateString();
                 $status = match (true) {
+                    $log->resolution_outcome === ResolutionOutcome::PetReturned => 'Pet returned to shelter',
                     $log->is_flagged && $log->resolved_at === null => 'Flagged for review',
                     $log->is_flagged && $log->resolved_at !== null => 'Flag resolved',
                     $missed => 'Missed',
@@ -147,7 +149,8 @@ final class AdopterHistoryService
                     default => 'Upcoming',
                 };
                 $events->push([
-                    'date' => $log->submitted_date
+                    'date' => $log->return_date
+                        ?? $log->submitted_date
                         ?? ($log->scheduled_date
                             ? CarbonImmutable::parse($log->scheduled_date->toDateString(), PostAdoptionClock::TIMEZONE)
                             : $application->created_at),
@@ -168,6 +171,7 @@ final class AdopterHistoryService
         }
 
         $reasons = $this->normalizedReasons($log);
+
         return $reasons === [] || collect($reasons)->contains(
             fn ($reason): bool => ! is_array($reason) || ($reason['code'] ?? null) !== 'missed_check_in'
         );

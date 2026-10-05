@@ -53,6 +53,7 @@ class DashboardController extends Controller
 
         $activeMonitoring = PostAdoptionLog::query()
             ->afterCompletedHandover()
+            ->beforeRecordedReturn()
             ->whereNull('submitted_date')
             ->count();
 
@@ -77,6 +78,7 @@ class DashboardController extends Controller
 
         $overdueCheckIns = PostAdoptionLog::query()
             ->afterCompletedHandover()
+            ->beforeRecordedReturn()
             ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
             ->whereNull('submitted_date')
             ->whereDate('scheduled_date', '<', $today)

@@ -64,6 +64,7 @@
                         <option value="Soft-Reserved" {{ old('status', $pet->availability_status->value) === 'Soft-Reserved' ? 'selected' : '' }}>Soft-Reserved</option>
                         <option value="Processing" {{ old('status', $pet->availability_status->value) === 'Processing' ? 'selected' : '' }}>Processing</option>
                         <option value="Adopted" {{ old('status', $pet->availability_status->value) === 'Adopted' ? 'selected' : '' }}>Adopted</option>
+                        <option value="Returned" {{ old('status', $pet->availability_status->value) === 'Returned' ? 'selected' : '' }}>Returned - needs shelter review</option>
                     </select>
                     @error('status') <div class="field-error">{{ $message }}</div> @enderror
                 </div>

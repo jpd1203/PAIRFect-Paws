@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ApplicationStatus;
 use App\Enums\Milestone;
 use App\Enums\PetCurrentStatus;
+use App\Enums\ResolutionOutcome;
 use App\Services\PostAdoptionWebDemoService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,7 +21,8 @@ class PostAdoptionLog extends Model
         'photo_sha256', 'c2pa_manifest_sha256',
         'video_path', 'video_sha256', 'video_mime_type', 'video_duration_ms',
         'is_flagged', 'flag_reasons', 'reminders_sent', 'last_reminder_sent_at', 'resolved_at',
-        'resolved_by_user_id', 'resolution_note', 'version',
+        'resolved_by_user_id', 'resolution_note', 'resolution_outcome',
+        'return_date', 'return_reason', 'return_condition', 'return_handled_by_user_id', 'version',
     ];
 
     protected function casts(): array
@@ -38,6 +40,8 @@ class PostAdoptionLog extends Model
             'submitted_date' => 'datetime',
             'last_reminder_sent_at' => 'datetime',
             'resolved_at' => 'datetime',
+            'resolution_outcome' => ResolutionOutcome::class,
+            'return_date' => 'date',
         ];
     }
 
@@ -55,9 +59,27 @@ class PostAdoptionLog extends Model
             ->whereHas('handover', fn (Builder $handover) => $handover->where('adopter_outcome', 'received')));
     }
 
+    /** Pending reminders and reports stop after a recorded physical return. */
+    public function scopeBeforeRecordedReturn(Builder $query): Builder
+    {
+        return $query->whereHas('adoptionApplication', fn (Builder $application) => $application
+            ->whereDoesntHave('postAdoptionLogs', fn (Builder $logs) => $logs
+                ->where('resolution_outcome', ResolutionOutcome::PetReturned->value)));
+    }
+
     public function resolvedBy()
     {
         return $this->belongsTo(User::class, 'resolved_by_user_id');
+    }
+
+    public function returnHandledBy()
+    {
+        return $this->belongsTo(User::class, 'return_handled_by_user_id');
+    }
+
+    public function getResolutionOutcomeLabelAttribute(): string
+    {
+        return $this->resolution_outcome?->label() ?? ($this->resolved_at ? 'Resolved' : 'Not resolved');
     }
 
     public function captureChallenges()
@@ -107,6 +129,10 @@ class PostAdoptionLog extends Model
 
     public function getStatusDisplayAttribute(): string
     {
+        if ($this->submitted_date === null && $this->adoptionApplication?->hasRecordedReturn()) {
+            return 'Placement ended';
+        }
+
         return ucfirst($this->status_slug);
     }
 

@@ -88,7 +88,7 @@
                                     {{ $log->pet->name }}
                                 </h3>
 
-                                <span class="badge badge-flagged">Flagged</span>
+                                <span class="badge badge-flagged">{{ $log->resolution_outcome === \App\Enums\ResolutionOutcome::FollowUpRequired ? 'Follow-up Required' : 'Flagged' }}</span>
                                 <span class="badge badge-pending">{{ $log->milestone_display }}</span>
                             </div>
 
@@ -192,22 +192,27 @@
                 </section>
             </div>
 
+            <section class="mt-4 rounded-xl border border-[#e5e1da] bg-white p-4 text-sm">
+                <h4 class="font-bold">Resolution Status</h4>
+                <p class="mt-1">{{ $log->resolution_outcome_label }}{{ $log->resolved_at ? ' · Closed' : ' · Open' }}</p>
+                @if ($log->resolution_note)
+                    <p class="mt-2 whitespace-pre-wrap">{{ $log->resolution_note }}</p>
+                @endif
+            </section>
+
             @if(auth()->user()->isAdmin())
-            <form method="POST" action="{{ $log->has_presentation_demo && !($log->is_flagged && !$log->resolved_at) ? route('admin.post-adoption-demo.resolve', $log) : route('admin.monitoring.resolve', $log) }}" class="mt-4 rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4">
+            @php($demoOnly = $log->has_presentation_demo && !($log->is_flagged && !$log->resolved_at))
+            <form method="POST" action="{{ $demoOnly ? route('admin.post-adoption-demo.resolve', $log) : route('admin.monitoring.resolve', $log) }}" class="mt-4 rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4" @unless($demoOnly) data-resolution-form @endunless>
                 @csrf
-                <label for="resolution-note-{{ $log->id }}" class="form-label">Resolution Note</label>
-                <textarea
-                    id="resolution-note-{{ $log->id }}"
-                    name="resolution_note"
-                    class="form-control remarks-textarea"
-                    rows="3"
-                    required
-                    maxlength="2000"
-                    placeholder="Describe the contact, intervention, or welfare action taken..."
-                >{{ old('resolution_note') }}</textarea>
+                @if ($demoOnly)
+                    <label for="resolution-note-{{ $log->id }}" class="form-label">Demo Resolution Note *</label>
+                    <textarea id="resolution-note-{{ $log->id }}" name="resolution_note" class="form-control remarks-textarea" rows="3" required maxlength="2000">{{ old('resolution_note') }}</textarea>
+                @else
+                    @include('admin.monitoring._resolution-fields', ['fieldPrefix' => 'flagged-'.$log->id])
+                @endif
                 <div class="mt-3 flex justify-end">
                     <button type="submit" class="btn btn-primary btn-sm">
-                        <i class="fa-solid fa-circle-check"></i> {{ $log->has_presentation_demo && !($log->is_flagged && !$log->resolved_at) ? 'Resolve Demo Flag' : 'Mark Resolved' }}
+                        <i class="fa-solid fa-circle-check"></i> {{ $demoOnly ? 'Resolve Demo Flag' : 'Record Outcome' }}
                     </button>
                 </div>
             </form>
@@ -220,4 +225,5 @@
             <p class="text-sm text-[#777]">There are currently no post-adoption cases waiting for staff review.</p>
         </div>
     @endforelse
+    @include('admin.monitoring._return-confirmation')
 @endsection

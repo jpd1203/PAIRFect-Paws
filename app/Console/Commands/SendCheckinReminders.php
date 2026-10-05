@@ -32,7 +32,7 @@ class SendCheckinReminders extends Command
         $created = $scheduleService->ensureForApprovedApplications();
         $this->info("Created {$created} missing check-in(s).");
 
-        PostAdoptionLog::query()->afterCompletedHandover()
+        PostAdoptionLog::query()->afterCompletedHandover()->beforeRecordedReturn()
             ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
             ->whereNull('submitted_date')->whereDate('scheduled_date', '<=', $today)
             ->orderBy('id')->chunkById(100, function ($logs) use ($inApp, $today): void {
@@ -72,6 +72,7 @@ class SendCheckinReminders extends Command
 
         PostAdoptionLog::query()
             ->afterCompletedHandover()
+            ->beforeRecordedReturn()
             ->whereNull('submitted_date')
             ->where('reminders_sent', '<', 2)
             ->whereDate('scheduled_date', '<=', $today)

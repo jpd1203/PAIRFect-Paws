@@ -148,6 +148,7 @@ class Pet extends Model
         if ($this->is_archived) {
             return 'Archived';
         }
+
         return $this->availability_status?->value ?? 'Available';
     }
 
@@ -180,6 +181,7 @@ class Pet extends Model
             'Available' => 'active',
             'Soft-Reserved' => 'upcoming',
             'Adopted' => 'adopted',
+            'Returned' => 'onhold',
             'Under Review' => 'underreview',
             'On Hold' => 'onhold',
             default => 'pending',
@@ -225,8 +227,8 @@ class Pet extends Model
 
     public function getCardSubtitleAttribute(): string
     {
-        return $this->species_display . ' · ' . ($this->breed ?? 'Mix') . ' · ' . 
-        ($this->age_years ? $this->age_years . ' yrs' : ($this->age_months ? $this->age_months . ' mos' : $this->age_group)) . ' · ' . 
+        return $this->species_display.' · '.($this->breed ?? 'Mix').' · '.
+        ($this->age_years ? $this->age_years.' yrs' : ($this->age_months ? $this->age_months.' mos' : $this->age_group)).' · '.
         ($this->sex === 'Female' ? 'F' : 'M');
     }
 }
