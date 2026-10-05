@@ -102,6 +102,9 @@ class HandoverWorkflowTest extends TestCase
         $confirmation = $this->actingAs($adopter)
             ->get(route('adopter.confirm', $handover))
             ->assertOk()
+            ->assertSee('Receipt confirmation becomes available after staff mark the pet as released.')
+            ->assertDontSee('Release Details')
+            ->assertDontSee('staff marked')
             ->assertDontSee(route('adopter.handover.notifications', $handover));
 
         $this->assertSame(1, substr_count($confirmation->getContent(), 'class="notification-bell'));
@@ -290,6 +293,11 @@ class HandoverWorkflowTest extends TestCase
             ->assertSee('Release Details')
             ->assertSee($volunteer->full_name)
             ->assertDontSee('Marco Uy');
+        $this->get(route('adopter.confirm', $handover))
+            ->assertOk()
+            ->assertSee('Release Details')
+            ->assertSee($volunteer->full_name)
+            ->assertSee('Did '.$handover->pet->name.' arrive?');
         $this->assertDatabaseHas('handover_notifications', [
             'handover_id' => $handover->id,
             'user_id' => $adopter->id,
