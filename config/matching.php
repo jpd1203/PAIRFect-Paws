@@ -94,7 +94,7 @@ return [
             ],
             'sociability' => [
                 'CS1' => 'Approaches familiar people voluntarily',
-                'CS2' => 'Approaches familiar people voluntarily (duplicate in capstone)',
+                'CS2' => 'Seeks physical contact.',
                 'CS3' => 'Remains in close proximity to the owner during daily activities',
             ],
             'attention_seeking' => [
