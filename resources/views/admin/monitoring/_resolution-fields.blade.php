@@ -1,7 +1,7 @@
 @php($fieldPrefix = $fieldPrefix ?? 'resolution')
 <div class="grid gap-3">
     <div>
-        <label class="form-label" for="{{ $fieldPrefix }}-outcome">Resolution Outcome *</label>
+        <label class="form-label" for="{{ $fieldPrefix }}-outcome">Resolution Outcome*</label>
         <select id="{{ $fieldPrefix }}-outcome" name="resolution_outcome" class="form-control" required data-resolution-outcome>
             <option value="">Select an outcome</option>
             @foreach (\App\Enums\ResolutionOutcome::cases() as $outcome)
@@ -10,7 +10,7 @@
         </select>
     </div>
     <div>
-        <label class="form-label" for="{{ $fieldPrefix }}-note">Resolution Note *</label>
+        <label class="form-label" for="{{ $fieldPrefix }}-note">Resolution Note*</label>
         <textarea id="{{ $fieldPrefix }}-note" name="resolution_note" class="form-control remarks-textarea" rows="3" required maxlength="2000" placeholder="Record the action or recommendation taken...">{{ old('resolution_note') }}</textarea>
     </div>
     <fieldset data-return-fields class="hidden gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3">

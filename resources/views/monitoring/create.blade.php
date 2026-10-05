@@ -14,6 +14,12 @@
 @section('content')
 @include('partials.post-adoption-demo-notice')
 <div class="post-adoption-report-page custom-scrollbar">
+    <div class="mb-2"> 
+        <button type="button" onclick="window.history.back()" 
+            class="inline-flex items-center gap-2 text-sm font-semibold text-text-muted hover:text-primary transition-colors" > 
+            <i class="fa-solid fa-arrow-left"></i><span>Back</span> 
+        </button> 
+    </div>
     <div class="heading-text">
         <h2>Submit Welfare Report</h2>
         <p>{{ $milestoneLabel }} check-in for <strong>{{ $log->adoptionApplication->pet->name }}</strong></p>
