@@ -334,7 +334,7 @@ class PostAdoptionMonitoringTest extends TestCase
     {
         Storage::fake('local');
         config()->set('post_adoption.capture.ffprobe_path', '');
-        $this->app->instance(VideoDurationProbe::class, new VideoDurationProbe());
+        $this->app->instance(VideoDurationProbe::class, new VideoDurationProbe);
         [$adopter, , $log] = $this->monitoringLog();
         $payload = $this->validReportPayloadFor($adopter, $log);
 
@@ -418,6 +418,31 @@ class PostAdoptionMonitoringTest extends TestCase
             $this->assertSame($durationMs, $log->survey_data['_verification']['verified_duration_ms']);
             $this->assertSame('verified', $log->survey_data['_verification']['duration_verification_status']);
         }
+    }
+
+    public function test_browser_webm_without_container_duration_uses_video_packet_timestamps(): void
+    {
+        Storage::fake('local');
+        Mail::fake();
+        $this->bindProbeDurations([3000, 1500], true);
+
+        [$adopter, , $log] = $this->monitoringLog();
+        $this->actingAs($adopter)->postJson(
+            route('monitoring.submit', $log),
+            $this->validReportPayloadFor($adopter, $log, [
+                'video' => $this->fakeVideo('webm', 'webm-without-container-duration'),
+            ]),
+        )->assertCreated();
+        $this->assertSame(3000, $log->fresh()->video_duration_ms);
+
+        [$otherAdopter, , $shortLog] = $this->monitoringLog();
+        $this->actingAs($otherAdopter)->postJson(
+            route('monitoring.submit', $shortLog),
+            $this->validReportPayloadFor($otherAdopter, $shortLog, [
+                'video' => $this->fakeVideo('webm', 'short-webm-without-container-duration'),
+            ]),
+        )->assertUnprocessable()->assertJsonValidationErrors('video');
+        $this->assertNull($shortLog->fresh()->submitted_date);
     }
 
     public function test_out_of_range_probed_duration_is_rejected_without_consuming_challenge(): void
@@ -638,7 +663,7 @@ class PostAdoptionMonitoringTest extends TestCase
     }
 
     /** @param list<int> $durationMilliseconds */
-    private function bindProbeDurations(array $durationMilliseconds): void
+    private function bindProbeDurations(array $durationMilliseconds, bool $withoutContainerDuration = false): void
     {
         config()->set('post_adoption.capture.ffprobe_path', PHP_BINARY);
         $remainingDurations = $durationMilliseconds;
@@ -646,11 +671,20 @@ class PostAdoptionMonitoringTest extends TestCase
         $this->app->instance(
             VideoDurationProbe::class,
             new VideoDurationProbe(
-                static function (array $command) use (&$remainingDurations): Process {
+                static function (array $command) use (&$remainingDurations, $withoutContainerDuration): Process {
+                    if ($withoutContainerDuration) {
+                        self::assertContains('-show_packets', $command);
+                        self::assertContains('stream=codec_type:format=duration:packet=pts_time,duration_time', $command);
+                    }
+
                     $durationMs = array_shift($remainingDurations);
                     $output = json_encode([
                         'streams' => [['codec_type' => 'video']],
-                        'format' => ['duration' => $durationMs / 1000],
+                        'format' => $withoutContainerDuration ? [] : ['duration' => $durationMs / 1000],
+                        'packets' => $withoutContainerDuration ? [
+                            ['pts_time' => '0', 'duration_time' => '0.033'],
+                            ['pts_time' => (string) (($durationMs - 33) / 1000), 'duration_time' => '0.033'],
+                        ] : [],
                     ], JSON_THROW_ON_ERROR);
                     $code = 'fwrite(STDOUT, '.var_export($output, true).');';
 
