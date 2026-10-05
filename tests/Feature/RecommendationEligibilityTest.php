@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\AssessmentRecord;
 use App\Services\KnnRecommendationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Tests\Concerns\BuildsMatchingFixtures;
 use Tests\TestCase;
 
@@ -26,7 +27,7 @@ class RecommendationEligibilityTest extends TestCase
         $this->assertSame([$eligible->id], $matches->pluck('pet.id')->all());
     }
 
-    public function test_all_candidates_are_scored_before_top_k_and_ties_use_pet_id(): void
+    public function test_all_candidates_are_ranked_before_an_optional_limit_and_ties_use_pet_id(): void
     {
         $profile = $this->matchingAdopter();
         $ids = [];
@@ -35,10 +36,41 @@ class RecommendationEligibilityTest extends TestCase
         }
         $best = $this->matchingPet();
         $matches = app(KnnRecommendationService::class)->recommendPets($profile);
-        $this->assertCount(5, $matches);
-        $this->assertSame([$best->id, ...array_slice($ids, 0, 4)], $matches->pluck('pet.id')->all());
+        $this->assertCount(6, $matches);
+        $this->assertSame([$best->id, ...$ids], $matches->pluck('pet.id')->all());
         $this->assertSame(100.0, $matches->first()['match']->compatibilityScore);
         $this->assertCount(1, app(KnnRecommendationService::class)->recommendPets($profile, 1));
+    }
+
+    public function test_results_show_every_eligible_pet_across_pages_and_keep_filters(): void
+    {
+        $user = $this->matchingUser();
+        $this->completeMatchingProfile($user);
+        $ids = [];
+        for ($i = 1; $i <= 7; $i++) {
+            $ids[] = $this->matchingPet(['name' => "Ranked Dog {$i}"])->id;
+        }
+        $this->matchingPet(['name' => 'Filtered Cat', 'species' => 'Cat']);
+        $this->matchingPet(['name' => 'Reserved Dog', 'availability_status' => 'Soft-Reserved']);
+
+        $this->actingAs($user)->get(route('recommendation.results', ['species' => 'Dog']))
+            ->assertOk()
+            ->assertSee('page=2', false)
+            ->assertDontSee('Filtered Cat')
+            ->assertDontSee('Reserved Dog')
+            ->assertViewHas('matches', fn ($page): bool => $page instanceof LengthAwarePaginator
+                && $page->total() === 7
+                && $page->getCollection()->pluck('pet.id')->all() === array_slice($ids, 0, 5)
+                && str_contains($page->url(2), 'species=Dog'));
+
+        $this->get(route('recommendation.results', ['species' => 'Dog', 'page' => 2]))
+            ->assertOk()
+            ->assertViewHas('matches', fn ($page): bool => $page->total() === 7
+                && $page->getCollection()->pluck('pet.id')->all() === array_slice($ids, 5));
+
+        $this->postJson(route('recommendation.recompute'), ['species' => 'Dog'])
+            ->assertOk()
+            ->assertJsonCount(7, 'matches');
     }
 
     public function test_repeated_assessments_by_the_same_observer_do_not_satisfy_the_requirement(): void

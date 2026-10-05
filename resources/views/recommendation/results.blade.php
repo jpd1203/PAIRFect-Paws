@@ -71,6 +71,7 @@
             </div>
         @endforelse
     </div>
+    <div class="mt-5">{{ $matches->links() }}</div>
 </div>
 
 @auth

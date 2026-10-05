@@ -74,7 +74,7 @@ class MatchingDemoSeeder extends Seeder
                 ]);
                 if ($this->command?->getOutput()->isVerbose()) {
                     $this->command->info("Top five: {$key}");
-                    foreach (app(KnnRecommendationService::class)->recommendPets($profile) as $item) {
+                    foreach (app(KnnRecommendationService::class)->recommendPets($profile, 5) as $item) {
                         $this->command->line(sprintf('%s: %.2f%%; distance %.6f; penalty %.1f',
                             $item['pet']->name, $item['match']->compatibilityScore,
                             $item['match']->adjustedDistance, $item['match']->penalty));

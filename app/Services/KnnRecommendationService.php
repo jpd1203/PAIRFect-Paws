@@ -55,8 +55,7 @@ class KnnRecommendationService
 
     public function recommendPets(AdopterProfile $adopter, ?int $limit = null, array $preferences = []): Collection
     {
-        $limit ??= $this->config->values['top_k'];
-        if ($limit < 1) {
+        if ($limit !== null && $limit < 1) {
             throw new InvalidArgumentException('Recommendation limit must be at least 1.');
         }
         if (! $this->profiles->adopterIsComplete($adopter)) {
@@ -70,7 +69,7 @@ class KnnRecommendationService
             $query->where('physical_size', $preferences['size']);
         }
 
-        return $query->get()->map(function (Pet $pet) use ($adopter) {
+        $matches = $query->get()->map(function (Pet $pet) use ($adopter) {
             $match = $this->calculateMatch($adopter, $pet);
 
             return ['pet' => $pet, 'match' => $match, 'distance' => $match->adjustedDistance, 'result' => $this->presenter->stored($match)];
@@ -78,7 +77,9 @@ class KnnRecommendationService
             ->sort(fn ($a, $b) => ($b['match']->compatibilityScore <=> $a['match']->compatibilityScore)
                 ?: ($a['match']->adjustedDistance <=> $b['match']->adjustedDistance)
                 ?: ($a['pet']->id <=> $b['pet']->id))
-            ->take($limit)->values();
+            ->values();
+
+        return $limit === null ? $matches : $matches->take($limit);
     }
 
     public function matchLabel(float $score): string

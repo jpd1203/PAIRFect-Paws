@@ -30,7 +30,8 @@ class MatchingDemoSeederTest extends TestCase
         $this->assertDatabaseCount('assessment_records', 36);
         foreach (AdopterProfile::all() as $profile) {
             $results = app(KnnRecommendationService::class)->recommendPets($profile);
-            $this->assertCount(5, $results);
+            $this->assertGreaterThanOrEqual(5, $results->count());
+            $this->assertCount(5, app(KnnRecommendationService::class)->recommendPets($profile, 5));
             $scores = $results->map(fn ($row) => $row['match']->compatibilityScore)->all();
             $sorted = $scores;
             rsort($sorted);

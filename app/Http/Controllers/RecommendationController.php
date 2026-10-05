@@ -8,6 +8,7 @@ use App\Services\Matching\MatchingProfileMapper;
 use App\Support\ApplicationOptions;
 use App\Models\Pet;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
 
 class RecommendationController extends Controller
@@ -92,8 +93,15 @@ class RecommendationController extends Controller
             return redirect()->route('recommendation.intake')->withErrors(['profile' => 'Complete your personality and household profile to see recommendations.']);
         }
 
+        $matches = $this->knn->recommendPets($profile, preferences: $this->preferences($request));
+        $perPage = max(1, (int) config('matching.top_k', 5));
+        $page = max(1, $request->integer('page', 1));
+
         return view('recommendation.results', [
-            'matches' => $this->knn->recommendPets($profile, preferences: $this->preferences($request)),
+            'matches' => new LengthAwarePaginator(
+                $matches->forPage($page, $perPage)->values(), $matches->count(), $perPage, $page,
+                ['path' => $request->url(), 'query' => $request->query()],
+            ),
             'matcher' => $this->knn,
         ]);
     }
