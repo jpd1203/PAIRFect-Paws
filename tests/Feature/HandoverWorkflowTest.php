@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Mail\TransactionalMail;
 use App\Services\HandoverService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
@@ -39,6 +40,32 @@ class HandoverWorkflowTest extends TestCase
                 'type' => 'error',
                 'message' => 'You have no pending handovers. Handover Status becomes available after an adoption is approved.',
             ]);
+    }
+
+    public function test_admin_handover_list_shows_newest_approvals_first_even_when_older_records_were_edited(): void
+    {
+        $staff = $this->staff('handover-order-staff@example.test');
+        $older = $this->handoverFor($this->approvedApplication($this->adopter('handover-order-old@example.test')));
+        $newer = $this->handoverFor($this->approvedApplication($this->adopter('handover-order-new@example.test')));
+        $newest = $this->handoverFor($this->approvedApplication($this->adopter('handover-order-newest@example.test')));
+        $approvalDate = now()->startOfSecond();
+
+        DB::table('handovers')->where('id', $older->id)->update([
+            'approved_at' => $approvalDate->copy()->subDays(3),
+            'updated_at' => $approvalDate->copy()->addDay(),
+        ]);
+        DB::table('handovers')->whereIn('id', [$newer->id, $newest->id])->update([
+            'approved_at' => $approvalDate,
+            'updated_at' => $approvalDate->copy()->subDay(),
+        ]);
+
+        foreach ([[], ['tab' => 'needs_handover']] as $filters) {
+            $this->actingAs($staff)->get(route('admin.handover.index', $filters))
+                ->assertOk()
+                ->assertViewHas('records', fn ($records): bool => $records->pluck('id')->all() === [
+                    $newest->id, $newer->id, $older->id,
+                ]);
+        }
     }
 
     public function test_adopter_handover_status_backfills_their_approved_application_and_shows_the_status_view(): void

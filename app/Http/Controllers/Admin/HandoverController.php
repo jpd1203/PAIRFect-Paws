@@ -20,7 +20,9 @@ class HandoverController extends Controller
 
     public function index(Request $request)
     {
-        $query = Handover::with(['pet', 'application', 'user'])->latest('updated_at');
+        $query = Handover::with(['pet', 'application', 'user'])
+            ->orderByDesc('approved_at')
+            ->orderByDesc('id');
 
         if ($search = trim($request->input('search', ''))) {
             $query->where(function ($q) use ($search) {
