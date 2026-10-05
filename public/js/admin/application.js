@@ -187,6 +187,8 @@ function openReviewModal(id) {
             compatBanner.textContent = '';
             compatBanner.style.background = 'none';
         }
+    }
+
     // Interview section: only show container and content if interview date is present
     const interviewContainer = document.getElementById('rInterviewContainer');
     const interviewSection = document.getElementById('rInterviewSection');

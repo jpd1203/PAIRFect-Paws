@@ -8,12 +8,6 @@
         <p>Show due, overdue, reminder, and flagged scenarios for one completed adoption at a time.</p>
     </div>
 
-    <div class="mb-5 rounded-xl border border-amber-400 bg-amber-50 p-4 text-sm text-amber-950" role="note">
-        <strong>Presentation mode:</strong> Only the selected adoption uses the temporary date. Official adoption dates,
-        check-in dates, reminder counts, and welfare flags remain unchanged. Demo reminders are real emails sent to
-        the selected adopter's verified address and are labeled as a presentation demo. State expires after six hours.
-    </div>
-
     @if($errors->any())
         <div class="mb-5 rounded-xl border border-red-400 bg-red-50 p-4 text-sm text-red-900" role="alert">
             <strong>Demo action was not completed.</strong>
@@ -26,7 +20,7 @@
         @if($applications->isEmpty())
             <p>No approved adoptions have a confirmed received handover yet.</p>
         @else
-            <div class="form-group mt-3">
+            <div class="form-group mt-3 w-full max-w-sm">
                 <label for="demo_adopter_search">Search adopter, pet, or application number</label>
                 <input id="demo_adopter_search" class="form-control" type="search" autocomplete="off" placeholder="Start typing a name or pet">
             </div>
