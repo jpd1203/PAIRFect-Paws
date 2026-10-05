@@ -643,7 +643,7 @@
     @apply min-w-[120px] justify-center text-center px-4 h-[38px];
   }
   .reports-card {
-    @apply mt-6 max-w-[500px] mx-auto;
+    @apply mt-6 max-w-[1000px] mx-auto;
   }
   .reports-card h2 {
     @apply mt-0 mb-4 font-primary font-semibold text-base;

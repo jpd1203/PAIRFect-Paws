@@ -1043,7 +1043,7 @@
                     <p id="monitoringViewFlagReasons" class="mt-0.5 text-xs leading-relaxed text-amber-900"></p>
                 </div>
 
-                <div class="rounded-lg border border-gray-200 bg-white p-3 text-sm">
+                <div class="rounded-lg border border-purple-300 bg-purple-100 p-3 text-xs ">
                     <strong class="block">Resolution Status</strong>
                     <div>Outcome: <span id="monitoringViewResolutionOutcome"></span></div>
                     <div>Resolved By: <span id="monitoringViewResolvedBy"></span></div>
