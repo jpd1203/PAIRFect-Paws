@@ -55,8 +55,11 @@ final class VideoDurationProbe
                 'error',
                 '-protocol_whitelist',
                 'file',
+                '-select_streams',
+                'v:0',
+                '-show_packets',
                 '-show_entries',
-                'stream=codec_type:format=duration',
+                'stream=codec_type:format=duration:packet=pts_time,duration_time',
                 '-of',
                 'json',
                 $mediaPath,
@@ -116,8 +119,13 @@ final class VideoDurationProbe
             FILTER_VALIDATE_FLOAT,
         );
 
+        if ($durationSeconds === false || ! is_finite((float) $durationSeconds) || $durationSeconds <= 0) {
+            $durationSeconds = $this->packetDurationSeconds($probe['packets'] ?? null);
+        }
+
         if (
-            $durationSeconds === false
+            $durationSeconds === null
+            || $durationSeconds === false
             || ! is_finite((float) $durationSeconds)
             || $durationSeconds <= 0
         ) {
@@ -128,6 +136,36 @@ final class VideoDurationProbe
             'status' => 'verified',
             'duration_ms' => max(1, (int) round($durationSeconds * 1000)),
         ];
+    }
+
+    private function packetDurationSeconds(mixed $packets): ?float
+    {
+        if (! is_array($packets)) {
+            return null;
+        }
+
+        $first = INF;
+        $last = -INF;
+        $count = 0;
+
+        foreach ($packets as $packet) {
+            if (! is_array($packet) || ! is_numeric($packet['pts_time'] ?? null)) {
+                continue;
+            }
+
+            $pts = (float) $packet['pts_time'];
+            if (! is_finite($pts)) {
+                continue;
+            }
+
+            $packetDuration = is_numeric($packet['duration_time'] ?? null)
+                ? max(0, (float) $packet['duration_time']) : 0;
+            $first = min($first, $pts);
+            $last = max($last, $pts + $packetDuration);
+            $count++;
+        }
+
+        return $count >= 2 && is_finite($last) && $last > $first ? $last - $first : null;
     }
 
     private function containerMatchesMime(string $path, string $mimeType): bool
@@ -161,6 +199,7 @@ final class VideoDurationProbe
 
         if ($configured === '' || ! $this->isAbsolutePath($configured)) {
             Log::error('FFPROBE_PATH is missing or is not an absolute path; welfare video verification is unavailable.');
+
             return null;
         }
 
