@@ -4,6 +4,7 @@
 
 @section('notification-bell-in-header', true)
 @section('content')
+    @include('partials.post-adoption-demo-notice')
     <div class="nonsticky-header">
         <div class="main-content-header">
             <div class="heading-text">

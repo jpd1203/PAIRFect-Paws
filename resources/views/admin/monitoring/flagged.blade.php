@@ -34,7 +34,7 @@
     @forelse ($flagged as $log)
         @php
             $survey = is_array($log->survey_data) ? $log->survey_data : [];
-            $reasons = collect($log->flag_reasons ?? [])->map(function ($reason) {
+            $reasons = collect($log->display_flag_reasons)->map(function ($reason) {
                 if (is_string($reason)) {
                     return ['message' => $reason, 'flagged_at' => null];
                 }
@@ -115,7 +115,7 @@
                     <p class="mt-3 text-sm text-[#666]">
                         Adopter: <strong>{{ $log->user?->full_name ?: 'Unknown adopter' }}</strong>
                         &middot; Due {{ $log->due_date->format('M j, Y') }}
-                        &middot; {{ $log->reminders_sent }} reminder{{ $log->reminders_sent === 1 ? '' : 's' }} sent
+                        &middot; {{ $log->display_reminders_sent }} {{ $log->has_presentation_demo ? 'demo ' : '' }}reminder{{ $log->display_reminders_sent === 1 ? '' : 's' }} sent
                     </p>
                 </div>
 
@@ -133,12 +133,18 @@
                     @endif
 
                     @if (!$log->submitted_date)
-                        <form method="POST" action="{{ route('admin.monitoring.reminder', $log) }}">
-                            @csrf
-                            <button type="submit" class="btn btn-secondary btn-sm">
-                                <i class="fa-solid fa-envelope"></i> Send Reminder
-                            </button>
-                        </form>
+                        @if($log->has_presentation_demo)
+                            @if(auth()->user()->isAdmin())
+                                <a class="btn btn-secondary btn-sm" href="{{ route('admin.post-adoption-demo.index', ['application_id' => $log->application_id]) }}">Open demo controls</a>
+                            @endif
+                        @else
+                            <form method="POST" action="{{ route('admin.monitoring.reminder', $log) }}">
+                                @csrf
+                                <button type="submit" class="btn btn-secondary btn-sm">
+                                    <i class="fa-solid fa-envelope"></i> Send Reminder
+                                </button>
+                            </form>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -187,7 +193,7 @@
             </div>
 
             @if(auth()->user()->isAdmin())
-            <form method="POST" action="{{ route('admin.monitoring.resolve', $log) }}" class="mt-4 rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4">
+            <form method="POST" action="{{ $log->has_presentation_demo && !($log->is_flagged && !$log->resolved_at) ? route('admin.post-adoption-demo.resolve', $log) : route('admin.monitoring.resolve', $log) }}" class="mt-4 rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4">
                 @csrf
                 <label for="resolution-note-{{ $log->id }}" class="form-label">Resolution Note</label>
                 <textarea
@@ -201,7 +207,7 @@
                 >{{ old('resolution_note') }}</textarea>
                 <div class="mt-3 flex justify-end">
                     <button type="submit" class="btn btn-primary btn-sm">
-                        <i class="fa-solid fa-circle-check"></i> Mark Resolved
+                        <i class="fa-solid fa-circle-check"></i> {{ $log->has_presentation_demo && !($log->is_flagged && !$log->resolved_at) ? 'Resolve Demo Flag' : 'Mark Resolved' }}
                     </button>
                 </div>
             </form>

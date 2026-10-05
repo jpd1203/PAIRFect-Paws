@@ -12,6 +12,7 @@
 @endphp
 
 @section('content')
+@include('partials.post-adoption-demo-notice')
 <div class="post-adoption-report-page custom-scrollbar">
     <div class="heading-text">
         <h2>Submit Welfare Report</h2>

@@ -37,6 +37,12 @@ return [
         ) ?? false,
     ],
 
+    'web_demo' => [
+        // Admin-only, per-adoption presentation state. Never changes official dates or reminder records.
+        'enabled' => filter_var(env('POST_ADOPTION_WEB_DEMO_ENABLED', false), FILTER_VALIDATE_BOOL),
+        'ttl_minutes' => 360,
+    ],
+
     'capture' => [
         // Capture challenges are deliberately fixed to five minutes.
         'challenge_ttl_seconds' => 300,

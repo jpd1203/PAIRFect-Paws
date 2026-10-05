@@ -41,11 +41,10 @@ class MonitoringController extends Controller
         $flagged = PostAdoptionLog::query()
             ->afterCompletedHandover()
             ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
-            ->where('is_flagged', true)
-            ->whereNull('resolved_at')
             ->orderByDesc('scheduled_date')
             ->orderByDesc('id')
-            ->get();
+            ->get()
+            ->filter(fn (PostAdoptionLog $log): bool => $log->display_is_flagged);
 
         return view('admin.monitoring.flagged', compact('flagged'));
     }
@@ -346,4 +345,3 @@ class MonitoringController extends Controller
             && preg_match('~^[A-Za-z]:[\\\\/]~', $path) !== 1;
     }
 }
-

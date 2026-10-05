@@ -17,16 +17,22 @@ class CheckInReminderMail extends Mailable
     public function __construct(
         public PostAdoptionLog $log,
         public ?string $customMessage = null,
+        public bool $isPresentationDemo = false,
+        ?string $demoReference = null,
     ) {
         $this->initializeDeliveryIdempotency(
-            "pairfectpaws-checkin-{$log->id}-".($log->reminders_sent + 1)
+            $isPresentationDemo
+                ? "pairfectpaws-demo-checkin-{$log->id}-{$demoReference}"
+                : "pairfectpaws-checkin-{$log->id}-".($log->reminders_sent + 1)
         );
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Reminder: Post-Adoption Check-in Due',
+            subject: $this->isPresentationDemo
+                ? '[Presentation Demo] Reminder: Post-Adoption Check-in Due'
+                : 'Reminder: Post-Adoption Check-in Due',
             using: $this->resendEnvelopeCallbacks(),
         );
     }

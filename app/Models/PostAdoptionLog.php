@@ -5,7 +5,7 @@ namespace App\Models;
 use App\Enums\ApplicationStatus;
 use App\Enums\Milestone;
 use App\Enums\PetCurrentStatus;
-use App\Services\PostAdoptionClock;
+use App\Services\PostAdoptionWebDemoService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -84,14 +84,15 @@ class PostAdoptionLog extends Model
 
     public function getStatusSlugAttribute(): string
     {
-        if ($this->is_flagged && ! $this->resolved_at) {
+        $demo = app(PostAdoptionWebDemoService::class);
+        if (($this->is_flagged && ! $this->resolved_at) || $demo->isDemoFlagged($this)) {
             return 'flagged';
         }
         if ($this->submitted_date) {
             return 'completed';
         }
 
-        $today = app(PostAdoptionClock::class)->today();
+        $today = $demo->dateFor($this);
         $dueDate = Carbon::parse($this->scheduled_date->toDateString(), 'Asia/Manila');
 
         if ($dueDate->lt($today)) {
@@ -112,6 +113,37 @@ class PostAdoptionLog extends Model
     public function getStatusBadgeClassAttribute(): string
     {
         return 'badge-'.$this->status_slug;
+    }
+
+    public function getHasPresentationDemoAttribute(): bool
+    {
+        return app(PostAdoptionWebDemoService::class)->stateFor((int) $this->application_id) !== null;
+    }
+
+    public function getDisplayRemindersSentAttribute(): int
+    {
+        $demo = app(PostAdoptionWebDemoService::class);
+
+        return $this->has_presentation_demo
+            ? $demo->reminderCount($this)
+            : (int) $this->reminders_sent;
+    }
+
+    public function getDisplayIsFlaggedAttribute(): bool
+    {
+        return ($this->is_flagged && ! $this->resolved_at)
+            || app(PostAdoptionWebDemoService::class)->isDemoFlagged($this);
+    }
+
+    /** @return array<mixed> */
+    public function getDisplayFlagReasonsAttribute(): array
+    {
+        $reasons = $this->flag_reasons ?? [];
+        if (app(PostAdoptionWebDemoService::class)->isDemoFlagged($this)) {
+            $reasons[] = ['code' => 'presentation_demo', 'message' => 'Presentation demo: two demonstration reminders were sent without a report.'];
+        }
+
+        return $reasons;
     }
 
     public function getMilestoneDisplayAttribute(): string

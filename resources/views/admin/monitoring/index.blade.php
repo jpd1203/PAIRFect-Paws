@@ -13,7 +13,7 @@
             $verification = is_array(data_get($survey, '_verification'))
                 ? data_get($survey, '_verification')
                 : [];
-            $flagReasonText = collect($checkIn->flag_reasons ?? [])
+            $flagReasonText = collect($checkIn->display_flag_reasons)
                 ->map(function ($reason) {
                     if (is_string($reason)) {
                         return $reason;
@@ -542,7 +542,11 @@
                                                     </span>
                                                 </td>
                                                 <td class="py-2.5 pr-4 text-muted">
-                                                    {{ $log->reminders_sent }} sent
+                                                    @if($log->has_presentation_demo)
+                                                        {{ $log->display_reminders_sent }} demo / {{ $log->reminders_sent }} official
+                                                    @else
+                                                        {{ $log->reminders_sent }} sent
+                                                    @endif
                                                 </td>
                                                 <td class="py-2.5 text-right">
                                                     <div class="flex items-center justify-end gap-1.5">
@@ -555,7 +559,7 @@
                                                             <i class="fa-solid fa-eye"></i> View
                                                         </button>
 
-                                                        @if (!$log->submitted_date && $log->status_slug !== 'upcoming')
+                                                        @if (!$log->submitted_date && $log->status_slug !== 'upcoming' && !$log->has_presentation_demo)
                                                             <button
                                                                 type="button"
                                                                 class="btn btn-yellow btn-sm !text-xs !py-1 !px-2.5"
@@ -567,7 +571,11 @@
                                                             </button>
                                                         @endif
 
-                                                        @if (!$log->is_flagged || $log->resolved_at)
+                                                        @if($log->has_presentation_demo)
+                                                            @if(auth()->user()->isAdmin())
+                                                                <a class="btn btn-secondary btn-sm !text-xs" href="{{ route('admin.post-adoption-demo.index', ['application_id' => $log->application_id]) }}">Demo controls</a>
+                                                            @endif
+                                                        @elseif (!$log->display_is_flagged)
                                                             <button
                                                                 type="button"
                                                                 class="btn btn-danger btn-sm !text-xs !py-1 !px-2.5"
@@ -824,7 +832,11 @@
                                                     </td>
 
                                                     <td class="py-2.5 pr-4 text-muted">
-                                                        {{ $log->reminders_sent }} sent
+                                                        @if($log->has_presentation_demo)
+                                                            {{ $log->display_reminders_sent }} demo / {{ $log->reminders_sent }} official
+                                                        @else
+                                                            {{ $log->reminders_sent }} sent
+                                                        @endif
                                                     </td>
 
                                                     <td class="py-2.5 text-right">
@@ -839,7 +851,7 @@
                                                             </button>
 
                                                             {{-- Remind --}}
-                                                            @if (!$log->submitted_date && $log->status_slug !== 'upcoming')
+                                                            @if (!$log->submitted_date && $log->status_slug !== 'upcoming' && !$log->has_presentation_demo)
                                                                 <button type="button" class="btn btn-yellow btn-sm !text-xs !py-1 !px-2.5" data-action="{{ route('admin.monitoring.reminder', $log) }}"
                                                                     data-summary="{{ $logSummary }}"
                                                                     onclick="openMonitoringReminderModal(this)"
@@ -849,7 +861,11 @@
                                                             @endif
 
                                                             {{-- Flag --}}
-                                                            @if (!$log->is_flagged || $log->resolved_at)
+                                                            @if($log->has_presentation_demo)
+                                                                @if(auth()->user()->isAdmin())
+                                                                    <a class="btn btn-secondary btn-sm !text-xs" href="{{ route('admin.post-adoption-demo.index', ['application_id' => $log->application_id]) }}">Demo controls</a>
+                                                                @endif
+                                                            @elseif (!$log->display_is_flagged)
                                                                 <button type="button" class="btn btn-danger btn-sm !text-xs !py-1 !px-2.5"
                                                                     data-action="{{ route('admin.monitoring.flag', $log) }}"
                                                                     data-summary="{{ $logSummary }}"

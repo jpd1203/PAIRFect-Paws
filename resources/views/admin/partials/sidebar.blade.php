@@ -140,6 +140,12 @@
                 </a>
             @endif
 
+            @if($staff?->isAdmin() && app(\App\Services\PostAdoptionWebDemoService::class)->enabled())
+                <a href="{{ route('admin.post-adoption-demo.index') }}" class="menu-item {{ $isActive('admin.post-adoption-demo.*') ? 'active' : '' }}">
+                    <i class="fa-solid fa-flask fa-lg"></i> Post-Adoption Demo
+                </a>
+            @endif
+
         </div>
 
     </div>

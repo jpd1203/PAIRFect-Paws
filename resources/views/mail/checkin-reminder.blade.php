@@ -1,4 +1,7 @@
 <x-mail.layout heading="Check-in Reminder" action-text="Submit Report" :action-url="url('/monitoring/my-checkins')">
+    @if($isPresentationDemo)
+        <p style="margin:0 0 14px;padding:12px;background:#fff3cd;border:1px solid #e8c86b;"><strong>Presentation demo:</strong> This message demonstrates the post-adoption reminder workflow. It does not change your official reminder history.</p>
+    @endif
     <p style="margin:0 0 14px;">Hello {{ $log->adoptionApplication->user->first_name }},</p>
     <p style="margin:0 0 14px;">This is a reminder that your <strong>{{ $log->milestone->shortLabel() }} post-adoption welfare report</strong> for <strong>{{ $log->adoptionApplication->pet->name }}</strong> is due on <strong>{{ $log->scheduled_date->format('F j, Y') }}</strong>.</p>
     @if(filled($customMessage))

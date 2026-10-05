@@ -10,7 +10,7 @@ use App\Services\EmailNotificationService;
 use App\Services\InAppNotificationService;
 use App\Services\FlagEvaluationService;
 use App\Services\PostAdoptionCaptureChallengeService;
-use App\Services\PostAdoptionClock;
+use App\Services\PostAdoptionWebDemoService;
 use App\Services\PostAdoptionScheduleService;
 use App\Services\VideoDurationProbe;
 use Carbon\CarbonImmutable;
@@ -60,7 +60,7 @@ class MonitoringController extends Controller
 
     public function __construct(
         private readonly FlagEvaluationService $flagService,
-        private readonly PostAdoptionClock $clock,
+        private readonly PostAdoptionWebDemoService $webDemo,
         private readonly PostAdoptionCaptureChallengeService $captureChallenges,
         private readonly EmailNotificationService $emailNotifications,
         private readonly VideoDurationProbe $videoDurationProbe,
@@ -94,13 +94,12 @@ class MonitoringController extends Controller
      */
     public function reportDue(Request $request): View
     {
-        $today = $this->clock->today()->toDateString();
         $logs = $this->ownedApprovedLogs($request)
             ->whereNull('submitted_date')
-            ->whereDate('scheduled_date', '<=', $today)
             ->orderBy('scheduled_date')
             ->orderBy('id')
             ->get()
+            ->filter(fn (PostAdoptionLog $log): bool => $this->webDemo->isDue($log))
             ->each(fn (PostAdoptionLog $log) => $this->setDisplayStatus($log));
 
         return view('monitoring.report-due', compact('logs'));
@@ -109,13 +108,12 @@ class MonitoringController extends Controller
     /** Show incomplete check-ins whose scheduled date has already passed. */
     public function overdueNotice(Request $request): View
     {
-        $today = $this->clock->today()->toDateString();
         $overdueLogs = $this->ownedApprovedLogs($request)
             ->whereNull('submitted_date')
-            ->whereDate('scheduled_date', '<', $today)
             ->orderByDesc('scheduled_date')
             ->orderByDesc('id')
             ->get()
+            ->filter(fn (PostAdoptionLog $log): bool => $this->webDemo->isOverdue($log))
             ->each(fn (PostAdoptionLog $log) => $this->setDisplayStatus($log));
 
         return view('monitoring.overdue-notice', compact('overdueLogs'));
@@ -128,11 +126,10 @@ class MonitoringController extends Controller
     public function flaggedNotice(Request $request): View
     {
         $flaggedLogs = $this->ownedApprovedLogs($request)
-            ->where('is_flagged', true)
-            ->whereNull('resolved_at')
             ->orderByDesc('updated_at')
             ->orderByDesc('id')
             ->get()
+            ->filter(fn (PostAdoptionLog $log): bool => $log->display_is_flagged)
             ->each(fn (PostAdoptionLog $log) => $this->setDisplayStatus($log));
 
         return view('monitoring.flagged-notice', compact('flaggedLogs'));
@@ -593,7 +590,7 @@ class MonitoringController extends Controller
             return 'Submitted';
         }
 
-        $today = $this->clock->today();
+        $today = $this->webDemo->dateFor($log);
         $scheduledDate = CarbonImmutable::parse(
             $log->scheduled_date->toDateString(),
             PostAdoptionScheduleService::TIMEZONE,
@@ -608,7 +605,7 @@ class MonitoringController extends Controller
 
     private function ensureLogIsDue(PostAdoptionLog $log): void
     {
-        $today = $this->clock->today();
+        $today = $this->webDemo->dateFor($log);
         $scheduledDate = CarbonImmutable::parse(
             $log->scheduled_date->toDateString(),
             PostAdoptionScheduleService::TIMEZONE,

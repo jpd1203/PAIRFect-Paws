@@ -4,6 +4,7 @@
 
 @section('notification-bell-in-header', true)
 @section('content')
+    @include('partials.post-adoption-demo-notice')
 
     <div class="nonsticky-header">
         <div class="main-content-header">
@@ -71,9 +72,10 @@
                                     <span class="badge {{ $badge }}">{{ $log->display_status }}</span>
 
                                     {{-- Flagged status --}}
-                                    @if($log->is_flagged && !$log->resolved_at)
+                                    @if($log->display_is_flagged)
                                         <span class="badge badge-flagged"><i class="fa-solid fa-warning mr-1"></i> Flagged</span>
                                     @endif
+                                    @if($log->has_presentation_demo)<span class="badge badge-pending">Demo</span>@endif
 
                                     {{-- Submit report --}}
                                     @if(in_array($log->display_status, ['Pending', 'Overdue'], true))

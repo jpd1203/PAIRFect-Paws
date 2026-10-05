@@ -33,7 +33,6 @@
                 ->where('status', \App\Enums\ApplicationStatus::Approved->value)
                 ->exists();
 
-        $today = app(\App\Services\PostAdoptionClock::class)->today()->toDateString();
         $approvedLogsBase = \App\Models\PostAdoptionLog::query()
             ->afterCompletedHandover()
             ->whereHas('adoptionApplication', function ($q) use ($user) {
@@ -41,20 +40,16 @@
                   ->where('status', \App\Enums\ApplicationStatus::Approved->value);
             });
 
-        $adopterDueReportsCount = (clone $approvedLogsBase)
-            ->whereNull('submitted_date')
-            ->whereDate('scheduled_date', '<=', $today)
-            ->count();
-
-        $adopterOverdueCount = (clone $approvedLogsBase)
-            ->whereNull('submitted_date')
-            ->whereDate('scheduled_date', '<', $today)
-            ->count();
-
-        $adopterFlaggedCount = (clone $approvedLogsBase)
-            ->where('is_flagged', true)
-            ->whereNull('resolved_at')
-            ->count();
+        $approvedLogs = $approvedLogsBase
+            ->select(['id', 'application_id', 'scheduled_date', 'submitted_date', 'is_flagged', 'resolved_at'])
+            ->get();
+        $webDemo = app(\App\Services\PostAdoptionWebDemoService::class);
+        $adopterDueReportsCount = $approvedLogs
+            ->filter(fn ($log) => !$log->submitted_date && $webDemo->isDue($log))->count();
+        $adopterOverdueCount = $approvedLogs
+            ->filter(fn ($log) => !$log->submitted_date && $webDemo->isOverdue($log))->count();
+        $adopterFlaggedCount = $approvedLogs
+            ->filter(fn ($log) => $log->display_is_flagged)->count();
     }
 
     $hasReceivedPet = $user && $user->adoptionApplications()

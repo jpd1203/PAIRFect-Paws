@@ -4,6 +4,7 @@
 
 @section('notification-bell-in-header', true)
 @section('content')
+    @include('partials.post-adoption-demo-notice')
     <div class="nonsticky-header">
         <div class="main-content-header">
             <div class="heading-text">
@@ -56,7 +57,7 @@
                                         @endphp
                                         <div class="mt-3 flex flex-wrap gap-2">
                                             <span class="badge {{ $statusBadge }}">{{ $log->display_status }}</span>
-                                            @if ($log->is_flagged && ! $log->resolved_at)
+                                            @if ($log->display_is_flagged)
                                                 <span class="badge badge-flagged">Under staff review</span>
                                             @endif
                                         </div>

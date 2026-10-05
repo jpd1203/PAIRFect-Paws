@@ -266,6 +266,11 @@ Route::middleware('auth')->group(function () {
 
         // ─── Admin-only routes ────────────────────────────────────────────────
         Route::middleware('admin')->group(function () {
+            Route::get('/post-adoption-demo', [Admin\PostAdoptionWebDemoController::class, 'index'])->name('post-adoption-demo.index');
+            Route::post('/post-adoption-demo', [Admin\PostAdoptionWebDemoController::class, 'activate'])->middleware('throttle:12,1')->name('post-adoption-demo.activate');
+            Route::post('/post-adoption-demo/logs/{log}/reminder', [Admin\PostAdoptionWebDemoController::class, 'reminder'])->middleware('throttle:10,1')->name('post-adoption-demo.reminder');
+            Route::post('/post-adoption-demo/logs/{log}/resolve', [Admin\PostAdoptionWebDemoController::class, 'resolve'])->name('post-adoption-demo.resolve');
+            Route::delete('/post-adoption-demo/{application}', [Admin\PostAdoptionWebDemoController::class, 'reset'])->name('post-adoption-demo.reset');
             Route::post('/applications/{application}/decision', [Admin\ApplicationController::class, 'decision'])->name('applications.decide');
             Route::post('/applications/{application}/override', [Admin\ApplicationController::class, 'overridePrimary'])->name('applications.override');
             Route::post('/monitoring/flagged/{log}/resolve', [Admin\MonitoringController::class, 'resolve'])->name('monitoring.resolve');

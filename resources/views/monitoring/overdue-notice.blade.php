@@ -4,6 +4,7 @@
 
 @section('notification-bell-in-header', true)
 @section('content')
+    @include('partials.post-adoption-demo-notice')
     <div class="nonsticky-header">
         <div class="main-content-header">
             <div class="heading-text">
@@ -48,9 +49,9 @@
                                             {{ $log->scheduled_date->format('F j, Y') }}
                                         </p>
                                         <p class="mt-2 text-xs text-[#77716e]">
-                                            @if ($log->reminders_sent > 0)
-                                                {{ $log->reminders_sent }} {{ Str::plural('reminder', $log->reminders_sent) }} sent
-                                                @if ($log->last_reminder_sent_at)
+                                            @if ($log->display_reminders_sent > 0)
+                                                {{ $log->display_reminders_sent }} {{ $log->has_presentation_demo ? 'demo ' : '' }}{{ Str::plural('reminder', $log->display_reminders_sent) }} sent
+                                                @if (!$log->has_presentation_demo && $log->last_reminder_sent_at)
                                                     &middot; Latest {{ \App\Support\ManilaTime::format($log->last_reminder_sent_at, 'F j, Y') }}
                                                 @endif
                                             @else
@@ -59,7 +60,7 @@
                                         </p>
                                         <div class="mt-3 flex flex-wrap gap-2">
                                             <span class="badge badge-overdue">Overdue</span>
-                                            @if ($log->is_flagged && ! $log->resolved_at)
+                                            @if ($log->display_is_flagged)
                                                 <span class="badge badge-flagged">Under staff review</span>
                                             @endif
                                         </div>
