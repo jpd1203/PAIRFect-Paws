@@ -6,7 +6,7 @@
     <div class="main-content-header">
         <div class="heading-text">
             <h2>Pet Recommendation</h2>
-            <p>Available pets recommended from your completed personality and household profile.</p>
+            <p>Explore all pets, with eligible matches first and reasons shown for ineligible pets.</p>
         </div>
         @include('partials.notification-bell')
     </div>
@@ -61,33 +61,23 @@
     @if ($errors->any())
         <p class="text-red-700">{{ $errors->first() }}</p>
     @endif
-    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <p class="m-0 text-sm text-text-muted">
-            Showing {{ $matches->firstItem() ?? 0 }} to {{ $matches->lastItem() ?? 0 }} of {{ $matches->total() }} eligible pet matches
-        </p>
-        @if ($matches->hasPages())
-            {{ $matches->links() }}
-        @endif
-    </div>
     <div id="matchResults" class="flex flex-col gap-4">
         @forelse ($matches as $match)
             @include('recommendation._match-card', ['pet' => $match['pet'], 'result' => $match['result'], 'matcher' => $matcher])
         @empty
             <div class="empty-state">
-                <p>No fully assessed, available pets currently match your profile.</p>
-                <p>Recommendations require three distinct observers, complete care information, and a household safety match.</p>
+                <p>No pets found for this page or the selected filters.</p>
+                <a class="btn btn-secondary" href="{{ route('recommendation.results') }}">Show all pets</a>
             </div>
         @endforelse
     </div>
-    <div class="mt-5">{{ $matches->links() }}</div>
+    @include('recommendation._pagination')
 </div>
 
-@auth
     <!-- Modal Overlay -->
     <div class="modal-overlay" id="petModal">
         <div class="pet-modal" id="petModalContent">
             <!-- Filled in dynamically via fetch() -->
         </div>
     </div>
-@endauth
 @endsection

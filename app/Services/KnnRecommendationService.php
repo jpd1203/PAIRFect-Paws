@@ -53,7 +53,7 @@ class KnnRecommendationService
         return $result;
     }
 
-    public function recommendPets(AdopterProfile $adopter, ?int $limit = null, array $preferences = []): Collection
+    public function recommendPets(AdopterProfile $adopter, ?int $limit = null, array $preferences = [], bool $includeIneligible = false): Collection
     {
         if ($limit !== null && $limit < 1) {
             throw new InvalidArgumentException('Recommendation limit must be at least 1.');
@@ -61,7 +61,7 @@ class KnnRecommendationService
         if (! $this->profiles->adopterIsComplete($adopter)) {
             throw ValidationException::withMessages(['profile' => MatchPresenter::reason('ADOPTER_PROFILE_INCOMPLETE')]);
         }
-        $query = Pet::recommendationEligible()->with('assessmentRecords');
+        $query = ($includeIneligible ? Pet::query() : Pet::recommendationEligible())->with('assessmentRecords');
         if (! empty($preferences['species'])) {
             $query->where('species', $preferences['species']);
         }
@@ -73,8 +73,9 @@ class KnnRecommendationService
             $match = $this->calculateMatch($adopter, $pet);
 
             return ['pet' => $pet, 'match' => $match, 'distance' => $match->adjustedDistance, 'result' => $this->presenter->stored($match)];
-        })->filter(fn ($item) => $item['match']->eligible)
-            ->sort(fn ($a, $b) => ($b['match']->compatibilityScore <=> $a['match']->compatibilityScore)
+        })->filter(fn ($item) => $includeIneligible || $item['match']->eligible)
+            ->sort(fn ($a, $b) => ($b['match']->eligible <=> $a['match']->eligible)
+                ?: ($b['match']->compatibilityScore <=> $a['match']->compatibilityScore)
                 ?: ($a['match']->adjustedDistance <=> $b['match']->adjustedDistance)
                 ?: ($a['pet']->id <=> $b['pet']->id))
             ->values();

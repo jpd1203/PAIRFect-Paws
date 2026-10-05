@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Enums\AvailabilityStatus;
 use App\Models\AdoptionApplication;
+use App\Models\AdopterProfile;
 use App\Models\Branch;
 use App\Models\Pet;
 use App\Services\AuditLogService;
+use App\Services\KnnRecommendationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -60,11 +62,16 @@ class PetController extends Controller
     /**
      * GET /pets/{pet}/modal — fetch pet modal content (AJAX)
      */
-    public function modal(Pet $pet)
+    public function modal(Request $request, Pet $pet, KnnRecommendationService $matcher)
     {
         $pet->load('branch');
+        $profile = $request->user()?->isAdopter() ? $request->user()->adopterProfile : null;
+        if (! $request->user() && $request->session()->has('guest_adopter_profile')) {
+            $profile = (new AdopterProfile)->forceFill($request->session()->get('guest_adopter_profile'));
+        }
+        $match = $profile ? $matcher->calculateMatch($profile, $pet) : null;
 
-        return view('animal._pet-modal-content', compact('pet'));
+        return view('animal._pet-modal-content', compact('pet', 'match'));
     }
 
     // ─── Staff Management ─────────────────────────────────────────────────────
