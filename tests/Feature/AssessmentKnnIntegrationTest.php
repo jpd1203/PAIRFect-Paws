@@ -118,45 +118,55 @@ class AssessmentKnnIntegrationTest extends TestCase
         $this->assertDatabaseCount('assessment_records', 1);
     }
 
-    public function test_each_admin_or_volunteer_account_can_assess_a_pet_only_once(): void
+    public function test_staff_can_assess_multiple_times_until_three_assessments_are_completed(): void
     {
         $pet = $this->matchingPet([], 0);
         $admin = $this->matchingUser(Role::Administrator);
-        $volunteer = $this->matchingUser(Role::Volunteer);
         $payload = $this->assessmentPayload();
 
         $this->actingAs($admin)->get(route('admin.assessments.create', $pet))->assertOk();
         $this->post(route('admin.assessments.store', $pet), $payload)
             ->assertRedirect(route('admin.assessments.record'));
+        $this->assertSame(1, $pet->assessmentRecords()->count());
+        $this->assertSame(1, $pet->fresh()->assessment_count);
+        $this->assertSame('pending', $pet->fresh()->assessment_status);
+
         $this->get(route('admin.assessments.record'))
             ->assertOk()
-            ->assertSee('Your assessment complete')
-            ->assertDontSee(route('admin.assessments.create', $pet));
-        $this->get(route('admin.animals.index'))
-            ->assertOk()
-            ->assertSee('"assessed_by_current_user":true', false);
-        $this->get(route('admin.assessments.create', $pet))
-            ->assertRedirect(route('admin.assessments.record'))
-            ->assertSessionHasErrors('assessment');
-        $this->post(route('admin.assessments.store', $pet), $payload)
-            ->assertRedirect(route('admin.assessments.record'))
-            ->assertSessionHasErrors('assessment');
-        $this->postJson(route('admin.assessments.store', $pet), $payload)
-            ->assertStatus(409)
-            ->assertJsonPath('message', "You have already assessed {$pet->name}. Each staff account can assess a pet only once.");
-        $this->assertSame(1, $pet->assessmentRecords()->count());
+            ->assertSee(route('admin.assessments.create', $pet))
+            ->assertSee('#2');
 
-        $this->actingAs($volunteer)->get(route('admin.assessments.create', $pet))->assertOk();
-        $this->get(route('admin.animals.index'))
-            ->assertOk()
-            ->assertSee('"assessed_by_current_user":false', false);
+        $this->get(route('admin.assessments.create', $pet))->assertOk();
         $this->post(route('admin.assessments.store', $pet), $payload)
             ->assertRedirect(route('admin.assessments.record'));
+        $this->assertSame(2, $pet->assessmentRecords()->count());
+        $this->assertSame(2, $pet->fresh()->assessment_count);
+
+        $this->get(route('admin.assessments.record'))
+            ->assertOk()
+            ->assertSee(route('admin.assessments.create', $pet))
+            ->assertSee('#3');
+
+        $this->get(route('admin.assessments.create', $pet))->assertOk();
+        $this->post(route('admin.assessments.store', $pet), $payload)
+            ->assertRedirect(route('admin.assessments.record'));
+        $this->assertSame(3, $pet->assessmentRecords()->count());
+        $this->assertSame(3, $pet->fresh()->assessment_count);
+        $this->assertSame('complete', $pet->fresh()->assessment_status);
+
+        $this->get(route('admin.assessments.record'))
+            ->assertOk()
+            ->assertSee('Complete')
+            ->assertDontSee(route('admin.assessments.create', $pet));
+
         $this->post(route('admin.assessments.store', $pet), $payload)
             ->assertRedirect(route('admin.assessments.record'))
             ->assertSessionHasErrors('assessment');
-        $this->assertSame(2, $pet->assessmentRecords()->count());
-        $this->assertSame(2, $pet->fresh()->assessment_count);
+
+        $this->postJson(route('admin.assessments.store', $pet), $payload)
+            ->assertStatus(409)
+            ->assertJsonPath('message', "Assessment for {$pet->name} is already complete.");
+        $this->assertSame(3, $pet->assessmentRecords()->count());
     }
 
     public function test_cbarq_zero_to_four_is_normalized_without_reversing_fearfulness(): void

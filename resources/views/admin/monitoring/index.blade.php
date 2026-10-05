@@ -61,6 +61,11 @@
                 'return_condition' => $checkIn->return_condition ?: 'Not recorded',
                 'return_handled_by' => $checkIn->returnHandledBy?->full_name ?: 'Not recorded',
                 'is_returned' => $checkIn->resolution_outcome === \App\Enums\ResolutionOutcome::PetReturned,
+                'follow_up_notes' => $checkIn->follow_up_notes ?: 'No follow-up response submitted yet.',
+                'has_follow_up' => filled($checkIn->follow_up_notes),
+                'follow_up_submitted_at' => $checkIn->follow_up_submitted_at
+                    ? \App\Support\ManilaTime::format($checkIn->follow_up_submitted_at, 'M j, Y g:i A')
+                    : null,
                 'can_resolve' => $checkIn->is_flagged && !$checkIn->resolved_at,
                 'resolve_url' => route('admin.monitoring.resolve', $checkIn),
                 'verification_method' => data_get($verification, 'method') ?: 'Not available',
@@ -556,6 +561,11 @@
                                                     @if ($log->resolution_outcome)
                                                         <span class="mt-1 block text-xs font-semibold text-amber-900">{{ $log->resolution_outcome->label() }}</span>
                                                     @endif
+                                                    @if ($log->follow_up_notes)
+                                                        <span class="mt-0.5 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-purple-100 text-purple-900 border border-purple-200">
+                                                            <i class="fa-solid fa-comment-dots"></i> Follow-up Provided
+                                                        </span>
+                                                    @endif
                                                 </td>
                                                 <td class="py-2.5 pr-4 text-muted">
                                                     @if($log->has_presentation_demo)
@@ -848,6 +858,11 @@
                                                         @if ($log->resolution_outcome)
                                                             <span class="mt-1 block text-xs font-semibold text-amber-900">{{ $log->resolution_outcome->label() }}</span>
                                                         @endif
+                                                        @if ($log->follow_up_notes)
+                                                            <span class="mt-0.5 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-purple-100 text-purple-900 border border-purple-200">
+                                                                <i class="fa-solid fa-comment-dots"></i> Follow-up Provided
+                                                            </span>
+                                                        @endif
                                                     </td>
 
                                                     <td class="py-2.5 pr-4 text-muted">
@@ -1039,6 +1054,13 @@
                         <div>Return Reason: <span id="monitoringViewReturnReason"></span></div>
                         <div>Condition Upon Return: <span id="monitoringViewReturnCondition"></span></div>
                         <div>Handled By: <span id="monitoringViewReturnHandledBy"></span></div>
+                    </div>
+                    <div id="monitoringViewFollowUpContainer" class="mt-3 hidden rounded-lg border border-purple-200 bg-[#faf6fc] p-3 text-xs">
+                        <strong class="block text-purple-900 flex items-center gap-1.5 font-bold mb-1">
+                            <i class="fa-solid fa-comment-dots text-purple-700"></i> Adopter Follow-up Update
+                        </strong>
+                        <div id="monitoringViewFollowUpSubmittedAt" class="text-purple-700 mb-1 text-[11px]"></div>
+                        <p id="monitoringViewFollowUpNotes" class="whitespace-pre-wrap text-text-dark leading-relaxed"></p>
                     </div>
                 </div>
 
@@ -1407,6 +1429,12 @@
             setMonitoringText('monitoringViewReturnCondition', data.return_condition);
             setMonitoringText('monitoringViewReturnHandledBy', data.return_handled_by);
             document.getElementById('monitoringViewReturnDetails').classList.toggle('hidden', !data.is_returned);
+            const followUpContainer = document.getElementById('monitoringViewFollowUpContainer');
+            if (followUpContainer) {
+                followUpContainer.classList.toggle('hidden', !data.has_follow_up);
+                setMonitoringText('monitoringViewFollowUpNotes', data.follow_up_notes);
+                setMonitoringText('monitoringViewFollowUpSubmittedAt', data.follow_up_submitted_at ? `Submitted: ${data.follow_up_submitted_at}` : '');
+            }
             const resolutionForm = document.getElementById('monitoringViewResolveForm');
             if (resolutionForm) {
                 resolutionForm.classList.toggle('hidden', !data.can_resolve);

@@ -150,6 +150,45 @@ class MonitoringController extends Controller
         return view('monitoring._report-view-modal-content', ['report' => $log]);
     }
 
+    public function submitFollowUp(Request $request, PostAdoptionLog $log): RedirectResponse|JsonResponse
+    {
+        $this->authorizeOwnedApprovedLog($request, $log);
+
+        abort_if(
+            $log->submitted_date === null,
+            422,
+            'A follow-up can only be submitted for a previously submitted report.'
+        );
+
+        $validated = $request->validate([
+            'follow_up_notes' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $log->update([
+            'follow_up_notes' => trim($validated['follow_up_notes']),
+            'follow_up_submitted_at' => now(),
+        ]);
+
+        AuditLogService::log(
+            $request->user()->id,
+            'Follow-up Note Submitted',
+            'PostAdoptionLog',
+            $log->id,
+            "Adopter submitted follow-up update for {$log->pet?->name} ({$log->milestone_display})."
+        );
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Follow-up update submitted successfully.',
+                'follow_up_notes' => $log->follow_up_notes,
+                'follow_up_submitted_at' => \App\Support\ManilaTime::format($log->follow_up_submitted_at, 'M j, Y g:i A'),
+            ]);
+        }
+
+        return back()->with('success', 'Follow-up update submitted successfully.');
+    }
+
     public function createReport(Request $request, PostAdoptionLog $log): View
     {
         $this->authorizeOwnedApprovedLog($request, $log);

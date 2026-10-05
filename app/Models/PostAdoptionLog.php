@@ -23,6 +23,7 @@ class PostAdoptionLog extends Model
         'is_flagged', 'flag_reasons', 'reminders_sent', 'last_reminder_sent_at', 'resolved_at',
         'resolved_by_user_id', 'resolution_note', 'resolution_outcome',
         'return_date', 'return_reason', 'return_condition', 'return_handled_by_user_id', 'version',
+        'follow_up_notes', 'follow_up_submitted_at',
     ];
 
     protected function casts(): array
@@ -42,6 +43,7 @@ class PostAdoptionLog extends Model
             'resolved_at' => 'datetime',
             'resolution_outcome' => ResolutionOutcome::class,
             'return_date' => 'date',
+            'follow_up_submitted_at' => 'datetime',
         ];
     }
 

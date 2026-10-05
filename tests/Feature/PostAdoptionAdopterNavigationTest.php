@@ -279,6 +279,49 @@ class PostAdoptionAdopterNavigationTest extends TestCase
         ]);
     }
 
+    public function test_adopter_can_submit_follow_up_update_and_it_reflects_on_admin_views(): void
+    {
+        $adopter = $this->user(Role::Adopter, 'followup-adopter');
+        $admin = $this->user(Role::Administrator, 'followup-admin');
+        $log = $this->logFor($adopter, 'Followup Pet', '2026-08-20');
+        $log->update([
+            'submitted_date' => now()->subDays(5),
+            'is_flagged' => true,
+            'resolution_outcome' => \App\Enums\ResolutionOutcome::FollowUpRequired,
+            'resolution_note' => 'Please provide update on feeding.',
+        ]);
+
+        $this->actingAs($adopter)
+            ->post(route('monitoring.follow-up', $log), [
+                'follow_up_notes' => 'Pet is now eating normally twice a day.',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('Pet is now eating normally twice a day.', $log->fresh()->follow_up_notes);
+        $this->assertNotNull($log->fresh()->follow_up_submitted_at);
+
+        // Check user side views
+        $this->actingAs($adopter)
+            ->get(route('monitoring.my-checkins'))
+            ->assertOk()
+            ->assertSee('Follow-up Provided');
+
+        $this->get(route('monitoring.modal', $log))
+            ->assertOk()
+            ->assertSee('Pet is now eating normally twice a day.');
+
+        // Check admin side views
+        $this->actingAs($admin)
+            ->get(route('admin.monitoring.flagged'))
+            ->assertOk()
+            ->assertSee('Pet is now eating normally twice a day.')
+            ->assertSee('Adopter Follow-up Update');
+
+        $this->get(route('admin.monitoring.index'))
+            ->assertOk()
+            ->assertSee('Follow-up Provided');
+    }
+
     private function assertSidebarLinkActive(
         TestResponse $response,
         string $routeName,

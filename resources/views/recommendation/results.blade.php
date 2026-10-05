@@ -72,4 +72,13 @@
         @endforelse
     </div>
 </div>
+
+@auth
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="petModal">
+        <div class="pet-modal" id="petModalContent">
+            <!-- Filled in dynamically via fetch() -->
+        </div>
+    </div>
+@endauth
 @endsection

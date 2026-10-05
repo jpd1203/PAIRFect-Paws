@@ -60,4 +60,9 @@ final readonly class MatchingConfiguration
     {
         return $this->values['algorithm_version'];
     }
+
+    public function minObservers(): int
+    {
+        return (int) ($this->values['min_observers'] ?? 3);
+    }
 }

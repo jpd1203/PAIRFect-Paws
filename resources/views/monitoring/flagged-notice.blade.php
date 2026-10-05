@@ -56,7 +56,20 @@
                                             @endif
                                         </p>
                                         <div class="mt-3 flex flex-wrap gap-2">
-                                            <span class="badge badge-flagged">Under staff review</span>
+                                            @if ($log->resolution_outcome)
+                                                @if ($log->resolved_at)
+                                                    <span class="badge badge-completed"><i class="fa-solid fa-circle-check mr-1"></i> {{ $log->resolution_outcome === \App\Enums\ResolutionOutcome::Resolved ? 'Resolved' : $log->resolution_outcome->label() }}</span>
+                                                @elseif ($log->resolution_outcome === \App\Enums\ResolutionOutcome::FollowUpRequired)
+                                                    <span class="badge badge-flagged"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Follow-up Required</span>
+                                                    @if ($log->follow_up_notes)
+                                                        <span class="badge badge-completed"><i class="fa-solid fa-circle-check mr-1"></i> Follow-up Provided</span>
+                                                    @endif
+                                                @else
+                                                    <span class="badge badge-flagged"><i class="fa-solid fa-triangle-exclamation mr-1"></i> {{ $log->resolution_outcome->label() }}</span>
+                                                @endif
+                                            @else
+                                                <span class="badge badge-flagged">Under staff review</span>
+                                            @endif
                                             @if ($log->submitted_date)
                                                 <span class="badge badge-completed">Report submitted</span>
                                             @elseif ($log->display_status === 'Overdue')
@@ -67,6 +80,31 @@
                                                 <span class="badge badge-upcoming">Upcoming</span>
                                             @endif
                                         </div>
+
+                                        @if (!empty($log->resolution_note))
+                                            <div class="mt-3 rounded-lg border border-[#e5e1da] bg-[#faf9f7] p-3 text-xs text-[#555]">
+                                                <div class="font-semibold text-text-dark flex items-center gap-1.5 mb-1">
+                                                    <i class="fa-solid fa-circle-info text-maroon-600"></i>
+                                                    <span>Staff Guidance &middot; {{ $log->resolution_outcome?->label() ?? 'Review Note' }}</span>
+                                                </div>
+                                                <p class="whitespace-pre-wrap leading-relaxed">{{ $log->resolution_note }}</p>
+                                            </div>
+                                        @endif
+
+                                        @if (!empty($log->follow_up_notes))
+                                            <div class="mt-3 rounded-lg border border-purple-200 bg-[#faf6fc] p-3 text-xs text-text-dark">
+                                                <div class="font-semibold text-purple-900 flex items-center justify-between mb-1">
+                                                    <span class="flex items-center gap-1.5">
+                                                        <i class="fa-solid fa-comment-dots text-purple-700"></i>
+                                                        <span>Your Follow-up Response</span>
+                                                    </span>
+                                                    @if ($log->follow_up_submitted_at)
+                                                        <span class="text-[11px] font-normal text-purple-700">Submitted {{ \App\Support\ManilaTime::format($log->follow_up_submitted_at, 'M j, Y') }}</span>
+                                                    @endif
+                                                </div>
+                                                <p class="whitespace-pre-wrap leading-relaxed">{{ $log->follow_up_notes }}</p>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
 

@@ -72,8 +72,19 @@
 
                                     <span class="badge {{ $badge }}">{{ $log->display_status }}</span>
 
-                                    {{-- Flagged status --}}
-                                    @if($log->display_is_flagged)
+                                    {{-- Flagged / Resolution status --}}
+                                    @if($log->resolution_outcome)
+                                        @if($log->resolved_at)
+                                            <span class="badge badge-completed"><i class="fa-solid fa-circle-check mr-1"></i> {{ $log->resolution_outcome === \App\Enums\ResolutionOutcome::Resolved ? 'Flag Resolved' : $log->resolution_outcome->label() }}</span>
+                                        @elseif($log->resolution_outcome === \App\Enums\ResolutionOutcome::FollowUpRequired)
+                                            <span class="badge badge-flagged"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Follow-up Required</span>
+                                            @if($log->follow_up_notes)
+                                                <span class="badge badge-completed"><i class="fa-solid fa-check mr-1"></i> Follow-up Provided</span>
+                                            @endif
+                                        @else
+                                            <span class="badge badge-flagged"><i class="fa-solid fa-triangle-exclamation mr-1"></i> {{ $log->resolution_outcome->label() }}</span>
+                                        @endif
+                                    @elseif($log->display_is_flagged)
                                         <span class="badge badge-flagged"><i class="fa-solid fa-warning mr-1"></i> Flagged</span>
                                     @endif
                                     @if($log->has_presentation_demo)<span class="badge badge-pending">Demo</span>@endif
@@ -117,7 +128,25 @@
                                             <tr>
                                                 <td>{{ $report->milestone->shortLabel() }}</td>
                                                 <td>{{ \App\Support\ManilaTime::format($report->submitted_date,'F j, Y') }}</td>
-                                                <td><span class="badge badge-completed">Submitted</span></td>
+                                                <td>
+                                                    <div class="flex flex-wrap items-center justify-center gap-1.5">
+                                                        <span class="badge badge-completed">Submitted</span>
+                                                        @if($report->resolution_outcome)
+                                                            @if($report->resolved_at)
+                                                                <span class="badge badge-completed"><i class="fa-solid fa-circle-check mr-1"></i> {{ $report->resolution_outcome === \App\Enums\ResolutionOutcome::Resolved ? 'Resolved' : $report->resolution_outcome->label() }}</span>
+                                                            @elseif($report->resolution_outcome === \App\Enums\ResolutionOutcome::FollowUpRequired)
+                                                                <span class="badge badge-flagged"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Follow-up Required</span>
+                                                                @if($report->follow_up_notes)
+                                                                    <span class="badge badge-completed"><i class="fa-solid fa-check mr-1"></i> Follow-up Provided</span>
+                                                                @endif
+                                                            @else
+                                                                <span class="badge badge-flagged"><i class="fa-solid fa-triangle-exclamation mr-1"></i> {{ $report->resolution_outcome->label() }}</span>
+                                                            @endif
+                                                        @elseif($report->display_is_flagged)
+                                                            <span class="badge badge-flagged"><i class="fa-solid fa-warning mr-1"></i> Under Review</span>
+                                                        @endif
+                                                    </div>
+                                                </td>
                                                 <td><button type="button" class="btn btn-secondary" onclick="openReportViewModal({{ $report->id }})"><i class="fa-solid fa-eye"></i>View</button></td>
                                             </tr>
                                         @endforeach

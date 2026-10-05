@@ -41,14 +41,14 @@ class RecommendationEligibilityTest extends TestCase
         $this->assertCount(1, app(KnnRecommendationService::class)->recommendPets($profile, 1));
     }
 
-    public function test_repeated_assessments_by_the_same_observer_do_not_satisfy_the_requirement(): void
+    public function test_repeated_assessments_by_the_same_observer_satisfy_the_requirement(): void
     {
         $pet = $this->matchingPet([], 1);
         $record = $pet->assessmentRecords->first();
         foreach ([1, 2] as $unused) {
             AssessmentRecord::create($record->only(['pet_id', 'assessor_id', 'responses', 'scoring_version']));
         }
-        $this->assertCount(0, app(KnnRecommendationService::class)->recommendPets($this->matchingAdopter()));
+        $this->assertCount(1, app(KnnRecommendationService::class)->recommendPets($this->matchingAdopter()));
     }
 
     public function test_recommendations_allow_guests_and_unverified_adopters_but_block_staff(): void

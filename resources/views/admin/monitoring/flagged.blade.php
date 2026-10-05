@@ -200,6 +200,29 @@
                 @endif
             </section>
 
+            @if ($log->follow_up_notes)
+                <section class="mt-4 rounded-xl border border-purple-200 bg-[#faf6fc] p-4 text-sm">
+                    <div class="flex items-center justify-between mb-1">
+                        <h4 class="font-bold text-purple-900 flex items-center gap-1.5">
+                            <i class="fa-solid fa-comment-dots text-purple-700"></i>
+                            <span>Adopter Follow-up Update</span>
+                        </h4>
+                        @if ($log->follow_up_submitted_at)
+                            <span class="text-xs text-purple-700">Submitted {{ \App\Support\ManilaTime::format($log->follow_up_submitted_at, 'M j, Y g:i A') }}</span>
+                        @endif
+                    </div>
+                    <p class="mt-2 whitespace-pre-wrap text-xs text-text-dark leading-relaxed">{{ $log->follow_up_notes }}</p>
+                </section>
+            @elseif ($log->resolution_outcome === \App\Enums\ResolutionOutcome::FollowUpRequired)
+                <section class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
+                    <div class="flex items-center gap-1.5 font-semibold text-amber-900">
+                        <i class="fa-solid fa-clock text-amber-600"></i>
+                        <span>Awaiting Adopter Follow-up</span>
+                    </div>
+                    <p class="mt-1 text-xs text-amber-800">The adopter has been instructed to follow up. No follow-up update has been recorded by the adopter yet.</p>
+                </section>
+            @endif
+
             @if(auth()->user()->isAdmin())
             @php($demoOnly = $log->has_presentation_demo && !($log->is_flagged && !$log->resolved_at))
             <form method="POST" action="{{ $demoOnly ? route('admin.post-adoption-demo.resolve', $log) : route('admin.monitoring.resolve', $log) }}" class="mt-4 rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4" @unless($demoOnly) data-resolution-form @endunless>

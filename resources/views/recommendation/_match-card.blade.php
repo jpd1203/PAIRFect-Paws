@@ -1,12 +1,20 @@
 <div class="match-card" data-pet-card="{{ $pet->id }}">
 
-    <img src="{{ $pet->image_url }}" alt="{{ $pet->name }}">
+    @if (auth()->check())
+        <img src="{{ $pet->image_url }}" alt="{{ $pet->name }}" onclick="openPetModal({{ $pet->id }})" class="cursor-pointer hover:opacity-90 transition-opacity">
+    @else
+        <img src="{{ $pet->image_url }}" alt="{{ $pet->name }}">
+    @endif
 
     <div class="flex-1 min-w-0">
 
         <div class="flex items-center justify-between gap-3">
             <div>
-                <strong class="font-primary text-base">{{ $pet->name }}</strong>
+                @if (auth()->check())
+                    <strong class="font-primary text-base cursor-pointer hover:text-maroon-600 transition-colors" onclick="openPetModal({{ $pet->id }})">{{ $pet->name }}</strong>
+                @else
+                    <strong class="font-primary text-base">{{ $pet->name }}</strong>
+                @endif
                 <span class="text-[.78rem] text-[#888] ml-1">{{ $pet->species }} &middot; {{ $pet->age_group }} &middot; {{ $pet->sex }}</span>
             </div>
         </div>
@@ -32,7 +40,11 @@
         </div>
 
         <div class="flex flex-col gap-1.5 mt-3">
-            <a class="btn btn-secondary" href="{{ route('pets.show', ['pet' => $pet, 'from' => 'matching']) }}">View</a>
+            @if (auth()->check())
+                <button type="button" class="btn btn-secondary cursor-pointer" onclick="openPetModal({{ $pet->id }})">View</button>
+            @else
+                <a class="btn btn-secondary" href="{{ route('pets.show', ['pet' => $pet, 'from' => 'matching']) }}">View</a>
+            @endif
             @if (auth()->check() && auth()->user()->isAdopter() && auth()->user()->hasVerifiedEmail())
                 <a class="btn btn-adoptMe text-center" href="{{ route('application.apply', $pet) }}">Adopt</a>
             @elseif (auth()->guest())

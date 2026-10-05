@@ -20,7 +20,7 @@ final class BehaviorAssessmentService
     {
         return DB::transaction(function () use ($pet, $staff, $input) {
             $pet = Pet::whereKey($pet->id)->lockForUpdate()->firstOrFail();
-            if ($pet->assessmentRecords()->where('assessor_id', $staff->id)->exists()) {
+            if ($pet->assessmentRecords()->count() >= $this->config->minObservers()) {
                 return false;
             }
 
@@ -36,7 +36,7 @@ final class BehaviorAssessmentService
             $record->saveQuietly();
             $pet->fill(['last_assessed_at' => now(), 'last_assessed_by' => $staff->full_name])->saveQuietly();
             $this->matches->refreshPetSummary($pet);
-            AuditLogService::log($staff->id, 'Pet Assessed', 'Pet', $pet->id, "Recorded assessment for {$pet->name}; one assessment per staff account is allowed for this pet.");
+            AuditLogService::log($staff->id, 'Pet Assessed', 'Pet', $pet->id, "Recorded assessment for {$pet->name}.");
 
             return true;
         });

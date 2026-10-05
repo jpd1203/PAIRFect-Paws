@@ -21,7 +21,6 @@
                     <div class="select-wrapper">
                         <select name="age" onchange="this.form.submit()">
                             <option value="all" @selected(($ageFilter ?? 'all') === 'all')>All Ages</option>
-                            <option value="Baby" @selected(($ageFilter ?? '') === 'Baby')>Baby</option>
                             <option value="Young" @selected(($ageFilter ?? '') === 'Young')>Young</option>
                             <option value="Adult" @selected(($ageFilter ?? '') === 'Adult')>Adult</option>
                             <option value="Senior" @selected(($ageFilter ?? '') === 'Senior')>Senior</option>

@@ -151,13 +151,13 @@ function openViewAnimalModal(id) {
     }
     const assessBtn = document.getElementById('vAssessBtn');
     const assessDone = document.getElementById('vAssessDone');
-    const assessmentUnavailable = a.assessment_status === 'complete' || a.assessed_by_current_user;
+    const assessmentUnavailable = a.assessment_status === 'complete';
     if (assessBtn) {
         assessBtn.href = a.assess_url;
         assessBtn.classList.toggle('hidden', assessmentUnavailable);
     }
     if (assessDone) {
-        assessDone.textContent = a.assessment_status === 'complete' ? 'Complete' : 'Your assessment complete';
+        assessDone.textContent = 'Complete';
         assessDone.classList.toggle('hidden', !assessmentUnavailable);
     }
 

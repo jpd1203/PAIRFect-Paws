@@ -131,12 +131,10 @@ Route::middleware('auth')->group(function () {
                 $query->where('species', $request->species);
             }
 
-            if ($request->filled('age') && $request->age !== 'All Ages') {
+            if ($request->filled('age') && $request->age !== 'All Ages' && $request->age !== 'all') {
                 $age = $request->age;
-                if ($age === 'Baby') {
-                    $query->where('age', '<=', 6);
-                } elseif ($age === 'Young') {
-                    $query->whereBetween('age', [7, 24]);
+                if ($age === 'Young') {
+                    $query->where('age', '<=', 24);
                 } elseif ($age === 'Adult') {
                     $query->whereBetween('age', [25, 84]);
                 } elseif ($age === 'Senior') {
@@ -187,6 +185,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/monitoring/reports/{log}', [MonitoringController::class, 'submitReport'])
                 ->middleware('throttle:3,1')
                 ->name('monitoring.submit');
+            Route::post('/monitoring/reports/{log}/follow-up', [MonitoringController::class, 'submitFollowUp'])
+                ->name('monitoring.follow-up');
         });
 
     });

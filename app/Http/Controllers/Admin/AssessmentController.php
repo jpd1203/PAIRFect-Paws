@@ -31,11 +31,6 @@ class AssessmentController extends Controller
 
     public function create(Request $request, Pet $pet, MatchingProfileMapper $mapper)
     {
-        if ($pet->assessmentRecords()->where('assessor_id', $request->user()->id)->exists()) {
-            return redirect()->route('admin.assessments.record')
-                ->withErrors(['assessment' => "You have already assessed {$pet->name}. Each staff account can assess a pet only once."]);
-        }
-
         $pet->load('assessmentRecords');
         $groups = config('matching.items.'.strtolower($pet->species->value));
         $categories = collect($groups)->mapWithKeys(fn (array $items, string $key) => [
@@ -51,14 +46,14 @@ class AssessmentController extends Controller
     public function store(StorePetAssessmentRequest $request, Pet $pet, BehaviorAssessmentService $assessments)
     {
         if (! $assessments->record($pet, $request->user(), $request->validated())) {
-            $message = "You have already assessed {$pet->name}. Each staff account can assess a pet only once.";
+            $message = "Assessment for {$pet->name} is already complete.";
 
             return $request->expectsJson()
                 ? response()->json(['message' => $message], 409)
                 : redirect()->route('admin.assessments.record')->withErrors(['assessment' => $message]);
         }
 
-        return redirect()->route('admin.assessments.record')->with('success', 'Assessment saved. Each pet requires observations from three distinct staff accounts.');
+        return redirect()->route('admin.assessments.record')->with('success', 'Assessment saved successfully.');
     }
 
     public function summary(Pet $pet, MatchingProfileMapper $mapper)

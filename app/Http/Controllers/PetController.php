@@ -29,10 +29,8 @@ class PetController extends Controller
 
         if ($request->filled('age') && $request->age !== 'all' && $request->age !== 'All Ages') {
             $age = $request->age;
-            if ($age === 'Baby') {
-                $query->where('age', '<=', 6);
-            } elseif ($age === 'Young') {
-                $query->whereBetween('age', [7, 24]);
+            if ($age === 'Young') {
+                $query->where('age', '<=', 24);
             } elseif ($age === 'Adult') {
                 $query->whereBetween('age', [25, 84]);
             } elseif ($age === 'Senior') {

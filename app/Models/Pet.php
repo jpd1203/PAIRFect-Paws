@@ -85,7 +85,7 @@ class Pet extends Model
                 ->whereNotNull('responses')
                 ->whereNotNull('assessor_id')
                 ->groupBy('pet_id')
-                ->havingRaw('COUNT(DISTINCT assessor_id) >= ?', [config('matching.min_observers')]));
+                ->havingRaw('COUNT(id) >= ?', [config('matching.min_observers')]));
     }
 
     public function scopeRecommendationEligible(Builder $query): Builder
@@ -119,9 +119,6 @@ class Pet extends Model
     {
         if (! $this->age) {
             return 'Unknown';
-        }
-        if ($this->age <= 6) {
-            return 'Baby';
         }
         if ($this->age <= 24) {
             return 'Young';
