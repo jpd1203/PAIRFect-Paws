@@ -24,13 +24,27 @@ final class InAppNotificationController extends Controller
 
         // Redirect only to a local path. The destination's normal middleware
         // remains responsible for authorizing the underlying resource.
-        $parts = parse_url((string) $notification->action_url);
-        $path = $parts['path'] ?? '';
-        $allowedHosts = array_filter([$request->getHost(), parse_url((string) config('app.url'), PHP_URL_HOST)]);
-        $legacyHandoverPath = $notification->handover_id !== null
-            && preg_match('#^/(adopter|confirm|monitoring)(/|$)#', $path) === 1;
+        $destination = (string) $notification->action_url;
+        $parts = parse_url($destination);
+        if (! is_array($parts)) {
+            return redirect()->route('notifications.index');
+        }
+
+        $path = $parts['path'] ?? (isset($parts['host']) ? '/' : '');
+        $host = strtolower($parts['host'] ?? '');
+        $configuredHost = strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST));
+        $baseHost = preg_replace('/^www\./', '', $configuredHost);
+        $allowedHosts = $baseHost ? [$baseHost, 'www.'.$baseHost] : [];
+        $requestHost = strtolower($request->getHost());
+        if ($baseHost && preg_replace('/^www\./', '', $requestHost) === $baseHost) {
+            $allowedHosts[] = $requestHost;
+        }
+
         if (! str_starts_with($path, '/') || str_starts_with($path, '//')
-            || (isset($parts['host']) && ! in_array($parts['host'], $allowedHosts, true) && ! $legacyHandoverPath)) {
+            || str_starts_with($path, '/\\') || str_starts_with($destination, '//')
+            || (isset($parts['scheme']) && (! in_array(strtolower($parts['scheme']), ['http', 'https'], true) || ! isset($parts['host'])))
+            || isset($parts['user']) || isset($parts['pass'])
+            || ($host !== '' && ! in_array($host, $allowedHosts, true))) {
             return redirect()->route('notifications.index');
         }
 
