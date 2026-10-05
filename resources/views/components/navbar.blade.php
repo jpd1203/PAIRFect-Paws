@@ -7,7 +7,11 @@
                 class="h-12 w-auto"
             >   
             <span class="hidden text-white/60 sm:inline">&bull;</span>
-            <span class="hidden text-base font-bold text-white sm:inline">PAIRfect Paws</span>
+            <img
+                src="{{ asset('images/pairfect-paws-logo.png') }}"
+                alt="PAIRfect Paws"
+                class="hidden h-5 sm:h-6 w-auto sm:inline object-contain"
+            >
         </a>
 
         <div class="hidden items-center gap-8 md:flex">
