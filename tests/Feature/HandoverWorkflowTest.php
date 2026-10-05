@@ -92,6 +92,8 @@ class HandoverWorkflowTest extends TestCase
             ->get(route('adopter.handover.status', $handover))
             ->assertOk()
             ->assertSee('Handover Status')
+            ->assertDontSee('Release Details')
+            ->assertDontSee('Marco Uy')
             ->assertSee('main-content-header', false)
             ->assertDontSee(route('adopter.handover.notifications', $handover));
 
@@ -283,6 +285,11 @@ class HandoverWorkflowTest extends TestCase
 
         $this->assertSame($volunteer->full_name, $handover->refresh()->staff_name);
         $this->assertNotNull($handover->released_at);
+        $this->actingAs($adopter)->get(route('adopter.handover.status', $handover))
+            ->assertOk()
+            ->assertSee('Release Details')
+            ->assertSee($volunteer->full_name)
+            ->assertDontSee('Marco Uy');
         $this->assertDatabaseHas('handover_notifications', [
             'handover_id' => $handover->id,
             'user_id' => $adopter->id,

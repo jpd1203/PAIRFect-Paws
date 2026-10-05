@@ -213,14 +213,15 @@
                     </ol>
                 </section>
 
-                <!-- RELEASE DETAILS Section -->
+                @if ($isReleased && $record->release_method)
                 @php
                     $isDelivery = ($record->release_method === 'delivery');
                     $dateTime = ($record->release_date && $record->release_time)
                         ? $record->release_date->format('M j, Y') . ' · ' . date('g:i A', strtotime($record->release_time))
-                        : ($record->released_at ? $record->released_at->format('M j, Y · g:i A') : 'Scheduled');
+                        : $record->released_at->format('M j, Y · g:i A');
                 @endphp
 
+                <!-- RELEASE DETAILS Section -->
                 <section class="rounded-card border border-[#e2ddd7] bg-white p-6 shadow-card">
                     <h3 class="text-base font-bold text-text-dark font-primary m-0 mb-4">
                         Release Details
@@ -239,7 +240,7 @@
                                         RELEASE METHOD
                                     </span>
                                     <span class="text-sm font-bold text-text-dark block mt-0.5">
-                                        {{ $isDelivery ? ('Third-party delivery · ' . ($record->courier ?: 'Grab Pet Transport')) : 'Shelter pickup' }}
+                                        {{ $isDelivery ? ('Third-party delivery' . ($record->courier ? ' · ' . $record->courier : '')) : 'Shelter pickup' }}
                                     </span>
                                 </div>
                             </div>
@@ -257,6 +258,7 @@
                                 </div>
                             </div>
 
+                            @if ($record->staff_name)
                             <!-- Released By -->
                             <div class="flex items-start gap-3">
                                 <i class="fa-regular fa-user mt-0.5 text-[#9e9e9e] text-base w-5"></i>
@@ -265,10 +267,11 @@
                                         RELEASED BY
                                     </span>
                                     <span class="text-sm font-bold text-text-dark block mt-0.5">
-                                        {{ $record->staff_name ?: 'Marco Uy' }}
+                                        {{ $record->staff_name }}
                                     </span>
                                 </div>
                             </div>
+                            @endif
 
                             <!-- Tracking Reference -->
                             @if ($record->tracking_number)
@@ -302,6 +305,7 @@
 
                     </div>
                 </section>
+                @endif
 
             </div>
 
