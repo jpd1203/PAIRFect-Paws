@@ -20,7 +20,7 @@ class PetController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Pet::with('branch')
+        $query = Pet::fullyAssessed()->with('branch')
             ->where('availability_status', AvailabilityStatus::Available);
 
         if ($request->filled('species') && $request->species !== 'all' && $request->species !== 'All Species') {

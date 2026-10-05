@@ -8,6 +8,7 @@ use App\Mail\TransactionalMail;
 use App\Models\Pet;
 use App\Models\User;
 use App\Notifications\QueuedVerifyEmail;
+use App\Services\Matching\ApplicationMatchService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,11 +16,12 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
+use Tests\Concerns\BuildsMatchingFixtures;
 use Tests\TestCase;
 
 class EmailVerificationTest extends TestCase
 {
-    use RefreshDatabase;
+    use BuildsMatchingFixtures, RefreshDatabase;
 
     public function test_registration_keeps_the_adopter_signed_in_and_dispatches_verification_immediately(): void
     {
@@ -181,11 +183,12 @@ class EmailVerificationTest extends TestCase
     public function test_unverified_adopters_can_browse_but_cannot_use_protected_workflows(): void
     {
         $user = $this->user(Role::Adopter, false, 'adopter-gate');
-        $pet = Pet::create([
+        $pet = $this->matchingPet([
             'name' => 'Gate Test Pet',
             'species' => 'Dog',
             'availability_status' => AvailabilityStatus::Available->value,
         ]);
+        app(ApplicationMatchService::class)->refreshPetSummary($pet);
 
         $this->actingAs($user)->get(route('animal.index'))->assertOk();
         $this->get(route('recommendation.intake'))->assertOk();

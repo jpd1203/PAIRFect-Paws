@@ -20,13 +20,13 @@ use Illuminate\Support\Facades\Route;
 // ─── Public Routes ────────────────────────────────────────────────────────────
 
 $landingPage = function () {
-    $featuredPets = Pet::where('availability_status', 'Available')
+    $featuredPets = Pet::fullyAssessed()->where('availability_status', 'Available')
         ->where('is_archived', false)
         ->latest('id')
         ->take(12)
         ->get();
 
-    $availablePetsCount = Pet::where('availability_status', 'Available')
+    $availablePetsCount = Pet::fullyAssessed()->where('availability_status', 'Available')
         ->where('is_archived', false)
         ->count();
 
@@ -122,7 +122,7 @@ Route::middleware('auth')->group(function () {
 
         // Browse pets (adopter dashboard sidebar)
         Route::get('/animal', function (Request $request) {
-            $query = Pet::whereIn('availability_status', ['Available', 'Soft-Reserved']);
+            $query = Pet::fullyAssessed()->whereIn('availability_status', ['Available', 'Soft-Reserved']);
 
             if ($request->filled('species') && $request->species !== 'All Species') {
                 $query->where('species', $request->species);

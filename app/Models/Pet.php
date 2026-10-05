@@ -71,6 +71,23 @@ class Pet extends Model
         return $this->hasMany(AssessmentRecord::class);
     }
 
+    public function scopeFullyAssessed(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('assessment_scoring_version')
+            ->where('assessment_count', '>=', config('matching.min_observers'))
+            ->whereNotNull('energy_level')
+            ->whereNotNull('trainability')
+            ->whereNotNull('independence')
+            ->whereNotNull('temperament')
+            ->whereIn('pets.id', AssessmentRecord::query()
+                ->select('pet_id')
+                ->whereNotNull('responses')
+                ->whereNotNull('assessor_id')
+                ->groupBy('pet_id')
+                ->havingRaw('COUNT(DISTINCT assessor_id) >= ?', [config('matching.min_observers')]));
+    }
+
     public function scopeRecommendationEligible(Builder $query): Builder
     {
         return $query
