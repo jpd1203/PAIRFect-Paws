@@ -34,10 +34,20 @@
             <div class="flex items-start gap-3">
                 <i class="fa-solid fa-user-check mt-0.5 text-[#9e9e9e] text-sm"></i>
                 <div class="min-w-0">
-                    <dt class="text-[11px] font-bold uppercase tracking-wide text-[#777]">Released by</dt>
+                    <dt class="text-[11px] font-bold uppercase tracking-wide text-[#777]">Release handled by</dt>
                     <dd class="text-sm font-semibold text-text-dark m-0 mt-0.5">{{ $record->staff_name ?: 'Staff' }}</dd>
                 </div>
             </div>
+
+            @if ($record->release_recorded_by_user_id)
+                <div class="flex items-start gap-3">
+                    <i class="fa-solid fa-clipboard-check mt-0.5 text-[#9e9e9e] text-sm"></i>
+                    <div class="min-w-0">
+                        <dt class="text-[11px] font-bold uppercase tracking-wide text-[#777]">Recorded in system by</dt>
+                        <dd class="text-sm font-semibold text-text-dark m-0 mt-0.5">{{ $record->releaseRecordedBy?->full_name ?: 'Former staff account' }}</dd>
+                    </div>
+                </div>
+            @endif
 
             @if ($isDelivery && $record->tracking_number)
                 <!-- Tracking -->
@@ -51,9 +61,9 @@
             @endif
         </dl>
 
-        @if ($record->proof_url)
+        @if ($record->proof_path || $record->legacyPublicProofPath())
             <figure class="shrink-0 m-0">
-                <img src="{{ $record->proof_url }}" alt="Proof of handover" 
+                <img src="{{ route('admin.handover.release-proof', $record) }}" alt="Proof of handover"
                      class="h-28 w-36 rounded-xl border border-[#e2ddd7] object-cover shadow-sm bg-neutral-light">
                 <figcaption class="mt-1 text-center text-[11px] font-semibold text-[#777]">
                     <i class="fa-solid fa-camera mr-1"></i> Proof of handover

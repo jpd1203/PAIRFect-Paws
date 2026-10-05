@@ -28,12 +28,12 @@ class EmailNotificationService
         if ($user && ! str_starts_with($event, 'handover_') && in_array($event, [
             'application_received', 'document_verified_adopter', 'document_followup_manual_review_adopter',
             'document_replacement_required', 'interview_assignment_staff', 'interview_reschedule_declined',
-            'application_queue_closed',
+            'application_queue_closed', 'welfare_resolution_adopter',
         ], true)) {
             $this->inApp->user(
                 $user, $event, $heading, $lines[0] ?? $heading, $actionUrl ?? route('notifications.index'),
                 "{$event}:{$entityId}:".hash('sha256', implode('|', $lines)),
-                'AdoptionApplication', $entityId,
+                $event === 'welfare_resolution_adopter' ? 'PostAdoptionLog' : 'AdoptionApplication', $entityId,
             );
         }
 

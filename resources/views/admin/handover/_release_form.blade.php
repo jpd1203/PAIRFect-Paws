@@ -88,9 +88,9 @@
             <div>
                 <label class="form-label mb-1.5">Proof of handover</label>
 
-                @if ($record->proof_url)
+                @if ($record->proof_path || $record->legacyPublicProofPath())
                     <div id="existingProof" class="flex items-center gap-3 rounded-xl border border-[#e2ddd7] bg-secondary-bg p-3 mb-2">
-                        <img src="{{ $record->proof_url }}" alt="Proof" class="h-16 w-16 rounded-lg object-cover border border-[#e2ddd7]">
+                        <img src="{{ route('admin.handover.release-proof', $record) }}" alt="Proof" class="h-16 w-16 rounded-lg object-cover border border-[#e2ddd7]">
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-semibold text-text-dark m-0">{{ $record->proof_name ?: 'proof-image.jpg' }}</p>
                             <p class="text-xs text-[#777] m-0">Attached to this handover record</p>

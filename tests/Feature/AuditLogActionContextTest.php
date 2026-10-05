@@ -89,6 +89,31 @@ class AuditLogActionContextTest extends TestCase
             ->assertSee('Aug 25, 2026 7:30 AM');
     }
 
+    public function test_audit_csv_neutralizes_formula_cells_without_changing_dates(): void
+    {
+        $admin = $this->user('=HYPERLINK("bad")', 'Admin', 'csv-admin@example.test', Role::Administrator);
+        foreach (['=HYPERLINK("bad")', '+SUM(1,2)', '-1+1', '@SUM(1,2)'] as $formula) {
+            AuditLog::create([
+                'user_id' => $admin->id,
+                'action' => $formula,
+                'entity_name' => '',
+                'notes' => $formula,
+            ]);
+        }
+
+        $csv = $this->actingAs($admin)->get(route('admin.audit-logs.export'))->assertOk()->streamedContent();
+        $rows = array_map('str_getcsv', array_slice(explode("\n", trim($csv)), 1));
+        foreach ($rows as $row) {
+            if (count($row) < 5) {
+                continue;
+            }
+            $this->assertMatchesRegularExpression('/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/', $row[0]);
+            $this->assertStringStartsWith("'=HYPERLINK", $row[1]);
+            $this->assertContains($row[3], ["'=HYPERLINK(\"bad\")", "'+SUM(1,2)", "'-1+1", "'@SUM(1,2)"]);
+            $this->assertSame($row[3], $row[4]);
+        }
+    }
+
     private function user(
         string $firstName,
         string $lastName,

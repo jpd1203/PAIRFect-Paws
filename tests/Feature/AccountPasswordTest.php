@@ -70,11 +70,20 @@ class AccountPasswordTest extends TestCase
         $this->assertIsString($auditNotes);
         $this->assertStringNotContainsString('CurrentPass123', $auditNotes);
         $this->assertStringNotContainsString('NewSecurePass456!', $auditNotes);
+
+        $this->post(route('logout'));
+        $this->post(route('login'), ['email' => $user->email, 'password' => 'CurrentPass123'])
+            ->assertSessionHasErrors('email');
+        $this->post(route('login'), ['email' => $user->email, 'password' => 'NewSecurePass456!'])
+            ->assertSessionHasNoErrors();
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_incorrect_current_password_confirmation_and_password_reuse_do_not_change_it(): void
     {
+        config(['session.driver' => 'database']);
         $user = User::factory()->create(['password' => 'CurrentPass123']);
+        $this->insertSession('legitimate-other-session', $user);
 
         $this->actingAs($user)
             ->from(route('account.settings'))
@@ -86,6 +95,7 @@ class AccountPasswordTest extends TestCase
             ->assertRedirect(route('account.settings'))
             ->assertSessionHasErrorsIn('updatePassword', 'current_password');
         $this->assertTrue(Hash::check('CurrentPass123', $user->refresh()->password));
+        $this->assertDatabaseHas('sessions', ['id' => 'legitimate-other-session']);
 
         $this->from(route('account.settings'))
             ->patch(route('account.password.update'), [
@@ -116,6 +126,7 @@ class AccountPasswordTest extends TestCase
             ->assertRedirect(route('account.settings'))
             ->assertSessionHasErrorsIn('updatePassword', 'password');
         $this->assertTrue(Hash::check('CurrentPass123', $user->refresh()->password));
+        $this->assertDatabaseHas('sessions', ['id' => 'legitimate-other-session']);
     }
 
     public function test_change_password_requires_authentication_and_a_verified_email(): void

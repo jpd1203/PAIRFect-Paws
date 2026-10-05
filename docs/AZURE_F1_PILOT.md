@@ -20,9 +20,9 @@ Confirm its PHP-FPM upstream on the actual image before admitting testers; it
 cannot be validated from a Windows checkout. Never expose the repository root
 or use an `.htaccess` rewrite as a substitute for the public document root.
 Set the App Service setting `PHP_INI_SCAN_DIR=:/home/site/wwwroot/azure` so the
-checked-in `azure/uploads.ini` raises PHP's upload/post limits to match the
-existing 100 MiB pet-photo validation. Confirm `php -i` in the actual container;
-the Nginx file sets the matching request-body limit. Use small files on F1.
+checked-in `azure/uploads.ini` permits welfare-video requests; pet photos are
+validated separately at 10 MiB. Confirm `php -i` in the actual container;
+the Nginx file sets the request-body limit. Use small files on F1.
 
 After the Web App exists, use Deployment Center to connect GitHub Actions to the
 selected branch. Audit Azure's generated workflow before enabling it; do not
@@ -55,6 +55,21 @@ php artisan optimize
 php artisan release:check
 ```
 
+For an existing deployment with public handover release proofs, apply the new
+handover migration and the checked-in Nginx configuration first (which denies
+`/storage/proofs/`). Then run:
+
+```sh
+php artisan handover:privatize-proofs
+php artisan handover:privatize-proofs --execute
+```
+
+The first command is a dry run. The second verifies the private copy before
+removing each public original and clearing its legacy URL. Both report skipped
+records and unreferenced public files; investigate any nonzero exit instead of
+deleting those files blindly. Staff proof links use an authenticated route;
+adopters cannot view release proofs. Keep `storage:link` for public pet photos.
+
 Never automate `migrate:fresh` against Azure. Re-run `migrate --force` only as a
 reviewed migration step. Keep writable `storage/` and `bootstrap/cache/` owned
 by the application user; do not use `chmod 777`.
@@ -73,6 +88,8 @@ Only**. `TRUSTED_PROXIES` defaults to loopback; if forwarded HTTPS URLs are
 wrong, set it to the verified immediate App Service proxy IPs/ranges and test
 signed links, redirects, and cookies. `*` trusts any forwarded host/IP/scheme
 and should not be selected without checking the ingress header behavior.
+
+After deployment, run `php artisan tinker --execute="dump(config('session.driver'));"` in Azure SSH and confirm it prints `database`. Password changes revoke other sessions through the database sessions table; file-backed sessions cannot be revoked across devices by this application. The local development environment may use `file`, but production must use `database`.
 
 `PRIVACY_CONTACT_EMAIL` must be a real shelter-controlled address. Configure
 the existing SMTP settings and `STAFF_ALERT_EMAIL`; Laravel 13 here reads

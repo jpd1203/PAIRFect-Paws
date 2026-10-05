@@ -389,6 +389,41 @@ class MonitoringController extends Controller
             );
         }
 
+        $petName = $log->adoptionApplication?->pet?->name ?? 'your pet';
+        [$heading, $message] = match ($outcome) {
+            ResolutionOutcome::Resolved => [
+                'Welfare review completed',
+                "The shelter has completed its review of {$petName}'s check-in. No further action is required at this time.",
+            ],
+            ResolutionOutcome::FollowUpRequired => [
+                'Welfare follow-up needed',
+                "The shelter will follow up with you about {$petName}'s check-in. Please watch for a message or call from staff.",
+            ],
+            ResolutionOutcome::VeterinaryAttention => [
+                'Veterinary evaluation recommended',
+                "The shelter recommends arranging a veterinary evaluation for {$petName}. Please contact the shelter if you need guidance.",
+            ],
+            ResolutionOutcome::ReturnRecommended => [
+                'Shelter return discussion requested',
+                "The shelter would like to discuss a possible return of {$petName}. This is a recommendation, not a confirmation that the pet has been returned. Please contact the shelter before making arrangements.",
+            ],
+            ResolutionOutcome::PetReturned => [
+                'Pet return recorded',
+                "The shelter has recorded {$petName} as physically returned. Your adoption history remains available in your account.",
+            ],
+        };
+
+        $this->notifications->user(
+            $log->adoptionApplication?->user,
+            "PAIRfect Paws: {$heading}",
+            $heading,
+            [$message],
+            'View My Check-ins',
+            route('monitoring.my-checkins'),
+            'welfare_resolution_adopter',
+            $log->id,
+        );
+
         return back()->with('toast', [
             'type' => 'success',
             'message' => $outcome === ResolutionOutcome::FollowUpRequired

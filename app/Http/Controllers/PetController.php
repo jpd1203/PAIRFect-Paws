@@ -96,7 +96,7 @@ class PetController extends Controller
             'health_status' => 'nullable|string|max:255',
             'behavioral_notes' => 'nullable|string',
             'description' => 'nullable|string',
-            'status' => 'required|string|max:255',
+            'status' => ['required', Rule::enum(AvailabilityStatus::class)],
             'branch_id' => 'nullable|exists:branches,id',
             'physical_size' => ['nullable', Rule::in(array_keys(config('matching.size_levels')))],
             'medical_needs' => 'nullable|numeric|min:1|max:5',
@@ -105,7 +105,7 @@ class PetController extends Controller
             'high_vocalization' => 'nullable|boolean',
             'vaccination_record_status' => 'nullable|string|max:255',
             'intake_date' => 'nullable|date|before_or_equal:today',
-            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:102400',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
         ]);
 
         $photoPath = null;
@@ -176,7 +176,7 @@ class PetController extends Controller
             'health_status' => 'nullable|string|max:255',
             'behavioral_notes' => 'nullable|string',
             'description' => 'nullable|string',
-            'status' => 'required|string|max:255',
+            'status' => ['required', Rule::enum(AvailabilityStatus::class)],
             'branch_id' => 'nullable|exists:branches,id',
             'physical_size' => ['nullable', Rule::in(array_keys(config('matching.size_levels')))],
             'medical_needs' => 'nullable|numeric|min:1|max:5',
@@ -184,7 +184,7 @@ class PetController extends Controller
             'has_aggression_history' => 'nullable|boolean',
             'high_vocalization' => 'nullable|boolean',
             'vaccination_record_status' => 'nullable|string|max:255',
-            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:102400',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
             'version' => 'required|integer',
         ]);
 

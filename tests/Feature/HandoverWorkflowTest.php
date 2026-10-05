@@ -330,12 +330,145 @@ class HandoverWorkflowTest extends TestCase
         Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool =>
             $mail->hasTo($adopter->email) && str_starts_with($mail->subjectLine, 'A new handover'));
 
+        $this->actingAs($staff)->post(route('admin.handover.release', $handover), [
+            'release_method' => 'delivery',
+            'release_date' => today()->toDateString(),
+            'release_time' => '10:30',
+            'staff_id' => $staff->id,
+            'courier' => 'Shelter courier',
+            'tracking_number' => 'RETRY-1',
+        ])->assertSessionHas('toast.type', 'success');
+
         Mail::fake();
         $this->actingAs($adopter)->post(route('adopter.confirm.submit', $handover), [
             'outcome' => 'not_received',
         ])->assertSessionHas('toast.type', 'warning');
         Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool =>
             $mail->hasTo($staff->email) && str_starts_with($mail->subjectLine, 'Handover issue reported'));
+    }
+
+    public function test_release_proof_is_private_and_release_replay_cannot_reset_received_handover(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        Storage::fake('public');
+        $adopter = $this->adopter('private-release-owner@example.test');
+        $other = $this->adopter('private-release-other@example.test');
+        $actor = $this->staff('private-release-actor@example.test');
+        $handler = $this->staff('private-release-handler@example.test');
+        $handover = $this->handoverFor($this->approvedApplication($adopter));
+        $release = [
+            'release_method' => 'pickup',
+            'release_date' => today()->toDateString(),
+            'release_time' => '10:30',
+            'staff_id' => $handler->id,
+            'proof' => UploadedFile::fake()->image('release.jpg'),
+        ];
+
+        $this->actingAs($actor)->post(route('admin.handover.release', $handover), $release)
+            ->assertSessionHas('toast.type', 'success');
+        $handover->refresh();
+        $this->assertSame($actor->id, $handover->release_recorded_by_user_id);
+        $this->assertSame($handler->id, $handover->release_handled_by_user_id);
+        $this->assertSame($handler->full_name, $handover->staff_name);
+        $this->assertNull($handover->proof_url);
+        Storage::disk('local')->assertExists($handover->proof_path);
+        $this->assertSame([], Storage::disk('public')->allFiles());
+        $proofUrl = route('admin.handover.release-proof', $handover);
+        $this->post(route('logout'))->assertRedirect();
+        $this->get($proofUrl)->assertRedirect(route('login'));
+        $this->actingAs($actor);
+        $proofResponse = $this->get($proofUrl)->assertOk();
+        $this->assertStringContainsString('private', $proofResponse->headers->get('Cache-Control'));
+        $this->assertStringContainsString('no-store', $proofResponse->headers->get('Cache-Control'));
+        $this->actingAs($handler)->get($proofUrl)->assertOk();
+        $handler->update(['is_active' => false]);
+        $this->get($proofUrl)->assertForbidden();
+        $handler->update(['is_active' => true]);
+        $this->actingAs($adopter)->get($proofUrl)->assertForbidden();
+        $this->actingAs($other)->get($proofUrl)->assertForbidden();
+        $this->get('/storage/'.$handover->proof_path)->assertForbidden();
+        $this->actingAs($actor)->get(route('admin.handover.show', $handover))
+            ->assertOk()->assertSee($proofUrl, false)->assertDontSee('/storage/handover-proofs/')
+            ->assertSee('Recorded in system by')->assertSee($actor->full_name);
+        $this->actingAs($adopter)->get(route('adopter.handover.status', $handover))
+            ->assertOk()->assertDontSee($proofUrl, false);
+
+        $this->actingAs($actor)->post(route('admin.handover.release', $handover), [
+            ...$release, 'proof' => UploadedFile::fake()->image('replay.jpg'),
+        ])->assertSessionHasErrors('release_method');
+        $this->assertCount(1, Storage::disk('local')->allFiles('handover-proofs'));
+        $this->assertSame(1, HandoverNotification::where('handover_id', $handover->id)->where('kind', 'released')->count());
+
+        $this->actingAs($adopter)->post(route('adopter.confirm.submit', $handover), [
+            'outcome' => 'received', 'receipt_proof' => UploadedFile::fake()->image('receipt.jpg'),
+        ])->assertSessionHas('toast.type', 'success');
+        $this->assertCount(3, PostAdoptionLog::where('application_id', $handover->application_id)->get());
+
+        $this->actingAs($actor)->post(route('admin.handover.release', $handover), [
+            ...$release, 'proof' => UploadedFile::fake()->image('after-receipt.jpg'),
+        ])->assertSessionHasErrors('release_method');
+        $this->post(route('admin.handover.reopen', $handover), ['reason' => 'Double click'])
+            ->assertSessionHasErrors('reason');
+        $this->assertSame('received', $handover->fresh()->adopter_outcome);
+        $this->assertNotNull($handover->fresh()->received_at);
+        $this->assertCount(3, PostAdoptionLog::where('application_id', $handover->application_id)->get());
+        $this->assertSame(1, AuditLog::where('entity_name', 'Handover')->where('entity_id', $handover->id)->where('action', 'handover.released')->count());
+        $releaseAudit = AuditLog::where('entity_name', 'Handover')->where('entity_id', $handover->id)->where('action', 'handover.released')->firstOrFail();
+        $this->assertSame($actor->id, $releaseAudit->user_id);
+        $this->assertStringContainsString("handled by user {$handler->id}", $releaseAudit->notes);
+    }
+
+    public function test_reopen_is_single_use_and_prepared_handover_cannot_be_reopened(): void
+    {
+        Mail::fake();
+        $adopter = $this->adopter('reopen-replay-owner@example.test');
+        $staff = $this->staff('reopen-replay-staff@example.test');
+        $handover = $this->handoverFor($this->approvedApplication($adopter));
+        $url = route('admin.handover.reopen', $handover);
+
+        $this->actingAs($staff)->post($url, ['reason' => 'Premature'])
+            ->assertSessionHasErrors('reason');
+        $this->assertSame(0, $handover->fresh()->reopen_count);
+
+        $this->post(route('admin.handover.release', $handover), [
+            'release_method' => 'pickup',
+            'release_date' => today()->toDateString(),
+            'release_time' => '10:30',
+            'staff_id' => $staff->id,
+        ])->assertSessionHas('toast.type', 'success');
+        $this->post($url, ['reason' => 'Delivery cancelled'])
+            ->assertSessionHas('toast.type', 'success');
+        $this->post($url, ['reason' => 'Replay'])
+            ->assertSessionHasErrors('reason');
+        $this->assertNull($handover->fresh()->released_at);
+        $this->assertSame(1, $handover->fresh()->reopen_count);
+        $this->assertSame(1, AuditLog::where('entity_name', 'Handover')->where('entity_id', $handover->id)->where('action', 'handover.reopened')->count());
+    }
+
+    public function test_legacy_proof_command_moves_only_verified_public_files_and_missing_files_return_404(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+        $adopter = $this->adopter('legacy-proof-owner@example.test');
+        $staff = $this->staff('legacy-proof-staff@example.test');
+        $handover = $this->handoverFor($this->approvedApplication($adopter));
+        $handover->update(['released_at' => now(), 'proof_url' => 'https://old.example.test/storage/proofs/legacy.jpg']);
+        Storage::disk('public')->put('proofs/legacy.jpg', 'legacy-proof-bytes');
+
+        $url = route('admin.handover.release-proof', $handover);
+        $this->actingAs($staff)->get($url)->assertOk();
+        $this->artisan('handover:privatize-proofs')->assertExitCode(0);
+        Storage::disk('public')->assertExists('proofs/legacy.jpg');
+        $this->artisan('handover:privatize-proofs', ['--execute' => true])->assertExitCode(0);
+        $handover->refresh();
+        Storage::disk('local')->assertExists($handover->proof_path);
+        Storage::disk('public')->assertMissing('proofs/legacy.jpg');
+        $this->assertNull($handover->proof_url);
+        $this->get($url)->assertOk();
+        $this->assertContains($this->get('/storage/proofs/legacy.jpg')->getStatusCode(), [403, 404]);
+        Storage::disk('local')->delete($handover->proof_path);
+        $this->get($url)->assertNotFound();
     }
 
     private function staff(string $email): User

@@ -288,13 +288,13 @@
                         </div>
 
                         <!-- Right: Proof of Handover Photo -->
-                        @if ($record->proof_url || $record->photo_url)
+                        @if ($record->photo_url)
                             <div class="flex flex-col items-center sm:items-end justify-center">
                                 <figure class="w-full sm:w-56 m-0">
-                                    <img src="{{ $record->proof_url ?: $record->photo_url }}" alt="Proof of handover"
+                                    <img src="{{ $record->photo_url }}" alt="Pet photo"
                                         class="w-full h-36 rounded-xl object-cover border border-[#e2ddd7] shadow-sm bg-neutral-light">
                                     <figcaption class="mt-1.5 text-center text-xs text-[#777] font-medium">
-                                        Proof of handover
+                                        Pet photo
                                     </figcaption>
                                 </figure>
                             </div>

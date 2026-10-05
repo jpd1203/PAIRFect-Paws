@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\ValidationException;
 
 class Handover extends Model
 {
@@ -28,7 +29,10 @@ class Handover extends Model
         'courier',
         'tracking_number',
         'proof_name',
+        'proof_path',
         'proof_url',
+        'release_recorded_by_user_id',
+        'release_handled_by_user_id',
         'released_at',
         'adopter_outcome',
         'adopter_confirmed_at',
@@ -70,6 +74,49 @@ class Handover extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function releaseRecordedBy()
+    {
+        return $this->belongsTo(User::class, 'release_recorded_by_user_id');
+    }
+
+    public function releaseHandledBy()
+    {
+        return $this->belongsTo(User::class, 'release_handled_by_user_id');
+    }
+
+    public function ensureCanRelease(): void
+    {
+        if ($this->released_at !== null || $this->adopter_outcome !== null) {
+            throw ValidationException::withMessages(['release_method' => 'This handover has already been released or confirmed. Reopen an unconfirmed handover before recording a new release.']);
+        }
+    }
+
+    public function ensureAwaitingConfirmation(): void
+    {
+        if ($this->released_at === null || $this->adopter_outcome !== null) {
+            throw ValidationException::withMessages(['outcome' => 'This handover is not awaiting adopter confirmation.']);
+        }
+    }
+
+    public function ensureCanReopen(): void
+    {
+        if ($this->adopter_outcome === 'received' || $this->released_at === null) {
+            throw ValidationException::withMessages(['reason' => 'Only an unconfirmed released handover can be reopened. A completed adoption cannot be reset.']);
+        }
+        if ($this->legacyPublicProofPath() && ! $this->proof_path) {
+            throw ValidationException::withMessages(['reason' => 'The existing release proof must be moved to private storage before this handover can be reopened.']);
+        }
+    }
+
+    public function legacyPublicProofPath(): ?string
+    {
+        $path = parse_url($this->proof_url ?? '', PHP_URL_PATH);
+
+        return is_string($path) && preg_match('~^/storage/(proofs/[A-Za-z0-9_-]+\.(?:jpe?g|png|webp|gif))$~i', $path, $matches)
+            ? $matches[1]
+            : null;
     }
 
     public function notifications()

@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Pet;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
+use App\Support\CsvSafeCell;
 use Illuminate\Support\Collection;
 
 class AuditLogController extends Controller
@@ -34,7 +35,8 @@ class AuditLogController extends Controller
             "Content-type"        => "text/csv",
             "Content-Disposition" => "attachment; filename=$filename",
             "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Cache-Control"       => "private, no-store, max-age=0",
+            "X-Content-Type-Options" => "nosniff",
             "Expires"             => "0",
         ];
 
@@ -50,10 +52,10 @@ class AuditLogController extends Controller
                     foreach ($logs as $log) {
                         fputcsv($file, [
                             $log->created_at?->format("Y-m-d H:i:s"),
-                            $log->user ? $log->user->full_name : "System",
-                            $log->user ? $log->user->role : "",
-                            $log->display_action,
-                            $log->notes,
+                            CsvSafeCell::text($log->user?->full_name ?? 'System'),
+                            CsvSafeCell::text($log->user?->role?->value),
+                            CsvSafeCell::text($log->display_action),
+                            CsvSafeCell::text($log->notes),
                         ]);
                     }
                 });
@@ -175,4 +177,3 @@ class AuditLogController extends Controller
             : null;
     }
 }
-

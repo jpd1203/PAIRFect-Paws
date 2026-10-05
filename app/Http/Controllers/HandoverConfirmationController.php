@@ -54,18 +54,12 @@ class HandoverConfirmationController extends Controller
                 $current = Handover::query()->lockForUpdate()->findOrFail($handover->id);
                 $this->authorizeOwnedHandover($request, $current);
 
-                if ($current->adopter_outcome !== null) {
-                    throw ValidationException::withMessages(['outcome' => 'This handover has already been confirmed.']);
-                }
+                $current->ensureAwaitingConfirmation();
 
                 $adopterName = $current->adopter_name ?: ($request->user()?->full_name ?? 'Adopter');
                 $confirmedAt = now();
 
                 if ($outcome === 'received') {
-                    if ($current->released_at === null) {
-                        throw ValidationException::withMessages(['outcome' => 'The pet must be marked as released before receipt can be confirmed.']);
-                    }
-
                     $file = $request->file('receipt_proof');
                     $storedPath = $file->store('handover-receipts', $disk);
                     if (! $storedPath || ! Storage::disk($disk)->exists($storedPath)) {
@@ -106,13 +100,21 @@ class HandoverConfirmationController extends Controller
                         "Application {$current->application_id}; pet {$current->pet_id}; adopter {$current->user_id}.");
                     $this->notifications->create($current, 'completed');
                 } else {
-                    $current->update([
-                        'adopter_outcome' => 'not_received',
-                        'adopter_confirmed_at' => $confirmedAt,
-                        'adopter_note' => $note,
-                    ]);
+                    $updated = Handover::query()->whereKey($current->id)
+                        ->whereNotNull('released_at')->whereNull('adopter_outcome')
+                        ->update([
+                            'adopter_outcome' => 'not_received',
+                            'adopter_confirmed_at' => $confirmedAt,
+                            'adopter_note' => $note,
+                        ]);
+                    if ($updated !== 1) {
+                        throw ValidationException::withMessages(['outcome' => 'This handover has already been confirmed.']);
+                    }
+                    $current->refresh();
                     $current->recordHistory('Adopter reported pet not received', $adopterName);
                     $current->save();
+                    AuditLogService::log($request->user()->id, 'handover.not_received', 'Handover', $current->id,
+                        'Released to Not Received; adopter reported non-receipt.');
                     $this->notifications->create($current, 'issue_logged');
                 }
             });

@@ -179,8 +179,9 @@ class PostAdoptionAdminMonitoringTest extends TestCase
 
     public function test_manual_flagging_and_resolution_require_notes_and_are_audited(): void
     {
-        [, $application] = $this->approvedApplication();
+        [$adopter, $application] = $this->approvedApplication();
         $staff = $this->user(Role::Administrator, 'staff-review');
+        Mail::fake();
         $log = PostAdoptionLog::create([
             'application_id' => $application->id,
             'milestone' => Milestone::ThreeWeeks,
@@ -222,6 +223,14 @@ class PostAdoptionAdminMonitoringTest extends TestCase
             'action' => 'Post-Adoption Flag Resolved',
             'entity_id' => $log->id,
         ]);
+        $this->assertDatabaseHas('handover_notifications', [
+            'user_id' => $adopter->id,
+            'kind' => 'welfare_resolution_adopter',
+            'entity_type' => 'PostAdoptionLog',
+            'entity_id' => $log->id,
+        ]);
+        Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool => $mail->hasTo($adopter->email)
+            && $mail->heading === 'Welfare review completed');
     }
 
     public function test_outcomes_are_validated_and_follow_up_remains_in_the_staff_queue(): void
@@ -252,9 +261,13 @@ class PostAdoptionAdminMonitoringTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'Post-Adoption Follow-Up Required', 'entity_id' => $log->id]);
         $this->assertDatabaseHas('handover_notifications', ['kind' => 'welfare_resolution_staff_alert', 'entity_id' => $log->id]);
         $this->assertDatabaseMissing('handover_notifications', ['body' => $sensitiveNote]);
-        Mail::assertQueued(TransactionalMail::class, function (TransactionalMail $mail) use ($sensitiveNote): bool {
-            return ! str_contains(implode(' ', $mail->lines).' '.$mail->heading, $sensitiveNote);
-        });
+        $adopterNotice = $application->user->inAppNotifications()->where('kind', 'welfare_resolution_adopter')->firstOrFail();
+        $this->assertStringContainsString('will follow up', $adopterNotice->body);
+        $this->assertStringNotContainsString($sensitiveNote, $adopterNotice->body);
+        $this->assertSame('PostAdoptionLog', $adopterNotice->entity_type);
+        Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool => $mail->hasTo($application->user->email)
+            && $mail->heading === 'Welfare follow-up needed'
+            && ! str_contains(implode(' ', $mail->lines).' '.$mail->heading, $sensitiveNote));
 
         $this->post(route('admin.monitoring.resolve', $log), [
             'resolution_outcome' => 'veterinary_attention',
@@ -263,6 +276,10 @@ class PostAdoptionAdminMonitoringTest extends TestCase
         $this->assertSame(ResolutionOutcome::VeterinaryAttention, $log->fresh()->resolution_outcome);
         $this->assertNotNull($log->fresh()->resolved_at);
         $this->get(route('admin.monitoring.index'))->assertOk()->assertSee('Veterinary Attention Recommended');
+        $this->assertSame(2, $application->user->inAppNotifications()->where('kind', 'welfare_resolution_adopter')->count());
+        Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool => $mail->hasTo($application->user->email)
+            && $mail->heading === 'Veterinary evaluation recommended'
+            && str_contains($mail->lines[0], 'recommends arranging a veterinary evaluation'));
     }
 
     public function test_return_recommendation_does_not_change_pet_status_and_legacy_resolution_renders(): void
@@ -279,6 +296,11 @@ class PostAdoptionAdminMonitoringTest extends TestCase
         $this->assertSame(AvailabilityStatus::Adopted, $application->pet->fresh()->availability_status);
         $this->assertSame(ResolutionOutcome::ReturnRecommended, $log->fresh()->resolution_outcome);
         $this->assertDatabaseHas('audit_logs', ['action' => 'Return to Shelter Recommended', 'entity_id' => $log->id]);
+        $notice = $application->user->inAppNotifications()->where('kind', 'welfare_resolution_adopter')->firstOrFail();
+        $this->assertStringContainsString('not a confirmation', $notice->body);
+        Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool => $mail->hasTo($application->user->email)
+            && $mail->heading === 'Shelter return discussion requested'
+            && str_contains($mail->lines[0], 'not a confirmation'));
 
         $log->update(['resolution_outcome' => null]);
         $this->assertSame('Resolved', $log->fresh()->resolution_outcome_label);
@@ -336,6 +358,12 @@ class PostAdoptionAdminMonitoringTest extends TestCase
         $this->assertSame(ResolutionOutcome::PetReturned, $log->fresh()->resolution_outcome);
         $this->assertSame($admin->id, $log->fresh()->return_handled_by_user_id);
         $this->assertDatabaseHas('audit_logs', ['action' => 'Pet Returned to Shelter', 'entity_id' => $log->id]);
+        $notice = $adopter->inAppNotifications()->where('kind', 'welfare_resolution_adopter')->firstOrFail();
+        $this->assertStringContainsString('physically returned', $notice->body);
+        $this->assertStringNotContainsString($input['return_reason'], $notice->body);
+        Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool => $mail->hasTo($adopter->email)
+            && $mail->heading === 'Pet return recorded'
+            && ! str_contains(implode(' ', $mail->lines), $input['return_reason']));
         $this->get(route('admin.monitoring.index'))->assertOk()->assertSee('Pet Returned to Shelter');
         $this->get(route('admin.dashboard'))->assertOk()->assertViewHas('activeMonitoring', 0);
         $this->actingAs($adopter)->get(route('monitoring.my-checkins'))
@@ -351,6 +379,7 @@ class PostAdoptionAdminMonitoringTest extends TestCase
         $this->post(route('admin.monitoring.reminder', $log))
             ->assertSessionHas('toast.type', 'error');
         $this->assertSame(1, DB::table('post_adoption_logs')->where('resolution_outcome', 'pet_returned')->count());
+        $this->assertSame(1, $adopter->inAppNotifications()->where('kind', 'welfare_resolution_adopter')->count());
         $this->assertSame(AvailabilityStatus::Returned, $application->pet->fresh()->availability_status);
     }
 
@@ -368,6 +397,7 @@ class PostAdoptionAdminMonitoringTest extends TestCase
         $this->assertSame(AvailabilityStatus::Adopted, $application->pet->fresh()->availability_status);
         $this->assertNull($log->fresh()->resolution_outcome);
         $this->assertDatabaseMissing('audit_logs', ['action' => 'Pet Returned to Shelter', 'entity_id' => $log->id]);
+        $this->assertDatabaseMissing('handover_notifications', ['kind' => 'welfare_resolution_adopter', 'entity_id' => $log->id]);
     }
 
     public function test_same_placement_cannot_be_returned_twice_even_if_pet_status_is_manually_reset(): void

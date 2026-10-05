@@ -116,6 +116,9 @@ Route::middleware('auth')->group(function () {
         ->middleware('verified')
         ->name('account.password.update');
 
+    Route::get('/admin/handover/{handover}/release-proof', [Admin\HandoverController::class, 'releaseProof'])
+        ->name('admin.handover.release-proof');
+
     // ─── Adopter Routes ───────────────────────────────────────────────────────
 
     Route::middleware('adopter')->group(function () {
