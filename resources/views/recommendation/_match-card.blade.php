@@ -32,7 +32,11 @@
         </div>
 
         <div class="flex flex-col gap-1.5 mt-3">
-            <a class="btn btn-secondary" href="{{ route('pets.show', ['pet' => $pet, 'from' => 'matching']) }}">View</a>
+            @guest
+                <a class="btn btn-secondary" href="{{ route('pets.show', ['pet' => $pet, 'from' => 'matching']) }}" onclick="if (typeof openPetModal === 'function') { event.preventDefault(); openPetModal({{ $pet->id }}); }">View</a>
+            @else
+                <a class="btn btn-secondary" href="{{ route('pets.show', ['pet' => $pet, 'from' => 'matching']) }}">View</a>
+            @endguest
             @if (auth()->check() && auth()->user()->isAdopter() && auth()->user()->hasVerifiedEmail())
                 <a class="btn btn-adoptMe text-center" href="{{ route('application.apply', $pet) }}">Adopt</a>
             @elseif (auth()->guest())

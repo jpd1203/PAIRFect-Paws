@@ -71,5 +71,10 @@
             </div>
         @endforelse
     </div>
+    @guest
+        <div class="modal-overlay" id="petModal" role="dialog" aria-modal="true" aria-label="Pet profile">
+            <div class="pet-modal" id="petModalContent"></div>
+        </div>
+    @endguest
 </div>
 @endsection

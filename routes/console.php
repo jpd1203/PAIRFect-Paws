@@ -19,6 +19,8 @@ Schedule::command('checkins:send-reminders')
     ->withoutOverlapping();
 Schedule::command('reservations:process-timeouts')->hourly()->withoutOverlapping();
 Schedule::command('matching:recompute')->hourly()->withoutOverlapping();
+Schedule::command('handovers:process-schedule-reminders')
+    ->everyFifteenMinutes()->timezone('Asia/Manila')->withoutOverlapping();
 
 Schedule::call(function (): void {
     PostAdoptionCaptureChallenge::query()

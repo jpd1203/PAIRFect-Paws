@@ -79,7 +79,13 @@ class RecommendationEligibilityTest extends TestCase
         ])->assertRedirect(route('recommendation.results'));
 
         $this->assertNotNull(session('guest_adopter_profile'));
-        $this->get(route('recommendation.results'))->assertOk()->assertSee('Guest Match');
+        $this->get(route('recommendation.results'))
+            ->assertOk()
+            ->assertSee('Guest Match')
+            ->assertSee('id="petModal"', false)
+            ->assertSee('openPetModal('.$pet->id.')', false)
+            ->assertSee(route('pets.show', ['pet' => $pet, 'from' => 'matching']), false);
+        $this->get(route('pets.modal', $pet))->assertOk()->assertSee('Guest Match');
         $this->get(route('application.apply', $pet))->assertRedirect(route('login'));
 
         $this->post(route('login.store'), [
@@ -116,6 +122,7 @@ class RecommendationEligibilityTest extends TestCase
         $this->get(route('recommendation.results'))
             ->assertOk()
             ->assertSee('Preview Match')
+            ->assertDontSee('id="petModal"', false)
             ->assertSee('Verify your email address before you can apply to adopt a pet.')
             ->assertDontSee('href="'.route('application.apply', $pet).'"', false);
         $this->postJson(route('recommendation.recompute'))

@@ -23,6 +23,7 @@ use Tests\TestCase;
 class HandoverWorkflowTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\PreparesVerifiedHandovers;
 
     public function test_adopter_without_approved_adoption_sees_handover_unavailable_notice(): void
     {
@@ -66,6 +67,11 @@ class HandoverWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('Handover Status')
             ->assertSee('main-content-header', false)
+            ->assertSee('Approved &mdash; waiting on a handover schedule', false)
+            ->assertDontSee('Release Details')
+            ->assertDontSee('Shelter pickup')
+            ->assertDontSee('Proof of handover')
+            ->assertDontSee(route('adopter.confirm', $handover), false)
             ->assertDontSee(route('adopter.handover.notifications', $handover));
 
         $this->assertSame(1, substr_count($status->getContent(), 'class="notification-bell'));
@@ -73,6 +79,9 @@ class HandoverWorkflowTest extends TestCase
         $confirmation = $this->actingAs($adopter)
             ->get(route('adopter.confirm', $handover))
             ->assertOk()
+            ->assertDontSee('Release Details')
+            ->assertDontSee('staff marked')
+            ->assertSee('Receipt confirmation becomes available after staff mark the pet as released.')
             ->assertDontSee(route('adopter.handover.notifications', $handover));
 
         $this->assertSame(1, substr_count($confirmation->getContent(), 'class="notification-bell'));
@@ -133,6 +142,12 @@ class HandoverWorkflowTest extends TestCase
         $application = $this->approvedApplication($adopter);
         $handover = $this->handoverFor($application);
         $handover->update(['released_at' => now()]);
+        $administrator = User::create([
+            'first_name' => 'Handover', 'last_name' => 'Admin',
+            'email' => 'handover-admin@example.test', 'password' => bcrypt('password'),
+            'role' => Role::Administrator->value, 'email_verified_at' => now(), 'is_active' => true,
+        ]);
+        $volunteer = $this->staff('handover-volunteer@example.test');
 
         $this->assertSame(0, PostAdoptionLog::where('application_id', $application->id)->count());
 
@@ -145,6 +160,17 @@ class HandoverWorkflowTest extends TestCase
 
         $this->assertSame('received', $handover->fresh()->adopter_outcome);
         $this->assertSame(1, $adopter->inAppNotifications()->where('kind', 'completed')->count());
+        $staffNotice = $administrator->inAppNotifications()->where('kind', 'handover_received_staff')->sole();
+        $this->assertSame('Handover', $staffNotice->entity_type);
+        $this->assertSame($handover->id, $staffNotice->entity_id);
+        $this->assertSame(route('admin.handover.show', $handover), $staffNotice->action_url);
+        $this->assertSame(0, $volunteer->inAppNotifications()->where('kind', 'handover_received_staff')->count());
+        $this->actingAs($administrator)->get(route('admin.handover.index'))
+            ->assertOk()
+            ->assertSee('Handover completed: '.$handover->pet->name);
+        $this->get(route('notifications.open', $staffNotice))
+            ->assertRedirect(route('admin.handover.show', $handover));
+        $this->assertNotNull($staffNotice->fresh()->read_at);
         $this->assertNotNull($handover->fresh()->received_at);
         Storage::disk('local')->assertExists($handover->fresh()->receipt_proof_path);
         $this->assertSame(
@@ -155,6 +181,8 @@ class HandoverWorkflowTest extends TestCase
         $this->assertCount(3, PostAdoptionLog::where('application_id', $application->id)->get());
         Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool =>
             $mail->hasTo($adopter->email) && str_starts_with($mail->subjectLine, 'Welcome home,'));
+        Mail::assertNotQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool =>
+            $mail->hasTo($administrator->email) || $mail->hasTo($volunteer->email));
     }
 
     public function test_receipt_requires_release_and_a_valid_photo_and_can_only_be_confirmed_once(): void
@@ -243,6 +271,7 @@ class HandoverWorkflowTest extends TestCase
             'is_active' => true,
         ]);
 
+        $this->prepareHandover($handover, $volunteer, 'pickup');
         $this->actingAs($volunteer)
             ->from(route('admin.handover.show', $handover))
             ->post(route('admin.handover.release', $handover), [
@@ -256,6 +285,16 @@ class HandoverWorkflowTest extends TestCase
 
         $this->assertSame($volunteer->full_name, $handover->refresh()->staff_name);
         $this->assertNotNull($handover->released_at);
+        $this->actingAs($adopter)->get(route('adopter.handover.status', $handover))
+            ->assertOk()
+            ->assertSee('Release Details')
+            ->assertSee('Shelter pickup')
+            ->assertSee($volunteer->full_name)
+            ->assertDontSee('Proof of handover');
+        $this->get(route('adopter.confirm', $handover))
+            ->assertOk()
+            ->assertSee('Release Details')
+            ->assertDontSee('Proof of handover');
         $this->assertDatabaseHas('handover_notifications', [
             'handover_id' => $handover->id,
             'user_id' => $adopter->id,
@@ -327,6 +366,9 @@ class HandoverWorkflowTest extends TestCase
         $this->actingAs($staff)->post(route('admin.handover.reopen', $handover), [
             'reason' => 'Delivery could not be completed.',
         ])->assertSessionHas('toast.type', 'success');
+        $this->actingAs($adopter)->get(route('adopter.handover.status', $handover))
+            ->assertOk()
+            ->assertDontSee('Release Details');
         Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool =>
             $mail->hasTo($adopter->email) && str_starts_with($mail->subjectLine, 'A new handover'));
 

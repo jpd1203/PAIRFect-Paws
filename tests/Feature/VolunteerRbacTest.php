@@ -19,6 +19,7 @@ use Tests\TestCase;
 class VolunteerRbacTest extends TestCase
 {
     use BuildsMatchingFixtures, RefreshDatabase;
+    use \Tests\Concerns\PreparesVerifiedHandovers;
 
     public function test_volunteer_can_review_applications_and_private_documents_without_final_decision_controls(): void
     {
@@ -139,6 +140,7 @@ class VolunteerRbacTest extends TestCase
                 'document_verification_status' => DocumentVerificationStatus::Verified->value,
             ]);
 
+            $this->verifiedIdentity($application, $admin);
             $this->post(route('admin.applications.decide', $application), [
                 'decision' => $decision,
                 'decision_remarks' => 'Administrator reviewed the case.',

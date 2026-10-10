@@ -97,6 +97,7 @@ function openReviewModal(id) {
     }[a.document_verification_status] || a.document_verification_status || '—';
     document.getElementById('rDocumentStatus').textContent = docStatusDisplay;
     document.getElementById('rVerificationLink').href = a.verification_url;
+    document.getElementById('rIdentityLink').href = a.identity_url;
     document.getElementById('rQueuePosition').textContent = a.queue_position
         ? `#${a.queue_position}`
         : ['approved', 'rejected', 'withdrawn', 'noshow', 'closed'].includes(a.status)

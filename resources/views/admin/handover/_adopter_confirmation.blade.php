@@ -2,7 +2,6 @@
     $outcome = $record->adopter_outcome;
     $isReceived = ($outcome === 'received');
     $isFailed = ($outcome === 'not_received');
-    $days = $record->days_waiting ?? 0;
     $reminders = $record->reminders ?? [];
     $lastReminder = count($reminders) > 0 ? end($reminders) : null;
 @endphp
@@ -35,7 +34,7 @@
                     @elseif ($isFailed)
                         Adopter says the pet never arrived
                     @else
-                        Waiting on adopter &middot; {{ $days }} {{ $days === 1 ? 'day' : 'days' }}
+                        Waiting on adopter receipt confirmation
                     @endif
                 </p>
 
@@ -54,11 +53,7 @@
                 @else
                     <p class="mt-1 text-xs text-text-muted m-0">
                         Confirmation request sent to {{ $record->adopter_phone }} and {{ $record->adopter_email }}.
-                        @if ($days >= 2)
-                            <span class="font-bold text-status-processing-text">A reminder is due now.</span>
-                        @else
-                            Automatic reminder after 2 days of no response.
-                        @endif
+                        Delivery follow-up uses the confirmed window: receipt reminder after one hour, staff follow-up after three hours.
                     </p>
                 @endif
             </div>
