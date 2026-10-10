@@ -7,7 +7,18 @@ use App\Models\HandoverNotification;
 
 class HandoverNotificationService
 {
-    public function __construct(private EmailNotificationService $emails) {}
+    public function __construct(
+        private EmailNotificationService $emails,
+        private InAppNotificationService $inApp,
+    ) {}
+
+    public function staffEvent(Handover $handover, string $kind, string $title, string $body): void
+    {
+        $url = route('admin.handover.show', $handover);
+        $key = "handover:{$kind}:{$handover->id}:{$handover->schedule_version}";
+        $this->inApp->administrators('handover_'.$kind, $title, $body, $url, $key, 'Handover', $handover->id);
+        $this->emails->staff($title, $title, [$body, "Handover {$handover->code}; open the protected record for details."], 'Review handover', $url, false, 'handover_'.$kind, $handover->id);
+    }
 
     /** Create the in-app notice and deliver only the channels it advertises. */
     public function create(Handover $handover, string $kind, array $attributes = []): HandoverNotification
@@ -36,6 +47,21 @@ class HandoverNotificationService
                 route('admin.handover.show', $handover),
                 false,
                 'handover_issue_staff',
+                $handover->id,
+            );
+        }
+
+        if ($kind === 'completed') {
+            $petName = $handover->pet?->name ?? 'the pet';
+            $adopterName = $handover->adopter_name ?: ($handover->user?->full_name ?? 'The adopter');
+
+            $this->inApp->administrators(
+                'handover_received_staff',
+                "Handover completed: {$petName}",
+                "{$adopterName} confirmed receipt of {$petName} ({$handover->code}).",
+                route('admin.handover.show', $handover),
+                "handover_received_staff:{$handover->id}",
+                'Handover',
                 $handover->id,
             );
         }

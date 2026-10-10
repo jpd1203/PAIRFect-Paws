@@ -44,17 +44,27 @@
                         Did {{ $record->pet?->name ?? 'your pet' }} arrive?
                     </h2>
                     <p class="mt-1 text-sm text-[#777] m-0">
-                        Hi {{ explode(' ', $record->adopter_name)[0] ?? 'there' }} &mdash; staff marked {{ $record->pet?->name ?? 'your pet' }} as released. Please confirm receipt so we can finalize your adoption.
+                        @if ($record->released_at)
+                            Hi {{ explode(' ', $record->adopter_name)[0] ?? 'there' }} &mdash; staff marked {{ $record->pet?->name ?? 'your pet' }} as released. Please confirm receipt so we can finalize your adoption.
+                        @else
+                            The shelter is arranging the handover for {{ $record->pet?->name ?? 'your pet' }}. Receipt confirmation will be available after release.
+                        @endif
                     </p>
                 </div>
             </section>
 
             <!-- Release Summary Card with Proof Photo -->
+            @include('handover._schedule-summary')
+            @if ($record->released_at)
             @php
-                $isDelivery = ($record->release_method === 'delivery');
+                $releaseMethod = match ($record->release_method) {
+                    'delivery' => 'Third-party delivery' . ($record->courier ? ' · ' . $record->courier : ''),
+                    'pickup' => 'Shelter pickup',
+                    default => 'Not recorded',
+                };
                 $dateTime = ($record->release_date && $record->release_time)
                     ? $record->release_date->format('M j, Y') . ' · ' . date('g:i A', strtotime($record->release_time))
-                    : ($record->released_at ? $record->released_at->format('M j, Y · g:i A') : 'Recently released');
+                    : $record->released_at->format('M j, Y · g:i A');
             @endphp
 
             <section class="rounded-card border border-[#e2ddd7] bg-white p-6 shadow-card">
@@ -69,7 +79,7 @@
                             <div>
                                 <span class="text-[11px] font-bold uppercase tracking-wider text-[#777] block">RELEASE METHOD</span>
                                 <span class="text-sm font-bold text-text-dark block mt-0.5">
-                                    {{ $isDelivery ? ('Third-party delivery · ' . ($record->courier ?: 'Courier')) : 'Shelter pickup' }}
+                                    {{ $releaseMethod }}
                                 </span>
                             </div>
                         </div>
@@ -86,7 +96,7 @@
                             <i class="fa-regular fa-user mt-0.5 text-[#9e9e9e] text-base w-5"></i>
                             <div>
                                 <span class="text-[11px] font-bold uppercase tracking-wider text-[#777] block">RELEASED BY</span>
-                                <span class="text-sm font-bold text-text-dark block mt-0.5">{{ $record->staff_name ?: 'Shelter Staff' }}</span>
+                                <span class="text-sm font-bold text-text-dark block mt-0.5">{{ $record->staff_name ?: 'Not recorded' }}</span>
                             </div>
                         </div>
 
@@ -98,6 +108,9 @@
                                     <span class="text-sm font-bold font-mono text-text-dark block mt-0.5">{{ $record->tracking_number }}</span>
                                 </div>
                             </div>
+                        @endif
+                        @if (!$record->adopter_outcome)
+                            @include('handover._live_tracking')
                         @endif
                     </div>
 
@@ -114,6 +127,7 @@
                     @endif
                 </div>
             </section>
+            @endif
 
             <!-- Confirmation Action Section -->
             @if ($record->adopter_outcome)

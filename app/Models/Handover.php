@@ -28,6 +28,7 @@ class Handover extends Model
         'staff_name',
         'courier',
         'tracking_number',
+        'tracking_url',
         'proof_name',
         'proof_path',
         'proof_url',
@@ -45,7 +46,15 @@ class Handover extends Model
         'reopen_reason',
         'reminders',
         'history',
+        'scheduled_method', 'scheduled_start_at', 'scheduled_end_at', 'schedule_status',
+        'schedule_version', 'schedule_confirmed_at', 'schedule_confirmed_by_user_id',
+        'reschedule_options', 'reschedule_reason', 'reschedule_status', 'reschedule_requested_at',
+        'reschedule_reviewed_at', 'reschedule_reviewed_by_user_id',
+        'schedule_24h_reminder_sent_at', 'schedule_2h_reminder_sent_at', 'receipt_reminder_sent_at',
+        'follow_up_flagged_at', 'missed_pickup_notified_at',
     ];
+
+    protected $hidden = ['tracking_url'];
 
     protected function casts(): array
     {
@@ -58,6 +67,12 @@ class Handover extends Model
             'reminders' => 'array',
             'history' => 'array',
             'reopen_count' => 'integer',
+            'scheduled_start_at' => 'datetime', 'scheduled_end_at' => 'datetime',
+            'schedule_confirmed_at' => 'datetime', 'schedule_version' => 'integer',
+            'reschedule_options' => 'array', 'reschedule_requested_at' => 'datetime',
+            'reschedule_reviewed_at' => 'datetime', 'schedule_24h_reminder_sent_at' => 'datetime',
+            'schedule_2h_reminder_sent_at' => 'datetime', 'receipt_reminder_sent_at' => 'datetime',
+            'follow_up_flagged_at' => 'datetime', 'missed_pickup_notified_at' => 'datetime',
         ];
     }
 
@@ -238,6 +253,7 @@ class Handover extends Model
     {
         $petName = $this->pet?->name ?? 'your pet';
         $methodLabel = $this->release_method_label;
+        $hasLiveTracking = $this->release_method === 'delivery' && filled($this->tracking_url);
 
         $defaults = match ($kind) {
             'prepared' => [
@@ -249,14 +265,16 @@ class Handover extends Model
             ],
             'released' => [
                 'title' => "{$petName} has been released via {$methodLabel}",
-                'body' => "Please confirm once {$petName} is with you — your adoption is not complete until you confirm receipt.",
+                'body' => $hasLiveTracking
+                    ? "{$petName} is on the way. Live courier tracking is available from your Handover Status page. Confirm receipt once {$petName} is safely with you."
+                    : "Please confirm once {$petName} is with you — your adoption is not complete until you confirm receipt.",
                 'channels' => ['In-app', 'Email', 'SMS'],
-                'action_label' => 'Confirm receipt',
-                'action_url' => route('adopter.confirm', $this),
+                'action_label' => $hasLiveTracking ? 'View handover status' : 'Confirm receipt',
+                'action_url' => route($hasLiveTracking ? 'adopter.handover.status' : 'adopter.confirm', $this),
             ],
             'reminder' => [
                 'title' => "Reminder: Please confirm receipt of {$petName}",
-                'body' => "It has been several days since {$petName} was released. Please confirm receipt so post-adoption check-ins can begin.",
+                'body' => "Please review {$petName}'s handover and confirm receipt once your pet has arrived so post-adoption check-ins can begin.",
                 'channels' => ['In-app', 'SMS'],
                 'action_label' => 'Confirm receipt',
                 'action_url' => route('adopter.confirm', $this),

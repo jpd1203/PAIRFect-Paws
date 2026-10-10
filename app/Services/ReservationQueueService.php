@@ -397,6 +397,13 @@ class ReservationQueueService
                 ]);
             }
 
+            app(IdentityVerificationService::class)->requireInterview($candidate);
+            if (! in_array($candidate->document_verification_status, [
+                DocumentVerificationStatus::Verified, DocumentVerificationStatus::LegacyReview,
+            ], true)) {
+                throw ValidationException::withMessages(['decision' => 'The supporting document must be verified before approval.']);
+            }
+
             $approvedAt = now();
 
             $candidate->update([

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class HandoverController extends Controller
@@ -100,14 +101,26 @@ class HandoverController extends Controller
 
     public function markReleased(Request $request, Handover $handover)
     {
+        $deliveryProviders = config('handover.delivery_providers');
+        if (is_string($request->input('tracking_url'))) {
+            $request->merge(['tracking_url' => trim($request->input('tracking_url'))]);
+        }
+
         $validated = $request->validate([
             'release_method' => 'required|in:pickup,delivery',
             'release_date' => 'required|date',
             'release_time' => 'required|string|max:20',
             'staff_id' => 'required|integer|exists:users,id',
-            'courier' => 'nullable|required_if:release_method,delivery|string|max:100',
-            'tracking_number' => 'nullable|required_if:release_method,delivery|string|max:100',
+            'courier_provider' => ['exclude_unless:release_method,delivery', 'required', 'string', Rule::in(array_keys($deliveryProviders))],
+            'tracking_number' => ['exclude_unless:release_method,delivery', 'required', 'string', 'max:100'],
+            'tracking_url' => ['exclude_unless:release_method,delivery', 'required', 'string', 'max:2048', 'url:https'],
             'proof' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ], [
+            'courier_provider.required' => 'Select an approved pet transport provider.',
+            'courier_provider.in' => 'Select one of the approved pet transport providers.',
+            'tracking_url.required' => 'Paste the live tracking/share link provided by the courier.',
+            'tracking_url.url' => 'The live tracking link must be a valid HTTPS URL.',
+            'tracking_url.max' => 'The live tracking link must not exceed 2048 characters.',
         ]);
 
         $staffMember = User::query()
@@ -124,9 +137,27 @@ class HandoverController extends Controller
 
         $storedPath = null;
         try {
-            $handover = DB::transaction(function () use ($request, $handover, $validated, $staffMember, &$storedPath): Handover {
+            $handover = DB::transaction(function () use ($request, $handover, $validated, $staffMember, $deliveryProviders, &$storedPath): Handover {
+                $application = \App\Models\AdoptionApplication::query()->lockForUpdate()->findOrFail($handover->application_id);
                 $current = Handover::query()->lockForUpdate()->findOrFail($handover->id);
                 $current->ensureCanRelease();
+                if ($current->received_at) {
+                    throw ValidationException::withMessages(['release_method' => 'This handover has already been confirmed.']);
+                }
+                if ($application->status !== \App\Enums\ApplicationStatus::Approved) {
+                    throw ValidationException::withMessages(['release_method' => 'Only an approved application can be released.']);
+                }
+                if ($current->schedule_status !== 'confirmed' || ! $current->scheduled_start_at || ! $current->scheduled_end_at || ! $current->schedule_confirmed_at || (int) $current->schedule_confirmed_by_user_id !== (int) $current->user_id) {
+                    throw ValidationException::withMessages(['schedule' => 'The handover schedule must be confirmed before the pet can be released.']);
+                }
+                if ($current->scheduled_method !== $validated['release_method']) {
+                    throw ValidationException::withMessages(['release_method' => 'The release method must match the confirmed schedule. Propose and confirm a new schedule to change it.']);
+                }
+                $identity = app(\App\Services\IdentityVerificationService::class);
+                $identity->requireInterview($application);
+                if ($validated['release_method'] === 'pickup' && ! $identity->isVerified($application, 'pickup_handover', $current->reopen_count)) {
+                    throw ValidationException::withMessages(['identity' => 'Final pickup identity verification must be completed before release.']);
+                }
 
                 if ($request->hasFile('proof')) {
                     $storedPath = $request->file('proof')->store('handover-proofs', 'local');
@@ -136,7 +167,7 @@ class HandoverController extends Controller
                 }
 
                 $updated = Handover::query()->whereKey($current->id)
-                    ->whereNull('released_at')->whereNull('adopter_outcome')
+                    ->whereNull('released_at')->whereNull('adopter_outcome')->whereNull('received_at')
                     ->update([
                         'release_method' => $validated['release_method'],
                         'release_date' => $validated['release_date'],
@@ -144,8 +175,9 @@ class HandoverController extends Controller
                         'staff_name' => $staffMember->full_name,
                         'release_recorded_by_user_id' => Auth::id(),
                         'release_handled_by_user_id' => $staffMember->id,
-                        'courier' => $validated['release_method'] === 'delivery' ? ($validated['courier'] ?? null) : null,
+                        'courier' => $validated['release_method'] === 'delivery' ? $deliveryProviders[$validated['courier_provider']]['label'] : null,
                         'tracking_number' => $validated['release_method'] === 'delivery' ? ($validated['tracking_number'] ?? null) : null,
+                        'tracking_url' => $validated['release_method'] === 'delivery' ? $validated['tracking_url'] : null,
                         'proof_path' => $storedPath,
                         'proof_name' => $storedPath ? $request->file('proof')->getClientOriginalName() : null,
                         'proof_url' => null,
@@ -220,6 +252,9 @@ class HandoverController extends Controller
         $handover = DB::transaction(function () use ($handover, $reason): Handover {
             $current = Handover::query()->lockForUpdate()->findOrFail($handover->id);
             $current->ensureCanReopen();
+            if ($current->received_at) {
+                throw ValidationException::withMessages(['reason' => 'A completed handover cannot be reopened.']);
+            }
             $previousState = $current->adopter_outcome === 'not_received' ? 'Not Received' : 'Released';
             $previousHandler = $current->release_handled_by_user_id;
             $previousActor = $current->release_recorded_by_user_id;
@@ -233,6 +268,14 @@ class HandoverController extends Controller
                 ->update([
                     'release_date' => null,
                     'release_time' => null,
+                    'release_method' => null, 'courier' => null, 'tracking_number' => null,
+                    'tracking_url' => null,
+                    'scheduled_method' => null, 'scheduled_start_at' => null, 'scheduled_end_at' => null,
+                    'schedule_status' => 'unscheduled', 'schedule_version' => $current->schedule_version + 1,
+                    'schedule_confirmed_at' => null, 'schedule_confirmed_by_user_id' => null,
+                    'reschedule_status' => null, 'reschedule_options' => null, 'reschedule_reason' => null,
+                    'reschedule_requested_at' => null, 'reschedule_reviewed_at' => null, 'reschedule_reviewed_by_user_id' => null,
+                    ...array_fill_keys(\App\Services\HandoverScheduleService::MARKERS, null),
                     'released_at' => null,
                     'adopter_outcome' => null,
                     'adopter_confirmed_at' => null,

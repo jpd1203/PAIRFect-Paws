@@ -43,7 +43,7 @@
             @if (auth()->check())
                 <button type="button" class="btn btn-secondary cursor-pointer" onclick="openPetModal({{ $pet->id }})">View</button>
             @else
-                <a class="btn btn-secondary" href="{{ route('pets.show', ['pet' => $pet, 'from' => 'matching']) }}">View</a>
+                <a class="btn btn-secondary" href="{{ route('pets.show', ['pet' => $pet, 'from' => 'matching']) }}" onclick="if (typeof openPetModal === 'function') { event.preventDefault(); openPetModal({{ $pet->id }}); }">View</a>
             @endif
             @if (auth()->check() && auth()->user()->isAdopter() && auth()->user()->hasVerifiedEmail())
                 <a class="btn btn-adoptMe text-center" href="{{ route('application.apply', $pet) }}">Adopt</a>

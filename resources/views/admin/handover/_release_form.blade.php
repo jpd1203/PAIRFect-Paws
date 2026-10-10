@@ -1,9 +1,10 @@
 @php
-    $method = old('release_method', $record->release_method ?: 'pickup');
+    $method = old('release_method', $record->scheduled_method ?: $record->release_method ?: 'pickup');
     $date = old('release_date', $record->release_date ? $record->release_date->format('Y-m-d') : date('Y-m-d'));
     $time = old('release_time', $record->release_time ?: date('H:i'));
     $staff = old('staff_name', $record->staff_name ?: auth()->user()?->full_name);
-    $courier = old('courier', $record->courier);
+    $providers = config('handover.delivery_providers');
+    $selectedProvider = old('courier_provider', collect($providers)->search(fn ($provider) => $provider['label'] === $record->courier));
     $tracking = old('tracking_number', $record->tracking_number);
 @endphp
 
@@ -15,6 +16,9 @@
 
     <form id="handoverForm" method="POST" action="{{ route('admin.handover.release', $record) }}" enctype="multipart/form-data">
         @csrf
+        @if($record->schedule_status !== 'confirmed')
+            <p class="modal-note caution m-4">The handover schedule must be confirmed before the pet can be released.</p>
+        @endif
 
         <div class="space-y-5 p-6">
             <!-- Release Method Selection -->
@@ -39,7 +43,7 @@
                             <span class="flex items-center gap-1.5 text-sm font-bold text-text-dark">
                                 <i class="fa-solid fa-truck text-primary"></i> Third-party delivery
                             </span>
-                            <span class="mt-0.5 block text-xs text-[#777]">Lalamove, Grab or partner courier</span>
+                            <span class="mt-0.5 block text-xs text-[#777]">Pet is transported through an approved pet transport or courier service.</span>
                         </div>
                     </label>
                 </div>
@@ -73,14 +77,33 @@
 
             <div id="courierFields" class="{{ $method === 'delivery' ? 'grid' : 'hidden' }} gap-4 rounded-xl border border-[#e2ddd7] bg-secondary-bg p-4 sm:grid-cols-2">
                 <div class="form-group">
-                    <label for="courier-name" class="form-label">Courier / service</label>
-                    <input id="courier-name" name="courier" type="text" value="{{ $courier }}" placeholder="e.g. Lalamove"
-                           class="form-control">
+                    <label for="courier-provider" class="form-label">Courier / Pet Transport Service</label>
+                    <select id="courier-provider" name="courier_provider" class="form-select appearance-auto"
+                            onchange="updateCourierProviderHelp()" aria-describedby="courier-provider-help" @required($method === 'delivery')>
+                        <option value="">Select provider</option>
+                        @foreach ($providers as $key => $provider)
+                            <option value="{{ $key }}" data-note="{{ $provider['note'] }}" @selected($selectedProvider === $key)>{{ $provider['label'] }}</option>
+                        @endforeach
+                    </select>
+                    <p id="courier-provider-help" class="mt-1 text-xs text-[#777]" aria-live="polite"></p>
+                    @error('courier_provider')
+                        <p class="mt-1 text-sm text-status-danger-text" role="alert">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="form-group">
-                    <label for="tracking-number" class="form-label">Reference / tracking no.</label>
-                    <input id="tracking-number" name="tracking_number" type="text" value="{{ $tracking }}" placeholder="e.g. LLM-77341902"
-                           class="form-control font-mono">
+                    <label for="tracking-number" class="form-label">Booking / Tracking Reference</label>
+                    <input id="tracking-number" name="tracking_number" type="text" value="{{ $tracking }}" placeholder="e.g. PTG-239123"
+                           class="form-control font-mono" @required($method === 'delivery')>
+                </div>
+                <div class="form-group sm:col-span-2">
+                    <label for="tracking-url" class="form-label">Live Tracking Link</label>
+                    <input id="tracking-url" name="tracking_url" type="url" value="{{ old('tracking_url', $record->tracking_url) }}"
+                           placeholder="https://..." maxlength="2048" pattern="https://.*"
+                           class="form-control" aria-describedby="tracking-url-help" @required($method === 'delivery')>
+                    <p id="tracking-url-help" class="mt-1 text-xs text-[#777]">Paste the live tracking/share link provided by the selected transport provider. The adopter will use this link to follow the pet's transfer.</p>
+                    @error('tracking_url')
+                        <p class="mt-1 text-sm text-status-danger-text" role="alert">{{ $message }}</p>
+                    @enderror
                 </div>
             </div>
 
@@ -134,6 +157,10 @@
 <script>
 function toggleCourierFields(method) {
     const courierDiv = document.getElementById('courierFields');
+    courierDiv.querySelectorAll('input, select').forEach(field => {
+        field.required = method === 'delivery';
+        field.disabled = method !== 'delivery';
+    });
     if (method === 'delivery') {
         courierDiv.classList.remove('hidden');
         courierDiv.classList.add('grid');
@@ -142,6 +169,16 @@ function toggleCourierFields(method) {
         courierDiv.classList.remove('grid');
     }
 }
+
+function updateCourierProviderHelp() {
+    const provider = document.getElementById('courier-provider');
+    const help = document.getElementById('courier-provider-help');
+    help.textContent = provider.selectedOptions[0]?.dataset.note || '';
+    help.classList.toggle('hidden', !help.textContent);
+}
+
+toggleCourierFields(document.querySelector('input[name="release_method"]:checked').value);
+updateCourierProviderHelp();
 
 function previewHandoverPhoto(e) {
     const file = e.target.files[0];

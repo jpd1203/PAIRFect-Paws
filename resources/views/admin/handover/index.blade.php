@@ -56,7 +56,6 @@
         @forelse ($records as $record)
             @php
                 $badge = $record->status_badge;
-                $days = $record->days_waiting;
                 $isDelivery = ($record->release_method === 'delivery');
             @endphp
             <a href="{{ route('admin.handover.show', $record) }}" 
@@ -93,10 +92,13 @@
                             </span>
                         @endif
 
-                        @if ($days !== null && !$record->adopter_outcome)
+                        @if ($record->follow_up_flagged_at && !$record->adopter_outcome)
                             <span class="font-bold text-status-processing-text">
-                                {{ $days }} {{ $days === 1 ? 'day' : 'days' }} without confirmation
+                                Delivery receipt unconfirmed — staff follow-up
                             </span>
+                        @endif
+                        @if ($record->missed_pickup_notified_at && !$record->released_at)
+                            <span class="font-bold text-status-processing-text">Missed / Uncompleted Pickup</span>
                         @endif
                     </div>
                 </div>
