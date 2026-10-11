@@ -8,11 +8,15 @@
     <form method="POST" action="{{ route('admin.applications.identity.store', $identityApplication) }}" class="space-y-3">
         @csrf
         <input type="hidden" name="stage" value="{{ $identityStage }}">
-        <label class="form-label" for="identity-method-{{ $identityStage }}">Verification method</label>
-        <select id="identity-method-{{ $identityStage }}" class="form-select" name="verification_method" required>
-            <option value="in_person">In Person</option>
-            @if($identityStage === 'interview')<option value="video_interview">Video Interview</option>@endif
-        </select>
+        <div class="relative">
+            <label class="form-label" for="identity-method-{{ $identityStage }}">Verification method</label>
+            <select id="identity-method-{{ $identityStage }}" class="form-select" name="verification_method" required>
+                <option value="in_person">In Person</option>
+                @if($identityStage === 'interview')<option value="video_interview">Video Interview</option>@endif
+            </select>
+            <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3 top-2/3 -translate-y-1/2 text-sm text-[#777]"></i>
+        </div>
+
         @foreach([
             'government_id_presented' => 'Government ID presented',
             'applicant_matches_id_photo' => 'Applicant reasonably corresponds to the ID photograph',
@@ -20,14 +24,24 @@
             'submitted_document_consistent' => 'Presented ID is consistent with the submitted document',
             'no_material_discrepancy' => 'No material identity discrepancy observed',
         ] as $field => $label)
-            <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="{{ $field }}" value="1" class="mt-1"> {{ $label }}</label>
+            <label class="flex items-start gap-2 text-sm">
+                <input type="checkbox" name="{{ $field }}" value="1" class="mt-1 accent-primary">
+                {{ $label }}
+            </label>
         @endforeach
+
         <label class="form-label" for="identity-result-{{ $identityStage }}">Verification result</label>
-        <select id="identity-result-{{ $identityStage }}" name="status" class="form-select" required>
-            <option value="verified">Verified</option><option value="needs_review">Needs Review</option><option value="failed">Failed</option>
-        </select>
+        <div class="relative">
+            <select id="identity-result-{{ $identityStage }}" name="status" class="form-select appearance-none pr-10" required>
+                <option value="verified">Verified</option>
+                <option value="needs_review">Needs Review</option>
+                <option value="failed">Failed</option>
+            </select>
+            <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#777]"></i>
+        </div>
         <label class="form-label" for="identity-notes-{{ $identityStage }}">Discrepancy / Staff Notes</label>
         <textarea id="identity-notes-{{ $identityStage }}" class="form-control" name="discrepancy_note" maxlength="2000" rows="2"></textarea>
+        <div class="flex flex-wrap items-center justify-end gap-2.5">
         <button class="btn btn-primary" type="submit">Save Identity Verification</button>
     </form>
 </section>

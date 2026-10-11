@@ -208,15 +208,15 @@
                                       class="form-control resize-y"></textarea>
                         </div>
 
-                        <div class="flex items-center gap-4 flex-wrap justify-between pt-4 border-t border-[#e2ddd7]">
-                            <button type="submit" name="outcome" value="received" class="btn btn-primary">
-                                <i class="fa-solid fa-circle-check mr-2"></i> Yes, I've received {{ $record->pet?->name }}
-                            </button>
-
+                        <div class="flex items-center justify-end gap-4 flex-wrap pt-4 border-t border-[#e2ddd7]">
                             <button type="submit" name="outcome" value="not_received"
                                     onclick="return confirm('Are you sure you want to report that {{ $record->pet?->name }} has not arrived? Staff will be alerted immediately.');"
                                     class="btn btn-danger">
                                 <i class="fa-solid fa-triangle-exclamation mr-2"></i> No, I haven't received my pet
+                            </button>
+
+                            <button type="submit" name="outcome" value="received" class="btn btn-primary">
+                                <i class="fa-solid fa-circle-check mr-2"></i> Yes, I've received {{ $record->pet?->name }}
                             </button>
                         </div>
                     </form>
