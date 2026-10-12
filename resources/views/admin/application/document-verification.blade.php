@@ -11,6 +11,10 @@
                 || ($documentVerificationValue === 'NeedsResubmission' && $followUpLimitReached))
             && in_array($application->status->value, ['Pending', 'DocumentFlagged'], true)
             && !$application->is_primary_candidate;
+        $handoverId = request('handover') ?: ($application->handover?->id);
+        $isFromHandover = request('from') === 'handover'
+            || request()->filled('handover')
+            || (url()->previous() && str_contains(url()->previous(), '/identity-verification') && (request('from') === 'handover' || str_contains(url()->previous(), 'from=handover')));
     @endphp
 
     <div class="main-content-header">
@@ -102,7 +106,11 @@
                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-rotate-right"></i>Retry Google OCR</button>
                 </form>
             @endif
-            <a href="{{ route('admin.applications.index', ['highlight' => $application->id]) }}#application-row-{{ $application->id }}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i>Back to Applications</a>
+            @if($isFromHandover)
+                <a href="{{ route('admin.applications.identity', array_filter(['application' => $application, 'from' => 'handover', 'handover' => $handoverId])) }}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i>Back to Identity Verification</a>
+            @else
+                <a href="{{ route('admin.applications.index', ['highlight' => $application->id]) }}#application-row-{{ $application->id }}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i>Back to Applications</a>
+            @endif
         </div>
 
         @if(!$application->is_primary_candidate && !in_array($application->status->value, ['Approved', 'Rejected', 'Withdrawn', 'NoShow', 'Closed'], true))

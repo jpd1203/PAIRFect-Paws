@@ -47,6 +47,28 @@ class HandoverScheduleService
         }
     }
 
+    public function selectMethod(Handover $handover, User $actor, string $method): void
+    {
+        abort_unless((int) $handover->user_id === (int) $actor->id, 403);
+        if (! in_array($method, ['pickup', 'delivery'], true)) {
+            throw ValidationException::withMessages(['method' => 'Select a valid handover method.']);
+        }
+        DB::transaction(function () use ($handover, $actor, $method): void {
+            $current = Handover::query()->lockForUpdate()->findOrFail($handover->id);
+            abort_unless((int) $current->user_id === (int) $actor->id, 403);
+            $this->editable($current);
+            $current->update(['scheduled_method' => $method]);
+            $this->history($current, $actor, 'schedule.method_selected');
+            $methodLabel = $method === 'pickup' ? 'Pickup at shelter' : 'Third-party delivery';
+            $this->notifications->staffEvent(
+                $current,
+                'method_selected',
+                'Adopter selected handover method',
+                "The adopter selected {$methodLabel} for {$current->pet?->name}."
+            );
+        });
+    }
+
     public function propose(Handover $handover, User $actor, array $data): void
     {
         abort_unless($actor->is_active && $actor->isStaff(), 403);

@@ -323,4 +323,96 @@ class HandoverSchedulingIdentityTest extends TestCase
         $this->assertNull($handover->fresh()->schedule_24h_reminder_sent_at);
         $this->assertSame(0, app(HandoverReminderService::class)->process());
     }
+
+    public function test_identity_verification_and_document_navigation_in_handover_flow(): void
+    {
+        [$owner, $staff, $application, $handover] = $this->placement();
+        $this->actingAs($staff);
+
+        // In handover flow: Back to Application is removed, Back to Handover Details is shown
+        $response = $this->get(route('admin.applications.identity', ['application' => $application, 'from' => 'handover', 'handover' => $handover->id]));
+        $response->assertOk()
+            ->assertSee('Back to Handover Details')
+            ->assertDontSee('Back to Application')
+            ->assertSee(route('admin.applications.document-verification', ['application' => $application, 'from' => 'handover', 'handover' => $handover->id]));
+
+        // Review Private Document in handover flow: Back to Identity Verification is shown, Back to Applications is not
+        $docResponse = $this->get(route('admin.applications.document-verification', ['application' => $application, 'from' => 'handover', 'handover' => $handover->id]));
+        $docResponse->assertOk()
+            ->assertSee('Back to Identity Verification')
+            ->assertDontSee('Back to Applications');
+
+        // Outside handover flow (standard application flow):
+        $standardIdentity = $this->get(route('admin.applications.identity', $application));
+        $standardIdentity->assertOk()
+            ->assertSee('Back to Application')
+            ->assertDontSee('Back to Handover Details');
+
+        $standardDoc = $this->get(route('admin.applications.document-verification', $application));
+        $standardDoc->assertOk()
+            ->assertSee('Back to Applications')
+            ->assertDontSee('Back to Identity Verification');
+    }
+
+    public function test_adopter_can_select_preferred_handover_method(): void
+    {
+        [$owner, $staff, $application, $handover] = $this->placement();
+
+        // Check Applications index displays Approved banner with Open Handover link
+        $this->actingAs($owner)->get(route('application.index'))
+            ->assertOk()
+            ->assertSee('Application Approved! Handover is now open.')
+            ->assertSee('Open Handover');
+
+        // Check Handover Status page shows method selection options
+        $statusResponse = $this->actingAs($owner)->get(route('adopter.handover.status', $handover));
+        $statusResponse->assertOk()
+            ->assertSee('Handover Method Preference')
+            ->assertSee('Pickup at shelter')
+            ->assertSee('Third-party delivery');
+
+        // Select pickup
+        $response = $this->actingAs($owner)->post(route('adopter.handover.schedule.method', $handover), [
+            'method' => 'pickup',
+        ]);
+        $response->assertSessionHasNoErrors();
+        $response->assertSessionHas('success', 'Handover method selected successfully.');
+
+        $handover->refresh();
+        $this->assertSame('pickup', $handover->scheduled_method);
+        $this->assertStringContainsString('schedule.method_selected', json_encode($handover->history));
+
+        // View status page after selecting pickup
+        $this->actingAs($owner)->get(route('adopter.handover.status', $handover))
+            ->assertOk()
+            ->assertSee('Selected: Pickup');
+
+        // Switch to delivery
+        $this->actingAs($owner)->post(route('adopter.handover.schedule.method', $handover), [
+            'method' => 'delivery',
+        ])->assertSessionHasNoErrors();
+
+        $handover->refresh();
+        $this->assertSame('delivery', $handover->scheduled_method);
+
+        // Staff sees the adopter's preference on admin handover page
+        $adminResponse = $this->actingAs($staff)->get(route('admin.handover.show', $handover));
+        $adminResponse->assertOk()
+            ->assertSee('Adopter preferred: Third-party delivery');
+
+        // Other adopter cannot change someone else's handover method (403)
+        $otherUser = User::create([
+            'first_name' => 'Other', 'last_name' => 'User',
+            'email' => 'other@example.test', 'password' => 'password',
+            'role' => Role::Adopter->value, 'email_verified_at' => now(), 'is_active' => true,
+        ]);
+        $this->actingAs($otherUser)->post(route('adopter.handover.schedule.method', $handover), [
+            'method' => 'pickup',
+        ])->assertForbidden();
+
+        // Invalid method rejected
+        $this->actingAs($owner)->post(route('adopter.handover.schedule.method', $handover), [
+            'method' => 'teleport',
+        ])->assertSessionHasErrors(['method']);
+    }
 }

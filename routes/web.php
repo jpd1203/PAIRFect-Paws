@@ -297,6 +297,7 @@ Route::middleware('auth')->group(function () {
 // ─── Handover & Adopter Confirmation Link Routes ──────────────────────────────
 Route::middleware(['auth', 'adopter', 'verified'])->group(function () {
     Route::post('/adopter/{handover}/schedule/confirm', [\App\Http\Controllers\HandoverScheduleController::class, 'confirm'])->name('adopter.handover.schedule.confirm');
+    Route::post('/adopter/{handover}/schedule/method', [\App\Http\Controllers\HandoverScheduleController::class, 'selectMethod'])->name('adopter.handover.schedule.method');
     Route::post('/adopter/{handover}/reschedule', [\App\Http\Controllers\HandoverScheduleController::class, 'requestReschedule'])->name('adopter.handover.reschedule');
     Route::get('/adopter', [HandoverConfirmationController::class, 'userHandoverRedirect'])->name('adopter.handover.my');
     Route::get('/confirm/{handover}', [HandoverConfirmationController::class, 'confirmView'])->name('adopter.confirm');

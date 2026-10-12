@@ -2,15 +2,28 @@
 @section('title', 'Identity Verification | PAIRfect Paws')
 @section('content')
     
-    <div class="flex items-center gap-2 text-sm text-[#777] mb-2 font-medium">
-        <a href="{{ url()->previous() }}" class="hover:text-primary transition no-underline text-[#777]">            
-            <i class="fa-solid fa-arrow-left mr-1"></i> Back to Handover Details</a>
-    </div>
+    @php
+        $handover = $application->handover()->first();
+        $handoverId = request('handover') ?: ($handover?->id);
+        $isFromHandover = request('from') === 'handover'
+            || request()->filled('handover')
+            || (url()->previous() && str_contains(url()->previous(), '/admin/handover'));
+        $handoverUrl = $handoverId ? route('admin.handover.show', $handoverId) : url()->previous();
+    @endphp
+
+    @if($isFromHandover)
+        <div class="flex items-center gap-2 text-sm text-[#777] mb-2 font-medium">
+            <a href="{{ $handoverUrl }}" class="hover:text-primary transition no-underline text-[#777]">            
+                <i class="fa-solid fa-arrow-left mr-1"></i> Back to Handover Details</a>
+        </div>
+    @endif
     <div class="heading-text mb-5">
         <h2>Identity Verification — Application #{{ $application->id }}</h2>
         <p class="pb-3">{{ $application->first_name }} {{ $application->last_name }} · {{ $application->pet?->name }}</p>
-        <a class="btn btn-secondary" href="{{ route('admin.applications.index', ['highlight' => $application->id]) }}"><i class="fa-solid fa-arrow-left"></i><span>Back to Application</span></a>
-        <a class="btn btn-secondary" href="{{ route('admin.applications.document-verification', $application) }}"> <i class="fa-solid fa-eye"></i><span>Review Private Document</span></a>
+        @if(!$isFromHandover)
+            <a class="btn btn-secondary" href="{{ route('admin.applications.index', ['highlight' => $application->id]) }}"><i class="fa-solid fa-arrow-left"></i><span>Back to Application</span></a>
+        @endif
+        <a class="btn btn-secondary" href="{{ route('admin.applications.document-verification', array_filter(['application' => $application, 'from' => $isFromHandover ? 'handover' : null, 'handover' => $isFromHandover ? $handoverId : null])) }}"> <i class="fa-solid fa-eye"></i><span>Review Private Document</span></a>
     </div>
     @if($errors->any())<div class="modal-note caution mb-4" role="alert">{{ $errors->first() }}</div>@endif
     @if(session('success'))<div class="modal-note mb-4">{{ session('success') }}</div>@endif

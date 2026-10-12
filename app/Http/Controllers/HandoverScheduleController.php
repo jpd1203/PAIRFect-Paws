@@ -29,6 +29,17 @@ class HandoverScheduleController extends Controller
         return back()->with('success', 'Handover schedule confirmed.');
     }
 
+    public function selectMethod(Request $request, Handover $handover, HandoverScheduleService $service)
+    {
+        abort_unless((int) $handover->user_id === (int) $request->user()->id, 403);
+        $data = $request->validate([
+            'method' => 'required|in:pickup,delivery',
+        ]);
+        $service->selectMethod($handover, $request->user(), $data['method']);
+
+        return back()->with('success', 'Handover method selected successfully.');
+    }
+
     public function requestReschedule(Request $request, Handover $handover, HandoverScheduleService $service)
     {
         abort_unless((int) $handover->user_id === (int) $request->user()->id, 403);

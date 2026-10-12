@@ -136,6 +136,24 @@
                                     <div class="note-section">
                                         <strong>Promoted:</strong> You are now the primary candidate. Staff will contact you to schedule an interview.
                                     </div>
+                                @elseif ($status === 'Approved')
+                                    <div class="my-4 rounded-xl border border-emerald-300 bg-emerald-50/70 p-4 shadow-xs">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div class="flex items-start gap-2.5">
+                                                <i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 text-base shrink-0"></i>
+                                                <div>
+                                                    <span class="text-sm font-bold text-emerald-950 block">Application Approved! Handover is now open.</span>
+                                                    <span class="text-xs text-emerald-800 mt-0.5 block">Select your preferred handover method (pickup or delivery) and track your pet's transfer.</span>
+                                                </div>
+                                            </div>
+                                            @php
+                                                $handoverRecord = \App\Models\Handover::where('application_id', $application->id)->first();
+                                            @endphp
+                                            <a href="{{ $handoverRecord ? route('adopter.handover.status', $handoverRecord) : route('adopter.handover.my') }}" class="btn btn-primary btn-sm shrink-0">
+                                                <i class="fa-solid fa-truck-ramp-box mr-1"></i> Open Handover
+                                            </a>
+                                        </div>
+                                    </div>
                                 @endif
 
                                 <div class="detail-row">

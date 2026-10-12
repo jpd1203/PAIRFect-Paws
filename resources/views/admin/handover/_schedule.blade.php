@@ -9,10 +9,17 @@
             @csrf
             <div class="px-6 py-4">
                 <input type="hidden" name="schedule_version" value="{{ $record->schedule_version }}">
-                <label for="schedule-method" class="form-label">Handover Method</label>
+                <div class="flex items-center justify-between mb-2">
+                    <label for="schedule-method" class="form-label m-0">Handover Method</label>
+                    @if($record->scheduled_method)
+                        <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <i class="fa-solid fa-user-check text-[10px]"></i> Adopter preferred: {{ $record->scheduled_method === 'pickup' ? 'Pickup at shelter' : 'Third-party delivery' }}
+                        </span>
+                    @endif
+                </div>
                 <div class="grid gap-3 sm:grid-cols-2">
                     <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-[#e2ddd7] bg-white p-3.5 transition has-[:checked]:border-primary has-[:checked]:bg-primary-muted/25 has-[:checked]:ring-1 has-[:checked]:ring-primary">
-                        <input type="radio" name="method" value="pickup" {{ $record->scheduled_method === 'pickup' ? 'checked' : '' }} class="mt-1 h-4 w-4 shrink-0 accent-primary" required>
+                        <input type="radio" name="method" value="pickup" {{ ($record->scheduled_method ?? 'pickup') === 'pickup' ? 'checked' : '' }} class="mt-1 h-4 w-4 shrink-0 accent-primary" required>
                         <div>
                             <span class="flex items-center gap-1.5 text-sm font-bold text-text-dark"><i class="fa-solid fa-house-user text-primary"></i> Pickup at shelter</span>
                             <span class="mt-0.5 block text-xs text-[#777]">Adopter collects the pet in person</span>
@@ -91,7 +98,7 @@
                 <p class="mt-0.5 text-xs text-[#777] m-0">Interview identity: {{ app(\App\Services\IdentityVerificationService::class)->isVerified($record->application) ? 'Verified' : 'Verification required' }}</p>
             </div>
             <div class="space-y-5 p-6">
-                <a class="btn btn-primary" href="{{ route('admin.applications.identity', $record->application) }}"><i class="fa-solid fa-eye"></i>Review Interview Identity</a>
+                <a class="btn btn-primary" href="{{ route('admin.applications.identity', ['application' => $record->application, 'from' => 'handover', 'handover' => $record->id]) }}"><i class="fa-solid fa-eye"></i>Review Interview Identity</a>
             </div>
         </section>
         @if($record->scheduled_method === 'pickup' && $record->schedule_status === 'confirmed')
