@@ -1017,3 +1017,62 @@
   cursor: grabbing !important;
   user-select: none;
 }
+
+/* ==========================================================================
+   Rating Pills & Question Items (Matches Admin Pet Assessment)
+   ========================================================================== */
+.rating-radiogroup {
+  background-color: #F5EFEB;
+}
+
+.rating-pill {
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+/* Active / Checked State - Solid Maroon */
+.rating-pill.is-active,
+.rating-pill:has(input:checked) {
+  background-color: #A61D24 !important;
+  color: #FFFFFF !important;
+  border-color: #A61D24 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+.rating-pill.is-active span,
+.rating-pill:has(input:checked) span {
+  color: #FFFFFF !important;
+}
+
+.rating-pill.is-active .pill-label,
+.rating-pill:has(input:checked) .pill-label {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Unselected Hover - Soft Red Highlight */
+.rating-pill:not(.is-active):not(:has(input:checked)):hover {
+  background-color: #FDF2F2 !important;
+  color: #A61D24 !important;
+}
+
+.rating-pill:not(.is-active):not(:has(input:checked)):hover span {
+  color: #A61D24 !important;
+}
+
+/* Question Number Badge - Solid Maroon when Answered */
+.q-badge.is-answered,
+.question-item:has(input:checked) .q-badge {
+  background-color: #A61D24 !important;
+  color: #FFFFFF !important;
+  border-color: #A61D24 !important;
+  box-shadow: 0 1px 2px rgba(166, 29, 36, 0.25) !important;
+}
+
+.question-item:has(input:checked) .q-badge-num {
+  display: none !important;
+}
+
+.question-item:has(input:checked) .q-badge-check {
+  display: block !important;
+}
+
