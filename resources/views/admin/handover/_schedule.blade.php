@@ -7,12 +7,12 @@
         </div>
         <form method="POST" action="{{ route('admin.handover.schedule', $record) }}" class="space-y-3">
             @csrf
-            <div class="px-6 py-4">
+            <div class="px-6 py-2">
                 <input type="hidden" name="schedule_version" value="{{ $record->schedule_version }}">
-                <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center justify-between mb-4">
                     <label for="schedule-method" class="form-label m-0">Handover Method</label>
                     @if($record->scheduled_method)
-                        <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-completed-bg text-completed-fg border border-completed-fg">
                             <i class="fa-solid fa-user-check text-[10px]"></i> Adopter preferred: {{ $record->scheduled_method === 'pickup' ? 'Pickup at shelter' : 'Third-party delivery' }}
                         </span>
                     @endif
@@ -55,7 +55,7 @@
             </div>
 
             @if($record->reschedule_reason)
-                <div class="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
                     <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Reason</p>
                     <p class="whitespace-pre-line text-sm text-gray-700">{{ $record->reschedule_reason }}</p>
                 </div>
@@ -85,8 +85,8 @@
                 </div>
 
                 <div class="flex justify-end gap-2 border-t border-[#e2ddd7] bg-secondary-bg px-6 py-4">
-                    <button class="btn btn-secondary h-10 inline-flex items-center justify-center gap-2" name="decision" value="declined"><i class="fa-solid fa-xmark"></i> Decline Request</button>
-                    <button class="btn btn-primary h-10 inline-flex items-center justify-center gap-2" name="decision" value="approved"><i class="fa-solid fa-check"></i> Approve Selected Option</button>
+                    <button class="btn btn-secondary h-[42px] inline-flex items-center justify-center gap-2" name="decision" value="declined"><i class="fa-solid fa-xmark"></i> Decline Request</button>
+                    <button class="btn btn-primary inline-flex items-center justify-center gap-2" name="decision" value="approved"><i class="fa-solid fa-check"></i> Approve Selected Option</button>
                 </div>
             </form>
         </section>

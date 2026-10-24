@@ -2,14 +2,14 @@
 @if(!$record->released_at && !$record->adopter_outcome)
     <section class="rounded-card border bg-white p-5 shadow-card">
         @if($record->schedule_status !== 'confirmed')
-            <div class="mb-5 pb-5 {{ in_array($record->schedule_status, ['proposed'], true) ? 'border-b border-gray-200' : '' }}">
+            <div class="{{ in_array($record->schedule_status, ['proposed'], true) ? 'border-b border-gray-200' : '' }}">
                 <div class="flex items-center justify-between mb-3">
                     <div>
-                        <h4 class="text-sm font-bold text-text-dark font-primary m-0">Handover Method Preference</h4>
+                        <h4 class="text-m font-bold text-text-dark font-primary m-0">Handover Method Preference</h4>
                         <p class="text-xs text-[#777] m-0 mt-0.5">Select how you would like to receive {{ $record->pet?->name ?? 'your pet' }}.</p>
                     </div>
                     @if($record->scheduled_method)
-                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                        <span class="inline-flex items-center gap-1 rounded-full bg-completed-bg px-2.5 py-0.5 text-xs font-semibold text-completed-fg border border-completed-fg">
                             <i class="fa-solid fa-circle-check text-[10px]"></i> Selected: {{ $record->scheduled_method === 'pickup' ? 'Pickup' : 'Delivery' }}
                         </span>
                     @else
@@ -46,14 +46,14 @@
                 </form>
             </div>
         @else
-            <div class="mb-5 pb-5 border-b border-gray-200">
+            <div class="mb-5 pb-5">
                 <div class="flex items-center justify-between">
                     <div>
                         <h4 class="text-sm font-bold text-text-dark font-primary m-0">Handover Method</h4>
                         <p class="text-xs text-[#777] m-0 mt-0.5">Method is confirmed for this scheduled window.</p>
                     </div>
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
-                        <i class="{{ $record->scheduled_method === 'pickup' ? 'fa-solid fa-house-user' : 'fa-solid fa-truck' }} text-emerald-600"></i>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-completed-bg px-3 py-1 text-xs font-semibold text-completed-fg border border-completed-fg">
+                        <i class="{{ $record->scheduled_method === 'pickup' ? 'fa-solid fa-house-user' : 'fa-solid fa-truck' }} text-completed-fg"></i>
                         {{ $record->scheduled_method === 'pickup' ? 'Pickup at shelter' : 'Third-party delivery' }}
                     </span>
                 </div>
@@ -61,7 +61,7 @@
         @endif
 
         @if($record->schedule_status === 'proposed')
-            <div class="mb-4 rounded-xl border border-primary/20 bg-primary-muted/15 p-4">
+            <div class="mb-4 mt-2 rounded-xl border border-primary/20 bg-primary-muted/15 p-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <h4 class="text-sm font-bold text-text-dark font-primary m-0">Confirm Proposed Schedule</h4>
