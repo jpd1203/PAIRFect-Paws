@@ -133,11 +133,13 @@
             </div>
 
             <div class="relative group/carousel">
-                <!-- Left Navigation Arrow -->
-                <button type="button" id="prevPetsBtn" aria-label="Previous pets"
-                    class="absolute -left-2 sm:-left-4 md:-left-5 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-800 shadow-md transition-all duration-200 hover:bg-gray-100 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-white cursor-pointer">
-                    <i class="fa-solid fa-chevron-left text-sm"></i>
-                </button>
+                @if (($availablePetsCount ?? 0) > 0)
+                    <!-- Left Navigation Arrow -->
+                    <button type="button" id="prevPetsBtn" aria-label="Previous pets"
+                        class="absolute -left-2 sm:-left-4 md:-left-5 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-800 shadow-md transition-all duration-200 hover:bg-gray-100 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-white cursor-pointer">
+                        <i class="fa-solid fa-chevron-left text-sm"></i>
+                    </button>
+                @endif
 
                 <div id="petsCarousel"
                     class="-mx-4 sm:-mx-6 mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth scroll-px-4 sm:scroll-px-6 px-4 sm:px-6 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -207,41 +209,45 @@
                 @endforelse
 
 
-                {{-- See More Card --}}
-                <a href="{{ route('pets.index') }}"
-                class="group relative flex w-[230px] shrink-0 snap-start flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-[#c9ae72] bg-white p-6 text-center no-underline cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:border-[#a98b58] hover:bg-[#fffdf8] hover:shadow-lg active:scale-[0.98]">
+                @if (($availablePetsCount ?? 0) > 0)
+                    {{-- See More Card --}}
+                    <a href="{{ route('pets.index') }}"
+                    class="group relative flex w-[230px] shrink-0 snap-start flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-[#c9ae72] bg-white p-6 text-center no-underline cursor-pointer transition-all duration-300 hover:-translate-y-1.5 hover:border-[#a98b58] hover:bg-[#fffdf8] hover:shadow-lg active:scale-[0.98]">
 
-                    {{-- Decorative paw --}}
-                    <div class="pointer-events-none absolute -bottom-5 -right-4 rotate-12 opacity-[0.06] transition-transform duration-500 group-hover:scale-125 group-hover:rotate-6">
-                        <i class="fa-solid fa-paw text-8xl text-[#4a3520]"></i>
-                    </div>
+                        {{-- Decorative paw --}}
+                        <div class="pointer-events-none absolute -bottom-5 -right-4 rotate-12 opacity-[0.06] transition-transform duration-500 group-hover:scale-125 group-hover:rotate-6">
+                            <i class="fa-solid fa-paw text-8xl text-[#4a3520]"></i>
+                        </div>
 
-                    {{-- Arrow Circle --}}
-                    <span class="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#fffaf0] text-[#4a3520] ring-1 ring-[#d8c7a5] shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:bg-[#4a3520] group-hover:text-white group-hover:ring-[#4a3520] group-hover:shadow-md">
-                        <i class="fa-solid fa-arrow-right text-base transition-transform duration-300 group-hover:translate-x-1"></i>
-                    </span>
+                        {{-- Arrow Circle --}}
+                        <span class="relative flex h-14 w-14 items-center justify-center rounded-full bg-[#fffaf0] text-[#4a3520] ring-1 ring-[#d8c7a5] shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:bg-[#4a3520] group-hover:text-white group-hover:ring-[#4a3520] group-hover:shadow-md">
+                            <i class="fa-solid fa-arrow-right text-base transition-transform duration-300 group-hover:translate-x-1"></i>
+                        </span>
 
-                    <span class="relative mt-4 font-bold text-gray-900 transition-colors duration-200 group-hover:text-[#7a5a35]">
-                        See more available pets
-                    </span>
+                        <span class="relative mt-4 font-bold text-gray-900 transition-colors duration-200 group-hover:text-[#7a5a35]">
+                            See more available pets
+                        </span>
 
-                    <span class="relative mt-1 text-xs text-gray-600">
-                        {{ $availablePetsCount ?? 0 }} pets are waiting for a home
-                    </span>
+                        <span class="relative mt-1 text-xs text-gray-600">
+                            {{ $availablePetsCount ?? 0 }} pets are waiting for a home
+                        </span>
 
-                    <span class="relative mt-3 text-[10px] font-semibold uppercase tracking-wider text-[#9a7b4f] opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                        Explore <i class="fa-solid fa-arrow-right ml-1"></i>
-                    </span>
+                        <span class="relative mt-3 text-[10px] font-semibold uppercase tracking-wider text-[#9a7b4f] opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                            Explore <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </span>
 
-                </a>
+                    </a>
+                @endif
 
             </div>
 
-            <!-- Right Navigation Arrow -->
-            <button type="button" id="nextPetsBtn" aria-label="Next pets"
-                class="absolute -right-2 sm:-right-4 md:-right-5 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-800 shadow-md transition-all duration-200 hover:bg-gray-100 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-white cursor-pointer">
-                <i class="fa-solid fa-chevron-right text-sm"></i>
-            </button>
+            @if (($availablePetsCount ?? 0) > 0)
+                <!-- Right Navigation Arrow -->
+                <button type="button" id="nextPetsBtn" aria-label="Next pets"
+                    class="absolute -right-2 sm:-right-4 md:-right-5 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-800 shadow-md transition-all duration-200 hover:bg-gray-100 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-white cursor-pointer">
+                    <i class="fa-solid fa-chevron-right text-sm"></i>
+                </button>
+            @endif
         </div>
 
     </div>

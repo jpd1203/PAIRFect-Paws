@@ -49,6 +49,9 @@
         
         <!-- Left Column: Release Details & Adopter Confirmation -->
         <div class="space-y-5">
+            @if($errors->any())<div class="modal-note caution" role="alert">{{ $errors->first() }}</div>@endif
+            @if(session('success'))<div class="modal-note">{{ session('success') }}</div>@endif
+            @include('admin.handover._schedule')
             @if ($record->released_at)
                 @include('admin.handover._recorded_release', ['record' => $record])
                 @include('admin.handover._adopter_confirmation', ['record' => $record])

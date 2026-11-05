@@ -21,6 +21,7 @@ use Tests\Concerns\BuildsMatchingFixtures;
 class ReservationQueueTest extends TestCase
 {
     use BuildsMatchingFixtures, RefreshDatabase;
+    use \Tests\Concerns\PreparesVerifiedHandovers;
 
     public function test_scheduling_soft_reserves_and_no_show_promotes_the_next_compatibility_ranked_application(): void
     {
@@ -446,6 +447,7 @@ class ReservationQueueTest extends TestCase
 
         $queue->schedule($first, now()->addDay(), $staff, $staff->id);
         $queue->recordInterviewNotes($first, 'Suitable home and adopter.', $staff->full_name, $staff->id);
+        $this->verifiedIdentity($first->refresh(), $staff);
         $closed = $queue->approve($first, 'Approved after review.', $staff->id);
 
         $this->assertCount(1, $closed);

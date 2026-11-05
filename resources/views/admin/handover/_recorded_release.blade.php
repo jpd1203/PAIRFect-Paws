@@ -59,6 +59,14 @@
                     </div>
                 </div>
             @endif
+            @if ($isDelivery && $record->tracking_url)
+                <div>
+                    <a href="{{ $record->tracking_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+                        <i class="fa-solid fa-location-dot mr-1.5" aria-hidden="true"></i> Open Live Tracking
+                        <i class="fa-solid fa-arrow-up-right-from-square ml-1.5" aria-hidden="true"></i>
+                    </a>
+                </div>
+            @endif
         </dl>
 
         @if ($record->proof_path || $record->legacyPublicProofPath())

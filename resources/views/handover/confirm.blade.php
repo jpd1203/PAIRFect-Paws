@@ -53,9 +53,14 @@
                 </div>
             </section>
 
+            @include('handover._schedule-summary')
             @if ($record->released_at && $record->release_method)
             @php
-                $isDelivery = ($record->release_method === 'delivery');
+                $releaseMethod = match ($record->release_method) {
+                    'delivery' => 'Third-party delivery' . ($record->courier ? ' · ' . $record->courier : ''),
+                    'pickup' => 'Shelter pickup',
+                    default => 'Not recorded',
+                };
                 $dateTime = ($record->release_date && $record->release_time)
                     ? $record->release_date->format('M j, Y') . ' · ' . date('g:i A', strtotime($record->release_time))
                     : $record->released_at->format('M j, Y · g:i A');
@@ -74,7 +79,7 @@
                             <div>
                                 <span class="text-[11px] font-bold uppercase tracking-wider text-[#777] block">RELEASE METHOD</span>
                                 <span class="text-sm font-bold text-text-dark block mt-0.5">
-                                    {{ $isDelivery ? ('Third-party delivery' . ($record->courier ? ' · ' . $record->courier : '')) : 'Shelter pickup' }}
+                                    {{ $releaseMethod }}
                                 </span>
                             </div>
                         </div>
@@ -105,6 +110,9 @@
                                     <span class="text-sm font-bold font-mono text-text-dark block mt-0.5">{{ $record->tracking_number }}</span>
                                 </div>
                             </div>
+                        @endif
+                        @if (!$record->adopter_outcome)
+                            @include('handover._live_tracking')
                         @endif
                     </div>
 
@@ -202,16 +210,17 @@
                                       class="form-control resize-y"></textarea>
                         </div>
 
-                        <div class="flex items-center gap-4 flex-wrap justify-between pt-4 border-t border-[#e2ddd7]">
+                        <div class="flex items-center justify-end gap-4 flex-wrap pt-4 border-t border-[#e2ddd7]">
                             <button type="submit" name="outcome" value="received" class="btn btn-primary">
                                 <i class="fa-solid fa-circle-check mr-2"></i> Yes, I've received {{ $record->pet?->name }}
                             </button>
 
                             <button type="submit" name="outcome" value="not_received"
-                                    onclick="return confirm('Are you sure you want to report that {{ $record->pet?->name }} has not arrived? Staff will be alerted immediately.');"
+                                    onclick="return confirm('Are you sure you want to report that your pet has not arrived? Staff will be alerted immediately.');"
                                     class="btn btn-danger">
                                 <i class="fa-solid fa-triangle-exclamation mr-2"></i> No, I haven't received my pet
                             </button>
+
                         </div>
                     </form>
                 </section>

@@ -75,7 +75,7 @@
 </div>
 
     <!-- Modal Overlay -->
-    <div class="modal-overlay" id="petModal">
+    <div class="modal-overlay" id="petModal" role="dialog" aria-modal="true" aria-label="Pet profile">
         <div class="pet-modal" id="petModalContent">
             <!-- Filled in dynamically via fetch() -->
         </div>

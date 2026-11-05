@@ -96,6 +96,11 @@ class AdoptionApplication extends Model
         return $this->hasOne(Handover::class, 'application_id');
     }
 
+    public function identityVerifications()
+    {
+        return $this->hasMany(IdentityVerification::class, 'application_id');
+    }
+
     public function hasCompletedHandover(): bool
     {
         if ($this->status !== ApplicationStatus::Approved) {

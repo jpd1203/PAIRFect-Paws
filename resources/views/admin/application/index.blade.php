@@ -320,6 +320,7 @@
                 'conducted_by' => $app->conducted_by,
                 'decision_remarks' => $app->decision_remarks,
                 'reschedule_status' => $app->reschedule_status,
+                'identity_url' => route('admin.applications.identity', $app),
                 'reschedule_reason' => $app->reschedule_reason,
                 'reschedule_options' => $app->reschedule_options ?? [],
                 'reschedule_decline_action' => route('admin.applications.reschedule.decline', $app),

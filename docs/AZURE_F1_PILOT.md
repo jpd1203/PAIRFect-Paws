@@ -134,8 +134,8 @@ count mismatch or a partial previous run and is a no-op after a complete run.
 Never use it for real animal records or present these assessments as genuine.
 
 The scheduler in `routes/console.php` runs check-in reminders daily, reservation
-timeouts hourly, matching recomputation hourly, and capture-challenge cleanup
-daily. `php artisan schedule:run` must be invoked every minute by reliable
+timeouts hourly, matching recomputation hourly, capture-challenge cleanup
+daily, and confirmed-handover reminders every 15 minutes. `php artisan schedule:run` must be invoked every minute by reliable
 external scheduling to preserve those guarantees. It is not automatic on F1.
 Manual command execution can demonstrate logic but is not a substitute for
 production automation.

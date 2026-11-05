@@ -24,6 +24,7 @@ use Tests\TestCase;
 class HandoverWorkflowTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\PreparesVerifiedHandovers;
 
     public function test_adopter_without_approved_adoption_sees_handover_unavailable_notice(): void
     {
@@ -95,6 +96,10 @@ class HandoverWorkflowTest extends TestCase
             ->assertDontSee('Release Details')
             ->assertDontSee('Marco Uy')
             ->assertSee('main-content-header', false)
+            ->assertSee('Approved &mdash; waiting on a handover schedule', false)
+            ->assertDontSee('Shelter pickup')
+            ->assertDontSee('Proof of handover')
+            ->assertDontSee(route('adopter.confirm', $handover), false)
             ->assertDontSee(route('adopter.handover.notifications', $handover));
 
         $this->assertSame(1, substr_count($status->getContent(), 'class="notification-bell'));
@@ -124,6 +129,26 @@ class HandoverWorkflowTest extends TestCase
         Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool =>
             $mail->hasTo($adopter->email) && $mail->subjectLine === 'Your adoption has been approved');
         Mail::assertQueuedCount(1);
+    }
+
+    public function test_legacy_release_details_do_not_invent_a_method_or_staff_member(): void
+    {
+        Mail::fake();
+        $adopter = $this->adopter('legacy-display@example.test');
+        $handover = $this->handoverFor($this->approvedApplication($adopter));
+        $handover->update(['released_at' => now(), 'release_method' => null, 'staff_name' => null]);
+
+        foreach (['adopter.handover.status', 'adopter.confirm'] as $route) {
+            $this->actingAs($adopter)->get(route($route, $handover))
+                ->assertOk()->assertDontSee('Release Details')->assertDontSee('Marco Uy');
+        }
+
+        $handover->update(['release_method' => 'pickup']);
+        foreach (['adopter.handover.status', 'adopter.confirm'] as $route) {
+            $this->get(route($route, $handover))->assertOk()
+                ->assertSee('Release Details')->assertSee('Shelter pickup')
+                ->assertDontSee('RELEASED BY')->assertDontSee('Marco Uy');
+        }
     }
 
     public function test_handover_pages_and_actions_are_limited_to_the_record_owner(): void
@@ -165,6 +190,12 @@ class HandoverWorkflowTest extends TestCase
         $application = $this->approvedApplication($adopter);
         $handover = $this->handoverFor($application);
         $handover->update(['released_at' => now()]);
+        $administrator = User::create([
+            'first_name' => 'Handover', 'last_name' => 'Admin',
+            'email' => 'handover-admin@example.test', 'password' => bcrypt('password'),
+            'role' => Role::Administrator->value, 'email_verified_at' => now(), 'is_active' => true,
+        ]);
+        $volunteer = $this->staff('handover-volunteer@example.test');
 
         $this->assertSame(0, PostAdoptionLog::where('application_id', $application->id)->count());
 
@@ -177,6 +208,17 @@ class HandoverWorkflowTest extends TestCase
 
         $this->assertSame('received', $handover->fresh()->adopter_outcome);
         $this->assertSame(1, $adopter->inAppNotifications()->where('kind', 'completed')->count());
+        $staffNotice = $administrator->inAppNotifications()->where('kind', 'handover_received_staff')->sole();
+        $this->assertSame('Handover', $staffNotice->entity_type);
+        $this->assertSame($handover->id, $staffNotice->entity_id);
+        $this->assertSame(route('admin.handover.show', $handover, false), $staffNotice->action_url);
+        $this->assertSame(0, $volunteer->inAppNotifications()->where('kind', 'handover_received_staff')->count());
+        $this->actingAs($administrator)->get(route('admin.handover.index'))
+            ->assertOk()
+            ->assertSee('Handover completed: '.$handover->pet->name);
+        $this->get(route('notifications.open', $staffNotice))
+            ->assertRedirect(route('admin.handover.show', $handover));
+        $this->assertNotNull($staffNotice->fresh()->read_at);
         $this->assertNotNull($handover->fresh()->received_at);
         Storage::disk('local')->assertExists($handover->fresh()->receipt_proof_path);
         $this->assertSame(
@@ -187,6 +229,8 @@ class HandoverWorkflowTest extends TestCase
         $this->assertCount(3, PostAdoptionLog::where('application_id', $application->id)->get());
         Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool =>
             $mail->hasTo($adopter->email) && str_starts_with($mail->subjectLine, 'Welcome home,'));
+        Mail::assertNotQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool =>
+            $mail->hasTo($administrator->email) || $mail->hasTo($volunteer->email));
     }
 
     public function test_receipt_requires_release_and_a_valid_photo_and_can_only_be_confirmed_once(): void
@@ -275,6 +319,7 @@ class HandoverWorkflowTest extends TestCase
             'is_active' => true,
         ]);
 
+        $this->prepareHandover($handover, $volunteer, 'pickup');
         $this->actingAs($volunteer)
             ->from(route('admin.handover.show', $handover))
             ->post(route('admin.handover.release', $handover), [
@@ -291,13 +336,16 @@ class HandoverWorkflowTest extends TestCase
         $this->actingAs($adopter)->get(route('adopter.handover.status', $handover))
             ->assertOk()
             ->assertSee('Release Details')
+            ->assertSee('Shelter pickup')
             ->assertSee($volunteer->full_name)
-            ->assertDontSee('Marco Uy');
+            ->assertDontSee('Marco Uy')
+            ->assertDontSee('Proof of handover');
         $this->get(route('adopter.confirm', $handover))
             ->assertOk()
             ->assertSee('Release Details')
             ->assertSee($volunteer->full_name)
-            ->assertSee('Did '.$handover->pet->name.' arrive?');
+            ->assertSee('Did '.$handover->pet->name.' arrive?')
+            ->assertDontSee('Proof of handover');
         $this->assertDatabaseHas('handover_notifications', [
             'handover_id' => $handover->id,
             'user_id' => $adopter->id,
@@ -369,16 +417,21 @@ class HandoverWorkflowTest extends TestCase
         $this->actingAs($staff)->post(route('admin.handover.reopen', $handover), [
             'reason' => 'Delivery could not be completed.',
         ])->assertSessionHas('toast.type', 'success');
+        $this->actingAs($adopter)->get(route('adopter.handover.status', $handover))
+            ->assertOk()
+            ->assertDontSee('Release Details');
         Mail::assertQueued(TransactionalMail::class, fn (TransactionalMail $mail): bool =>
             $mail->hasTo($adopter->email) && str_starts_with($mail->subjectLine, 'A new handover'));
 
+        $this->prepareHandover($handover->refresh(), $staff);
         $this->actingAs($staff)->post(route('admin.handover.release', $handover), [
             'release_method' => 'delivery',
             'release_date' => today()->toDateString(),
             'release_time' => '10:30',
             'staff_id' => $staff->id,
-            'courier' => 'Shelter courier',
+            'courier_provider' => 'pet_to_go_express',
             'tracking_number' => 'RETRY-1',
+            'tracking_url' => 'https://courier.example.test/track/retry',
         ])->assertSessionHas('toast.type', 'success');
 
         Mail::fake();
@@ -399,6 +452,7 @@ class HandoverWorkflowTest extends TestCase
         $actor = $this->staff('private-release-actor@example.test');
         $handler = $this->staff('private-release-handler@example.test');
         $handover = $this->handoverFor($this->approvedApplication($adopter));
+        $this->prepareHandover($handover, $actor, 'pickup');
         $release = [
             'release_method' => 'pickup',
             'release_date' => today()->toDateString(),
@@ -473,6 +527,7 @@ class HandoverWorkflowTest extends TestCase
             ->assertSessionHasErrors('reason');
         $this->assertSame(0, $handover->fresh()->reopen_count);
 
+        $this->prepareHandover($handover, $staff, 'pickup');
         $this->post(route('admin.handover.release', $handover), [
             'release_method' => 'pickup',
             'release_date' => today()->toDateString(),

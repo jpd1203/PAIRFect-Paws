@@ -23,6 +23,7 @@ use Tests\Concerns\BuildsMatchingFixtures;
 class AdoptionPipelineStateMachineTest extends TestCase
 {
     use BuildsMatchingFixtures, RefreshDatabase;
+    use \Tests\Concerns\PreparesVerifiedHandovers;
 
     public function test_verified_application_progresses_through_interview_notes_review_and_approval(): void
     {
@@ -133,6 +134,7 @@ class AdoptionPipelineStateMachineTest extends TestCase
                 && $mail->status === ApplicationStatus::UnderReview->value
         );
 
+        $this->verifiedIdentity($application, $staff);
         $queue->approve($application, 'Approved after final administrative review.', $staff->id);
         $application->refresh();
 

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\Role;
 use App\Mail\TransactionalMail;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -59,28 +60,7 @@ class EmailNotificationService
         string $event = 'staff_email',
         ?int $entityId = null,
     ): void {
-        $roles = $administratorsOnly
-            ? [Role::Administrator->value]
-            : [Role::Administrator->value, Role::Volunteer->value];
-
-        $excludedAddresses = collect(config('mail.staff_notification_excluded_addresses', []))
-            ->filter(fn ($email): bool => is_string($email) && filled($email))
-            ->map(fn (string $email): string => strtolower(trim($email)))
-            ->all();
-
-        $recipients = User::query()
-            ->whereIn('role', $roles)
-            ->where('is_active', true)
-            ->whereNotNull('email_verified_at')
-            ->whereNotNull('email')
-            ->get()
-            ->reject(fn (User $staff): bool => in_array(strtolower(trim($staff->email)), $excludedAddresses, true))
-            ->mapWithKeys(fn (User $staff): array => [strtolower(trim($staff->email)) => $staff]);
-
-        $alertAddress = strtolower(trim((string) config('mail.staff_alert_address')));
-        if (filter_var($alertAddress, FILTER_VALIDATE_EMAIL) && ! $recipients->has($alertAddress)) {
-            $recipients->put($alertAddress, $alertAddress);
-        }
+        $recipients = $this->staffRecipients($administratorsOnly);
 
         if (in_array($event, [
             'application_received_staff', 'document_verified_staff', 'document_followup_manual_review_staff',
@@ -113,6 +93,27 @@ class EmailNotificationService
         ): void {
             $this->queue($recipient, $subject, $heading, $lines, $actionText, $actionUrl, $event, $entityId);
         });
+    }
+
+    /** Shared recipient policy; handover outbox delivery rechecks eligibility in the worker. */
+    public function staffRecipients(bool $administratorsOnly = false): Collection
+    {
+        $roles = $administratorsOnly
+            ? [Role::Administrator->value]
+            : [Role::Administrator->value, Role::Volunteer->value];
+        $excludedAddresses = collect(config('mail.staff_notification_excluded_addresses', []))
+            ->filter(fn ($email): bool => is_string($email) && filled($email))
+            ->map(fn (string $email): string => strtolower(trim($email)))->all();
+        $recipients = User::query()->whereIn('role', $roles)->where('is_active', true)
+            ->whereNotNull('email_verified_at')->whereNotNull('email')->get()
+            ->reject(fn (User $staff): bool => in_array(strtolower(trim($staff->email)), $excludedAddresses, true))
+            ->mapWithKeys(fn (User $staff): array => [strtolower(trim($staff->email)) => $staff]);
+        $alertAddress = strtolower(trim((string) config('mail.staff_alert_address')));
+        if (filter_var($alertAddress, FILTER_VALIDATE_EMAIL) && ! $recipients->has($alertAddress)) {
+            $recipients->put($alertAddress, $alertAddress);
+        }
+
+        return $recipients;
     }
 
     /** @param list<string> $lines */
