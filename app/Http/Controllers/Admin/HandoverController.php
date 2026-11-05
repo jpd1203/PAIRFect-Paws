@@ -70,7 +70,7 @@ class HandoverController extends Controller
 
     public function show(Handover $handover)
     {
-        $handover->load(['pet', 'application', 'user', 'notifications', 'releaseRecordedBy', 'releaseHandledBy']);
+        $handover->load(['pet', 'application', 'user', 'notifications', 'releaseRecordedBy', 'releaseHandledBy', 'deliveryAddressVerifiedBy', 'deliveryContactedBy']);
 
         $volunteers = User::whereIn('role', ['Administrator', 'Volunteer'])
             ->where('is_active', true)
@@ -143,6 +143,8 @@ class HandoverController extends Controller
             $handover = DB::transaction(function () use ($request, $handover, $validated, $staffMember, $deliveryProviders, &$storedPath): Handover {
                 $application = \App\Models\AdoptionApplication::query()->lockForUpdate()->findOrFail($handover->application_id);
                 $current = Handover::query()->lockForUpdate()->findOrFail($handover->id);
+                $clearance = app(\App\Services\HandoverDeliveryClearanceService::class);
+                $clearance->authorizeStaff($request->user());
                 $current->ensureCanRelease();
                 if ($current->received_at) {
                     throw ValidationException::withMessages(['release_method' => 'This handover has already been confirmed.']);
@@ -160,6 +162,9 @@ class HandoverController extends Controller
                 $identity->requireInterview($application);
                 if ($validated['release_method'] === 'pickup' && ! $identity->isVerified($application, 'pickup_handover', $current->reopen_count)) {
                     throw ValidationException::withMessages(['identity' => 'Final pickup identity verification must be completed before release.']);
+                }
+                if ($validated['release_method'] === 'delivery') {
+                    $clearance->requireReleaseClearance($current);
                 }
 
                 if ($request->hasFile('proof')) {

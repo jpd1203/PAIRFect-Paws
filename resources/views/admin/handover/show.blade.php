@@ -52,6 +52,7 @@
             @if($errors->any())<div class="modal-note caution" role="alert">{{ $errors->first() }}</div>@endif
             @if(session('success'))<div class="modal-note">{{ session('success') }}</div>@endif
             @include('admin.handover._schedule')
+            @include('admin.handover._delivery-clearance')
             @if ($record->released_at)
                 @include('admin.handover._recorded_release', ['record' => $record])
                 @include('admin.handover._adopter_confirmation', ['record' => $record])
@@ -103,7 +104,7 @@
                         @foreach ($history as $idx => $entry)
                             @php
                                 $isLatest = ($idx === 0);
-                                $entryTime = isset($entry['at']) ? date('M j, Y · g:i A', strtotime($entry['at'])) : '';
+                                $entryTime = \App\Support\ManilaTime::parseAndFormat($entry['at'] ?? null, 'M j, Y · g:i A', 'Time not available');
                             @endphp
                             <li class="flex gap-3">
                                 <div class="relative mt-1 flex w-3 justify-center">

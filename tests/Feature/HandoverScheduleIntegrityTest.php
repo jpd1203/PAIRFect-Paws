@@ -206,6 +206,8 @@ class HandoverScheduleIntegrityTest extends TestCase
         $this->verifiedIdentity($application, $staff);
         if ($method === 'pickup') {
             $this->verifiedIdentity($application, $staff, 'pickup_handover');
+        } else {
+            $this->prepareDeliveryClearance($handover, $staff);
         }
         $this->travelTo($handover->scheduled_start_at->copy()->addMinutes(30));
         $this->actingAs($staff)->post(route('admin.handover.release', $handover), $this->releaseData($staff, $method))
@@ -233,6 +235,8 @@ class HandoverScheduleIntegrityTest extends TestCase
         $this->verifiedIdentity($application, $staff);
         if ($method === 'pickup') {
             $this->verifiedIdentity($application, $staff, 'pickup_handover');
+        } else {
+            $this->prepareDeliveryClearance($handover, $staff);
         }
         $this->assertSame('02:00', $handover->scheduled_start_at->utc()->format('H:i'));
         $instant = match ($boundary) {
@@ -293,6 +297,7 @@ class HandoverScheduleIntegrityTest extends TestCase
             $this->post($url, $incomplete)->assertSessionHasErrors(['courier_provider', 'tracking_number', 'tracking_url']);
             $this->post($url, array_replace($payload, ['tracking_url' => 'http://example.test/insecure']))
                 ->assertSessionHasErrors('tracking_url');
+            $this->prepareDeliveryClearance($handover, $staff);
         }
         $this->assertNull($handover->fresh()->released_at);
         $this->post($url, $payload)->assertSessionHasNoErrors();
@@ -308,6 +313,7 @@ class HandoverScheduleIntegrityTest extends TestCase
         $this->actingAs($owner)->post(route('adopter.handover.reschedule', $handover), [
             'schedule_version' => $handover->schedule_version, 'options' => [$this->slot(7)],
         ])->assertSessionHasNoErrors();
+        $this->prepareDeliveryClearance($handover, $staff);
         $this->travelTo($handover->scheduled_end_at->copy()->addMinute());
         $this->actingAs($staff)->post(route('admin.handover.release', $handover), $this->releaseData($staff))
             ->assertSessionHasErrors('schedule');

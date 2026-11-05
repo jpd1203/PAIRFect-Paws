@@ -29,7 +29,9 @@ class HandoverMailOutboxService
             'handover_id' => $handover->id, 'recipient_user_id' => $recipient instanceof User ? $recipient->id : null,
             'kind' => $kind, 'audience' => $audience, 'schedule_version' => (int) $handover->schedule_version,
             'release_attempt' => $handover->reopen_count ?? 0,
-            'schedule_fingerprint' => $this->fingerprint($handover),
+            'schedule_fingerprint' => $kind === 'delivery_pre_dispatch'
+                ? app(HandoverDeliveryClearanceService::class)->notificationFingerprint($handover)
+                : $this->fingerprint($handover),
             'payload' => ['recipient' => $address, ...$payload],
         ]);
         DB::afterCommit(fn () => $this->enqueue($row->id));
@@ -194,6 +196,20 @@ class HandoverMailOutboxService
             return 'application_not_approved';
         }
         $kind = $row->kind;
+        if ($kind === 'delivery_pre_dispatch') {
+            $clearance = app(HandoverDeliveryClearanceService::class);
+            if ($handover->released_at || $handover->adopter_outcome || $handover->received_at) {
+                return 'dispatch_preparation_ended';
+            }
+            if (! $clearance->readinessIsCurrent($handover)
+                || $handover->schedule_version !== $row->schedule_version
+                || $clearance->notificationFingerprint($handover) !== $row->schedule_fingerprint
+                || ManilaTime::now()->gt(ManilaTime::at($handover->scheduled_end_at))) {
+                return 'delivery_clearance_changed';
+            }
+
+            return null;
+        }
         $scheduleDependent = in_array($kind, ['24h_reminder', '2h_reminder', 'receipt_reminder', 'delivery_follow_up', 'missed_pickup', 'method_selected'], true)
             || str_starts_with($kind, 'schedule_') || str_starts_with($kind, 'reschedule_');
         if ($scheduleDependent && ($row->schedule_version > $handover->schedule_version || $this->fingerprint($handover) !== $row->schedule_fingerprint)) {

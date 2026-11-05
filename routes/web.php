@@ -249,6 +249,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/adoption-profiles/{application}/document', [Admin\AdoptionProfileController::class, 'document'])->name('adoption-profiles.document');
 
         // Handover & Release
+        Route::post('/handover/{handover}/delivery/address-verification', [Admin\HandoverDeliveryController::class, 'verifyAddress'])->name('handover.delivery.address');
+        Route::post('/handover/{handover}/delivery/readiness', [Admin\HandoverDeliveryController::class, 'readiness'])->name('handover.delivery.readiness');
         Route::get('/applications/{application}/identity-verification', [Admin\IdentityVerificationController::class, 'show'])->name('applications.identity');
         Route::post('/applications/{application}/identity-verification', [Admin\IdentityVerificationController::class, 'store'])->name('applications.identity.store');
         Route::post('/handover/{handover}/schedule', [\App\Http\Controllers\HandoverScheduleController::class, 'propose'])->name('handover.schedule');

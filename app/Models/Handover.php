@@ -54,7 +54,24 @@ class Handover extends Model
         'follow_up_flagged_at', 'missed_pickup_notified_at',
     ];
 
-    protected $hidden = ['tracking_url'];
+    protected $hidden = [
+        'tracking_url', 'delivery_readiness_notes', 'delivery_address_fingerprint',
+        'delivery_readiness_destination_fingerprint', 'delivery_readiness_schedule_fingerprint',
+    ];
+
+    protected static function booted(): void
+    {
+        static::updating(function (Handover $handover): void {
+            if ($handover->isDirty('adopter_address')) {
+                $handover->forceFill([
+                    'delivery_address_status' => null, 'delivery_address_fingerprint' => null,
+                    'delivery_address_verified_by_user_id' => null, 'delivery_address_verified_at' => null,
+                    'delivery_recipient_available' => null,
+                    'delivery_clearance_version' => (int) $handover->delivery_clearance_version + 1,
+                ]);
+            }
+        });
+    }
 
     protected function casts(): array
     {
@@ -73,6 +90,9 @@ class Handover extends Model
             'reschedule_reviewed_at' => 'datetime', 'schedule_24h_reminder_sent_at' => 'datetime',
             'schedule_2h_reminder_sent_at' => 'datetime', 'receipt_reminder_sent_at' => 'datetime',
             'follow_up_flagged_at' => 'datetime', 'missed_pickup_notified_at' => 'datetime',
+            'delivery_clearance_version' => 'integer', 'delivery_address_verified_at' => 'datetime',
+            'delivery_contacted_at' => 'datetime', 'delivery_recipient_available' => 'boolean',
+            'delivery_readiness_schedule_version' => 'integer', 'delivery_readiness_release_attempt' => 'integer',
         ];
     }
 
@@ -112,6 +132,16 @@ class Handover extends Model
             && $this->released_at === null
             && $this->adopter_outcome === null
             && $this->received_at === null;
+    }
+
+    public function deliveryAddressVerifiedBy()
+    {
+        return $this->belongsTo(User::class, 'delivery_address_verified_by_user_id');
+    }
+
+    public function deliveryContactedBy()
+    {
+        return $this->belongsTo(User::class, 'delivery_contacted_by_user_id');
     }
 
     public function ensureCanRelease(): void

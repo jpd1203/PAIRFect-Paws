@@ -221,6 +221,7 @@ class HandoverSchedulingIdentityTest extends TestCase
         $this->confirm($owner, $handover);
         $this->actingAs($staff)->post(route('admin.handover.release', $handover), $this->release($staff))->assertSessionHasErrors('identity');
         $this->verifiedIdentity($application, $staff);
+        $this->prepareDeliveryClearance($handover, $staff);
         $this->post(route('admin.handover.release', $handover), $this->release($staff))->assertSessionHasNoErrors()->assertSessionHas('toast.type', 'success');
         $this->assertNotNull($handover->fresh()->released_at);
         $this->assertDatabaseCount('identity_verifications', 1);
