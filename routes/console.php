@@ -21,6 +21,9 @@ Schedule::command('reservations:process-timeouts')->hourly()->withoutOverlapping
 Schedule::command('matching:recompute')->hourly()->withoutOverlapping();
 Schedule::command('handovers:process-schedule-reminders')
     ->everyFifteenMinutes()->timezone('Asia/Manila')->withoutOverlapping();
+// Delivery recovery only; the operational reminder thresholds above are unchanged.
+Schedule::command('handovers:dispatch-pending-email')
+    ->everyMinute()->timezone('Asia/Manila')->withoutOverlapping();
 
 Schedule::call(function (): void {
     PostAdoptionCaptureChallenge::query()

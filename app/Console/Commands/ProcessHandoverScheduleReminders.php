@@ -13,7 +13,7 @@ class ProcessHandoverScheduleReminders extends Command
 
     public function handle(HandoverReminderService $service): int
     {
-        $this->info('Processed '.$service->process().' handover reminder/follow-up event(s).');
+        $this->info('Durably recorded '.$service->process().' handover reminder/follow-up event(s). This is not a delivery confirmation.');
 
         return self::SUCCESS;
     }

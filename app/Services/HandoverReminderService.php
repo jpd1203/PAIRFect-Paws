@@ -11,6 +11,8 @@ class HandoverReminderService
 
     public function process(): int
     {
+        // Recover committed mail intents even when the reminder marker is already set.
+        app(HandoverMailOutboxService::class)->dispatchPending();
         $count = 0;
         Handover::query()->where('schedule_status', 'confirmed')->whereNull('adopter_outcome')
             ->whereNull('received_at')->whereNotNull('scheduled_start_at')->whereNotNull('scheduled_end_at')
@@ -65,6 +67,7 @@ class HandoverReminderService
         if ($handover->$marker) {
             return 0;
         }
+        // This marker records durable event creation, not mail queueing or delivery.
         $updated = Handover::query()->whereKey($handover->id)->where('schedule_version', $handover->schedule_version)
             ->whereNull($marker)->whereNull('adopter_outcome')->whereNull('received_at')->update([$marker => now()]);
         if ($updated !== 1) {
