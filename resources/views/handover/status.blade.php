@@ -84,10 +84,10 @@
                         </div>
                         <div class="min-w-0 flex-1">
                             <h3 class="text-base font-bold text-text-dark font-primary m-0">
-                                We know {{ $record->pet?->name }} hasn't arrived
+                                You reported that {{ $record->pet?->name }} has not arrived
                             </h3>
                             <p class="mt-1 text-sm text-text-muted m-0">
-                                The shelter is arranging a new handover and will call you at {{ $record->adopter_phone }}.
+                                Shelter staff have been notified to investigate your report and follow up with you. This report does not establish a verified delivery failure.
                             </p>
                         </div>
                     </div>

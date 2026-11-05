@@ -42,6 +42,7 @@ class HandoverReminderService
                                 $pet."'s scheduled delivery window has ended. Please confirm in PAIRfect Paws whether your pet has arrived.");
                         }
                         if ($delivery && $current->released_at && $now->gte($end->copy()->addHours(3))) {
+                            app(HandoverTransportIncidentService::class)->overdueDelivery($current);
                             $events += $this->once($current, 'follow_up_flagged_at', 'delivery_follow_up', 'Delivery receipt unconfirmed',
                                 "Handover {$current->code}: the delivery window ended more than three hours ago without receipt confirmation. Contact the adopter and courier.", true);
                         }

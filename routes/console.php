@@ -24,6 +24,8 @@ Schedule::command('handovers:process-schedule-reminders')
 // Delivery recovery only; the operational reminder thresholds above are unchanged.
 Schedule::command('handovers:dispatch-pending-email')
     ->everyMinute()->timezone('Asia/Manila')->withoutOverlapping();
+Schedule::command('handovers:process-transport-cases')
+    ->everyFifteenMinutes()->timezone('Asia/Manila')->withoutOverlapping();
 
 Schedule::call(function (): void {
     PostAdoptionCaptureChallenge::query()

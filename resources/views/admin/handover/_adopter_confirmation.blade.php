@@ -117,7 +117,7 @@
                             </label>
                             <textarea id="reopen-reason" name="reason" rows="2" required
                                       class="form-control"
-                                      placeholder="e.g. Delivery failed — courier could not complete handover">{{ $isFailed ? 'Delivery failed — adopter reported pet not received' : '' }}</textarea>
+                                      placeholder="e.g. Staff reviewed the reported delivery issue and agreed to arrange a new handover">{{ $isFailed ? 'Adopter reported pet not received - requires investigation' : '' }}</textarea>
                         </div>
                         
                         <div class="flex justify-end gap-2">

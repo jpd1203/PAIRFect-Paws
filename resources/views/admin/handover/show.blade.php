@@ -53,6 +53,7 @@
             @if(session('success'))<div class="modal-note">{{ session('success') }}</div>@endif
             @include('admin.handover._schedule')
             @include('admin.handover._delivery-clearance')
+            @include('admin.handover._transport-investigations')
             @if ($record->released_at)
                 @include('admin.handover._recorded_release', ['record' => $record])
                 @include('admin.handover._adopter_confirmation', ['record' => $record])

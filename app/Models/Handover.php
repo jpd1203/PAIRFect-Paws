@@ -182,6 +182,11 @@ class Handover extends Model
         return $this->hasMany(HandoverNotification::class)->latest();
     }
 
+    public function transportIncidents()
+    {
+        return $this->hasMany(HandoverTransportIncident::class)->orderByDesc('id');
+    }
+
     /**
      * Determine current pipeline step:
      * 'approved' | 'awaiting' | 'monitoring'
@@ -241,7 +246,7 @@ class Handover extends Model
     {
         if ($this->adopter_outcome === 'not_received') {
             return [
-                'label' => 'Delivery failed',
+                'label' => 'Not received - requires investigation',
                 'class' => 'badge-rejected',
                 'border' => 'border-status-danger-text',
                 'icon' => 'fa-solid fa-triangle-exclamation',

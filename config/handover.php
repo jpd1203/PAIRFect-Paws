@@ -1,6 +1,8 @@
 <?php
 
 return [
+    // No default deadline. Set only after documented shelter approval; review alert only.
+    'transport_max_pending_hours' => env('HANDOVER_TRANSPORT_MAX_PENDING_HOURS'),
     'delivery_providers' => [
         'pet_to_go_express' => [
             'label' => 'Pet To Go Express',

@@ -22,7 +22,7 @@ class HandoverController extends Controller
 
     public function index(Request $request)
     {
-        $query = Handover::with(['pet', 'application', 'user'])
+        $query = Handover::with(['pet', 'application', 'user', 'transportIncidents.assignedTo'])
             ->orderByDesc('approved_at')
             ->orderByDesc('id');
 
@@ -45,6 +45,12 @@ class HandoverController extends Controller
             $query->where('adopter_outcome', 'not_received');
         } elseif ($tab === 'monitoring') {
             $query->where('adopter_outcome', 'received');
+        } elseif ($tab === 'investigations') {
+            $query->whereHas('transportIncidents', fn ($q) => $q->where('status', '!=', 'resolved'));
+        } elseif ($tab === 'overdue') {
+            $query->where('release_method', 'delivery')->whereNotNull('released_at')->whereNull('received_at')
+                ->where(fn ($q) => $q->whereNull('adopter_outcome')->orWhere('adopter_outcome', 'not_received'))
+                ->where('scheduled_end_at', '<=', now()->subHours(3));
         }
 
         $records = $query->get();
@@ -58,6 +64,8 @@ class HandoverController extends Controller
             'monitoring_active' => $all->filter(fn ($h) => $h->adopter_outcome === 'received')->count(),
             'open_count' => $all->filter(fn ($h) => $h->adopter_outcome !== 'received')->count(),
             'total_count' => $all->count(),
+            'investigations' => Handover::whereHas('transportIncidents', fn ($q) => $q->where('status', '!=', 'resolved'))->count(),
+            'overdue' => $all->filter(fn ($h) => app(\App\Services\HandoverTransportIncidentService::class)->isOverdue($h))->count(),
         ];
 
         return view('admin.handover.index', [
@@ -71,6 +79,7 @@ class HandoverController extends Controller
     public function show(Handover $handover)
     {
         $handover->load(['pet', 'application', 'user', 'notifications', 'releaseRecordedBy', 'releaseHandledBy', 'deliveryAddressVerifiedBy', 'deliveryContactedBy']);
+        $handover->load(['transportIncidents.assignedTo', 'transportIncidents.reportedBy', 'transportIncidents.resolvedBy']);
 
         $volunteers = User::whereIn('role', ['Administrator', 'Volunteer'])
             ->where('is_active', true)
@@ -82,6 +91,7 @@ class HandoverController extends Controller
             'record' => $handover,
             'volunteers' => $volunteers,
             'currentStaffId' => Auth::id(),
+            'investigationStaff' => $volunteers->filter(fn ($user) => $user->hasVerifiedEmail()),
         ]);
     }
 

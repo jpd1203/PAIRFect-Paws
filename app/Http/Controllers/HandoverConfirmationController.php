@@ -8,6 +8,7 @@ use App\Models\Handover;
 use App\Models\HandoverNotification;
 use App\Services\HandoverService;
 use App\Services\HandoverNotificationService;
+use App\Services\HandoverTransportIncidentService;
 use App\Services\PostAdoptionScheduleService;
 use App\Services\AuditLogService;
 use Illuminate\Http\Request;
@@ -111,6 +112,7 @@ class HandoverConfirmationController extends Controller
                         throw ValidationException::withMessages(['outcome' => 'This handover has already been confirmed.']);
                     }
                     $current->refresh();
+                    app(HandoverTransportIncidentService::class)->reportedNonReceipt($current, $request->user());
                     $current->recordHistory('Adopter reported pet not received', $adopterName);
                     $current->save();
                     AuditLogService::log($request->user()->id, 'handover.not_received', 'Handover', $current->id,

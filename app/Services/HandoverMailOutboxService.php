@@ -171,7 +171,8 @@ class HandoverMailOutboxService
 
     private function obsoleteReason(Handover $handover, HandoverEmailOutbox $row): ?string
     {
-        if (($handover->reopen_count ?? 0) !== $row->release_attempt) {
+        // Investigations remain actionable across reopened release attempts.
+        if ($row->kind !== 'transport_case_attention' && ($handover->reopen_count ?? 0) !== $row->release_attempt) {
             return 'superseded_attempt';
         }
         $payload = $row->payload;
@@ -191,6 +192,9 @@ class HandoverMailOutboxService
                 || ($row->audience === 'adopter' ? ((int) $user->id !== (int) $handover->user_id || $user->role?->value !== 'Adopter') : (! $user->isStaff() || in_array($payload['recipient'], $excluded, true)))) {
                 return 'recipient_ineligible';
             }
+        }
+        if ($row->kind === 'transport_case_attention') {
+            return app(HandoverTransportIncidentService::class)->noticeIsCurrent($handover, $row) ? null : 'transport_case_changed';
         }
         if ($handover->application?->status !== ApplicationStatus::Approved) {
             return 'application_not_approved';
@@ -219,7 +223,16 @@ class HandoverMailOutboxService
             return $handover->adopter_outcome === 'received' && $handover->received_at ? null : 'receipt_state_changed';
         }
         if ($kind === 'issue_logged') {
+            if ($handover->transportIncidents()->where('release_attempt', $row->release_attempt)
+                ->where('source', 'adopter_non_receipt')->where('status', 'resolved')->exists()) {
+                return 'transport_case_resolved';
+            }
+
             return $handover->adopter_outcome === 'not_received' ? null : 'receipt_state_changed';
+        }
+        if ($kind === 'delivery_follow_up' && $handover->transportIncidents()->where('release_attempt', $row->release_attempt)
+            ->where('source', 'overdue_delivery')->where('status', 'resolved')->exists()) {
+            return 'transport_case_resolved';
         }
         if ($handover->adopter_outcome || $handover->received_at) {
             return 'receipt_already_recorded';
