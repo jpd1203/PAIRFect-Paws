@@ -374,6 +374,7 @@ class HandoverSchedulingIdentityTest extends TestCase
         // Select pickup
         $response = $this->actingAs($owner)->post(route('adopter.handover.schedule.method', $handover), [
             'method' => 'pickup',
+            'schedule_version' => $handover->refresh()->schedule_version,
         ]);
         $response->assertSessionHasNoErrors();
         $response->assertSessionHas('success', 'Handover method selected successfully.');
@@ -390,6 +391,7 @@ class HandoverSchedulingIdentityTest extends TestCase
         // Switch to delivery
         $this->actingAs($owner)->post(route('adopter.handover.schedule.method', $handover), [
             'method' => 'delivery',
+            'schedule_version' => $handover->schedule_version,
         ])->assertSessionHasNoErrors();
 
         $handover->refresh();

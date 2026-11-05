@@ -1,7 +1,7 @@
 @include('handover._schedule-summary')
 @if(!$record->released_at && !$record->adopter_outcome)
     <section class="rounded-card border bg-white p-5 shadow-card">
-        @if($record->schedule_status !== 'confirmed')
+        @if($record->canSelectScheduleMethod())
             <div class="{{ in_array($record->schedule_status, ['proposed'], true) ? 'border-b border-gray-200' : '' }}">
                 <div class="flex items-center justify-between mb-3">
                     <div>
@@ -21,6 +21,7 @@
 
                 <form method="POST" action="{{ route('adopter.handover.schedule.method', $record) }}">
                     @csrf
+                    <input type="hidden" name="schedule_version" value="{{ $record->schedule_version }}">
                     <div class="grid gap-3 sm:grid-cols-2">
                         <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-[#e2ddd7] bg-white p-3.5 transition hover:bg-gray-50/50 has-[:checked]:border-primary has-[:checked]:bg-primary-muted/25 has-[:checked]:ring-1 has-[:checked]:ring-primary">
                             <input type="radio" name="method" value="pickup" {{ $record->scheduled_method === 'pickup' ? 'checked' : '' }} class="mt-1 h-4 w-4 shrink-0 accent-primary" required>
@@ -50,7 +51,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h4 class="text-sm font-bold text-text-dark font-primary m-0">Handover Method</h4>
-                        <p class="text-xs text-[#777] m-0 mt-0.5">Method is confirmed for this scheduled window.</p>
+                        <p class="text-xs text-[#777] m-0 mt-0.5">The method belongs to this proposed or confirmed schedule. Ask shelter staff for a new proposal to change it.</p>
                     </div>
                     <span class="inline-flex items-center gap-1.5 rounded-full bg-completed-bg px-3 py-1 text-xs font-semibold text-completed-fg border border-completed-fg">
                         <i class="{{ $record->scheduled_method === 'pickup' ? 'fa-solid fa-house-user' : 'fa-solid fa-truck' }} text-completed-fg"></i>

@@ -8,6 +8,7 @@ use App\Models\Handover;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\HandoverNotificationService;
+use App\Support\ManilaTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -166,6 +167,10 @@ class HandoverController extends Controller
                     }
                 }
 
+                $releasedAt = ManilaTime::now();
+                if ($releasedAt->gt(ManilaTime::at($current->scheduled_end_at))) {
+                    throw ValidationException::withMessages(['schedule' => 'The confirmed handover window has expired. Staff must propose a new schedule and obtain adopter confirmation before release.']);
+                }
                 $updated = Handover::query()->whereKey($current->id)
                     ->whereNull('released_at')->whereNull('adopter_outcome')->whereNull('received_at')
                     ->update([
@@ -181,7 +186,7 @@ class HandoverController extends Controller
                         'proof_path' => $storedPath,
                         'proof_name' => $storedPath ? $request->file('proof')->getClientOriginalName() : null,
                         'proof_url' => null,
-                        'released_at' => now(),
+                        'released_at' => $releasedAt->utc(),
                     ]);
                 if ($updated !== 1) {
                     throw ValidationException::withMessages(['release_method' => 'This handover has already been released.']);

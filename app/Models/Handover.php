@@ -101,6 +101,19 @@ class Handover extends Model
         return $this->belongsTo(User::class, 'release_handled_by_user_id');
     }
 
+    public function canSelectScheduleMethod(): bool
+    {
+        return $this->schedule_status === 'unscheduled'
+            && $this->scheduled_start_at === null
+            && $this->scheduled_end_at === null
+            && $this->schedule_confirmed_at === null
+            && $this->schedule_confirmed_by_user_id === null
+            && $this->reschedule_status !== 'pending'
+            && $this->released_at === null
+            && $this->adopter_outcome === null
+            && $this->received_at === null;
+    }
+
     public function ensureCanRelease(): void
     {
         if ($this->released_at !== null || $this->adopter_outcome !== null) {
