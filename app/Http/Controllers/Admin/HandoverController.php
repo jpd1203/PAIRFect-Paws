@@ -216,6 +216,9 @@ class HandoverController extends Controller
                 AuditLogService::log(Auth::id(), 'handover.released', 'Handover', $current->id,
                     "Prepared to Released; recorded by user ".Auth::id()."; handled by user {$staffMember->id}; method {$current->release_method}.");
 
+                // Persist bell/mail intent with the release; the outbox dispatches after commit.
+                $this->notifications->create($current, 'released');
+
                 return $current;
             });
         } catch (\Throwable $exception) {
@@ -224,8 +227,6 @@ class HandoverController extends Controller
             }
             throw $exception;
         }
-
-        $this->notifications->create($handover, 'released');
 
         return back()->with('toast', ['type' => 'success', 'message' => "{$handover->pet?->name} marked as released. Adopter notified to confirm receipt."]);
     }
