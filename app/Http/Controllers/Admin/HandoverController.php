@@ -324,10 +324,11 @@ class HandoverController extends Controller
             AuditLogService::log(Auth::id(), 'handover.reopened', 'Handover', $current->id,
                 "{$previousState} to Prepared; reason: {$reason}; previous recorded by user {$previousActor}; previous handler user {$previousHandler} ({$previousHandlerName}).");
 
+            // Reopening and its durable bell/mail intent must commit or roll back together.
+            $this->notifications->create($current, 'reopened');
+
             return $current;
         });
-
-        $this->notifications->create($handover, 'reopened');
 
         return back()->with('toast', ['type' => 'success', 'message' => 'Handover reopened. Release details have been reset for a new attempt.']);
     }
