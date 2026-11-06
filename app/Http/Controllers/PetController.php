@@ -7,6 +7,8 @@ use App\Models\AdoptionApplication;
 use App\Models\AdopterProfile;
 use App\Models\Branch;
 use App\Models\Pet;
+use App\Models\User;
+use App\Rules\PositivePetMeasurement;
 use App\Services\AuditLogService;
 use App\Services\KnnRecommendationService;
 use Illuminate\Http\Request;
@@ -91,7 +93,10 @@ class PetController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorizePetWrite($request);
         $validated = $request->validate([
+            'weight_kg' => ['required', new PositivePetMeasurement],
+            'height_cm' => ['nullable', new PositivePetMeasurement],
             'name' => 'required|string|max:255',
             'species' => 'required|in:Cat,Dog',
             'breed' => 'nullable|string|max:255',
@@ -121,6 +126,8 @@ class PetController extends Controller
         $age = ((int) ($validated['age_years'] ?? 0)) * 12 + ((int) ($validated['age_months'] ?? 0));
 
         $pet = Pet::create([
+            'weight_kg' => $validated['weight_kg'],
+            'height_cm' => $validated['height_cm'] ?? null,
             'name' => $validated['name'],
             'species' => $validated['species'],
             'breed' => $validated['breed'] ?? null,
@@ -171,7 +178,10 @@ class PetController extends Controller
      */
     public function update(Request $request, Pet $pet)
     {
+        $this->authorizePetWrite($request);
         $validated = $request->validate([
+            'weight_kg' => ['sometimes', 'nullable', new PositivePetMeasurement],
+            'height_cm' => ['sometimes', 'nullable', new PositivePetMeasurement],
             'name' => 'required|string|max:255',
             'species' => 'required|in:Cat,Dog',
             'breed' => 'nullable|string|max:255',
@@ -231,7 +241,7 @@ class PetController extends Controller
 
         // Explicit unknown selections clear canonical profile data; omitted fields retain it.
         // An unverified legacy aggression "No" remains stored but not trusted until confirmed.
-        foreach (['physical_size', 'medical_needs', 'life_stage', 'high_vocalization'] as $field) {
+        foreach (['physical_size', 'medical_needs', 'life_stage', 'high_vocalization', 'weight_kg', 'height_cm'] as $field) {
             if (array_key_exists($field, $validated)) {
                 $changes[$field] = $validated[$field];
             }
@@ -322,6 +332,12 @@ class PetController extends Controller
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────
+
+    private function authorizePetWrite(Request $request): void
+    {
+        $staff = $request->user() ? User::find($request->user()->id) : null;
+        abort_unless($staff?->is_active && $staff->isStaff() && $staff->hasVerifiedEmail(), 403);
+    }
 
     private function handlePhotoUpload(Request $request, ?string $existingPath): string
     {

@@ -104,6 +104,8 @@ function openViewAnimalModal(id) {
     setVal('vStatus', a.status);
     setVal('vMedical', a.medical_needs);
     setVal('vSize', a.physical_size);
+    setVal('vWeightKg', a.weight_kg);
+    setVal('vHeightCm', a.height_cm);
     setVal('vLifeStage', a.life_stage);
     setVal('vAggression', a.has_aggression_history === null ? '' : Number(a.has_aggression_history));
     setVal('vVocalization', a.high_vocalization === null ? '' : Number(a.high_vocalization));

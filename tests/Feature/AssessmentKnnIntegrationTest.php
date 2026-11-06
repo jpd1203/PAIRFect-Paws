@@ -25,7 +25,7 @@ class AssessmentKnnIntegrationTest extends TestCase
     {
         $this->actingAs($this->matchingUser(Role::Administrator))
             ->post(route('admin.animals.store'), [
-                'name' => 'New Intake', 'species' => 'Dog', 'breed' => 'Aspin',
+                'name' => 'New Intake', 'species' => 'Dog', 'breed' => 'Aspin', 'weight_kg' => '12.5',
                 'status' => 'Assessing', 'health_status' => 'Needs Vet',
             ])->assertRedirect(route('admin.animals.index'));
 
@@ -52,7 +52,7 @@ class AssessmentKnnIntegrationTest extends TestCase
     {
         $this->actingAs($this->matchingUser(Role::Administrator))
             ->post(route('admin.animals.store'), [
-                'name' => 'Assessed Intake', 'species' => 'Cat', 'status' => 'Assessing',
+                'name' => 'Assessed Intake', 'species' => 'Cat', 'status' => 'Assessing', 'weight_kg' => '3.25',
                 'physical_size' => 'Extra Small', 'medical_needs' => '1',
                 'life_stage' => 'young', 'has_aggression_history' => '0', 'high_vocalization' => '0',
             ])->assertRedirect(route('admin.animals.index'));

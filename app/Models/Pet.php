@@ -17,6 +17,7 @@ class Pet extends Model
         'medical_needs', 'is_reactive_to_pets', 'has_aggression_history',
         'aggression_history_verified_at', 'high_vocalization', 'life_stage', 'assessment_scoring_version',
         'last_assessed_at', 'assessment_count', 'physical_size', 'vaccination_record_status', 'last_assessed_by',
+        'weight_kg', 'height_cm',
     ];
 
     protected function casts(): array
@@ -26,6 +27,8 @@ class Pet extends Model
             'availability_status' => AvailabilityStatus::class,
             'is_archived' => 'boolean',
             'intake_date' => 'date',
+            'weight_kg' => 'decimal:3',
+            'height_cm' => 'decimal:3',
             'last_assessed_at' => 'datetime',
             'energy_level' => 'float',
             'trainability' => 'float',
@@ -152,6 +155,21 @@ class Pet extends Model
     public function getSpeciesDisplayAttribute(): string
     {
         return $this->species?->value ?? 'Unknown';
+    }
+
+    public function getWeightDisplayAttribute(): string
+    {
+        return $this->measurementDisplay($this->weight_kg, 'kg');
+    }
+
+    public function getHeightDisplayAttribute(): string
+    {
+        return $this->measurementDisplay($this->height_cm, 'cm');
+    }
+
+    private function measurementDisplay(?string $value, string $unit): string
+    {
+        return $value === null ? 'Not recorded' : rtrim(rtrim($value, '0'), '.').' '.$unit;
     }
 
     public function getSexDisplayAttribute(): string

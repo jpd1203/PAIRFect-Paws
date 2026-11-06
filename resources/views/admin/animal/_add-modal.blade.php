@@ -172,7 +172,7 @@
                                 </select>
                                 <i class="fa-solid fa-chevron-down select-arrow"></i>
                             </div>
-                            <p class="mt-1 text-xs text-gray-500">Based on veterinary assessment. Required before matching.</p>
+                            @include('partials.pet-size-guidance')
                         </div>
 
                         <div class="form-group">
@@ -213,6 +213,8 @@
                             </div>
                         </div>
                     </div>
+
+                    @include('partials.pet-measurement-inputs', ['idPrefix' => 'add', 'requireWeight' => true])
 
                     <div class="flex flex-col-reverse sm:flex-row justify-between gap-2.5 pt-2">
                         <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="switchAnimalModalTab('add', 1)">

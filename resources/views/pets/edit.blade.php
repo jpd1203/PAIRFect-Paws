@@ -70,6 +70,8 @@
                 </div>
             </div>
 
+            @include('partials.pet-measurement-inputs', ['idPrefix' => 'editPet', 'measurementPet' => $pet, 'showSize' => true])
+
             <div class="form-group">
                 <label for="behavioral_notes">Behavioral Notes</label>
                 <textarea id="behavioral_notes" name="behavioral_notes" rows="3">{{ old('behavioral_notes', $pet->behavioral_notes) }}</textarea>

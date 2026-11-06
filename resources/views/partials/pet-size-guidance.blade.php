@@ -1,0 +1,1 @@
+<p class="mt-1 text-xs text-gray-500">Dog: use the veterinary assessment of this dog's build. Cat: use the veterinary assessment of this cat's build, not canine weight cutoffs. No numerical size thresholds are approved in the current system. Weight and height do not automatically select size. Existing size labels remain unchanged; size is required before matching.</p>

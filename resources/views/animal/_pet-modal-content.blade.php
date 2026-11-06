@@ -138,6 +138,8 @@
             <span>Physical Size</span>
             <span>{{ $pet->physical_size ?: 'Unknown' }}</span>
         </div>
+        <div class="profile-row"><span>Weight</span><span>{{ $pet->weight_display }}</span></div>
+        <div class="profile-row"><span>Height</span><span>{{ $pet->height_display }}</span></div>
         <div class="profile-row">
             <span>Temperament</span>
             <span>{{ $temperamentVal }}</span>

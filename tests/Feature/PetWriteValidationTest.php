@@ -20,7 +20,7 @@ class PetWriteValidationTest extends TestCase
         Storage::fake('public');
         $staff = User::factory()->create(['role' => Role::Administrator, 'email_verified_at' => now()]);
         $this->actingAs($staff);
-        $valid = ['name' => 'Milo', 'species' => 'Dog', 'status' => AvailabilityStatus::Assessing->value];
+        $valid = ['name' => 'Milo', 'species' => 'Dog', 'status' => AvailabilityStatus::Assessing->value, 'weight_kg' => '12.5'];
 
         $this->post(route('admin.animals.store'), [...$valid, 'status' => 'Anything'])
             ->assertSessionHasErrors('status');

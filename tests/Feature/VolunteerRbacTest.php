@@ -213,7 +213,7 @@ class VolunteerRbacTest extends TestCase
     {
         $volunteer = $this->matchingUser(Role::Volunteer);
         $this->actingAs($volunteer)->post(route('admin.animals.store'), [
-            'name' => 'Volunteer Pet', 'species' => 'Dog', 'status' => 'Assessing',
+            'name' => 'Volunteer Pet', 'species' => 'Dog', 'status' => 'Assessing', 'weight_kg' => '12.5',
         ])->assertRedirect(route('admin.animals.index'));
         $pet = Pet::where('name', 'Volunteer Pet')->sole();
 
