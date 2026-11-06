@@ -14,16 +14,25 @@ use App\Models\Handover;
 use App\Models\Pet;
 use App\Models\PostAdoptionLog;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use Tests\TestCase;
 
 class PostAdoptionAdminMonitoringTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Keep the existing return regressions deterministic at the failing calendar boundary.
+        $this->travelTo(CarbonImmutable::parse('2026-11-05 16:30:00', 'UTC'));
+    }
 
     public function test_staff_queue_displays_real_survey_data_and_is_not_available_to_adopters(): void
     {
@@ -335,8 +344,10 @@ class PostAdoptionAdminMonitoringTest extends TestCase
             ->assertSessionHasErrors('return_handled_by_user_id');
     }
 
-    public function test_physical_return_is_admin_only_preserves_adoption_history_and_prevents_duplicate(): void
+    #[DataProvider('returnLifecycleClocks')]
+    public function test_physical_return_is_admin_only_preserves_adoption_history_and_prevents_duplicate(string $utcNow): void
     {
+        $this->travelTo(CarbonImmutable::parse($utcNow, 'UTC'));
         [$adopter, $application] = $this->approvedApplication();
         $admin = $this->user(Role::Administrator, 'return-admin');
         $volunteer = $this->user(Role::Volunteer, 'return-volunteer');
@@ -383,8 +394,10 @@ class PostAdoptionAdminMonitoringTest extends TestCase
         $this->assertSame(AvailabilityStatus::Returned, $application->pet->fresh()->availability_status);
     }
 
-    public function test_return_transaction_rolls_back_if_handover_history_cannot_be_saved(): void
+    #[DataProvider('returnLifecycleClocks')]
+    public function test_return_transaction_rolls_back_if_handover_history_cannot_be_saved(string $utcNow): void
     {
+        $this->travelTo(CarbonImmutable::parse($utcNow, 'UTC'));
         [, $application] = $this->approvedApplication();
         $admin = $this->user(Role::Administrator, 'return-rollback');
         $log = $this->flaggedLog($application);
@@ -400,8 +413,10 @@ class PostAdoptionAdminMonitoringTest extends TestCase
         $this->assertDatabaseMissing('handover_notifications', ['kind' => 'welfare_resolution_adopter', 'entity_id' => $log->id]);
     }
 
-    public function test_same_placement_cannot_be_returned_twice_even_if_pet_status_is_manually_reset(): void
+    #[DataProvider('returnLifecycleClocks')]
+    public function test_same_placement_cannot_be_returned_twice_even_if_pet_status_is_manually_reset(string $utcNow): void
     {
+        $this->travelTo(CarbonImmutable::parse($utcNow, 'UTC'));
         [, $application] = $this->approvedApplication();
         $admin = $this->user(Role::Administrator, 'duplicate-return');
         $firstLog = $this->flaggedLog($application);
@@ -421,6 +436,127 @@ class PostAdoptionAdminMonitoringTest extends TestCase
             ->assertSessionHasErrors('resolution_outcome');
         $this->assertNull($secondLog->fresh()->resolution_outcome);
         $this->assertSame(1, DB::table('post_adoption_logs')->where('resolution_outcome', 'pet_returned')->count());
+    }
+
+    public static function returnLifecycleClocks(): array
+    {
+        return [
+            'same UTC and Manila date' => ['2026-11-05 15:30:00'],
+            'Manila is the following day' => ['2026-11-05 16:30:00'],
+        ];
+    }
+
+    public static function manilaCalendarBoundaries(): array
+    {
+        return [
+            'before Manila midnight' => ['2026-11-05 15:59:59', '2026-11-05'],
+            'at Manila midnight' => ['2026-11-05 16:00:00', '2026-11-06'],
+            'before UTC midnight' => ['2026-11-05 23:59:59', '2026-11-06'],
+            'at UTC midnight' => ['2026-11-06 00:00:00', '2026-11-06'],
+            'Manila year rollover' => ['2026-12-31 16:00:00', '2027-01-01'],
+        ];
+    }
+
+    #[DataProvider('manilaCalendarBoundaries')]
+    public function test_today_in_manila_is_accepted_and_stored_as_a_date_without_changing_utc_timestamps(string $utcNow, string $manilaDate): void
+    {
+        $this->travelTo(CarbonImmutable::parse($utcNow, 'UTC'));
+        $this->assertSame('UTC', config('app.timezone'));
+        $this->assertSame(CarbonImmutable::parse($utcNow, 'UTC')->toDateString(), today('UTC')->toDateString());
+        $this->assertSame($manilaDate, today('Asia/Manila')->toDateString());
+        [, $application] = $this->approvedApplication();
+        $admin = $this->user(Role::Administrator, 'manila-today');
+        $log = $this->flaggedLog($application);
+        $originalApplication = $application->fresh()->getAttributes();
+        Mail::fake();
+
+        $this->actingAs($admin)->get(route('admin.monitoring.index'))->assertOk()
+            ->assertSee('max="'.$manilaDate.'"', false);
+        $this->post(route('admin.monitoring.resolve', $log), [
+            ...$this->returnInput($admin), 'return_date' => $manilaDate,
+        ])->assertSessionHasNoErrors()->assertSessionHas('toast.type', 'success');
+
+        $storedDate = DB::table('post_adoption_logs')->where('id', $log->id)
+            ->selectRaw('DATE(return_date) AS calendar_date')->first()->calendar_date;
+        $this->assertSame($manilaDate, $storedDate);
+        $this->assertSame($manilaDate, $log->fresh()->return_date->toDateString());
+        $this->assertSame($utcNow, $log->fresh()->resolved_at->format('Y-m-d H:i:s'));
+        $this->assertSame($originalApplication, $application->fresh()->getAttributes());
+        $this->assertSame(AvailabilityStatus::Returned, $application->pet->fresh()->availability_status);
+        $this->assertSame('UTC', config('app.timezone'));
+    }
+
+    #[DataProvider('manilaCalendarBoundaries')]
+    public function test_future_manila_return_date_is_rejected_without_lifecycle_side_effects(string $utcNow, string $manilaDate): void
+    {
+        $this->travelTo(CarbonImmutable::parse($utcNow, 'UTC'));
+        [, $application] = $this->approvedApplication();
+        $admin = $this->user(Role::Administrator, 'manila-future');
+        $log = $this->flaggedLog($application);
+        $originalLog = $log->fresh()->getAttributes();
+        $originalApplication = $application->fresh()->getAttributes();
+        $originalHandover = $application->handover->getAttributes();
+        $tomorrow = CarbonImmutable::parse($manilaDate, 'Asia/Manila')->addDay()->toDateString();
+        Mail::fake();
+
+        $this->actingAs($admin)->post(route('admin.monitoring.resolve', $log), [
+            ...$this->returnInput($admin), 'return_date' => $tomorrow,
+        ])->assertSessionHasErrors('return_date');
+
+        $this->assertSame($originalLog, $log->fresh()->getAttributes());
+        $this->assertSame($originalApplication, $application->fresh()->getAttributes());
+        $this->assertSame($originalHandover, $application->handover->fresh()->getAttributes());
+        $this->assertSame(AvailabilityStatus::Adopted, $application->pet->fresh()->availability_status);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'Pet Returned to Shelter', 'entity_id' => $log->id]);
+        $this->assertDatabaseMissing('handover_notifications', ['kind' => 'welfare_resolution_adopter', 'entity_id' => $log->id]);
+        Mail::assertNothingSent();
+        Mail::assertNothingQueued();
+    }
+
+    public static function historicalReturnDates(): array
+    {
+        return [
+            'yesterday before Manila midnight' => ['2026-11-05 15:30:00', '2026-11-04'],
+            'yesterday after Manila midnight' => ['2026-11-05 16:30:00', '2026-11-05'],
+            'earlier year' => ['2027-01-01 00:30:00', '2026-01-15'],
+            'valid leap day' => ['2024-03-01 00:30:00', '2024-02-29'],
+        ];
+    }
+
+    #[DataProvider('historicalReturnDates')]
+    public function test_historical_manila_return_dates_are_accepted_without_date_shifting(string $utcNow, string $returnDate): void
+    {
+        $this->travelTo(CarbonImmutable::parse($utcNow, 'UTC'));
+        [, $application] = $this->approvedApplication();
+        $admin = $this->user(Role::Administrator, 'historical-return');
+        $log = $this->flaggedLog($application);
+        Mail::fake();
+
+        $this->actingAs($admin)->post(route('admin.monitoring.resolve', $log), [
+            ...$this->returnInput($admin), 'return_date' => $returnDate,
+        ])->assertSessionHasNoErrors()->assertSessionHas('toast.type', 'success');
+
+        $storedDate = DB::table('post_adoption_logs')->where('id', $log->id)
+            ->selectRaw('DATE(return_date) AS calendar_date')->first()->calendar_date;
+        $this->assertSame($returnDate, $storedDate);
+        $this->assertSame($returnDate, $log->fresh()->return_date->toDateString());
+        $this->assertSame(AvailabilityStatus::Returned, $application->pet->fresh()->availability_status);
+    }
+
+    public function test_malformed_return_dates_remain_invalid(): void
+    {
+        [, $application] = $this->approvedApplication();
+        $admin = $this->user(Role::Administrator, 'malformed-return');
+        $log = $this->flaggedLog($application);
+        Mail::fake();
+
+        foreach (['not-a-date', '2026-02-30', ['2026-11-06']] as $invalidDate) {
+            $this->actingAs($admin)->post(route('admin.monitoring.resolve', $log), [
+                ...$this->returnInput($admin), 'return_date' => $invalidDate,
+            ])->assertSessionHasErrors('return_date');
+            $this->assertNull($log->fresh()->return_date);
+            $this->assertSame(AvailabilityStatus::Adopted, $application->pet->fresh()->availability_status);
+        }
     }
 
     public function test_second_successful_manual_reminder_flags_the_incomplete_log(): void
