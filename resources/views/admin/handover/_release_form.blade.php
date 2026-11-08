@@ -57,30 +57,38 @@
                     <input id="release-time" name="release_time" type="time" value="{{ $time }}" required
                            class="form-control">
                 </div>
-                <div class="form-group"><label for="release-staff" class="form-label">Released by</label>
-                    <select id="release-staff" name="staff_id" class="form-select appearance-auto" required>
-                        <option value="">Select Staff</option>
-                        @foreach ($volunteers as $v)
-                            <option
-                                value="{{ $v->id }}"
-                                {{ $v->id == $currentStaffId ? 'selected' : '' }}>
-                                {{ $v->full_name }} ({{ $v->role->value }})
-                            </option>
-                        @endforeach
-                    </select>
+                <div class="form-group">
+                    <label for="release-staff" class="form-label">Released by</label>
+
+                    <div class="relative">
+                        <select id="release-staff" name="staff_id" class="form-select appearance-none pr-10" required>
+                            <option value="">Select Staff</option>
+                            @foreach ($volunteers as $v)
+                                <option
+                                    value="{{ $v->id }}"
+                                    {{ $v->id == $currentStaffId ? 'selected' : '' }}>
+                                    {{ $v->full_name }} ({{ $v->role->value }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#777]"></i>
+                    </div>
                 </div>
             </div>
 
             <div id="courierFields" class="{{ $method === 'delivery' ? 'grid' : 'hidden' }} gap-4 rounded-xl border border-[#e2ddd7] bg-secondary-bg p-4 sm:grid-cols-2">
                 <div class="form-group">
                     <label for="courier-provider" class="form-label">Courier / Pet Transport Service</label>
-                    <select id="courier-provider" name="courier_provider" class="form-select appearance-auto"
-                            onchange="updateCourierProviderHelp()" aria-describedby="courier-provider-help" @required($method === 'delivery')>
-                        <option value="">Select provider</option>
-                        @foreach ($providers as $key => $provider)
-                            <option value="{{ $key }}" data-note="{{ $provider['note'] }}" @selected($selectedProvider === $key)>{{ $provider['label'] }}</option>
-                        @endforeach
-                    </select>
+                    <div class="relative">
+                        <select id="courier-provider" name="courier_provider" class="form-select appearance-none pr-10"
+                                onchange="updateCourierProviderHelp()" aria-describedby="courier-provider-help" @required($method === 'delivery')>
+                            <option value="">Select provider</option>
+                            @foreach ($providers as $key => $provider)
+                                <option value="{{ $key }}" data-note="{{ $provider['note'] }}" @selected($selectedProvider === $key)>{{ $provider['label'] }}</option>
+                            @endforeach
+                        </select>
+                    <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#777]"></i>
+                    </div>
                     <p id="courier-provider-help" class="mt-1 text-xs text-[#777]" aria-live="polite"></p>
                     @error('courier_provider')
                         <p class="mt-1 text-sm text-status-danger-text" role="alert">{{ $message }}</p>

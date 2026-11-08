@@ -64,9 +64,6 @@
 
                         <div class="form-grid">
 
-
-
-
                             <div class="form-group">
                                 <label for="housing_type">Housing Type*</label>
                                 <div class="select-wrapper">

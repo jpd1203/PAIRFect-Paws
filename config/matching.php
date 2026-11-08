@@ -142,9 +142,9 @@ return [
             'N3' => 'Worries a lot',
             'N4' => 'Is relaxed, handles stress well',
             'O1' => 'Is original, comes up with new ideas',
-            'O2' => 'Has few artistic interests',
+            'O2' => 'Has little interest in abstract ideas',
             'O3' => 'Is fascinated by art, music, or literature',
-            'O4' => 'Has few artistic interests', // Provisional duplicate from Table 12; do not invent wording.
+            'O4' => 'Has few artistic interests', 
         ],
     ],
 ];

@@ -29,12 +29,15 @@
                 <input type="hidden" name="clearance_version" value="{{ $record->delivery_clearance_version }}">
                 <input type="hidden" name="destination_fingerprint" value="{{ $clearance->destinationFingerprint($record) }}">
                 <label class="form-label" for="deliveryAddressStatus">Staff review of the exact destination above</label>
-                <select id="deliveryAddressStatus" name="status" class="form-select" required>
-                    <option value="">Select a review outcome</option>
-                    <option value="verified">I reviewed and verified this delivery destination</option>
-                    <option value="needs_review">Destination needs further review — block delivery</option>
-                </select>
-                <button class="btn btn-secondary" type="submit">Record destination review</button>
+                <div class="relative">
+                    <select id="deliveryAddressStatus" name="status" class="form-select appearance-none pr-10" required>
+                        <option value="">Select a review outcome</option>
+                        <option value="verified">I reviewed and verified this delivery destination</option>
+                        <option value="needs_review">Destination needs further review — block delivery</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#777]"></i>
+                </div>
+                <button class="btn btn-secondary" type="submit"><i class="fa-solid fa-eye"></i>Record destination review</button>
             </form>
         @endif
 
@@ -58,21 +61,27 @@
                 <input type="hidden" name="recipient" value="adopter">
                 <p class="text-xs text-text-muted">Record actual direct contact with the adopter, not an unanswered email or automated reminder. Third-party recipient authorization is not supported here.</p>
                 <label for="deliveryContactMethod" class="form-label">Contact method</label>
-                <select id="deliveryContactMethod" name="contact_method" class="form-select" required>
-                    <option value="">Select contact method</option>
-                    @foreach (\App\Services\HandoverDeliveryClearanceService::CONTACT_METHODS as $key => $label)
-                        <option value="{{ $key }}">{{ $label }}</option>
-                    @endforeach
-                </select>
+                <div class="relative">
+                    <select id="deliveryContactMethod" name="contact_method" class="form-select appearance-none pr-10" required>
+                        <option value="">Select contact method</option>
+                        @foreach (\App\Services\HandoverDeliveryClearanceService::CONTACT_METHODS as $key => $label)
+                            <option value="{{ $key }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#777]"></i>
+                </div>
                 <label for="deliveryAvailable" class="form-label">Did the adopter explicitly confirm availability for this delivery?</label>
-                <select id="deliveryAvailable" name="available" class="form-select" required>
-                    <option value="">Select confirmed outcome</option>
-                    <option value="1">Yes — the adopter confirmed availability</option>
-                    <option value="0">No — the adopter is not available</option>
-                </select>
+                <div class="relative">
+                    <select id="deliveryAvailable" name="available" class="form-select appearance-none pr-10" required>
+                        <option value="">Select confirmed outcome</option>
+                        <option value="1">Yes — the adopter confirmed availability</option>
+                        <option value="0">No — the adopter is not available</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#777]"></i>
+                </div>
                 <label for="deliveryReadinessNotes" class="form-label">Contact notes (required for other contact methods; no unnecessary sensitive details)</label>
                 <textarea id="deliveryReadinessNotes" name="notes" maxlength="1000" rows="2" class="form-control"></textarea>
-                <button class="btn btn-primary" type="submit" @disabled(!$addressVerified || !$confirmedDelivery || !$notExpired)>Record contact and availability</button>
+                <button class="btn btn-primary" type="submit" @disabled(!$addressVerified || !$confirmedDelivery || !$notExpired)><i class="fa-solid fa-eye"></i>Record contact and availability</button>
                 <p class="text-xs text-text-muted">Verify the destination and obtain a confirmed, nonexpired delivery schedule first. Confirming availability creates a pre-dispatch notice; it does not record courier booking, release or prove email delivery.</p>
             </form>
         @endif
