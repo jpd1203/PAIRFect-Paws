@@ -42,7 +42,7 @@
         </div>
     @else
         <!-- Panel 1: Delivery Destination -->
-        <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-4.5 space-y-3.5">
+        <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3 space-y-3.5">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
                 <div class="flex items-center gap-2">
                     <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white border border-[#e2ddd7] text-primary shadow-xs">
@@ -64,7 +64,7 @@
             </div>
 
             <!-- Address Snapshot Box -->
-            <div class="rounded-lg bg-white border border-[#e2ddd7] p-3.5 shadow-xs">
+            <div class="rounded-lg bg-white border border-[#e2ddd7] p-3 shadow-xs">
                 <div class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#777] mb-1">
                     <i class="fa-solid fa-map-pin text-primary"></i>
                     <span>Application Destination Address</span>
@@ -121,25 +121,27 @@
             </dl>
 
             @if ($editable)
-                <form method="POST" action="{{ route('admin.handover.delivery.address', $record) }}" class="border-t border-[#e2ddd7] pt-3.5 space-y-2">
-                    @csrf
+                <form method="POST" action="{{ route('admin.handover.delivery.address', $record) }}"> @csrf
                     <input type="hidden" name="schedule_version" value="{{ $record->schedule_version }}">
                     <input type="hidden" name="clearance_version" value="{{ $record->delivery_clearance_version }}">
                     <input type="hidden" name="destination_fingerprint" value="{{ $clearance->destinationFingerprint($record) }}">
-                    <label class="form-label text-xs font-bold text-text-dark m-0" for="deliveryAddressStatus">
-                        <i class="fa-solid fa-stamp text-primary mr-1"></i> Staff review of the exact destination above
+
+                    <label class="form-label text-[12px] font-bold text-text-dark mb-2" for="deliveryAddressStatus"><i class="fa-solid fa-stamp text-primary mr-1"></i>
+                        Staff review of the exact destination above
                     </label>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <div class="relative flex-1">
-                            <select id="deliveryAddressStatus" name="status" class="form-select text-xs appearance-none pr-9 py-2 rounded-lg" required>
+                    <div class="mb-3">
+                        <div class="relative w-full sm:flex-1">
+                            <select id="deliveryAddressStatus" name="status"
+                                    class="form-select text-xs appearance-none pr-9 py-2 rounded-lg w-full" required>
                                 <option value="">Select a review outcome...</option>
                                 <option value="verified">I reviewed and verified this delivery destination</option>
                                 <option value="needs_review">Destination needs further review — block delivery</option>
                             </select>
                             <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#777]"></i>
                         </div>
-                        <button class="btn btn-primary btn-sm shrink-0 flex items-center gap-1.5 justify-center" type="submit">
-                            <i class="fa-solid fa-stamp"></i>
+                    </div>
+                    <div class="flex justify-end border-t border-[#e2ddd7] pt-3.5 space-y-2">
+                        <button class="btn btn-primary shrink-0 flex items-center gap-1.5 justify-center"type="submit"><i class="fa-solid fa-stamp"></i>
                             <span>Record destination review</span>
                         </button>
                     </div>
@@ -148,7 +150,7 @@
         </div>
 
         <!-- Panel 2: Recipient Readiness -->
-        <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-4.5 space-y-3.5">
+        <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3 space-y-3.5">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
                 <div class="flex items-center gap-2">
                     <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white border border-[#e2ddd7] text-primary shadow-xs">
@@ -247,7 +249,7 @@
 
                     <div class="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <label for="deliveryContactMethod" class="form-label text-xs font-bold text-text-dark">Contact method</label>
+                            <label for="deliveryContactMethod" class="form-label text-[12px] font-bold text-text-dark">Contact method</label>
                             <div class="relative">
                                 <select id="deliveryContactMethod" name="contact_method" class="form-select text-xs appearance-none pr-9 py-2 rounded-lg" required>
                                     <option value="">Select contact method</option>
@@ -260,7 +262,7 @@
                         </div>
 
                         <div>
-                            <label for="deliveryAvailable" class="form-label text-xs font-bold text-text-dark">Did the adopter explicitly confirm availability for this delivery?</label>
+                            <label for="deliveryAvailable" class="form-label text-[12px] font-bold text-text-dark">Did the adopter explicitly confirm availability for this delivery?</label>
                             <div class="relative">
                                 <select id="deliveryAvailable" name="available" class="form-select text-xs appearance-none pr-9 py-2 rounded-lg" required>
                                     <option value="">Select confirmed outcome</option>
@@ -273,24 +275,25 @@
                     </div>
 
                     <div>
-                        <label for="deliveryReadinessNotes" class="form-label text-xs font-bold text-text-dark">Contact notes (required for other contact methods; no unnecessary sensitive details)</label>
-                        <textarea id="deliveryReadinessNotes" name="notes" maxlength="1000" rows="2" class="form-control text-xs rounded-lg" placeholder="Enter contact details or confirmation observations..."></textarea>
+                        <label for="deliveryReadinessNotes" class="form-label text-[12px] font-bold text-text-dark">Contact notes (required for other contact methods; no unnecessary sensitive details)</label>
+                        <textarea id="deliveryReadinessNotes" name="notes" maxlength="1000" rows="2" class="form-control text-[12px] rounded-lg" placeholder="Enter contact details or confirmation observations..."></textarea>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
-                        <button class="btn btn-primary btn-sm flex items-center gap-1.5 justify-center" type="submit" @disabled(!$addressVerified || !$confirmedDelivery || !$notExpired)>
+                    <div class="flex justify-end">
+                        <button class="btn btn-primary" type="submit" @disabled(!$addressVerified || !$confirmedDelivery || !$notExpired)>
                             <i class="fa-solid fa-eye"></i>
                             <span>Record contact and availability</span>
                         </button>
-                        <p class="text-[11px] text-[#777] m-0">Verify the destination and obtain a confirmed, nonexpired delivery schedule first. Confirming availability creates a pre-dispatch notice; it does not record courier booking, release or prove email delivery.</p>
+                        
                     </div>
+                    <p class="text-[11px] text-[#777] m-0 flex text-end">Verify the destination and obtain a confirmed, nonexpired delivery schedule first. Confirming availability creates a pre-dispatch notice; it does not record courier booking, release or prove email delivery.</p>
                 </form>
             @endif
         </div>
 
         <!-- Panel 3: Delivery Release Eligibility Checklist -->
         @if (!$record->released_at && !$record->adopter_outcome)
-            <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-4.5 space-y-3.5">
+            <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3 space-y-3.5">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
                     <div class="flex items-center gap-2">
                         <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white border border-[#e2ddd7] text-primary shadow-xs">

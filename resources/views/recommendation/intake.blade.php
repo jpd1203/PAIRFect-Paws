@@ -68,7 +68,7 @@
                     <div class="space-y-6">
 
                         {{-- 1. Your Adopter Profile Section Card --}}
-                        <section class="rounded-xl border border-line bg-white p-5 sm:p-6 shadow-sm">
+                        <section class="rounded-xl border border-line bg-secondary-bg p-5 sm:p-6 shadow-sm">
                             <header class="border-b border-line pb-4 mb-5">
                                 <h2 class="text-lg font-semibold text-ink font-primary">Your Adopter Profile</h2>
                                 <p class="mt-0.5 text-sm text-ink-muted">
@@ -81,7 +81,7 @@
                                 <div class="flex flex-col">
                                     <label for="housing_type" class="mb-1.5 text-[13px] font-semibold text-ink">Housing Type*</label>
                                     <div class="select-wrapper">
-                                        <select id="housing_type" name="housing_type" required class="h-[42px] border border-[#777] rounded-md px-3 text-sm bg-white focus:border-maroon-600 focus:ring-4 focus:ring-maroon-600/10 focus:outline-none w-full">
+                                        <select id="housing_type" name="housing_type" required class="h-[42px] border border-[#777] rounded-md px-3 text-sm bg-secondary-bg focus:border-maroon-600 focus:ring-4 focus:ring-maroon-600/10 focus:outline-none w-full">
                                             <option value="">Select Housing Type</option>
                                             @foreach ($options::HOUSING_TYPES as $option)
                                                 <option value="{{ $option }}" @selected(old('housing_type', $profile?->housing_type) === $option)>{{ $option }}</option>
@@ -95,7 +95,7 @@
                                 <div class="flex flex-col">
                                     <label for="monthly_income_range" class="mb-1.5 text-[13px] font-semibold text-ink">Monthly Income Range*</label>
                                     <div class="select-wrapper">
-                                        <select id="monthly_income_range" name="monthly_income_range" required class="h-[42px] border border-[#777] rounded-md px-3 text-sm bg-white focus:border-maroon-600 focus:ring-4 focus:ring-maroon-600/10 focus:outline-none w-full">
+                                        <select id="monthly_income_range" name="monthly_income_range" required class="h-[42px] border border-[#777] rounded-md px-3 text-sm bg-secondary-bg focus:border-maroon-600 focus:ring-4 focus:ring-maroon-600/10 focus:outline-none w-full">
                                             <option value="">Select Income Range</option>
                                             @foreach ($options::INCOME_RANGES as $option)
                                                 <option value="{{ $option }}" @selected(old('monthly_income_range', $profile?->monthly_income_range) === $option)>{{ $option }}</option>
@@ -123,7 +123,7 @@
                         <div class="sticky top-6 space-y-4">
 
                             {{-- Adopter Overview Card --}}
-                            <div class="rounded-xl border border-line bg-white p-5 shadow-sm">
+                            <div class="rounded-xl border border-line bg-secondary-bg p-5 shadow-sm">
                                 <div class="flex items-center gap-3">
                                     <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-sand text-[#A61D24] text-xl border border-line">
                                         <i class="fa-solid fa-user-check"></i>
@@ -148,7 +148,7 @@
                             </div>
 
                             {{-- Sticky Progress Card --}}
-                            <div class="rounded-xl border border-line bg-white p-5 shadow-sm">
+                            <div class="rounded-xl border border-line bg-secondary-bg p-5 shadow-sm">
                                 <div class="flex items-baseline justify-between">
                                     <p class="text-sm font-semibold text-ink font-primary">Progress</p>
                                     <p class="text-sm tabular-nums text-ink-muted">
@@ -238,7 +238,7 @@
             </form>
 
             {{-- Floating Mobile Bottom Action Bar (Fixed to phone bottom) --}}
-            <div class="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-3 border-t border-line bg-white/95 backdrop-blur-md px-4 py-3 lg:hidden shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
+            <div class="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-3 border-t border-line bg-secondary-bg/95 backdrop-blur-md px-4 py-3 lg:hidden shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
                 <div class="flex flex-col gap-1 min-w-0">
                     <div class="flex items-center gap-1.5">
                         <span class="text-xs font-bold text-ink tabular-nums">

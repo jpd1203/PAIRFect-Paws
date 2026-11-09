@@ -100,8 +100,12 @@
                 <h3 class="text-base font-bold text-text-dark font-primary m-0">Identity Verification Status</h3>
                 <p class="mt-0.5 text-xs text-[#777] m-0">Interview identity: {{ app(\App\Services\IdentityVerificationService::class)->isVerified($record->application) ? 'Verified' : 'Verification required' }}</p>
             </div>
-            <div class="space-y-5 p-6">
-                <a class="btn btn-primary" href="{{ route('admin.applications.identity', ['application' => $record->application, 'from' => 'handover', 'handover' => $record->id]) }}"><i class="fa-solid fa-eye"></i>Review Interview Identity</a>
+            <div class="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <p class="text-sm font-semibold text-text-dark m-0">Review applicant identity</p>
+                    <p class="text-xs text-[#777] mt-1 m-0">Check the interview identity verification details before release.</p>
+                </div>
+                <a class="btn btn-primary shrink-0" href="{{ route('admin.applications.identity', ['application' => $record->application, 'from' => 'handover', 'handover' => $record->id]) }}"><i class="fa-solid fa-eye"></i> Review Interview Identity</a>
             </div>
         </section>
         @if($record->scheduled_method === 'pickup' && $record->schedule_status === 'confirmed')

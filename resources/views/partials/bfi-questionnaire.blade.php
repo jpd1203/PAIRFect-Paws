@@ -37,11 +37,11 @@
 <div class="space-y-6" id="personalityQuestionnaireContainer">
     @foreach ($dimensions as $dimKey => $dim)
         <section id="section-{{ $dimKey }}" aria-labelledby="heading-{{ $dimKey }}"
-                 class="scroll-mt-6 rounded-xl border border-line bg-white shadow-sm overflow-hidden bfi-section"
+                 class="scroll-mt-6 rounded-xl border border-line bg-secondary-bg shadow-sm overflow-hidden bfi-section"
                  data-section="{{ $dimKey }}" data-section-total="{{ count($dim['keys']) }}">
 
             {{-- Section Header matching Pet Assessment Category Header --}}
-            <header class="flex items-start justify-between gap-4 border-b border-line px-5 py-4 sm:px-6 bg-white">
+            <header class="flex items-start justify-between gap-4 border-b border-line px-5 py-4 sm:px-6 bg-secondary-bg">
                 <div>
                     <h2 id="heading-{{ $dimKey }}" class="text-lg font-semibold text-ink font-primary">
                         {{ $dim['label'] }}
