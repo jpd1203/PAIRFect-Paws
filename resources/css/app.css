@@ -104,7 +104,7 @@
 
   /* ---------- Sidebar ---------- */
   .sidebar {
-    @apply w-sidebar shrink-0 h-screen h-[100dvh] bg-white border-r border-[#e2ddd7] flex flex-col overflow-y-auto overflow-x-hidden z-[1100] transition-transform duration-200;
+    @apply w-sidebar shrink-0 h-full bg-white border-r border-[#e2ddd7] flex flex-col overflow-y-auto overflow-x-hidden z-[1100] transition-transform duration-200;
   }
   .sidebar.open {
     @apply translate-x-0;

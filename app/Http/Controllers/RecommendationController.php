@@ -93,7 +93,8 @@ class RecommendationController extends Controller
             return redirect()->route('recommendation.intake')->withErrors(['profile' => 'Complete your personality and household profile to see recommendations.']);
         }
 
-        $matches = $this->knn->recommendPets($profile, preferences: $this->preferences($request), includeIneligible: true);
+        $includeIneligible = $request->boolean('include_ineligible', false);
+        $matches = $this->knn->recommendPets($profile, preferences: $this->preferences($request), includeIneligible: $includeIneligible);
         $perPage = max(1, (int) config('matching.top_k', 5));
         $page = max(1, $request->integer('page', 1));
 
@@ -113,7 +114,8 @@ class RecommendationController extends Controller
         $profile = $user ? $user->adopterProfile : $this->getGuestProfile($request);
 
         abort_unless($profile && $this->mapper->adopterIsComplete($profile), 422, 'Complete your matching profile first.');
-        $matches = $this->knn->recommendPets($profile, preferences: $this->preferences($request), includeIneligible: true);
+        $includeIneligible = $request->boolean('include_ineligible', false);
+        $matches = $this->knn->recommendPets($profile, preferences: $this->preferences($request), includeIneligible: $includeIneligible);
 
         return response()->json(['matches' => $matches->map(fn ($item) => [
             'id' => $item['pet']->id, 'pet_name' => $item['pet']->name,

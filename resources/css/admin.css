@@ -23,7 +23,7 @@
     @apply flex min-h-screen bg-white;
   }
   .main-content {
-    @apply flex-1 p-[2rem_2.5rem] bg-white min-w-0 max-[991px]:p-4 overflow-x-hidden;
+    @apply flex-1 p-[2rem_2.5rem] bg-white min-w-0 max-[991px]:p-4 overflow-x-clip;
   }
   .heading-text {
     @apply mb-1;

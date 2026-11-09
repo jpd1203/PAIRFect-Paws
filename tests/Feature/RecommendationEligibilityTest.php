@@ -42,7 +42,7 @@ class RecommendationEligibilityTest extends TestCase
         $this->assertCount(1, app(KnnRecommendationService::class)->recommendPets($profile, 1));
     }
 
-    public function test_results_paginate_eligible_and_ineligible_pets_and_keep_filters(): void
+    public function test_results_paginate_only_eligible_pets_and_exclude_ineligible_pets(): void
     {
         $user = $this->matchingUser();
         $this->completeMatchingProfile($user);
@@ -55,28 +55,30 @@ class RecommendationEligibilityTest extends TestCase
 
         $results = $this->actingAs($user)->get(route('recommendation.results', ['species' => 'Dog']))
             ->assertOk()
-            ->assertSeeInOrder(['id="matchResults"', 'Showing 1 to 5 of 8 pets', 'page=2'], false)
+            ->assertSeeInOrder(['id="matchResults"', 'Showing 1 to 5 of 7 pets', 'page=2'], false)
             ->assertDontSee('Filtered Cat')
             ->assertDontSee('Reserved Dog')
             ->assertViewHas('matches', fn ($page): bool => $page instanceof LengthAwarePaginator
-                && $page->total() === 8
+                && $page->total() === 7
                 && $page->getCollection()->pluck('pet.id')->all() === array_slice($ids, 0, 5)
                 && str_contains($page->url(2), 'species=Dog'));
 
-        $this->assertSame(1, substr_count($results->getContent(), 'Showing 1 to 5 of 8 pets'));
+        $this->assertSame(1, substr_count($results->getContent(), 'Showing 1 to 5 of 7 pets'));
         $this->assertSame(1, substr_count($results->getContent(), 'id="petModal"'));
 
         $this->get(route('recommendation.results', ['species' => 'Dog', 'page' => 2]))
             ->assertOk()
-            ->assertSee('Showing 6 to 8 of 8 pets')
-            ->assertSee('Reserved Dog')
-            ->assertSee('Ineligible')
-            ->assertSee('The pet is not currently available for matching.')
-            ->assertDontSee('href="'.route('application.apply', $reserved).'"', false)
-            ->assertViewHas('matches', fn ($page): bool => $page->total() === 8
-                && $page->getCollection()->pluck('pet.id')->all() === [...array_slice($ids, 5), $reserved->id]);
+            ->assertSee('Showing 6 to 7 of 7 pets')
+            ->assertDontSee('Reserved Dog')
+            ->assertDontSee('Ineligible')
+            ->assertViewHas('matches', fn ($page): bool => $page->total() === 7
+                && $page->getCollection()->pluck('pet.id')->all() === array_slice($ids, 5));
 
         $this->postJson(route('recommendation.recompute'), ['species' => 'Dog'])
+            ->assertOk()
+            ->assertJsonCount(7, 'matches');
+
+        $this->postJson(route('recommendation.recompute', ['include_ineligible' => 1]), ['species' => 'Dog'])
             ->assertOk()
             ->assertJsonCount(8, 'matches')
             ->assertJsonPath('matches.7.eligible', false)
@@ -84,7 +86,7 @@ class RecommendationEligibilityTest extends TestCase
             ->assertJsonPath('matches.7.match_label', 'Ineligible');
     }
 
-    public function test_ineligible_only_results_still_paginate_without_fabricated_scores(): void
+    public function test_ineligible_only_results_display_empty_state_without_showing_ineligible_pets(): void
     {
         $user = $this->matchingUser();
         $this->completeMatchingProfile($user);
@@ -95,31 +97,29 @@ class RecommendationEligibilityTest extends TestCase
 
         $this->actingAs($user)->get(route('recommendation.results'))
             ->assertOk()
-            ->assertSee('Showing 1 to 5 of 6 pets')
-            ->assertSee('Page 1 of 2')
-            ->assertSee('Ineligible to adopt')
-            ->assertSee('The pet needs three distinct observers and complete behavioral scores.')
-            ->assertDontSee('Archived Pet')
-            ->assertDontSee('data-overall-score', false);
-
-        $this->get(route('recommendation.results', ['page' => 2]))
-            ->assertOk()->assertSee('Awaiting Assessment 6')->assertSee('Page 2 of 2');
+            ->assertSee('No pets found for this page or the selected filters.')
+            ->assertDontSee('Awaiting Assessment')
+            ->assertDontSee('Ineligible to adopt')
+            ->assertDontSee('Archived Pet');
     }
 
-    public function test_safety_excluded_pet_has_reason_on_card_and_modal_and_cannot_be_adopted_from_either(): void
+    public function test_safety_excluded_pet_has_reason_on_modal_and_cannot_be_adopted(): void
     {
         $user = $this->matchingUser();
         $this->completeMatchingProfile($user, ['has_children' => true]);
         $pet = $this->matchingPet(['name' => 'Safety Review', 'has_aggression_history' => true]);
 
-        foreach ([route('recommendation.results'), route('pets.modal', $pet)] as $url) {
-            $this->actingAs($user)->get($url)->assertOk()
-                ->assertSee('Ineligible')
-                ->assertSee(\App\Services\Matching\MatchPresenter::reason('EXCLUDED_CHILD_SAFETY'))
-                ->assertDontSee('href="'.route('application.apply', $pet).'"', false);
-        }
+        // Ineligible pets do not appear in recommendations
+        $this->actingAs($user)->get(route('recommendation.results'))->assertOk()
+            ->assertDontSee('Safety Review');
 
-        $this->postJson(route('recommendation.recompute'))->assertOk()
+        // Modal shows safety reason and blocks application
+        $this->actingAs($user)->get(route('pets.modal', $pet))->assertOk()
+            ->assertSee('Ineligible')
+            ->assertSee(\App\Services\Matching\MatchPresenter::reason('EXCLUDED_CHILD_SAFETY'))
+            ->assertDontSee('href="'.route('application.apply', $pet).'"', false);
+
+        $this->postJson(route('recommendation.recompute', ['include_ineligible' => 1]))->assertOk()
             ->assertJsonPath('matches.0.eligible', false)
             ->assertJsonPath('matches.0.exclusion_reason', 'EXCLUDED_CHILD_SAFETY')
             ->assertJsonPath('matches.0.compatibility_score', null);

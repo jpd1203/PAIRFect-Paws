@@ -2,9 +2,12 @@
     <div class="flex items-center justify-between mb-3">
         <h3 class="text-base font-bold text-text-dark font-primary m-0">Pet Handover Schedule</h3>
         @if($record->scheduled_method)
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-muted/30 px-2.5 py-0.5 text-xs font-semibold text-primary border border-primary">
-                <i class="{{ $record->scheduled_method === 'pickup' ? 'fa-solid fa-house-user' : 'fa-solid fa-truck' }} text-xs"></i>
-                {{ $record->scheduled_method === 'pickup' ? 'Shelter Pickup' : 'Third-Party Delivery' }}
+            @php
+                $isPickup = $record->scheduled_method === 'pickup';
+            @endphp
+            <span class="inline-flex items-center gap-1.5 rounded-full {{ $isPickup ? 'bg-completed-bg text-completed-fg border-completed-fg' : 'bg-primary-muted/30 text-primary border-primary' }} px-2.5 py-0.5 text-xs font-semibold border">
+                <i class="{{ $isPickup ? 'fa-solid fa-house-user' : 'fa-solid fa-truck' }} text-xs"></i>
+                {{ $isPickup ? 'Shelter Pickup' : 'Third-Party Delivery' }}
             </span>
         @endif
     </div>

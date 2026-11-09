@@ -26,10 +26,10 @@
                 <legend class="form-label mb-2">Release Method</legend>
 
                 <div class="grid gap-3 sm:grid-cols-2">
-                    <label class="method-option flex cursor-pointer items-start gap-3 rounded-xl border border-[#e2ddd7] bg-white p-3.5 transition has-[:checked]:border-primary has-[:checked]:bg-primary-muted/25 has-[:checked]:ring-1 has-[:checked]:ring-primary">
-                        <input type="radio" name="release_method" value="pickup" {{ $method === 'pickup' ? 'checked' : '' }} onchange="toggleCourierFields(this.value)" class="mt-1 h-4 w-4 shrink-0 accent-primary">
+                    <label class="method-option flex cursor-pointer items-start gap-3 rounded-xl border border-[#e2ddd7] bg-white p-3.5 transition has-[:checked]:border-completed-fg has-[:checked]:bg-completed-bg/30 has-[:checked]:ring-1 has-[:checked]:ring-completed-fg">
+                        <input type="radio" name="release_method" value="pickup" {{ $method === 'pickup' ? 'checked' : '' }} onchange="toggleCourierFields(this.value)" class="mt-1 h-4 w-4 shrink-0 accent-completed-solid">
                         <div>
-                            <span class="flex items-center gap-1.5 text-sm font-bold text-text-dark"><i class="fa-solid fa-house-user text-primary"></i> Pickup at shelter</span>
+                            <span class="flex items-center gap-1.5 text-sm font-bold text-text-dark"><i class="fa-solid fa-house-user text-completed-fg"></i> Pickup at shelter</span>
                             <span class="mt-0.5 block text-xs text-[#777]">Adopter collects the pet in person</span>
                         </div>
                     </label>

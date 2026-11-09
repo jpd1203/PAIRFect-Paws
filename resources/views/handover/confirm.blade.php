@@ -75,7 +75,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6 items-start">
                     <div class="space-y-4">
                         <div class="flex items-start gap-3">
-                            <i class="fa-solid fa-truck mt-0.5 text-[#9e9e9e] text-base w-5"></i>
+                            <i class="{{ $record->release_method === 'pickup' ? 'fa-solid fa-house-user text-completed-fg' : 'fa-solid fa-truck text-primary' }} mt-0.5 text-base w-5"></i>
                             <div>
                                 <span class="text-[11px] font-bold uppercase tracking-wider text-[#777] block">RELEASE METHOD</span>
                                 <span class="text-sm font-bold text-text-dark block mt-0.5">

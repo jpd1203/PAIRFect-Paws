@@ -89,7 +89,7 @@
 
                         @if ($record->released_at)
                             <span class="flex items-center gap-1">
-                                <i class="{{ $isDelivery ? 'fa-solid fa-truck' : 'fa-solid fa-house-user' }} text-[#9e9e9e]"></i>
+                                <i class="{{ $isDelivery ? 'fa-solid fa-truck text-primary' : 'fa-solid fa-house-user text-completed-fg' }}"></i>
                                 {{ $isDelivery ? (($record->courier ?: 'Courier') . ' · ' . ($record->tracking_number ?: 'In transit')) : 'Picked up at shelter' }}
                             </span>
                         @endif

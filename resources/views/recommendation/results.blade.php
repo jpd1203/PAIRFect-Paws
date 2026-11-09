@@ -6,7 +6,7 @@
     <div class="main-content-header">
         <div class="heading-text">
             <h2>Pet Recommendation</h2>
-            <p>Explore all pets, with eligible matches first and reasons shown for ineligible pets.</p>
+            <p>Explore compatible, adoptable pets matching your personality and household profile.</p>
         </div>
         @include('partials.notification-bell')
     </div>
@@ -56,7 +56,10 @@
                 </div>
             </label>
         </div> -->
-        <button class="btn btn-primary" type="submit">Filter Recommendations</button>
+        <button class="btn btn-primary flex items-center gap-2" type="submit">
+            <i class="fa-solid fa-filter text-xs"></i>
+            <span>Apply Filters</span>
+        </button>
     </form>
     @if ($errors->any())
         <p class="text-red-700">{{ $errors->first() }}</p>
