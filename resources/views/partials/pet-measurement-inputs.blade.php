@@ -20,15 +20,7 @@
         </div>
         @if($showSize)
             <div class="form-group sm:col-span-2">
-                <label class="form-label" for="{{ $idPrefix }}PhysicalSize">Physical size (staff-entered veterinary assessment)</label>
-                <select class="form-select" id="{{ $idPrefix }}PhysicalSize" name="physical_size">
-                    <option value="">Not yet veterinary-assessed</option>
-                    @foreach(array_keys(config('matching.size_levels')) as $size)
-                        <option value="{{ $size }}" @selected(old('physical_size', $measurementPet?->physical_size) === $size)>{{ $size }}</option>
-                    @endforeach
-                </select>
-                @include('partials.pet-size-guidance')
-                @error('physical_size')<p class="text-sm text-red-700" role="alert">{{ $message }}</p>@enderror
+                @include('partials.pet-calculated-size', ['sizeInputId' => $idPrefix.'PhysicalSize', 'sizePet' => $measurementPet])
             </div>
         @endif
     </div>

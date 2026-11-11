@@ -66,8 +66,8 @@ class AssessmentController extends Controller
         $pet->load('assessmentRecords');
 
         $missingInformation = [];
-        if (! array_key_exists((string) $pet->physical_size, config('matching.size_levels'))) {
-            $missingInformation[] = 'veterinary physical size';
+        if (! $pet->hasClassifiedPhysicalSize()) {
+            $missingInformation[] = 'current adult weight-based size (known age and measured weight required)';
         }
         if (! MatchingConfiguration::validValue($pet->medical_needs)) {
             $missingInformation[] = 'veterinary medical-needs level';

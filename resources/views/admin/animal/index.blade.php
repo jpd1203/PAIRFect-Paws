@@ -203,6 +203,7 @@
             'status' => $p->status, 'vacc' => $p->vaccination_record_status, 'notes' => $p->behavioral_notes,
             'description' => $p->description,
             'physical_size' => $p->physical_size, 'medical_needs' => $p->medical_needs,
+            'size_display' => $p->size_display,
             'weight_kg' => $p->weight_kg, 'height_cm' => $p->height_cm,
             'life_stage' => $p->life_stage,
             'has_aggression_history' => $p->aggression_history_verified_at === null ? null : $p->has_aggression_history,

@@ -7,8 +7,8 @@ use App\Models\Pet;
 use App\Models\User;
 use App\Services\Matching\BehaviorAssessmentService;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 final class FreshStartPetsSeeder extends Seeder
@@ -68,6 +68,10 @@ final class FreshStartPetsSeeder extends Seeder
         $assessment = app(BehaviorAssessmentService::class);
 
         foreach (self::PETS as $index => [$name, $species, $breed, $age, $sex, $size, $energy, $trainability, $social, $fear, $medicalNeeds]) {
+            // New synthetic demo records only; never infer measurements for existing real pets.
+            $demoWeights = $species === 'Dog'
+                ? ['Extra Small' => '1', 'Small' => '7', 'Medium' => '12', 'Large' => '20', 'Extra Large' => '30']
+                : ['Extra Small' => '2', 'Small' => '3', 'Medium' => '4', 'Large' => '5', 'Extra Large' => '6.5'];
             $pet = Pet::create([
                 'name' => $namePrefix.$name,
                 'species' => $species,
@@ -75,6 +79,7 @@ final class FreshStartPetsSeeder extends Seeder
                 'age' => $age,
                 'sex' => $sex,
                 'physical_size' => $size,
+                'weight_kg' => $demoWeights[$size],
                 'life_stage' => $age <= 24 ? 'young' : ($age > 84 ? 'senior' : 'adult'),
                 'health_status' => 'Healthy',
                 'vaccination_record_status' => 'Complete',

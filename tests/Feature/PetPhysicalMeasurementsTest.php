@@ -128,7 +128,7 @@ class PetPhysicalMeasurementsTest extends TestCase
 
     public function test_legacy_unknowns_omitted_updates_and_explicit_blanks_have_distinct_behavior(): void
     {
-        $pet = Pet::create(['name' => 'Legacy Unknown', 'species' => 'Cat', 'physical_size' => 'Extra Small', 'availability_status' => 'Assessing'])->fresh();
+        $pet = Pet::withoutEvents(fn () => Pet::create(['name' => 'Legacy Unknown', 'species' => 'Cat', 'physical_size' => 'Extra Small', 'availability_status' => 'Assessing']))->fresh();
         $this->assertNull($pet->weight_kg);
         $this->assertNull($pet->height_cm);
         $this->assertSame('Not recorded', $pet->weight_display);
@@ -136,7 +136,8 @@ class PetPhysicalMeasurementsTest extends TestCase
         $pet->refresh();
         $this->assertNull($pet->weight_kg);
         $this->assertNull($pet->height_cm);
-        $this->assertSame('Extra Small', $pet->physical_size);
+        $this->assertNull($pet->physical_size);
+        $this->assertSame('Extra Small', $pet->legacy_physical_size);
         $this->put(route('admin.animals.update', $pet), $this->editData($pet, ['weight_kg' => '3.123', 'height_cm' => '22.001']))->assertSessionHasNoErrors();
         $pet->refresh();
         $this->put(route('admin.animals.update', $pet), $this->editData($pet, ['description' => 'Unrelated story edit']))->assertSessionHasNoErrors();
@@ -161,12 +162,12 @@ class PetPhysicalMeasurementsTest extends TestCase
     }
 
     #[DataProvider('speciesAndSizes')]
-    public function test_both_species_keep_all_existing_labels_without_weight_reclassification(string $species, string $size): void
+    public function test_both_species_ignore_manual_size_and_use_weight_classification(string $species, string $size): void
     {
         $this->actingAs($this->matchingUser(Role::Administrator))->post(route('admin.animals.store'), $this->newPetData(['species' => $species, 'physical_size' => $size]))->assertSessionHasNoErrors();
         $pet = Pet::sole();
         $this->put(route('admin.animals.update', $pet), $this->editData($pet, ['weight_kg' => '1.125', 'height_cm' => '20']))->assertSessionHasNoErrors();
-        $this->assertSame($size, $pet->fresh()->physical_size);
+        $this->assertNull($pet->fresh()->physical_size); // Unknown age cannot be made adult by a forged label.
         $this->assertSame(['Extra Small' => 1.0, 'Small' => 2.0, 'Medium' => 3.0, 'Large' => 4.0, 'Extra Large' => 5.0], config('matching.size_levels'));
     }
 
@@ -230,9 +231,9 @@ class PetPhysicalMeasurementsTest extends TestCase
         $this->get(route('pets.modal', $pet))->assertSee('Not recorded')->assertDontSee('0 kg')->assertDontSee('0 cm');
         $this->actingAs($this->matchingUser(Role::Administrator));
         $this->get(route('admin.animals.index'))->assertOk()->assertSee('Weight (kg)')->assertSee('Height (cm, optional)')
-            ->assertSee('Dog: use the veterinary assessment')->assertSee('Cat: use the veterinary assessment')->assertSee('shelter approval pending');
-        $this->get(route('admin.pets.create'))->assertOk()->assertSee('name="weight_kg"', false)->assertSee('name="physical_size"', false);
-        $this->get(route('admin.pets.edit', $pet))->assertOk()->assertSee('name="height_cm"', false)->assertSee('name="physical_size"', false);
+            ->assertSee('Dogs must be at least 24 months')->assertSee('cats at least 12 months')->assertSee('shelter approval pending');
+        $this->get(route('admin.pets.create'))->assertOk()->assertSee('name="weight_kg"', false)->assertDontSee('name="physical_size"', false);
+        $this->get(route('admin.pets.edit', $pet))->assertOk()->assertSee('name="height_cm"', false)->assertDontSee('name="physical_size"', false);
     }
 
     public function test_measurement_only_http_edit_preserves_matching_scores_fingerprints_eligibility_and_order(): void
@@ -249,7 +250,7 @@ class PetPhysicalMeasurementsTest extends TestCase
         $stored = $application->fresh()->getAttributes();
         $observations = $pet->assessmentRecords->map->getAttributes()->all();
         $this->travelTo(now()->addHour());
-        $this->actingAs($this->matchingUser(Role::Administrator))->put(route('admin.animals.update', $pet), $this->editData($pet, ['weight_kg' => '27.125', 'height_cm' => '41.375']))->assertSessionHasNoErrors();
+        $this->actingAs($this->matchingUser(Role::Administrator))->put(route('admin.animals.update', $pet), $this->editData($pet, ['weight_kg' => '13.125', 'height_cm' => '41.375']))->assertSessionHasNoErrors();
         $pet->refresh()->load('assessmentRecords');
         $this->assertSame($before, $matcher->calculateMatch($profile, $pet)->toArray());
         $this->assertSame($order, $matcher->recommendPets($profile, includeIneligible: true)->pluck('pet.id')->all());
@@ -261,7 +262,7 @@ class PetPhysicalMeasurementsTest extends TestCase
 
     public function test_measurements_do_not_replace_size_eligibility_or_become_assessment_inputs(): void
     {
-        $pet = $this->matchingPet(['physical_size' => null, 'weight_kg' => '15', 'height_cm' => '40'], 0);
+        $pet = $this->matchingPet(['physical_size' => null, 'weight_kg' => '15', 'height_cm' => '40', 'age' => null], 0);
         $this->actingAs($this->matchingUser(Role::Administrator))->post(route('admin.assessments.store', $pet), [
             'responses' => $this->behaviorResponses('dog', 2), 'weight_kg' => '99', 'height_cm' => '99', 'physical_size' => 'Large',
         ])->assertSessionHasNoErrors();

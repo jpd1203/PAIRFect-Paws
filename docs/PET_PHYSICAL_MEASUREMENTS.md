@@ -1,5 +1,7 @@
 # Pet physical measurements and size (Phase 7 / Tool Defense Group 8)
 
+Historical Phase 7 report: its manual-size policy below is superseded by [Phase 11A adult weight-based classification](WEIGHT_BASED_PET_SIZE.md). The measurement precision/unit rules remain in force.
+
 Baseline: committed Phase 6 `485ecb0b39ecc5dc981688601f348d7eba412065`.
 
 ## Existing schema and implementation audit

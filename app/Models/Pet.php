@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AvailabilityStatus;
 use App\Enums\Species;
+use App\Services\PetSizeClassifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -29,6 +30,7 @@ class Pet extends Model
             'intake_date' => 'date',
             'weight_kg' => 'decimal:3',
             'height_cm' => 'decimal:3',
+            'age' => 'integer',
             'last_assessed_at' => 'datetime',
             'energy_level' => 'float',
             'trainability' => 'float',
@@ -52,6 +54,9 @@ class Pet extends Model
         });
 
         static::saving(function (Pet $pet) {
+            if (! $pet->exists || $pet->isDirty(['species', 'weight_kg', 'age', 'physical_size'])) {
+                $pet->forceFill(app(PetSizeClassifier::class)->changes($pet));
+            }
             if ($pet->isDirty('has_aggression_history')) {
                 $pet->aggression_history_verified_at = $pet->has_aggression_history === null ? null : now();
             }
@@ -97,6 +102,8 @@ class Pet extends Model
             ->where('availability_status', AvailabilityStatus::Available->value)
             ->whereHas('assessmentRecords', fn (Builder $records) => $records->whereNotNull('responses'))
             ->whereNotNull('medical_needs')
+            ->where('size_classification_status', 'classified')
+            ->where('size_rule_version', PetSizeClassifier::VERSION)
             ->whereIn('physical_size', ['Extra Small', 'Small', 'Medium', 'Large', 'Extra Large'])
             ->whereIn('life_stage', ['young', 'adult', 'senior'])
             ->whereNotNull('has_aggression_history')
@@ -108,7 +115,7 @@ class Pet extends Model
 
     public function getAgeDisplayAttribute(): string
     {
-        if (! $this->age) {
+        if ($this->age === null) {
             return 'Unknown';
         }
         if ($this->age >= 12) {
@@ -120,7 +127,7 @@ class Pet extends Model
 
     public function getAgeGroupAttribute(): string
     {
-        if (! $this->age) {
+        if ($this->age === null) {
             return 'Unknown';
         }
         if ($this->age <= 24) {
@@ -135,12 +142,32 @@ class Pet extends Model
 
     public function getAgeYearsAttribute(): ?int
     {
-        return $this->age ? intdiv($this->age, 12) : null;
+        return $this->age === null ? null : intdiv($this->age, 12);
     }
 
     public function getAgeMonthsAttribute(): ?int
     {
-        return $this->age ? $this->age % 12 : null;
+        return $this->age === null ? null : $this->age % 12;
+    }
+
+    public function hasClassifiedPhysicalSize(): bool
+    {
+        return app(PetSizeClassifier::class)->isCurrent($this);
+    }
+
+    public function getSizeDisplayAttribute(): string
+    {
+        if ($this->hasClassifiedPhysicalSize()) {
+            return $this->physical_size;
+        }
+
+        return match ($this->size_classification_status) {
+            'juvenile' => 'Unavailable: not yet eligible for adult size',
+            'age_unknown' => 'Unavailable: age is unknown',
+            'weight_unavailable' => 'Unavailable: measured weight is missing or invalid',
+            'unsupported_species' => 'Unavailable: unsupported species',
+            default => 'Unavailable: classification needs staff review',
+        };
     }
 
     public function getStatusAttribute(): string

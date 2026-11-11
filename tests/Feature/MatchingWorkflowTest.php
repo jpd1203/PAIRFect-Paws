@@ -171,7 +171,8 @@ class MatchingWorkflowTest extends TestCase
             ->assertDontSee('KNN matching flags')
             ->assertSee('id="desktopProgressBar"', false);
         $animalPage = $this->get(route('admin.animals.index'))->assertOk();
-        foreach (['physical_size', 'medical_needs', 'life_stage', 'has_aggression_history', 'high_vocalization'] as $field) {
+        $animalPage->assertDontSee('name="physical_size"', false)->assertSee('id="vSize"', false);
+        foreach (['medical_needs', 'life_stage', 'has_aggression_history', 'high_vocalization'] as $field) {
             $animalPage->assertSee('name="'.$field.'"', false);
         }
         $unassessedPet = $this->matchingPet(['name' => 'Awaiting assessment'], 0);

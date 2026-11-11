@@ -40,12 +40,11 @@ class AssessmentKnnIntegrationTest extends TestCase
         $basicStep = strpos($page, 'id="addTabPane-1"');
         $healthStep = strpos($page, 'id="addTabPane-2"');
         $storyStep = strpos($page, 'id="addTabPane-3"');
-        $this->assertGreaterThan($healthStep, strpos($page, 'name="physical_size"'));
+        $this->assertGreaterThan($healthStep, strpos($page, 'id="addSize"'));
         $this->assertGreaterThan($basicStep, $healthStep);
         $this->assertLessThan($storyStep, strpos($page, 'name="high_vocalization"'));
-        foreach (array_keys(config('matching.size_levels')) as $size) {
-            $this->assertStringContainsString('<option value="'.$size.'">'.$size.'</option>', $page);
-        }
+        $this->assertStringNotContainsString('name="physical_size"', $page);
+        $this->assertStringContainsString('readonly', $page);
     }
 
     public function test_add_animal_saves_explicit_five_level_size_and_verified_no_answers(): void
@@ -53,12 +52,12 @@ class AssessmentKnnIntegrationTest extends TestCase
         $this->actingAs($this->matchingUser(Role::Administrator))
             ->post(route('admin.animals.store'), [
                 'name' => 'Assessed Intake', 'species' => 'Cat', 'status' => 'Assessing', 'weight_kg' => '3.25',
-                'physical_size' => 'Extra Small', 'medical_needs' => '1',
+                'physical_size' => 'Extra Small', 'medical_needs' => '1', 'age_years' => 1,
                 'life_stage' => 'young', 'has_aggression_history' => '0', 'high_vocalization' => '0',
             ])->assertRedirect(route('admin.animals.index'));
 
         $pet = Pet::where('name', 'Assessed Intake')->sole();
-        $this->assertSame('Extra Small', $pet->physical_size);
+        $this->assertSame('Small', $pet->physical_size); // 3.25 kg adult cat, not a client override.
         $this->assertSame(1.0, $pet->medical_needs);
         $this->assertSame('young', $pet->life_stage);
         $this->assertFalse($pet->has_aggression_history);
@@ -73,7 +72,7 @@ class AssessmentKnnIntegrationTest extends TestCase
             ->put(route('admin.pets.update', $pet), [
                 'name' => $pet->name, 'species' => $pet->species->value,
                 'status' => 'Available', 'version' => $pet->version,
-                'physical_size' => 'Extra Large', 'medical_needs' => 5,
+                'physical_size' => 'Extra Small', 'weight_kg' => '30', 'medical_needs' => 5,
                 'life_stage' => 'senior', 'has_aggression_history' => '1', 'high_vocalization' => '1',
             ])->assertRedirect(route('admin.animals.index'));
 
@@ -309,7 +308,7 @@ class AssessmentKnnIntegrationTest extends TestCase
             ->put(route('admin.pets.update', $pet), [
                 'name' => $pet->name, 'species' => $pet->species->value,
                 'status' => 'Available', 'version' => $pet->version,
-                'physical_size' => '', 'medical_needs' => '',
+                'physical_size' => '', 'medical_needs' => '', 'weight_kg' => '',
             ])->assertRedirect(route('admin.animals.index'));
 
         $this->assertNull($pet->fresh()->physical_size);

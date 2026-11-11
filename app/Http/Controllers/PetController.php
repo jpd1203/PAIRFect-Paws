@@ -3,14 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AvailabilityStatus;
-use App\Models\AdoptionApplication;
 use App\Models\AdopterProfile;
+use App\Models\AdoptionApplication;
 use App\Models\Branch;
 use App\Models\Pet;
 use App\Models\User;
 use App\Rules\PositivePetMeasurement;
 use App\Services\AuditLogService;
 use App\Services\KnnRecommendationService;
+use App\Services\Matching\ApplicationMatchService;
+use App\Services\PetSizeClassifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -100,7 +102,8 @@ class PetController extends Controller
             'name' => 'required|string|max:255',
             'species' => 'required|in:Cat,Dog',
             'breed' => 'nullable|string|max:255',
-            'age_years' => 'nullable|integer|min:0',
+            'age' => 'prohibited',
+            'age_years' => 'nullable|integer|min:0|max:178956969',
             'age_months' => 'nullable|integer|min:0|max:11',
             'sex' => 'nullable|in:Male,Female',
             'health_status' => 'nullable|string|max:255',
@@ -108,7 +111,6 @@ class PetController extends Controller
             'description' => 'nullable|string',
             'status' => ['required', Rule::enum(AvailabilityStatus::class)],
             'branch_id' => 'nullable|exists:branches,id',
-            'physical_size' => ['nullable', Rule::in(array_keys(config('matching.size_levels')))],
             'medical_needs' => 'nullable|numeric|min:1|max:5',
             'life_stage' => ['nullable', Rule::in(['young', 'adult', 'senior'])],
             'has_aggression_history' => 'nullable|boolean',
@@ -123,7 +125,7 @@ class PetController extends Controller
             $photoPath = $request->file('photo')->store('pets', 'public');
         }
 
-        $age = ((int) ($validated['age_years'] ?? 0)) * 12 + ((int) ($validated['age_months'] ?? 0));
+        $age = $this->ageInMonths($validated);
 
         $pet = Pet::create([
             'weight_kg' => $validated['weight_kg'],
@@ -131,14 +133,13 @@ class PetController extends Controller
             'name' => $validated['name'],
             'species' => $validated['species'],
             'breed' => $validated['breed'] ?? null,
-            'age' => $age > 0 ? $age : null,
+            'age' => $age,
             'sex' => $validated['sex'] ?? null,
             'health_status' => $validated['health_status'] ?? null,
             'behavioral_notes' => $validated['behavioral_notes'] ?? null,
             'description' => $validated['description'] ?? null,
             'availability_status' => $validated['status'],
             'branch_id' => $validated['branch_id'] ?? null,
-            'physical_size' => $validated['physical_size'] ?? null,
             'medical_needs' => $validated['medical_needs'] ?? null,
             'life_stage' => $validated['life_stage'] ?? null,
             'has_aggression_history' => $validated['has_aggression_history'] ?? null,
@@ -185,7 +186,8 @@ class PetController extends Controller
             'name' => 'required|string|max:255',
             'species' => 'required|in:Cat,Dog',
             'breed' => 'nullable|string|max:255',
-            'age_years' => 'nullable|integer|min:0',
+            'age' => 'prohibited',
+            'age_years' => 'nullable|integer|min:0|max:178956969',
             'age_months' => 'nullable|integer|min:0|max:11',
             'sex' => 'nullable|in:Male,Female',
             'health_status' => 'nullable|string|max:255',
@@ -193,7 +195,6 @@ class PetController extends Controller
             'description' => 'nullable|string',
             'status' => ['required', Rule::enum(AvailabilityStatus::class)],
             'branch_id' => 'nullable|exists:branches,id',
-            'physical_size' => ['nullable', Rule::in(array_keys(config('matching.size_levels')))],
             'medical_needs' => 'nullable|numeric|min:1|max:5',
             'life_stage' => ['nullable', Rule::in(['young', 'adult', 'senior'])],
             'has_aggression_history' => 'nullable|boolean',
@@ -204,7 +205,10 @@ class PetController extends Controller
         ]);
 
         $submittedVersion = (int) $validated['version'];
-        $age = ((int) ($validated['age_years'] ?? 0)) * 12 + ((int) ($validated['age_months'] ?? 0));
+        if ($submittedVersion !== (int) $pet->version) {
+            return back()->withErrors(['concurrency' => 'This record was changed by someone else while you were editing it. Please reload and try again.'])->withInput();
+        }
+        $age = $this->ageInMonths($validated, $pet->age);
 
         $hasActivePrimary = AdoptionApplication::where('pet_id', $pet->id)
             ->where('is_primary_candidate', true)
@@ -225,14 +229,13 @@ class PetController extends Controller
             'name' => $validated['name'],
             'species' => $validated['species'],
             'breed' => $validated['breed'] ?? null,
-            'age' => $age > 0 ? $age : null,
+            'age' => $age,
             'sex' => $validated['sex'] ?? null,
             'health_status' => $validated['health_status'] ?? null,
             'behavioral_notes' => $validated['behavioral_notes'] ?? null,
             'description' => $validated['description'] ?? null,
             'availability_status' => $validated['status'],
             'branch_id' => $validated['branch_id'] ?? null,
-            'physical_size' => $validated['physical_size'] ?? null,
             'medical_needs' => $validated['medical_needs'] ?? null,
             'vaccination_record_status' => $validated['vaccination_record_status'] ?? null,
             'photo_path' => $this->handlePhotoUpload($request, $pet->photo_path),
@@ -241,7 +244,7 @@ class PetController extends Controller
 
         // Explicit unknown selections clear canonical profile data; omitted fields retain it.
         // An unverified legacy aggression "No" remains stored but not trusted until confirmed.
-        foreach (['physical_size', 'medical_needs', 'life_stage', 'high_vocalization', 'weight_kg', 'height_cm'] as $field) {
+        foreach (['medical_needs', 'life_stage', 'high_vocalization', 'weight_kg', 'height_cm'] as $field) {
             if (array_key_exists($field, $validated)) {
                 $changes[$field] = $validated[$field];
             }
@@ -256,6 +259,9 @@ class PetController extends Controller
             }
         }
 
+        $changes['age'] = $age; // Explicit blank clears age; omitted age retains it.
+        $changes = array_replace($changes, app(PetSizeClassifier::class)->changes($pet, $changes));
+
         $updated = Pet::withoutGlobalScope('notArchived')
             ->where('id', $pet->id)
             ->where('version', $submittedVersion)
@@ -267,7 +273,7 @@ class PetController extends Controller
             ])->withInput();
         }
 
-        app(\App\Services\Matching\ApplicationMatchService::class)->refreshPetSummary($pet->fresh());
+        app(ApplicationMatchService::class)->refreshPetSummary($pet->fresh());
 
         AuditLogService::log(
             auth()->id(),
@@ -337,6 +343,18 @@ class PetController extends Controller
     {
         $staff = $request->user() ? User::find($request->user()->id) : null;
         abort_unless($staff?->is_active && $staff->isStaff() && $staff->hasVerifiedEmail(), 403);
+    }
+
+    private function ageInMonths(array $values, ?int $existing = null): ?int
+    {
+        if (! array_key_exists('age_years', $values) && ! array_key_exists('age_months', $values)) {
+            return $existing;
+        }
+        if (($values['age_years'] ?? null) === null && ($values['age_months'] ?? null) === null) {
+            return null;
+        }
+
+        return (int) ($values['age_years'] ?? 0) * 12 + (int) ($values['age_months'] ?? 0);
     }
 
     private function handlePhotoUpload(Request $request, ?string $existingPath): string

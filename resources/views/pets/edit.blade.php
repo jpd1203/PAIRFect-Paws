@@ -33,8 +33,11 @@
                     <input id="breed" type="text" name="breed" value="{{ old('breed', $pet->breed) }}">
                 </div>
                 <div class="form-group">
-                    <label for="age">Age (years)</label>
-                    <input id="age" type="number" name="age" min="0" value="{{ old('age', $pet->age) }}">
+                    <label for="age_years">Age (years and months; blank if unknown)</label>
+                    <input id="age_years" type="number" name="age_years" min="0" value="{{ old('age_years', $pet->age_years) }}" aria-label="Age years">
+                    <input id="age_months" type="number" name="age_months" min="0" max="11" value="{{ old('age_months', $pet->age_months) }}" aria-label="Additional age months">
+                    @error('age_years') <div class="field-error">{{ $message }}</div> @enderror
+                    @error('age_months') <div class="field-error">{{ $message }}</div> @enderror
                 </div>
                 <div class="form-group">
                     <label for="sex">Sex</label>

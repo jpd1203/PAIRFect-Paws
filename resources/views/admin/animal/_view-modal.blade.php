@@ -152,17 +152,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="vSize">Physical Size</label>
-                            <div class="select-wrapper">
-                                <select id="vSize" name="physical_size" class="form-select">
-                                    <option value="">Not yet veterinary-assessed</option>
-                                    @foreach (array_keys(config('matching.size_levels')) as $size)
-                                        <option value="{{ $size }}">{{ $size }}</option>
-                                    @endforeach
-                                </select>
-                                <i class="fa-solid fa-chevron-down select-arrow"></i>
-                            </div>
-                            @include('partials.pet-size-guidance')
+                            @include('partials.pet-calculated-size', ['sizeInputId' => 'vSize', 'sizePet' => null])
                         </div>
 
                         <div class="form-group">
