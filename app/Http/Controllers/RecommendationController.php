@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdopterProfile;
+use App\Models\Pet;
 use App\Services\KnnRecommendationService;
 use App\Services\Matching\AdopterMatchingProfileService;
+use App\Services\Matching\BfiScorer;
+use App\Services\Matching\MatchingConfiguration;
 use App\Services\Matching\MatchingProfileMapper;
+use App\Services\Matching\MatchPresenter;
+use App\Services\PetSizeClassifier;
 use App\Support\ApplicationOptions;
-use App\Models\Pet;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
@@ -94,7 +99,8 @@ class RecommendationController extends Controller
         }
 
         $includeIneligible = $request->boolean('include_ineligible', false);
-        $matches = $this->knn->recommendPets($profile, preferences: $this->preferences($request), includeIneligible: $includeIneligible);
+        $preferences = $this->preferences($request);
+        $matches = $this->knn->recommendPets($profile, preferences: $preferences, includeIneligible: $includeIneligible);
         $perPage = max(1, (int) config('matching.top_k', 5));
         $page = max(1, $request->integer('page', 1));
 
@@ -104,6 +110,9 @@ class RecommendationController extends Controller
                 ['path' => $request->url(), 'query' => $request->query()],
             ),
             'matcher' => $this->knn,
+            'sizeOptionsBySpecies' => app(PetSizeClassifier::class)->filterOptions(),
+            'selectedSpecies' => $preferences['species'] ?? '',
+            'selectedSize' => $preferences['size'] ?? '',
         ]);
     }
 
@@ -124,15 +133,15 @@ class RecommendationController extends Controller
             'status' => $item['pet']->availability_status->value,
             'eligible' => $item['match']->eligible,
             'exclusion_reason' => $item['match']->exclusionReason,
-            'reason' => $item['match']->eligible ? null : \App\Services\Matching\MatchPresenter::reason($item['match']->exclusionReason),
+            'reason' => $item['match']->eligible ? null : MatchPresenter::reason($item['match']->exclusionReason),
             'match_label' => $item['match']->eligible ? $this->knn->matchLabel($item['result']['overall']) : 'Ineligible',
         ])]);
     }
 
     private function saveGuestProfile(Request $request): void
     {
-        $config = app(\App\Services\Matching\MatchingConfiguration::class);
-        $bfi = app(\App\Services\Matching\BfiScorer::class);
+        $config = app(MatchingConfiguration::class);
+        $bfi = app(BfiScorer::class);
 
         $rules = [
             'housing_type' => ['required', Rule::in(ApplicationOptions::HOUSING_TYPES)],
@@ -159,14 +168,14 @@ class RecommendationController extends Controller
         $request->session()->put('guest_adopter_profile', $guestData);
     }
 
-    private function getGuestProfile(Request $request): ?\App\Models\AdopterProfile
+    private function getGuestProfile(Request $request): ?AdopterProfile
     {
         $data = $request->session()->get('guest_adopter_profile');
         if (! $data) {
             return null;
         }
 
-        $profile = new \App\Models\AdopterProfile();
+        $profile = new AdopterProfile;
         $profile->forceFill($data);
 
         return $profile;
@@ -174,12 +183,6 @@ class RecommendationController extends Controller
 
     private function preferences(Request $request): array
     {
-        return $request->validate([
-            'species' => ['nullable', Rule::in(['Dog', 'Cat'])],
-            'size' => ['nullable', Rule::in(array_keys(config('matching.size_levels')))],
-            'score' => 'prohibited', 'knn_score' => 'prohibited', 'distance' => 'prohibited',
-            'energy' => 'prohibited', 'trainability' => 'prohibited', 'temperament' => 'prohibited',
-            'medical' => 'prohibited', 'independence' => 'prohibited', 'profile' => 'prohibited',
-        ]);
+        return $this->knn->validatePreferences($request->all());
     }
 }

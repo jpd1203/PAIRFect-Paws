@@ -15,13 +15,58 @@ final class PetSizeClassifier
         'Cat' => [3000, 4000, 5000, 6500],
     ];
 
+    private const MINIMUM_AGES = ['Dog' => 24, 'Cat' => 12];
+
+    private const SIZES = ['Extra Small', 'Small', 'Medium', 'Large', 'Extra Large'];
+
+    /** Bounds and display labels for filters, derived from the classification policy. */
+    public function bandsFor(string $species): array
+    {
+        if (! isset(self::BANDS[$species])) {
+            return [];
+        }
+        $bands = [];
+        $lower = 0;
+        foreach (self::SIZES as $index => $size) {
+            $upper = self::BANDS[$species][$index] ?? null;
+            $minimum = $this->kilograms($lower);
+            $maximum = $upper === null ? null : $this->kilograms($upper);
+            $range = $lower === 0 ? "below {$maximum} kg"
+                : ($maximum === null ? "{$minimum} kg and above" : "{$minimum} to under {$maximum} kg");
+            $bands[$size] = ['minimum_kg' => $minimum, 'maximum_kg' => $maximum,
+                'minimum_age_months' => self::MINIMUM_AGES[$species], 'label' => "{$size} ({$range})"];
+            $lower = $upper ?? $lower;
+        }
+
+        return $bands;
+    }
+
+    public function filterOptions(): array
+    {
+        $options = [];
+        foreach (array_keys(self::BANDS) as $species) {
+            foreach ($this->bandsFor($species) as $size => $band) {
+                $options[$species][] = ['value' => $size, 'label' => $band['label']];
+            }
+        }
+
+        return $options;
+    }
+
+    private function kilograms(int $grams): string
+    {
+        $fraction = rtrim(str_pad((string) ($grams % 1000), 3, '0', STR_PAD_LEFT), '0');
+
+        return (string) intdiv($grams, 1000).($fraction === '' ? '' : '.'.$fraction);
+    }
+
     public function classify(Species|string|null $species, mixed $weightKg, ?int $ageMonths): array
     {
         $species = $species instanceof Species ? $species->value : $species;
         $status = match (true) {
             ! isset(self::BANDS[$species ?? '']) => 'unsupported_species',
             $ageMonths === null || $ageMonths < 0 => 'age_unknown',
-            $ageMonths < ($species === 'Dog' ? 24 : 12) => 'juvenile',
+            $ageMonths < self::MINIMUM_AGES[$species] => 'juvenile',
             default => 'classified',
         };
         $grams = $this->grams($weightKg);
@@ -36,7 +81,7 @@ final class PetSizeClassifier
                     $index++;
                 }
             }
-            $size = ['Extra Small', 'Small', 'Medium', 'Large', 'Extra Large'][$index];
+            $size = self::SIZES[$index];
         }
 
         return ['physical_size' => $size, 'size_classification_status' => $status, 'size_rule_version' => self::VERSION];

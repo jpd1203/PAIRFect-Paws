@@ -111,6 +111,28 @@ class Pet extends Model
             ->whereNotNull('high_vocalization');
     }
 
+    /** A size filter means current adult classification, not a historical label. */
+    public function scopeWithClassifiedSize(Builder $query, string $species, string $size): Builder
+    {
+        $band = app(PetSizeClassifier::class)->bandsFor($species)[$size] ?? null;
+        if ($band === null) {
+            return $query->whereRaw('1 = 0');
+        }
+        foreach (['species' => $species, 'physical_size' => $size,
+            'size_classification_status' => 'classified', 'size_rule_version' => PetSizeClassifier::VERSION] as $column => $value) {
+            // Exact PHP strings must not become case-insensitive on MySQL.
+            $query->where('pets.'.$column, $value)
+                ->whereRaw('HEX(pets.'.$column.') = ?', [strtoupper(bin2hex($value))]);
+        }
+        $query->where('pets.age', '>=', $band['minimum_age_months'])
+            ->where('pets.weight_kg', $band['minimum_kg'] === '0' ? '>' : '>=', $band['minimum_kg']);
+        if ($band['maximum_kg'] !== null) {
+            $query->where('pets.weight_kg', '<', $band['maximum_kg']);
+        }
+
+        return $query;
+    }
+
     // ─── Accessors used by frontend Blade templates ────────────────────────
 
     public function getAgeDisplayAttribute(): string
