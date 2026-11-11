@@ -115,7 +115,7 @@
                                     @endif
                                 </div>
                                 <div class="min-w-0 pb-1 flex-1">
-                                    <p class="text-sm font-semibold leading-snug text-text-dark m-0">{{ $entry['label'] ?? '' }}</p>
+                                    <p class="text-sm font-semibold leading-snug text-text-dark m-0">{{ \App\Support\HandoverHistoryLabel::forStaff($entry['label'] ?? '') }}</p>
                                     <p class="mt-0.5 text-xs text-[#777] m-0">
                                         {{ $entryTime }} &middot; <span class="font-medium text-text-muted">{{ $entry['actor'] ?? 'System' }}</span>
                                     </p>

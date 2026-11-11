@@ -8,6 +8,19 @@
     $notExpired = $record->scheduled_end_at && \App\Support\ManilaTime::now()->lte(\App\Support\ManilaTime::at($record->scheduled_end_at));
     $interviewVerified = $record->application && app(\App\Services\IdentityVerificationService::class)->isVerified($record->application);
     $allCleared = $addressVerified && $recipientReady;
+    $readinessLabel = $recipientReady ? 'Availability confirmed for the current delivery agreement'
+        : ($record->delivery_recipient_available === false && $record->delivery_contacted_at
+            ? 'Adopter reported unavailable (last recorded contact)' : 'Current readiness not established');
+    $readinessAttempt = old('recipient') === 'adopter';
+    $readinessPrerequisites = [];
+    if (!$addressVerified) {
+        $readinessPrerequisites[] = 'Verify the current delivery destination using Record destination review above.';
+    }
+    if (!$confirmedDelivery) {
+        $readinessPrerequisites[] = 'Establish a delivery schedule and have the adopter confirm it on Handover Status.';
+    } elseif (!$notExpired) {
+        $readinessPrerequisites[] = 'The confirmed delivery window has expired. Establish a new schedule and obtain adopter confirmation.';
+    }
 @endphp
 
 <section class="rounded-card border border-[#e2ddd7] bg-white p-6 shadow-card space-y-5" aria-labelledby="deliveryClearanceHeading">
@@ -150,7 +163,7 @@
         </div>
 
         <!-- Panel 2: Recipient Readiness -->
-        <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3 space-y-3.5">
+        <div id="deliveryReadiness" class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3 space-y-3.5" tabindex="-1">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
                 <div class="flex items-center gap-2">
                     <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white border border-[#e2ddd7] text-primary shadow-xs">
@@ -165,11 +178,25 @@
                         </span>
                     @else
                         <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800 border border-amber-300 shrink-0 whitespace-nowrap">
-                            <i class="fa-solid fa-triangle-exclamation text-xs text-amber-600"></i> Current readiness not established
+                            <i class="fa-solid fa-triangle-exclamation text-xs text-amber-600"></i> {{ $readinessLabel }}
                         </span>
                     @endif
                 </div>
             </div>
+
+            @if (session('delivery_readiness_recorded'))
+                <p class="modal-note m-0" role="status">{{ session('success') }}</p>
+            @endif
+            @if ($readinessAttempt && $errors->any())
+                <div class="modal-note caution" role="alert" id="deliveryReadinessErrors">
+                    <p class="m-0 font-semibold">Contact and availability were not recorded. Review the following:</p>
+                    <ul class="m-0 list-disc pl-5">
+                        @foreach ($errors->all() as $message)
+                            <li>{{ $message }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
             <!-- Readiness Status Box: matching Application Destination Address box -->
             <div class="rounded-lg bg-white border border-[#e2ddd7] p-3.5 shadow-xs">
@@ -178,8 +205,11 @@
                     <span>Adopter Availability Status</span>
                 </div>
                 <p class="text-sm font-semibold {{ $recipientReady ? 'text-completed-fg' : 'text-text-dark' }} whitespace-pre-line break-words m-0">
-                    {{ $recipientReady ? 'Availability confirmed for the current delivery agreement' : 'Current readiness not established' }}
+                    {{ $readinessLabel }}
                 </p>
+                @if (!$recipientReady && $record->delivery_recipient_available === true)
+                    <p class="text-xs text-text-muted m-0">The previous availability confirmation no longer covers the current agreement. Review the current destination and schedule, then record direct contact again.</p>
+                @endif
                 <p class="text-xs text-text-muted mt-1.5 m-0">Direct adopter contact is required before dispatch to confirm they will be available to receive the pet.</p>
             </div>
 
@@ -192,7 +222,7 @@
                     </dt>
                     <dd class="text-xs font-semibold mt-2 m-0 flex items-center gap-1.5 {{ $recipientReady ? 'text-completed-fg' : 'text-amber-800' }}">
                         <i class="{{ $recipientReady ? 'fa-solid fa-circle-check text-completed-fg' : 'fa-solid fa-triangle-exclamation text-amber-600' }}"></i>
-                        <span>{{ $recipientReady ? 'Availability confirmed' : 'Current readiness not established' }}</span>
+                        <span>{{ $readinessLabel }}</span>
                     </dd>
                 </div>
 
@@ -251,42 +281,59 @@
                         <div>
                             <label for="deliveryContactMethod" class="form-label text-[12px] font-bold text-text-dark">Contact method</label>
                             <div class="relative">
-                                <select id="deliveryContactMethod" name="contact_method" class="form-select text-xs appearance-none pr-9 py-2 rounded-lg" required>
+                                <select id="deliveryContactMethod" name="contact_method" class="form-select text-xs appearance-none pr-9 py-2 rounded-lg" required
+                                        aria-invalid="{{ $readinessAttempt && $errors->has('contact_method') ? 'true' : 'false' }}" aria-describedby="deliveryContactMethodError">
                                     <option value="">Select contact method</option>
                                     @foreach (\App\Services\HandoverDeliveryClearanceService::CONTACT_METHODS as $key => $label)
-                                        <option value="{{ $key }}">{{ $label }}</option>
+                                        <option value="{{ $key }}" @selected($readinessAttempt && old('contact_method') === $key)>{{ $label }}</option>
                                     @endforeach
                                 </select>
                                 <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#777]"></i>
                             </div>
+                            <p id="deliveryContactMethodError" class="text-xs text-primary m-0">{{ $readinessAttempt ? $errors->first('contact_method') : '' }}</p>
                         </div>
 
                         <div>
                             <label for="deliveryAvailable" class="form-label text-[12px] font-bold text-text-dark">Did the adopter explicitly confirm availability for this delivery?</label>
                             <div class="relative">
-                                <select id="deliveryAvailable" name="available" class="form-select text-xs appearance-none pr-9 py-2 rounded-lg" required>
+                                <select id="deliveryAvailable" name="available" class="form-select text-xs appearance-none pr-9 py-2 rounded-lg" required
+                                        aria-invalid="{{ $readinessAttempt && $errors->has('available') ? 'true' : 'false' }}" aria-describedby="deliveryAvailableError">
                                     <option value="">Select confirmed outcome</option>
-                                    <option value="1">Yes — the adopter confirmed availability</option>
-                                    <option value="0">No — the adopter is not available</option>
+                                    <option value="1" @selected($readinessAttempt && (string) old('available') === '1')>Yes — the adopter confirmed availability</option>
+                                    <option value="0" @selected($readinessAttempt && (string) old('available') === '0')>No — the adopter is not available</option>
                                 </select>
                                 <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#777]"></i>
                             </div>
+                            <p id="deliveryAvailableError" class="text-xs text-primary m-0">{{ $readinessAttempt ? $errors->first('available') : '' }}</p>
                         </div>
                     </div>
 
                     <div>
                         <label for="deliveryReadinessNotes" class="form-label text-[12px] font-bold text-text-dark">Contact notes (required for other contact methods; no unnecessary sensitive details)</label>
-                        <textarea id="deliveryReadinessNotes" name="notes" maxlength="1000" rows="2" class="form-control text-[12px] rounded-lg" placeholder="Enter contact details or confirmation observations..."></textarea>
+                        <textarea id="deliveryReadinessNotes" name="notes" maxlength="1000" rows="2" class="form-control text-[12px] rounded-lg" placeholder="Enter contact details or confirmation observations..."
+                                  aria-invalid="{{ $readinessAttempt && $errors->has('notes') ? 'true' : 'false' }}" aria-describedby="deliveryReadinessNotesError">{{ $readinessAttempt ? old('notes') : '' }}</textarea>
+                        <p id="deliveryReadinessNotesError" class="text-xs text-primary m-0">{{ $readinessAttempt ? $errors->first('notes') : '' }}</p>
                     </div>
 
+                    @if ($readinessPrerequisites)
+                        <div id="deliveryReadinessPrerequisites" class="modal-note caution" role="note">
+                            <p class="m-0 font-semibold">Before you can record contact and availability:</p>
+                            <ul class="m-0 list-disc pl-5">
+                                @foreach ($readinessPrerequisites as $prerequisite)
+                                    <li>{{ $prerequisite }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                     <div class="flex justify-end">
-                        <button class="btn btn-primary" type="submit" @disabled(!$addressVerified || !$confirmedDelivery || !$notExpired)>
+                        <button class="btn btn-primary" type="submit" @disabled(!$addressVerified || !$confirmedDelivery || !$notExpired)
+                                @if ($readinessPrerequisites) aria-describedby="deliveryReadinessPrerequisites" @endif>
                             <i class="fa-solid fa-eye"></i>
                             <span>Record contact and availability</span>
                         </button>
                         
                     </div>
-                    <p class="text-[11px] text-[#777] m-0 flex text-end">Verify the destination and obtain a confirmed, nonexpired delivery schedule first. Confirming availability creates a pre-dispatch notice; it does not record courier booking, release or prove email delivery.</p>
+                    <p class="text-[11px] text-[#777] m-0 flex text-end">Select a contact method and the adopter's explicit availability outcome. Other contact methods require notes. Confirming availability creates a pre-dispatch notice; it does not record courier booking, release or prove email delivery.</p>
                 </form>
             @endif
         </div>
