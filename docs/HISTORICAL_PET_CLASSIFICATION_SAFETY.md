@@ -1,5 +1,7 @@
 # Phase 15B: historical classification safety
 
+Phase 15C adds a narrowly allowlisted **fictional prototype fixture** normalization/rehearsal tool, not a measurement certification workflow or a general legacy-save bypass. Ordinary editing protections below remain unchanged. See [the prototype normalization runbook](PROTOTYPE_PET_NORMALIZATION.md) for identities, dry-run/hash guards, disposable-only apply and separately authorized deployment requirements.
+
 ## Enforced backend contract
 
 Persisted `legacy_unclassified` is a review boundary, not a calculation result. `PetSizeClassifier::requiresHistoricalReview()` reads the model's original persisted status rather than editable attributes. `changes()` preserves the exact original `physical_size`, `legacy_physical_size`, status and rule version, including nulls. Name, description, photo, availability, species, age and weight edits are not review attestations; even entering both measurements cannot promote history.
