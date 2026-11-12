@@ -85,7 +85,7 @@
 
                     <!-- Meta / Details Row -->
                     <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#777]">
-                        <span>Approved {{ $record->approved_at ? $record->approved_at->format('M j, Y') : 'Recently' }}</span>
+                        <span>Approved {{ $record->approved_at ? \App\Support\ManilaTime::format($record->approved_at, 'M j, Y') : 'Recently' }}</span>
 
                         @if ($record->released_at)
                             <span class="flex items-center gap-1">

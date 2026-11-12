@@ -45,7 +45,7 @@
                             {{ $record->pet?->name ?? 'Pet' }}
                         </h2>
                         <p class="mt-1 text-sm text-[#777] m-0">
-                            {{ $record->pet?->species ?? 'Pet' }} &middot; {{ $record->pet?->age_group ?? 'Adult' }} &middot; Approved {{ $record->approved_at ? $record->approved_at->format('M j, Y') : 'Recently' }}
+                            {{ $record->pet?->species ?? 'Pet' }} &middot; {{ $record->pet?->age_group ?? 'Adult' }} &middot; Approved {{ $record->approved_at ? \App\Support\ManilaTime::format($record->approved_at, 'M j, Y') : 'Recently' }}
                         </p>
                     </div>
                 </section>
@@ -240,7 +240,7 @@
                     };
                     $dateTime = ($record->release_date && $record->release_time)
                         ? $record->release_date->format('M j, Y') . ' · ' . date('g:i A', strtotime($record->release_time))
-                        : $record->released_at->format('M j, Y · g:i A');
+                        : \App\Support\ManilaTime::format($record->released_at, 'M j, Y · g:i A');
                 @endphp
 
                 <!-- RELEASE DETAILS Section -->

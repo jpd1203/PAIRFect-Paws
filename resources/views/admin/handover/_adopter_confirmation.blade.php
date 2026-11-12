@@ -40,7 +40,7 @@
 
                 @if ($outcome)
                     <p class="mt-1 text-xs text-text-muted m-0">
-                        {{ $record->adopter_confirmed_at ? $record->adopter_confirmed_at->format('M j, Y · g:i A') : 'Recorded' }}
+                        {{ $record->adopter_confirmed_at ? \App\Support\ManilaTime::format($record->adopter_confirmed_at, 'M j, Y · g:i A') : 'Recorded' }}
                     </p>
                     @if ($record->adopter_note)
                         <p class="mt-2 rounded-lg bg-white/90 border border-[#e2ddd7] px-3 py-2 text-xs italic text-text-dark m-0">
@@ -69,7 +69,7 @@
                             @if (count($reminders) === 0)
                                 No reminders sent yet.
                             @else
-                                {{ count($reminders) }} sent &middot; last {{ date('M j, g:i A', strtotime($lastReminder['at'])) }} ({{ $lastReminder['channel'] }})
+                                {{ count($reminders) }} sent &middot; last {{ \App\Support\ManilaTime::parseAndFormat($lastReminder['at'] ?? null, 'M j, g:i A', 'Time not available') }} ({{ $lastReminder['channel'] }})
                             @endif
                         </p>
                     </div>

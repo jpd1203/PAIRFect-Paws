@@ -91,7 +91,7 @@
                                             @endif
 
                                             <span class="text-xs text-[#9e9e9e] ml-auto">
-                                                {{ $notif->created_at->diffForHumans() }} &middot; {{ $notif->created_at->format('M j, g:i A') }}
+                                                {{ $notif->created_at->diffForHumans() }} &middot; {{ \App\Support\ManilaTime::format($notif->created_at, 'M j, g:i A') }}
                                             </span>
                                         </div>
 

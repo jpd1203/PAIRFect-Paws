@@ -63,7 +63,7 @@
                 };
                 $dateTime = ($record->release_date && $record->release_time)
                     ? $record->release_date->format('M j, Y') . ' · ' . date('g:i A', strtotime($record->release_time))
-                    : $record->released_at->format('M j, Y · g:i A');
+                    : \App\Support\ManilaTime::format($record->released_at, 'M j, Y · g:i A');
             @endphp
 
             <!-- Release Summary Card with Proof Photo -->

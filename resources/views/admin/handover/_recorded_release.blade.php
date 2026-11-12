@@ -2,7 +2,7 @@
     $isDelivery = ($record->release_method === 'delivery');
     $dateTime = ($record->release_date && $record->release_time) 
         ? $record->release_date->format('M j, Y') . ' · ' . date('g:i A', strtotime($record->release_time))
-        : ($record->released_at ? $record->released_at->format('M j, Y · g:i A') : '—');
+        : ($record->released_at ? \App\Support\ManilaTime::format($record->released_at, 'M j, Y · g:i A') : '—');
 @endphp
 
 <div class="bg-white border border-[#e2ddd7] rounded-card p-6 shadow-card space-y-4">

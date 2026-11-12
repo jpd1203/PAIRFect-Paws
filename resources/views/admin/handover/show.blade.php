@@ -15,7 +15,7 @@
                  class="h-16 w-16 rounded-xl object-cover border border-[#e2ddd7] bg-neutral-light shadow-card">
             <div>
                 <h2>{{ $record->pet?->name ?? 'Pet' }} &rarr; {{ $record->adopter_name }}</h2>
-                <p>{{ strtoupper($record->code) }} &middot; Approved {{ $record->approved_at ? $record->approved_at->format('M j, Y') : 'Recently' }} &middot; {{ $record->pet?->species ?? 'Animal' }}, {{ $record->pet?->age_group ?? 'Age' }}</p>
+                <p>{{ strtoupper($record->code) }} &middot; Approved {{ $record->approved_at ? \App\Support\ManilaTime::format($record->approved_at, 'M j, Y') : 'Recently' }} &middot; {{ $record->pet?->species ?? 'Animal' }}, {{ $record->pet?->age_group ?? 'Age' }}</p>
             </div>
         </div>
     </div>

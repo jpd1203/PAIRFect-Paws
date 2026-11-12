@@ -1,7 +1,8 @@
 @php
     $method = old('release_method', $record->scheduled_method ?: $record->release_method ?: 'pickup');
-    $date = old('release_date', $record->release_date ? $record->release_date->format('Y-m-d') : date('Y-m-d'));
-    $time = old('release_time', $record->release_time ?: date('H:i'));
+    $localNow = \App\Support\ManilaTime::now();
+    $date = old('release_date', $record->release_date ? $record->release_date->format('Y-m-d') : $localNow->toDateString());
+    $time = old('release_time', $record->release_time ?: $localNow->format('H:i'));
     $staff = old('staff_name', $record->staff_name ?: auth()->user()?->full_name);
     $providers = config('handover.delivery_providers');
     $selectedProvider = old('courier_provider', collect($providers)->search(fn ($provider) => $provider['label'] === $record->courier));
@@ -48,12 +49,12 @@
             <!-- Date, Time, Staff -->
             <div class="grid gap-4 sm:grid-cols-3">
                 <div class="form-group">
-                    <label for="release-date" class="form-label">Date of release</label>
+                    <label for="release-date" class="form-label">Date of release (Asia/Manila)</label>
                     <input id="release-date" name="release_date" type="date" value="{{ $date }}" required
                            class="form-control">
                 </div>
                 <div class="form-group">
-                    <label for="release-time" class="form-label">Time of release</label>
+                    <label for="release-time" class="form-label">Time of release (Asia/Manila)</label>
                     <input id="release-time" name="release_time" type="time" value="{{ $time }}" required
                            class="form-control">
                 </div>

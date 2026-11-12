@@ -39,7 +39,7 @@
 
     <div class="records-container mt-5 p-6">
         <div class="review-section">
-            <h6>OCR Result</h6>
+            <h6>Document Review Status</h6>
             <div class="review-row"><span>Status</span><strong>{{ match($application->document_verification_status?->value) {
                 'NeedsResubmission' => 'Needs Resubmission',
                 'ManualReview' => 'Manual Review',
@@ -82,18 +82,23 @@
             <h6>Extracted OCR Text</h6>
             <p class="text-xs text-[#777] mb-2">Sensitive data — visible only to authorized shelter personnel.</p>
             @if(filled($ocrText))
+                <p class="text-xs text-[#777] mb-2">Extracted OCR text is recorded below. Text extraction does not establish identity or document authenticity.</p>
                 <pre class="whitespace-pre-wrap break-words bg-neutral-light rounded-lg p-4 text-sm">{{ $ocrText }}</pre>
+            @elseif($documentVerificationValue === 'Verified')
+                <div class="rounded-lg border border-[#ddd] bg-neutral-light p-4 text-sm">
+                    The document is marked verified. This may reflect a manual staff decision; no extracted OCR text is recorded. Verification status alone does not confirm OCR completion.
+                </div>
             @elseif($documentVerificationValue === 'ManualReview')
                 <div class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-                    <strong>OCR did not complete.</strong> Google did not return an extraction result. Review the provider note above, correct the configuration issue, and retry OCR.
+                    <strong>No completed OCR result is recorded.</strong> Review the verification notes for any recorded failure or provider availability issue. Staff review or an OCR retry may be required.
                 </div>
             @elseif($documentVerificationValue === 'LegacyReview')
                 <div class="rounded-lg border border-[#ddd] bg-neutral-light p-4 text-sm">
-                    This legacy document has not been processed by OCR.
+                    No OCR extraction result is recorded for this legacy document.
                 </div>
             @else
                 <div class="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
-                    Google Vision completed without returning readable text. Review the document image and request a clearer replacement if needed.
+                    No readable OCR text is recorded. Review the document and verification notes; the stored status alone does not establish whether extraction ran or completed.
                 </div>
             @endif
         </div>
