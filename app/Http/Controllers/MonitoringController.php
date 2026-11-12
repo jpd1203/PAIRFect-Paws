@@ -12,6 +12,7 @@ use App\Services\InAppNotificationService;
 use App\Services\PostAdoptionCaptureChallengeService;
 use App\Services\PostAdoptionScheduleService;
 use App\Services\PostAdoptionWebDemoService;
+use App\Services\RecoverableEmailDispatcher;
 use App\Services\VideoDurationProbe;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +22,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -535,14 +535,8 @@ class MonitoringController extends Controller
             route('monitoring.my-checkins'), "welfare_report_received:{$log->id}", 'PostAdoptionLog', $log->id,
         );
 
-        try {
-            Mail::to($request->user())->queue(new WelfareReportReceiptMail($log));
-        } catch (Throwable $exception) {
-            Log::error('A welfare report receipt could not be queued.', [
-                'post_adoption_log_id' => $log->id,
-                'exception' => $exception::class,
-            ]);
-        }
+        app(RecoverableEmailDispatcher::class)->queue($request->user(),
+            new WelfareReportReceiptMail($log), 'welfare_report_receipt', $log->id);
 
         if ($newFlagReasons !== []) {
             $this->emailNotifications->staff(

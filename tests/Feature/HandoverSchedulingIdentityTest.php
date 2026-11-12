@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\ApplicationStatus;
 use App\Enums\DocumentVerificationStatus;
 use App\Enums\Role;
+use App\Mail\TransactionalMail;
 use App\Models\AdoptionApplication;
 use App\Models\Handover;
 use App\Models\IdentityVerification;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Services\HandoverReminderService;
 use App\Services\IdentityVerificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\MailManager;
 use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\PreparesVerifiedHandovers;
@@ -264,17 +266,23 @@ class HandoverSchedulingIdentityTest extends TestCase
         [$owner, $staff, $application, $handover] = $this->placement();
         $this->prepareHandover($handover, $staff);
         $service = app(HandoverReminderService::class);
+        $mailer = (new MailManager($this->app))->mailer('array');
+        // This scenario assumes a working worker, not jobs lost across expired dispatch leases.
+        $deliver = fn () => Mail::queued(TransactionalMail::class)->each(fn ($mail) => $mail->send($mailer));
         $this->travelTo($handover->scheduled_start_at->copy()->subHours(24));
         $this->assertSame(1, $service->process());
         $this->assertSame(0, $service->process());
+        $deliver();
         $this->travelTo($handover->scheduled_start_at->copy()->subHours(2));
         $this->assertSame(1, $service->process());
         $this->assertSame(0, $service->process());
+        $deliver();
         $handover->update(['released_at' => now(), 'release_method' => 'delivery']);
         $this->travelTo($handover->scheduled_end_at->copy()->addHour());
         $this->artisan('handovers:process-schedule-reminders')->assertSuccessful();
         $this->assertSame(0, $service->process());
         $this->assertNotNull($handover->fresh()->receipt_reminder_sent_at);
+        $deliver();
         $this->travelTo($handover->scheduled_end_at->copy()->addHours(3));
         $this->assertSame(1, $service->process());
         $this->assertSame(0, $service->process());
@@ -283,6 +291,8 @@ class HandoverSchedulingIdentityTest extends TestCase
         $this->assertNull($handover->fresh()->adopter_outcome);
         $this->assertDatabaseCount('post_adoption_logs', 0);
         Mail::assertQueuedCount(4);
+        $deliver();
+        $this->assertCount(4, $mailer->getSymfonyTransport()->messages());
     }
 
     public function test_missed_pickup_notifies_once_without_release_or_monitoring(): void

@@ -54,7 +54,8 @@ class HandoverMailOutboxService
     public function dispatchPending(): int
     {
         $count = 0;
-        HandoverEmailOutbox::query()->whereNull('transport_accepted_at')->whereNull('suppressed_at')->whereNull('queued_at')
+        HandoverEmailOutbox::query()->whereNull('transport_accepted_at')->whereNull('suppressed_at')
+            ->where(fn ($query) => $query->whereNull('queued_at')->orWhere('dispatch_lease_expires_at', '<=', now()))
             ->where(fn ($query) => $query->whereNull('dispatch_lease_expires_at')->orWhere('dispatch_lease_expires_at', '<=', now()))
             ->chunkById(100, function ($rows) use (&$count): void {
                 foreach ($rows as $row) {
@@ -73,7 +74,7 @@ class HandoverMailOutboxService
         try {
             $row = DB::transaction(function () use ($id): ?HandoverEmailOutbox {
                 $current = HandoverEmailOutbox::query()->lockForUpdate()->find($id);
-                if (! $current || $current->queued_at || $current->transport_accepted_at || $current->suppressed_at
+                if (! $current || ($current->queued_at && ($current->dispatch_lease_expires_at === null || $current->dispatch_lease_expires_at->isFuture())) || $current->transport_accepted_at || $current->suppressed_at
                     || $current->dispatch_lease_expires_at?->isFuture()) {
                     return null;
                 }
