@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\Branch;
 use App\Models\Pet;
 use App\Models\User;
+use App\Support\PrototypePetFixtures;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -80,16 +81,17 @@ class DatabaseSeeder extends Seeder
         // ─── Sample Pets ──────────────────────────────────────────────────────
 
         $pets = [
-            ['name' => 'Luna',    'species' => 'Cat', 'breed' => 'Siamese',        'age' => 2, 'sex' => 'Female', 'health_status' => 'Excellent', 'branch_id' => $branchMain->id, 'description' => 'Luna is an elegant and curious Siamese cat who loves conversing with her humans and curling up in sunny spots.'],
-            ['name' => 'Buddy',   'species' => 'Dog', 'breed' => 'Golden Retriever', 'age' => 3, 'sex' => 'Male',   'health_status' => 'Good',      'branch_id' => $branchMain->id, 'description' => 'Buddy is a happy-go-lucky Golden Retriever who enjoys playing fetch, swimming, and making friends with everyone he meets.'],
-            ['name' => 'Mochi',   'species' => 'Cat', 'breed' => 'Persian',        'age' => 1, 'sex' => 'Female', 'health_status' => 'Good',      'branch_id' => $branchNorth->id, 'description' => 'Mochi is a sweet and gentle Persian kitten with a calm demeanor who enjoys feather toys and cozy laps.'],
-            ['name' => 'Max',     'species' => 'Dog', 'breed' => 'Labrador',       'age' => 4, 'sex' => 'Male',   'health_status' => 'Good',      'branch_id' => $branchNorth->id, 'description' => 'Max is a loyal, well-trained Labrador who loves outdoor adventures and has a wonderfully gentle temperament.'],
-            ['name' => 'Coco',    'species' => 'Dog', 'breed' => 'Shih Tzu',       'age' => 2, 'sex' => 'Female', 'health_status' => 'Excellent', 'branch_id' => $branchSouth->id, 'description' => 'Coco is a playful, cheerful Shih Tzu who loves being pampered, going on leisurely walks, and greeting new guests.'],
-            ['name' => 'Oliver',  'species' => 'Cat', 'breed' => 'Tabby',          'age' => 3, 'sex' => 'Male',   'health_status' => 'Good',      'branch_id' => $branchSouth->id, 'description' => 'Oliver is an adventurous and affectionate Tabby cat who loves climbing cat trees and purring happily when brushed.'],
+            ['name' => 'Luna',    'species' => 'Cat', 'breed' => 'Siamese',        'sex' => 'Female', 'health_status' => 'Excellent', 'branch_id' => $branchMain->id, 'description' => 'Luna is an elegant and curious Siamese cat who loves conversing with her humans and curling up in sunny spots.'],
+            ['name' => 'Buddy',   'species' => 'Dog', 'breed' => 'Golden Retriever', 'sex' => 'Male',   'health_status' => 'Good',      'branch_id' => $branchMain->id, 'description' => 'Buddy is a happy-go-lucky Golden Retriever who enjoys playing fetch, swimming, and making friends with everyone he meets.'],
+            ['name' => 'Mochi',   'species' => 'Cat', 'breed' => 'Persian',        'sex' => 'Female', 'health_status' => 'Good',      'branch_id' => $branchNorth->id, 'description' => 'Mochi is a sweet and gentle Persian kitten with a calm demeanor who enjoys feather toys and cozy laps.'],
+            ['name' => 'Max',     'species' => 'Dog', 'breed' => 'Labrador',       'sex' => 'Male',   'health_status' => 'Good',      'branch_id' => $branchNorth->id, 'description' => 'Max is a loyal, well-trained Labrador who loves outdoor adventures and has a wonderfully gentle temperament.'],
+            ['name' => 'Coco',    'species' => 'Dog', 'breed' => 'Shih Tzu',       'sex' => 'Female', 'health_status' => 'Excellent', 'branch_id' => $branchSouth->id, 'description' => 'Coco is a playful, cheerful Shih Tzu who loves being pampered, going on leisurely walks, and greeting new guests.'],
+            ['name' => 'Oliver',  'species' => 'Cat', 'breed' => 'Tabby',          'sex' => 'Male',   'health_status' => 'Good',      'branch_id' => $branchSouth->id, 'description' => 'Oliver is an adventurous and affectionate Tabby cat who loves climbing cat trees and purring happily when brushed.'],
         ];
 
         foreach ($pets as $petData) {
-            Pet::create(array_merge($petData, [
+            Pet::create(array_merge($petData, PrototypePetFixtures::sampleMeasurements()[$petData['name']], [
+                'behavioral_notes' => PrototypePetFixtures::marker('sample-'.strtolower($petData['name'])),
                 'availability_status' => 'Available',
                 'intake_date' => now()->subDays(rand(1, 90))->toDateString(),
                 'is_archived' => false,

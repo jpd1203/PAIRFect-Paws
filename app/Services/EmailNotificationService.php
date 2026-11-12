@@ -6,8 +6,6 @@ use App\Enums\Role;
 use App\Mail\TransactionalMail;
 use App\Models\User;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class EmailNotificationService
 {
@@ -127,21 +125,12 @@ class EmailNotificationService
         string $event,
         ?int $entityId,
     ): void {
-        try {
-            Mail::to($recipient)->queue(new TransactionalMail(
-                $subject,
-                $heading,
-                $lines,
-                $actionText,
-                $actionUrl,
-            ));
-        } catch (\Throwable $exception) {
-            Log::error('Transactional email could not be queued.', [
-                'event' => $event,
-                'entity_id' => $entityId,
-                'recipient_user_id' => $recipient instanceof User ? $recipient->id : null,
-                'exception' => $exception::class,
-            ]);
-        }
+        app(RecoverableEmailDispatcher::class)->queue($recipient, new TransactionalMail(
+            $subject,
+            $heading,
+            $lines,
+            $actionText,
+            $actionUrl,
+        ), $event, $entityId);
     }
 }

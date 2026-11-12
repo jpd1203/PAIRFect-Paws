@@ -14,6 +14,7 @@ use App\Services\HandoverReminderService;
 use App\Services\HandoverScheduleService;
 use App\Support\ManilaTime;
 use Carbon\CarbonImmutable;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\Mailer;
 use Illuminate\Mail\MailManager;
@@ -48,6 +49,73 @@ class HandoverReminderReliabilityTest extends TestCase
     public static function failureEvents(): array
     {
         return [['24h_reminder'], ['delivery_follow_up']];
+    }
+
+    public function test_lost_acknowledged_job_is_reclaimed_only_after_lease_expiry(): void
+    {
+        $this->placement();
+        app(HandoverReminderService::class)->process();
+        $row = HandoverEmailOutbox::sole();
+        $token = $row->enqueue_token;
+        $this->assertNotNull($row->queued_at);
+        $this->assertSame(0, app(HandoverMailOutboxService::class)->dispatchPending());
+        $row->update(['dispatch_lease_expires_at' => now()->subSecond()]);
+        $this->assertSame(1, app(HandoverMailOutboxService::class)->dispatchPending());
+        $this->assertNotSame($token, $row->fresh()->enqueue_token);
+        $sent = 0;
+        app(HandoverMailOutboxService::class)->deliver($row->id, $token, function () use (&$sent) {
+            $sent++;
+
+            return true;
+        });
+        $this->assertSame(0, $sent);
+        $this->assertDatabaseCount('handover_email_outbox', 1);
+    }
+
+    public function test_registered_recovery_command_is_repeatable_and_preserves_reminder_schedule(): void
+    {
+        $events = collect(app(Schedule::class)->events());
+        $event = $events->first(fn ($event) => str_contains($event->command ?? '', 'handovers:dispatch-pending-email'));
+        $this->assertNotNull($event);
+        $this->assertSame('* * * * *', $event->expression);
+        $this->assertTrue($event->withoutOverlapping);
+        $checkin = $events->first(fn ($event) => str_contains($event->command ?? '', 'checkins:send-reminders'));
+        $this->assertSame('0 8 * * *', $checkin->expression);
+        $this->assertSame('Asia/Manila', $checkin->timezone);
+        $this->placement();
+        app(HandoverReminderService::class)->process();
+        $row = HandoverEmailOutbox::sole();
+        $row->update(['dispatch_lease_expires_at' => now()]);
+        $this->artisan('handovers:dispatch-pending-email')->assertSuccessful();
+        $this->artisan('handovers:dispatch-pending-email')->assertSuccessful();
+        $this->assertSame(2, $row->fresh()->queue_attempts);
+        $this->assertDatabaseCount('handover_email_outbox', 1);
+    }
+
+    public function test_acceptance_followed_by_database_failure_has_an_explicit_duplicate_delivery_window(): void
+    {
+        $this->placement();
+        app(HandoverReminderService::class)->process();
+        $row = HandoverEmailOutbox::sole();
+        $mailer = $this->arrayMailer();
+        $mail = $this->queuedMail($row);
+        Event::listen('eloquent.saving: '.HandoverEmailOutbox::class, function ($saving): void {
+            if ($saving->transport_accepted_at !== null) {
+                throw new RuntimeException('Synthetic failure after provider acceptance');
+            }
+        });
+        try {
+            $mail->send($mailer);
+            $this->fail('Acceptance-record failure must not be presented as confirmed delivery.');
+        } catch (RuntimeException) {
+            $this->assertNull($row->fresh()->transport_accepted_at);
+            $this->assertCount(1, $mailer->getSymfonyTransport()->messages());
+        } finally {
+            Event::forget('eloquent.saving: '.HandoverEmailOutbox::class);
+        }
+        $mail->send($mailer);
+        $this->assertCount(2, $mailer->getSymfonyTransport()->messages()); // Plain SMTP cannot prove exactly-once.
+        $this->assertNotNull($row->fresh()->transport_accepted_at);
     }
 
     #[DataProvider('failureEvents')]
@@ -154,7 +222,7 @@ class HandoverReminderReliabilityTest extends TestCase
         $this->assertSame(1, app(HandoverReminderService::class)->process());
         $this->assertSame(0, app(HandoverReminderService::class)->process());
         $row = HandoverEmailOutbox::sole();
-        $this->travelTo(now()->addHours(2));
+        $this->travelTo(now()->addMinutes(30)); // Backlog within the live dispatch lease is not a lost job.
         $this->assertSame(0, app(HandoverMailOutboxService::class)->dispatchPending());
         $this->assertSame(1, $row->fresh()->queue_attempts);
         Mail::assertQueuedCount(1);
@@ -301,6 +369,8 @@ class HandoverReminderReliabilityTest extends TestCase
         $current = HandoverEmailOutbox::where('kind', '2h_reminder')->sole();
         $mailer = $this->arrayMailer();
         $oldMail->send($mailer);
+        // Recovery rotated the expired lease: only the replacement may suppress the obsolete event.
+        Mail::queued(TransactionalMail::class)->last(fn ($mail) => $mail->handoverOutboxId === $old->id)->send($mailer);
         $this->queuedMail($current)->send($mailer);
         $this->assertSame('event_no_longer_due', $old->fresh()->suppression_reason);
         $this->assertNotNull($current->fresh()->transport_accepted_at);

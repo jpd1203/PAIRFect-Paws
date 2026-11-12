@@ -69,9 +69,6 @@ final class FreshStartPetsSeeder extends Seeder
 
         foreach (self::PETS as $index => [$name, $species, $breed, $age, $sex, $size, $energy, $trainability, $social, $fear, $medicalNeeds]) {
             // New synthetic demo records only; never infer measurements for existing real pets.
-            $demoWeights = $species === 'Dog'
-                ? ['Extra Small' => '1', 'Small' => '7', 'Medium' => '12', 'Large' => '20', 'Extra Large' => '30']
-                : ['Extra Small' => '2', 'Small' => '3', 'Medium' => '4', 'Large' => '5', 'Extra Large' => '6.5'];
             $pet = Pet::create([
                 'name' => $namePrefix.$name,
                 'species' => $species,
@@ -79,7 +76,7 @@ final class FreshStartPetsSeeder extends Seeder
                 'age' => $age,
                 'sex' => $sex,
                 'physical_size' => $size,
-                'weight_kg' => $demoWeights[$size],
+                'weight_kg' => self::normalizationFixtures()[$name]['weight_kg'],
                 'life_stage' => $age <= 24 ? 'young' : ($age > 84 ? 'senior' : 'adult'),
                 'health_status' => 'Healthy',
                 'vaccination_record_status' => 'Complete',
@@ -110,6 +107,22 @@ final class FreshStartPetsSeeder extends Seeder
                 }
             }
         }
+    }
+
+    /** Canonical fictional inputs shared with the narrowly scoped prototype normalizer. */
+    public static function normalizationFixtures(): array
+    {
+        $fixtures = [];
+        foreach (self::PETS as [$name, $species, $breed, $age, $sex, $size]) {
+            $weights = $species === 'Dog'
+                ? ['Extra Small' => '1.000', 'Small' => '7.000', 'Medium' => '12.000', 'Large' => '20.000', 'Extra Large' => '30.000']
+                : ['Extra Small' => '2.000', 'Small' => '3.000', 'Medium' => '4.000', 'Large' => '5.000', 'Extra Large' => '6.500'];
+            $fixtures[$name] = ['species' => $species, 'breed' => $breed, 'age' => $age, 'sex' => $sex,
+                'weight_kg' => $weights[$size],
+                'description' => "Demo pet record for PAIRfect Paws testing. {$name}'s details and assessments are synthetic."];
+        }
+
+        return $fixtures;
     }
 
     private static function answers(string $species, array $traits, int $observerOffset): array
