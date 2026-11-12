@@ -1,81 +1,213 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy PHP app to Azure Web App - pairfectpaws
+name: Validate and approve existing PAIRfect Paws upgrade
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
+  pull_request:
+    branches: [main, master]
   workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact current master SHA (40 lowercase hex characters)
+        required: true
+        type: string
+      schema_evidence:
+        description: Completed operator attestation JSON; see docs/DEPLOYMENT_SAFETY.md
+        required: true
+        type: string
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
+    timeout-minutes: 45
+    services:
+      mysql:
+        image: mysql:8.0.46
+        env:
+          MYSQL_ROOT_PASSWORD: disposable-ci-only
+          MYSQL_DATABASE: pairfect_phase15c_ci
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -pdisposable-ci-only"
+          --health-interval=10s --health-timeout=5s --health-retries=15
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'true'
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_URL: https://pairfectpaws.org
+      APP_TIMEZONE: UTC
+      APP_DISPLAY_TIMEZONE: Asia/Manila
+      DB_URL: ''
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_USERNAME: root
+      DB_PASSWORD: disposable-ci-only
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      BCRYPT_ROUNDS: '4'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-
-      - name: Install Composer dependencies
-        run: composer validate --no-check-publish && composer install --prefer-dist --no-progress --no-interaction --no-dev --optimize-autoloader
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+          extensions: pdo_mysql, pdo_sqlite, curl, openssl, fileinfo, mbstring, dom, xml, intl, gd, zip
+          coverage: none
+      - uses: actions/setup-node@v4
         with:
           node-version: '26.x'
-          cache: 'npm'
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Build Vite frontend
-        run: npm run build
-
-      - name: Verify Vite manifest
+          cache: npm
+      - name: Validate locked dependencies
         run: |
-          test -f public/build/manifest.json
-          echo "Vite manifest exists"
+          composer validate --strict
+          composer install --prefer-dist --no-progress --no-interaction
+          composer check-platform-reqs
+          npm ci
+      - name: Build assets before feature tests
+        run: |
+          npm run build
+          test -s public/build/manifest.json
+      - name: Deployment policy and artifact regression tests
+        run: node --test scripts/deployment/tests/*.test.mjs
+      - name: Workflow syntax and shell validation
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9 -color
+      - name: Frontend tests, PHP lint, scoped Pint, Blade
+        env:
+          PINT_BASE: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
+        run: |
+          npm run test:frontend
+          node scripts/deployment/quality.mjs
+          php artisan view:cache
+          php artisan view:clear
+      # Serial execution: different databases still share fake-upload storage.
+      - name: Complete SQLite suite, then isolated destructive seeder
+        run: |
+          php artisan test --compact --filter='^(?!.*MatchingDemoSeederTest)'
+          php artisan test --compact --filter=MatchingDemoSeederTest
+      - name: Complete MySQL 8 suite, then isolated destructive seeder
+        env:
+          DB_CONNECTION: mysql
+          DB_DATABASE: pairfect_phase15c_ci
+          PAIRFECT_DISPOSABLE_MYSQL_DB: pairfect_phase15c_ci
+        run: |
+          # PHP variables must not be expanded by Bash.
+          # shellcheck disable=SC2016
+          php -r '$p = new PDO("mysql:host=127.0.0.1;dbname=pairfect_phase15c_ci", "root", "disposable-ci-only"); if (!str_starts_with($p->query("select version()")->fetchColumn(), "8.0.")) { exit(1); }'
+          php artisan test --compact --filter='^(?!.*MatchingDemoSeederTest)'
+          php artisan test --compact --filter=MatchingDemoSeederTest
 
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
+  runtime:
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' && inputs.release_sha == github.sha && github.repository == 'jpd1203/PAIRFect-Paws' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      digest: ${{ steps.package.outputs.digest }}
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      SCHEMA_EVIDENCE: ${{ inputs.schema_evidence }}
+    steps:
+      - uses: actions/checkout@v4
         with:
-          name: php-app
-          path: |
-            .
-            !node_modules
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, pdo_sqlite, curl, openssl, fileinfo, mbstring, dom, xml, intl, gd, zip
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.x'
+          cache: npm
+      - name: Check exact-release operator evidence (not proof of live operations)
+        run: node scripts/deployment/gate.mjs evidence
+      - name: Install runtime-only locked dependencies and build
+        run: |
+          composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
+          composer check-platform-reqs --no-dev
+          npm ci
+          npm run build
+      - name: Build and verify runtime allowlist
+        id: package
+        run: node scripts/deployment/artifact.mjs pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: runtime-${{ github.sha }}
+          path: output/release/runtime.tar.gz
+          if-no-files-found: error
+          retention-days: 7
 
   deploy:
+    needs: [validate, runtime]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' && inputs.release_sha == github.sha && github.repository == 'jpd1203/PAIRFect-Paws' && github.run_attempt == 1
     runs-on: ubuntu-latest
-    needs: build
+    timeout-minutes: 20
+    concurrency:
+      group: pairfectpaws-existing-site-upgrade
+      cancel-in-progress: false
+    # Configure real required reviewers externally. A YAML name alone is NOT protection.
+    environment: prototype-existing-site
     permissions:
-      id-token: write
       contents: read
-
+      actions: read
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      SCHEMA_EVIDENCE: ${{ inputs.schema_evidence }}
+      EXPECTED_DIGEST: ${{ needs.runtime.outputs.digest }}
+      SITE_URL: ${{ vars.PAIRFECT_EXISTING_SITE_URL }}
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          name: php-app
-
-      - name: Login to Azure
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.x'
+      - uses: actions/download-artifact@v4
+        with:
+          name: runtime-${{ github.sha }}
+          path: output/release
+      - name: Verify archive digest and runtime manifest
+        run: node scripts/deployment/artifact.mjs unpack
+      - name: Recheck current master, evidence and real required-reviewer configuration
+        run: node scripts/deployment/gate.mjs remote
+      - name: Login to existing Azure app identity
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_E4FE80617B344019B9F3F97FB53F3139 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_95C3718EDE4743CA83CD808941EBC3D1 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_75A010B907E44131BDF0E7B93154F4DA }}
-
-      - name: Deploy to Azure Web App
+      - name: Final stale-run check immediately before activation
+        run: node scripts/deployment/gate.mjs remote
+      - name: Activate approved existing-site package
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
         with:
-          app-name: 'pairfectpaws'
-          slot-name: 'Production'
-          package: .
+          app-name: pairfectpaws
+          slot-name: Production
+          package: output/release/runtime
+          clean: 'false'
+      - name: Bounded existing-site smoke checks
+        run: node scripts/deployment/smoke.mjs
+      - name: Stop and require recovery review on failure
+        if: failure()
+        run: |
+          echo 'Upgrade NOT accepted. Retain approved maintenance/worker hold; inspect actual state.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No automatic migration retry, restore, job purge, or email replay. See docs/DEPLOYMENT_SAFETY.md.' >> "$GITHUB_STEP_SUMMARY"
