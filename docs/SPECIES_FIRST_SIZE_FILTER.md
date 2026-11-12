@@ -28,4 +28,4 @@ The native change event resets size to All Sizes whenever species changes, even 
 
 Without JavaScript, server-rendered options and server validation still apply; apply a species selection first to obtain its size options. Automatic reset on an unsent species change requires JavaScript. No form value can bypass the backend trust checks.
 
-Pet intake, questionnaires, handover, delivery, unrelated components and deployment are outside this change. Historical classification still requires the Phase 11A staff review workflow; this filter does not reclassify or backfill records.
+Pet intake, questionnaires, handover, delivery, unrelated components and deployment are outside this change. Historical classification requires a separately approved explicit staff measurement-review workflow, which has not been implemented. Ordinary edits cannot provide that attestation (Phase 15B); this filter does not reclassify or backfill records.

@@ -87,9 +87,25 @@ final class PetSizeClassifier
         return ['physical_size' => $size, 'size_classification_status' => $status, 'size_rule_version' => self::VERSION];
     }
 
+    /** Persisted provenance, not editable attributes, defines the review boundary. */
+    public function requiresHistoricalReview(Pet $pet): bool
+    {
+        return $pet->exists && $pet->getRawOriginal('size_classification_status') === 'legacy_unclassified';
+    }
+
     /** Same operation for model events and the version-checked query-builder path. */
     public function changes(Pet $pet, array $overrides = []): array
     {
+        if ($this->requiresHistoricalReview($pet)) {
+            // Ordinary saves are not an attestation that historical measurements were reviewed.
+            return [
+                'physical_size' => $pet->getRawOriginal('physical_size'),
+                'legacy_physical_size' => $pet->getRawOriginal('legacy_physical_size'),
+                'size_classification_status' => 'legacy_unclassified',
+                'size_rule_version' => $pet->getRawOriginal('size_rule_version'),
+            ];
+        }
+
         $values = array_replace($pet->getAttributes(), $overrides);
         $result = $this->classify($values['species'] ?? null, $values['weight_kg'] ?? null,
             isset($values['age']) ? (int) $values['age'] : null);
@@ -102,7 +118,8 @@ final class PetSizeClassifier
 
     public function isCurrent(Pet $pet): bool
     {
-        return $pet->size_classification_status === 'classified'
+        return ! $this->requiresHistoricalReview($pet)
+            && $pet->size_classification_status === 'classified'
             && $pet->size_rule_version === self::VERSION
             && $pet->physical_size !== null
             && $this->classify($pet->getAttributes()['species'] ?? null, $pet->getAttributes()['weight_kg'] ?? null, $pet->age)['physical_size'] === $pet->physical_size;

@@ -136,8 +136,10 @@ class PetPhysicalMeasurementsTest extends TestCase
         $pet->refresh();
         $this->assertNull($pet->weight_kg);
         $this->assertNull($pet->height_cm);
-        $this->assertNull($pet->physical_size);
-        $this->assertSame('Extra Small', $pet->legacy_physical_size);
+        $this->assertSame('Extra Small', $pet->physical_size);
+        $this->assertNull($pet->legacy_physical_size); // Preserve the exact preexisting snapshot, including null.
+        $this->assertSame('legacy_unclassified', $pet->size_classification_status);
+        $this->assertFalse($pet->hasClassifiedPhysicalSize());
         $this->put(route('admin.animals.update', $pet), $this->editData($pet, ['weight_kg' => '3.123', 'height_cm' => '22.001']))->assertSessionHasNoErrors();
         $pet->refresh();
         $this->put(route('admin.animals.update', $pet), $this->editData($pet, ['description' => 'Unrelated story edit']))->assertSessionHasNoErrors();

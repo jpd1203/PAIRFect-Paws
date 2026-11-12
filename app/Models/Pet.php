@@ -54,8 +54,10 @@ class Pet extends Model
         });
 
         static::saving(function (Pet $pet) {
-            if (! $pet->exists || $pet->isDirty(['species', 'weight_kg', 'age', 'physical_size'])) {
-                $pet->forceFill(app(PetSizeClassifier::class)->changes($pet));
+            $classifier = app(PetSizeClassifier::class);
+            if ($classifier->requiresHistoricalReview($pet)
+                || ! $pet->exists || $pet->isDirty(['species', 'weight_kg', 'age', 'physical_size'])) {
+                $pet->forceFill($classifier->changes($pet));
             }
             if ($pet->isDirty('has_aggression_history')) {
                 $pet->aggression_history_verified_at = $pet->has_aggression_history === null ? null : now();

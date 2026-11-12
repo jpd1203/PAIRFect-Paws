@@ -14,7 +14,7 @@ Dogs require known age >=24 months; cats >=12 months. Unknown age is NULL, never
 
 ## Writes and age contract
 
-PetSizeClassifier owns thresholds and statuses. New model saves calculate size. Existing saves recalculate changed species, age, weight or physical_size. Authorized HTTP updates explicitly invoke the same operation before the version-checked query update, which does not run model events. Controller input cannot supply physical_size, metadata or history overrides. No manual/veterinarian exception exists.
+PetSizeClassifier owns thresholds and statuses. New model saves calculate size. Current-policy saves recalculate changed species, age, weight or physical_size. Persisted legacy_unclassified records retain their exact historical size/provenance on every ordinary save, including age/weight edits, pending a separately approved explicit review workflow. Authorized HTTP updates explicitly invoke the same operation before the version-checked query update, which does not run model events. Controller input cannot supply physical_size, metadata or history overrides. No manual/veterinarian exception exists.
 
 The age column remains integer months. Forms submit age_years and age_months (0..11 additional months). Omitted age on updates retains it; both blank fields clear it; a provided component uses zero for an omitted component. The ambiguous old age request field is rejected. The years maximum is a technical signed integer storage bound, not shelter age policy. Historical erroneous/unknown ages cannot be reconstructed automatically.
 
@@ -26,7 +26,7 @@ Additive columns: legacy_physical_size (nullable string); size_classification_st
 
 Evaluated statuses: classified, age_unknown, juvenile, weight_unavailable, unsupported_species. Only current-version classified size consistent with the actual species, age and weight is trusted for matching. Metadata is not mass-assignable from form input.
 
-The migration snapshots old physical_size into legacy_physical_size, changing NO existing size, age, weight, timestamp, assessment or application score. It never classifies history. A subsequent authorized edit establishes the new canonical result, retaining the old manual label separately. Later calculations cannot overwrite that historical label. Quiet imports/direct SQL must use the classifier when intentionally creating new classified records; merely supplying a historical size does not make them eligible.
+The migration snapshots old physical_size into legacy_physical_size, changing NO existing size, age, weight, timestamp, assessment or application score. It never classifies history. Ordinary authorized edits do not establish reviewed measurements or promote historical records. Both historical size fields (including nulls) and provenance are preserved. A future, explicitly authorized review workflow requires separate approval; it does not exist in Phase 15B. Quiet imports/direct SQL intentionally evaluating classification must use the shared changes operation; it preserves persisted legacy provenance too. Merely supplying a historical size does not make a pet eligible. See HISTORICAL_PET_CLASSIFICATION_SAFETY.md for the review boundary and privileged-write limitations.
 
 ## Dry-run historical impact report
 
