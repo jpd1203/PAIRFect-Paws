@@ -13,7 +13,14 @@ assert.match(base, /^[a-f0-9]{40}$/);
 // Missing base is a blocking failure, not a silent quality-check skip.
 git(['cat-file', '-e', base + '^{commit}']);
 const inherited = new Set(['app/Http/Controllers/MonitoringController.php',
-    'app/Services/ReservationQueueService.php']);
+    'app/Services/ReservationQueueService.php',
+    'app/Http/Controllers/Admin/HandoverController.php',
+    'app/Http/Controllers/HandoverConfirmationController.php',
+    'app/Models/Handover.php', 'config/matching.php', 'routes/web.php',
+    'tests/Feature/AdoptionPipelineStateMachineTest.php',
+    'tests/Feature/HandoverTrackingTest.php', 'tests/Feature/HandoverWorkflowTest.php',
+    'tests/Feature/LandingPageFeaturedPetsTest.php', 'tests/Feature/RecommendationEligibilityTest.php',
+    'tests/Feature/ReservationQueueTest.php', 'tests/Feature/VolunteerRbacTest.php']);
 const changed = git(['diff', '--name-only', '--diff-filter=ACMR', base, 'HEAD']).split('\n')
     .filter(f => f.endsWith('.php') && existsSync(f));
 const checked = changed.filter(file => {

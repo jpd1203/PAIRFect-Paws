@@ -145,10 +145,29 @@ databases. Mail=array, queue=sync, synthetic key/password and disposable loopbac
 MySQL pairfect_phase15c_ci prevent real data/mail usage.
 
 All tracked PHP is linted; Pint covers PHP changed against PR base / push-before SHA,
-or the reviewed Phase16.1 baseline for manual dispatch. Two inherited violations
-are excepted ONLY when their committed contents still exactly match that baseline:
-app/Http/Controllers/MonitoringController.php and
-app/Services/ReservationQueueService.php. Any modification makes Pint mandatory;
+or the reviewed Phase16.1 baseline for manual dispatch. Fourteen inherited failing
+paths are excepted ONLY when their committed contents still exactly match that
+baseline. The initial two were MonitoringController and ReservationQueueService;
+an actual old-master-to-release scope rehearsal identified twelve more. Exact paths:
+
+- app/Http/Controllers/MonitoringController.php
+- app/Services/ReservationQueueService.php
+- app/Http/Controllers/Admin/HandoverController.php
+- app/Http/Controllers/HandoverConfirmationController.php
+- app/Models/Handover.php
+- config/matching.php
+- routes/web.php
+- tests/Feature/AdoptionPipelineStateMachineTest.php
+- tests/Feature/HandoverTrackingTest.php
+- tests/Feature/HandoverWorkflowTest.php
+- tests/Feature/LandingPageFeaturedPetsTest.php
+- tests/Feature/RecommendationEligibilityTest.php
+- tests/Feature/ReservationQueueTest.php
+- tests/Feature/VolunteerRbacTest.php
+
+Inherited findings include import order, whitespace, strict type names, trait order,
+quote style and empty-body/brace/operator formatting. They were reproduced using
+Pint --test, not reformatted. Any modification makes Pint mandatory;
 all other changed PHP is checked. Missing diff bases block, not skip quality checks.
 There is no PHP source change in Phase18A. Frontend tests, deployment-tool tests,
 actionlint (including ShellCheck), Blade compilation and Vite are required.

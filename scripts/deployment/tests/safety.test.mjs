@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
+import { runInNewContext } from 'node:vm';
 import { test } from 'node:test';
 import { allowedEvent, environment, migrationDigest, repository, sha256,
     validateEnvironment, validateEvidence, validateRemote } from '../gate.mjs';
@@ -44,6 +45,26 @@ test('Reruns cannot reuse a previous run approval or deploy artifact', () => {
         repository, run_attempt: 2 };
     for (const condition of conditions) {
         assert.equal(Function('github', 'inputs', 'return (' + condition + ')')(github, { release_sha: sha }), false);
+    }
+});
+test('Pint debt exception applies only to identical frozen content; edits/new PHP stay checked', () => {
+    const source = readFileSync(new URL('../quality.mjs', import.meta.url), 'utf8').replace(/^import .+;$/gm, '');
+    for (const [file, edited, expectedPint] of [
+        ['app/Models/Handover.php', false, false],
+        ['app/Models/Handover.php', true, true],
+        ['app/NewFeature.php', false, true],
+    ]) {
+        const pints = [];
+        runInNewContext(source, {
+            assert, existsSync: () => true, console: { log() {} }, process: { env: { PINT_BASE: sha } },
+            execFileSync(command, args) {
+                if (command === 'php') { if (args[0] === 'vendor/bin/pint') pints.push(args); return Buffer.from(''); }
+                if (args[0] === 'ls-files' || args[0] === 'diff') return Buffer.from(file);
+                if (args[0] === 'show') return Buffer.from(edited && args[1].startsWith('HEAD:') ? 'modified' : 'frozen');
+                return Buffer.from('');
+            },
+        });
+        assert.equal(pints.length > 0, expectedPint);
     }
 });
 test('Validation dependencies, permissions and serial database suite order', () => {
