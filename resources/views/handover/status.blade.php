@@ -310,23 +310,32 @@
                                 </div>
                             @endif
 
-                            @include('handover._live_tracking')
+                            
                         </div>
 
                         <!-- Right: Proof of Handover Photo -->
-                        @if ($record->photo_url)
-                            <div class="flex flex-col items-center sm:items-end justify-center">
-                                <figure class="w-full sm:w-56 m-0">
-                                    <img src="{{ $record->photo_url }}" alt="Pet photo"
-                                        class="w-full h-36 rounded-xl object-cover border border-[#e2ddd7] shadow-sm bg-neutral-light">
-                                    <figcaption class="mt-1.5 text-center text-xs text-[#777] font-medium">
-                                        Pet photo
-                                    </figcaption>
-                                </figure>
-                            </div>
-                        @endif
+                        <div>
+                            @if ($record->photo_url)
+                                <div class="flex flex-col items-center sm:items-end justify-center">
+                                    <figure class="w-full sm:w-56 m-0">
+                                        <img src="{{ $record->photo_url }}" alt="Pet photo"
+                                            class="w-full h-36 rounded-xl object-cover border border-[#e2ddd7] shadow-sm bg-neutral-light">
+                                        <figcaption class="mt-1.5 text-center text-xs text-[#777] font-medium">
+                                            Pet photo
+                                        </figcaption>
+                                    </figure>
+                                </div>
+                                
+                            @endif
+                            @include('handover._live_tracking') 
+                        </div>
+
+                        
 
                     </div>
+                    
+
+                    
                 </section>
                 @endif
 

@@ -5,7 +5,7 @@
 @section('notification-bell-in-header', true)
 @section('content')
 
-    <div class="sticky-header">
+    <div class="nonsticky-header custom-scrollbar">
         <div class="main-content-header">
             <div class="heading-text">
                 <h2>Confirm Pet Receipt</h2>
@@ -14,7 +14,7 @@
 
             @include('partials.notification-bell')
         </div>
-    </div>
+    
 
     <div class="content-area">
 
@@ -111,22 +111,25 @@
                                 </div>
                             </div>
                         @endif
-                        @if (!$record->adopter_outcome)
-                            @include('handover._live_tracking')
-                        @endif
                     </div>
 
-                    @if ($record->photo_url)
-                        <div class="flex flex-col items-center sm:items-end justify-center">
-                            <figure class="w-full sm:w-56 m-0">
-                                <img src="{{ $record->photo_url }}" alt="Pet photo"
-                                     class="w-full h-36 rounded-xl object-cover border border-[#e2ddd7] shadow-sm bg-neutral-light">
-                                <figcaption class="mt-1.5 text-center text-xs text-[#777] font-medium">
-                                    Pet photo
-                                </figcaption>
-                            </figure>
-                        </div>
-                    @endif
+                    <div>
+                        @if ($record->photo_url)
+                            <div class="flex flex-col items-center sm:items-end justify-center">
+                                <figure class="w-full sm:w-56 m-0">
+                                    <img src="{{ $record->photo_url }}" alt="Pet photo"
+                                        class="w-full h-36 rounded-xl object-cover border border-[#e2ddd7] shadow-sm bg-neutral-light">
+                                    <figcaption class="mt-1.5 text-center text-xs text-[#777] font-medium">
+                                        Pet photo
+                                    </figcaption>
+                                </figure>
+                            </div>
+                        @endif
+
+                        @if (!$record->adopter_outcome)
+                                @include('handover._live_tracking')
+                            @endif
+                    </div>
                 </div>
             </section>
             @endif
@@ -211,16 +214,14 @@
                         </div>
 
                         <div class="flex items-center justify-end gap-4 flex-wrap pt-4 border-t border-[#e2ddd7]">
+                            <button type="submit" name="outcome" value="not_received"
+                                    onclick="return confirm('Are you sure you want to report that your pet has not arrived? Staff will be alerted immediately.');"
+                                    class="btn btn-secondary">
+                                <i class="fa-solid fa-triangle-exclamation mr-2"></i> No, I haven't received my pet
+                            </button>
                             <button type="submit" name="outcome" value="received" class="btn btn-primary">
                                 <i class="fa-solid fa-circle-check mr-2"></i> Yes, I've received {{ $record->pet?->name }}
                             </button>
-
-                            <button type="submit" name="outcome" value="not_received"
-                                    onclick="return confirm('Are you sure you want to report that your pet has not arrived? Staff will be alerted immediately.');"
-                                    class="btn btn-danger">
-                                <i class="fa-solid fa-triangle-exclamation mr-2"></i> No, I haven't received my pet
-                            </button>
-
                         </div>
                     </form>
                 </section>
@@ -230,6 +231,7 @@
 
         </div>
 
+    </div>
     </div>
 
 @endsection

@@ -223,7 +223,7 @@
                                         </button>
                                     @else
                                         <a href="{{ route('animal.index') }}"
-                                           class="flex w-full items-center justify-center rounded-xl border border-line text-ink-muted hover:bg-sand px-4 py-2 text-sm font-semibold transition-colors duration-150 cursor-pointer">
+                                           class="flex w-full items-center justify-center rounded-xl border border-[#A61D24] text-[#A61D24] hover:bg-[#FDF2F2] px-4 py-2 text-sm font-semibold transition-colors duration-150 cursor-pointer">
                                             Browse pets
                                         </a>
                                     @endif
