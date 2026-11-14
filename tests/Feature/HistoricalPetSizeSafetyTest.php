@@ -78,6 +78,11 @@ class HistoricalPetSizeSafetyTest extends TestCase
         $pet->forceFill($changes)->save();
         $this->assertProtected($pet, $before);
         foreach (array_diff_key($changes, array_flip(self::HISTORY)) as $field => $value) {
+            if ($field === 'weight_kg') {
+                $this->assertSame(number_format((float) $value, 3, '.', ''), $pet->weight_kg);
+
+                continue;
+            }
             $this->assertEquals($value, $pet->getRawOriginal($field));
         }
     }
