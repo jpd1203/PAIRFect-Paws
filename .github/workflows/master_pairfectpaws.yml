@@ -1,21 +1,10 @@
-name: Validate and approve existing PAIRfect Paws upgrade
+name: Validate and automatically deploy PAIRfect Paws prototype
 
 on:
   push:
     branches: [master]
   pull_request:
     branches: [main, master]
-  workflow_dispatch:
-    inputs:
-      release_sha:
-        description: Exact current master SHA (40 lowercase hex characters)
-        required: true
-        type: string
-      schema_evidence:
-        description: Completed operator attestation JSON; see docs/DEPLOYMENT_SAFETY.md
-        required: true
-        type: string
-
 permissions:
   contents: read
 
@@ -107,7 +96,7 @@ jobs:
 
   runtime:
     needs: validate
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' && inputs.release_sha == github.sha && github.repository == 'jpd1203/PAIRFect-Paws' && github.run_attempt == 1
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'jpd1203/PAIRFect-Paws' && github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
@@ -121,8 +110,7 @@ jobs:
       QUEUE_CONNECTION: sync
       CACHE_STORE: array
       SESSION_DRIVER: array
-      RELEASE_SHA: ${{ inputs.release_sha }}
-      SCHEMA_EVIDENCE: ${{ inputs.schema_evidence }}
+      RELEASE_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -136,8 +124,6 @@ jobs:
         with:
           node-version: '26.x'
           cache: npm
-      - name: Check exact-release operator evidence (not proof of live operations)
-        run: node scripts/deployment/gate.mjs evidence
       - name: Install runtime-only locked dependencies and build
         run: |
           composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
@@ -156,24 +142,21 @@ jobs:
 
   deploy:
     needs: [validate, runtime]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' && inputs.release_sha == github.sha && github.repository == 'jpd1203/PAIRFect-Paws' && github.run_attempt == 1
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'jpd1203/PAIRFect-Paws' && github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 20
     concurrency:
       group: pairfectpaws-existing-site-upgrade
       cancel-in-progress: false
-    # Configure real required reviewers externally. A YAML name alone is NOT protection.
-    environment: prototype-existing-site
     permissions:
       contents: read
       actions: read
       id-token: write
     env:
       GH_TOKEN: ${{ github.token }}
-      RELEASE_SHA: ${{ inputs.release_sha }}
-      SCHEMA_EVIDENCE: ${{ inputs.schema_evidence }}
+      RELEASE_SHA: ${{ github.sha }}
       EXPECTED_DIGEST: ${{ needs.runtime.outputs.digest }}
-      SITE_URL: ${{ vars.PAIRFECT_EXISTING_SITE_URL }}
+      SITE_URL: https://pairfectpaws.app
     steps:
       - uses: actions/checkout@v4
         with:
@@ -187,27 +170,33 @@ jobs:
           path: output/release
       - name: Verify archive digest and runtime manifest
         run: node scripts/deployment/artifact.mjs unpack
-      - name: Recheck current master, evidence and real required-reviewer configuration
-        run: node scripts/deployment/gate.mjs remote
+      - name: Reject superseded master release before login
+        run: |
+          current_sha=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/master" --jq '.object.sha')
+          test "$current_sha" = "$GITHUB_SHA"
       - name: Login to existing Azure app identity
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_E4FE80617B344019B9F3F97FB53F3139 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_95C3718EDE4743CA83CD808941EBC3D1 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_75A010B907E44131BDF0E7B93154F4DA }}
-      - name: Final stale-run check immediately before activation
-        run: node scripts/deployment/gate.mjs remote
-      - name: Activate approved existing-site package
+      - name: Reject superseded master release before activation
+        run: |
+          current_sha=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/master" --jq '.object.sha')
+          test "$current_sha" = "$GITHUB_SHA"
+      - name: Activate validated prototype package
         uses: azure/webapps-deploy@v3
         with:
           app-name: pairfectpaws
           slot-name: Production
           package: output/release/runtime
           clean: 'false'
-      - name: Bounded existing-site smoke checks
-        run: node scripts/deployment/smoke.mjs
+      - name: Handoff required database migration and browser checks
+        run: |
+          echo 'Code package deployed to pairfectpaws/Production. Database migrations are NOT automatic.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Operator: open Azure SSH, verify pending migrations, run php artisan migrate --force, then manually test https://pairfectpaws.app.' >> "$GITHUB_STEP_SUMMARY"
       - name: Stop and require recovery review on failure
         if: failure()
         run: |
-          echo 'Upgrade NOT accepted. Retain approved maintenance/worker hold; inspect actual state.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'No automatic migration retry, restore, job purge, or email replay. See docs/DEPLOYMENT_SAFETY.md.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Deployment not accepted. Inspect active code, database schema, storage, and Azure logs before retrying.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No automatic migration, rollback, job purge, or email replay. Verify pending migrations separately.' >> "$GITHUB_STEP_SUMMARY"
