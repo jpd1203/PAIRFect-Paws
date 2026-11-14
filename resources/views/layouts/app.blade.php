@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-<body class="bg-white text-gray-900 font-secondary antialiased">
+<body class="bg-white text-gray-900 font-secondary antialiased {{ auth()->check() ? 'overflow-hidden' : '' }}">
 
 @auth
     <!-- Mobile-only top bar with hamburger toggle -->

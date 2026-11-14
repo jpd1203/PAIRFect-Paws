@@ -67,7 +67,7 @@
                     @endphp
 
                     <div id="bfi_row_{{ $key }}"
-                         class="question-item bfi-question-item flex scroll-mt-24 flex-col gap-3 py-3.5 sm:py-4 xl:flex-row xl:items-center xl:gap-8 rounded-xl px-2 sm:px-2.5 -mx-2 sm:-mx-2.5 transition-all duration-200 focus-within:bg-[#FDF2F2]/40 focus-within:ring-1 focus-within:ring-[#A61D24]/30 {{ $hasAnswer ? 'is-answered' : '' }}"
+                         class="question-item bfi-question-item relative flex scroll-mt-24 flex-col gap-3 py-3.5 sm:py-4 xl:flex-row xl:items-center xl:gap-8 rounded-xl px-2 sm:px-2.5 -mx-2 sm:-mx-2.5 transition-all duration-200 focus-within:bg-[#FDF2F2]/40 focus-within:ring-1 focus-within:ring-[#A61D24]/30 {{ $hasAnswer ? 'is-answered' : '' }}"
                          tabindex="0"
                          data-q-key="{{ $key }}"
                          data-dimension="{{ $dimKey }}">

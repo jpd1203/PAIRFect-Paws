@@ -108,25 +108,27 @@
 
                 <!-- Name (First, Last) -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Name*</label>
-                    <div class="grid grid-cols-2 gap-3">
+                    <span class="block text-xs font-bold text-gray-700 mb-1" id="register_name_group_label">Name*</span>
+                    <div class="grid grid-cols-2 gap-3" role="group" aria-labelledby="register_name_group_label">
                         <div>
-                            <input name="first_name" type="text" value="{{ old('first_name') }}" placeholder="First" required
+                            <label for="register_first_name" class="sr-only">First Name*</label>
+                            <input id="register_first_name" name="first_name" type="text" value="{{ old('first_name') }}" placeholder="First" required
                                    class="w-full bg-white border border-gray-400 rounded-lg px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:border-maroon-600 focus:ring-1 focus:ring-maroon-600">
-                            <span class="text-[10px] text-gray-500 mt-0.5 block">First</span>
+                            <label for="register_first_name" class="text-[10px] text-gray-500 mt-0.5 block cursor-pointer">First</label>
                         </div>
                         <div>
-                            <input name="last_name" type="text" value="{{ old('last_name') }}" placeholder="Last" required
+                            <label for="register_last_name" class="sr-only">Last Name*</label>
+                            <input id="register_last_name" name="last_name" type="text" value="{{ old('last_name') }}" placeholder="Last" required
                                    class="w-full bg-white border border-gray-400 rounded-lg px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:border-maroon-600 focus:ring-1 focus:ring-maroon-600">
-                            <span class="text-[10px] text-gray-500 mt-0.5 block">Last</span>
+                            <label for="register_last_name" class="text-[10px] text-gray-500 mt-0.5 block cursor-pointer">Last</label>
                         </div>
                     </div>
                 </div>
 
                 <!-- Email -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Email*</label>
-                    <input name="email" type="email" value="{{ old('email') }}" required
+                    <label for="register_email" class="block text-xs font-bold text-gray-700 mb-1">Email*</label>
+                    <input id="register_email" name="email" type="email" value="{{ old('email') }}" required
                            class="w-full bg-white border border-gray-400 rounded-lg px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:border-maroon-600 focus:ring-1 focus:ring-maroon-600">
                 </div>
 
@@ -135,13 +137,13 @@
                 <!-- Password & Confirm Password -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Password*</label>
-                        <input name="password" type="password" required
+                        <label for="register_password" class="block text-xs font-bold text-gray-700 mb-1">Password*</label>
+                        <input id="register_password" name="password" type="password" required
                                class="w-full bg-white border border-gray-400 rounded-lg px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:border-maroon-600 focus:ring-1 focus:ring-maroon-600">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Confirm Password*</label>
-                        <input name="password_confirmation" type="password" required
+                        <label for="register_password_confirmation" class="block text-xs font-bold text-gray-700 mb-1">Confirm Password*</label>
+                        <input id="register_password_confirmation" name="password_confirmation" type="password" required
                                class="w-full bg-white border border-gray-400 rounded-lg px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:border-maroon-600 focus:ring-1 focus:ring-maroon-600">
                     </div>
                 </div>

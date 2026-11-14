@@ -9,7 +9,7 @@
     $tracking = old('tracking_number', $record->tracking_number);
 @endphp
 
-<div class="bg-white border border-[#e2ddd7] rounded-card shadow-card overflow-hidden" id="releaseFormSection">
+<div class="bg-white border border-[#e2ddd7] rounded-card shadow-card overflow-hidden scroll-mt-20" id="releaseFormSection">
     <div class="border-b border-[#e2ddd7] px-6 py-4 bg-secondary-bg">
         <h3 class="text-base font-bold text-text-dark font-primary m-0">Release Details</h3>
         <p class="mt-0.5 text-xs text-[#777] m-0">Record how and when {{ $record->pet?->name ?? 'the pet' }} physically left the shelter.</p>

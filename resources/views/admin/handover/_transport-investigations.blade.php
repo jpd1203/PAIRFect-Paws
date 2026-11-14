@@ -97,7 +97,7 @@
     <!-- Investigations Case List -->
     <div class="space-y-4">
         @forelse ($record->transportIncidents as $case)
-            <article id="transport-case-{{ $case->id }}" class="border border-[#e2ddd7] rounded-xl bg-white p-4.5 space-y-3.5 shadow-xs break-words">
+            <article id="transport-case-{{ $case->id }}" class="border border-[#e2ddd7] rounded-xl bg-white p-4.5 space-y-3.5 shadow-xs break-words scroll-mt-20">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e2ddd7] pb-3">
                     <div class="flex items-center gap-2">
                         <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-neutral-light border border-[#e2ddd7] text-primary">
