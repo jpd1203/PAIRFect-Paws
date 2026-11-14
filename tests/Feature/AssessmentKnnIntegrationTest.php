@@ -60,7 +60,7 @@ class AssessmentKnnIntegrationTest extends TestCase
         $pet = Pet::where('name', 'Assessed Intake')->sole();
         $this->assertSame('Small', $pet->physical_size); // 3.25 kg adult cat, not a client override.
         $this->assertSame(1.0, $pet->medical_needs);
-        $this->assertSame('young', $pet->life_stage);
+        $this->assertSame('adult', $pet->life_stage); // Cat age 12 months, never the submitted override.
         $this->assertFalse($pet->has_aggression_history);
         $this->assertFalse($pet->high_vocalization);
         $this->assertNotNull($pet->aggression_history_verified_at);
@@ -74,7 +74,7 @@ class AssessmentKnnIntegrationTest extends TestCase
                 'name' => $pet->name, 'species' => $pet->species->value,
                 'status' => 'Available', 'version' => $pet->version,
                 'physical_size' => 'Extra Small', 'weight_kg' => '30', 'medical_needs' => 5,
-                'life_stage' => 'senior', 'has_aggression_history' => '1', 'high_vocalization' => '1',
+                'age_years' => 8, 'life_stage' => 'senior', 'has_aggression_history' => '1', 'high_vocalization' => '1',
             ])->assertRedirect(route('admin.animals.index'));
 
         $pet = $pet->fresh();
@@ -258,7 +258,7 @@ class AssessmentKnnIntegrationTest extends TestCase
                 'life_stage' => '', 'has_aggression_history' => '', 'high_vocalization' => '',
             ])->assertRedirect(route('admin.animals.index'));
 
-        $this->assertNull($pet->fresh()->life_stage);
+        $this->assertSame('adult', $pet->fresh()->life_stage); // Known age cannot be cleared by a manual stage field.
         $this->assertNull($pet->fresh()->has_aggression_history);
         $this->assertNull($pet->fresh()->aggression_history_verified_at);
         $this->assertNull($pet->fresh()->high_vocalization);

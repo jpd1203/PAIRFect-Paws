@@ -77,7 +77,6 @@ final class FreshStartPetsSeeder extends Seeder
                 'sex' => $sex,
                 'physical_size' => $size,
                 'weight_kg' => self::normalizationFixtures()[$name]['weight_kg'],
-                'life_stage' => $age <= 24 ? 'young' : ($age > 84 ? 'senior' : 'adult'),
                 'health_status' => 'Healthy',
                 'vaccination_record_status' => 'Complete',
                 'description' => "Demo pet record for PAIRfect Paws testing. {$name}'s details and assessments are synthetic.",

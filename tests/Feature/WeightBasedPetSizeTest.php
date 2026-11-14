@@ -151,9 +151,9 @@ class WeightBasedPetSizeTest extends TestCase
         $page = $this->get(route('pets.index'))->assertOk();
         foreach ($pets as $pet) {
             $page->assertSee($pet->name);
-            $this->assertSame($pet->id !== $pets[2]->id, Pet::recommendationEligible()->whereKey($pet->id)->exists());
+            $this->assertSame($pet->id === $pets[0]->id, Pet::recommendationEligible()->whereKey($pet->id)->exists());
         }
-        $this->assertCount(2, app(KnnRecommendationService::class)->recommendPets($this->matchingAdopter()));
+        $this->assertCount(1, app(KnnRecommendationService::class)->recommendPets($this->matchingAdopter()));
     }
 
     public function test_current_numeric_size_changes_refresh_pending_but_not_terminal_matching_history(): void

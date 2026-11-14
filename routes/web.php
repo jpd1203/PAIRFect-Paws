@@ -6,6 +6,8 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\HandoverConfirmationController;
+use App\Http\Controllers\HandoverScheduleController;
+use App\Http\Controllers\InAppNotificationController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\PasswordResetController;
@@ -14,6 +16,7 @@ use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\TimeTravelController;
 use App\Http\Middleware\EnsureVerificationLinkMatchesUser;
 use App\Models\Pet;
+use App\Services\PetLifeStageClassifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -133,12 +136,8 @@ Route::middleware('auth')->group(function () {
 
             if ($request->filled('age') && $request->age !== 'All Ages' && $request->age !== 'all') {
                 $age = $request->age;
-                if ($age === 'Young') {
-                    $query->where('age', '<=', 24);
-                } elseif ($age === 'Adult') {
-                    $query->whereBetween('age', [25, 84]);
-                } elseif ($age === 'Senior') {
-                    $query->where('age', '>=', 85);
+                if (in_array($age, PetLifeStageClassifier::LABELS, true)) {
+                    $query->lifeStage(strtolower($age));
                 }
             }
 
@@ -236,7 +235,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/applications/{application}/document-verification', [Admin\AdoptionProfileController::class, 'verification'])->name('applications.document-verification');
         Route::post('/applications/{application}/document-ocr-retry', [Admin\ApplicationController::class, 'retryDocumentOcr'])->name('applications.document-ocr-retry');
         Route::post('/applications/{application}/document-decision', [Admin\ApplicationController::class, 'documentDecision'])->name('applications.document-decision');
-        
+
         Route::post('/applications/schedule', [Admin\ApplicationController::class, 'scheduleSelectedInterview'])->name('applications.schedule');
 
         // Adoption Profiles
@@ -256,8 +255,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/handover/{handover}/delivery/readiness', [Admin\HandoverDeliveryController::class, 'readiness'])->name('handover.delivery.readiness');
         Route::get('/applications/{application}/identity-verification', [Admin\IdentityVerificationController::class, 'show'])->name('applications.identity');
         Route::post('/applications/{application}/identity-verification', [Admin\IdentityVerificationController::class, 'store'])->name('applications.identity.store');
-        Route::post('/handover/{handover}/schedule', [\App\Http\Controllers\HandoverScheduleController::class, 'propose'])->name('handover.schedule');
-        Route::post('/handover/{handover}/reschedule/review', [\App\Http\Controllers\HandoverScheduleController::class, 'review'])->name('handover.reschedule.review');
+        Route::post('/handover/{handover}/schedule', [HandoverScheduleController::class, 'propose'])->name('handover.schedule');
+        Route::post('/handover/{handover}/reschedule/review', [HandoverScheduleController::class, 'review'])->name('handover.reschedule.review');
         Route::get('/handover', [Admin\HandoverController::class, 'index'])->name('handover.index');
         Route::get('/handover/{handover}', [Admin\HandoverController::class, 'show'])->name('handover.show');
         Route::post('/handover/{handover}/mark-released', [Admin\HandoverController::class, 'markReleased'])->name('handover.release');
@@ -301,9 +300,9 @@ Route::middleware('auth')->group(function () {
 
 // ─── Handover & Adopter Confirmation Link Routes ──────────────────────────────
 Route::middleware(['auth', 'adopter', 'verified'])->group(function () {
-    Route::post('/adopter/{handover}/schedule/confirm', [\App\Http\Controllers\HandoverScheduleController::class, 'confirm'])->name('adopter.handover.schedule.confirm');
-    Route::post('/adopter/{handover}/schedule/method', [\App\Http\Controllers\HandoverScheduleController::class, 'selectMethod'])->name('adopter.handover.schedule.method');
-    Route::post('/adopter/{handover}/reschedule', [\App\Http\Controllers\HandoverScheduleController::class, 'requestReschedule'])->name('adopter.handover.reschedule');
+    Route::post('/adopter/{handover}/schedule/confirm', [HandoverScheduleController::class, 'confirm'])->name('adopter.handover.schedule.confirm');
+    Route::post('/adopter/{handover}/schedule/method', [HandoverScheduleController::class, 'selectMethod'])->name('adopter.handover.schedule.method');
+    Route::post('/adopter/{handover}/reschedule', [HandoverScheduleController::class, 'requestReschedule'])->name('adopter.handover.reschedule');
     Route::get('/adopter', [HandoverConfirmationController::class, 'userHandoverRedirect'])->name('adopter.handover.my');
     Route::get('/confirm/{handover}', [HandoverConfirmationController::class, 'confirmView'])->name('adopter.confirm');
     Route::post('/confirm/{handover}', [HandoverConfirmationController::class, 'submitConfirmation'])->name('adopter.confirm.submit');
@@ -318,8 +317,8 @@ Route::get('/handover/{handover}/receipt-proof', [HandoverConfirmationController
     ->name('handover.receipt-proof');
 
 Route::middleware('auth')->prefix('notifications')->name('notifications.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\InAppNotificationController::class, 'index'])->name('index');
-    Route::get('/{notification}/open', [\App\Http\Controllers\InAppNotificationController::class, 'open'])->name('open');
-    Route::post('/{notification}/read', [\App\Http\Controllers\InAppNotificationController::class, 'markRead'])->name('read');
-    Route::post('/read-all', [\App\Http\Controllers\InAppNotificationController::class, 'markAllRead'])->name('read-all');
+    Route::get('/', [InAppNotificationController::class, 'index'])->name('index');
+    Route::get('/{notification}/open', [InAppNotificationController::class, 'open'])->name('open');
+    Route::post('/{notification}/read', [InAppNotificationController::class, 'markRead'])->name('read');
+    Route::post('/read-all', [InAppNotificationController::class, 'markAllRead'])->name('read-all');
 });

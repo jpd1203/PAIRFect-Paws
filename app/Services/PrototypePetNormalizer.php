@@ -32,10 +32,11 @@ final class PrototypePetNormalizer
             // not an ordinary-save attestation or a global bypass of historical safeguards.
             $values = $fixture['measurements'];
             $desired = array_replace($values, $this->classifier->classify($values['species'], $values['weight_kg'], $values['age']));
+            $desired['life_stage'] = app(PetLifeStageClassifier::class)->classify($values['species'], $values['age']);
             unset($desired['species']); // Identity must already agree; never convert an unknown animal.
             $changes = [];
             foreach ($desired as $field => $value) {
-                $before = $pet->getAttribute($field);
+                $before = $field === 'life_stage' ? $pet->getRawOriginal($field) : $pet->getAttribute($field);
                 if ($before !== $value) {
                     $changes[$field] = ['before' => $before, 'after' => $value];
                 }

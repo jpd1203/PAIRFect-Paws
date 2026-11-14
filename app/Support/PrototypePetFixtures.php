@@ -54,7 +54,7 @@ final class PrototypePetFixtures
             'breed' => 'Fictional Mixed Breed', 'sex' => 'Female', 'age' => $age, 'weight_kg' => $weight,
             'description' => "Fictional Phase 15C prototype fixture {$key}; not a real animal.",
             'behavioral_notes' => self::marker($key), 'availability_status' => 'Available',
-            'medical_needs' => 2, 'life_stage' => $age === null ? null : ($age < 24 ? 'young' : 'adult'),
+            'medical_needs' => 2,
             'has_aggression_history' => false, 'high_vocalization' => false,
         ]];
     }

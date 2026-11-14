@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\KnnRecommendationService;
 use App\Services\Matching\ApplicationMatchService;
 use App\Services\Matching\BfiScorer;
+use App\Services\PetLifeStageClassifier;
 use App\Services\PetSizeClassifier;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,7 @@ class MatchingDemoSeeder extends Seeder
                 $pet = Pet::firstOrNew(['name' => "Matching Demo {$species} {$i}"]);
                 $pet->fill([
                     'species' => $species, 'sex' => $i % 2 ? 'Male' : 'Female',
-                    'age' => $i === 6 ? 120 : 36, 'life_stage' => $i === 6 ? 'senior' : 'adult',
+                    'age' => $i === 6 ? 120 : 36,
                     'availability_status' => 'Available', 'is_archived' => false,
                     'physical_size' => $sizes[($i - 1) % 5], 'medical_needs' => $i === 6 ? 5 : 2,
                     'weight_kg' => $weight,
@@ -43,7 +44,10 @@ class MatchingDemoSeeder extends Seeder
                     'description' => 'Synthetic matching QA record; not a real shelter animal.',
                     'last_assessed_at' => now(), 'last_assessed_by' => 'Matching demo observers',
                 ]);
-                $pet->forceFill(app(PetSizeClassifier::class)->changes($pet))->saveQuietly();
+                $pet->forceFill([
+                    ...app(PetSizeClassifier::class)->changes($pet),
+                    'life_stage' => app(PetLifeStageClassifier::class)->classify($species, $pet->age),
+                ])->saveQuietly();
 
                 $answers = $this->behaviorAnswers(strtolower($species), $i);
                 foreach ($observers as $observer) {

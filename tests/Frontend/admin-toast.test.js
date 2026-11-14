@@ -4,7 +4,8 @@ import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 
 const source = readFileSync(new URL('../../resources/js/admin.js', import.meta.url), 'utf8')
-    .replace("import '../css/admin.css';", '');
+    .replace("import '../css/admin.css';", '')
+    .replace("import './pet-life-stage';", ''); // Tested separately; this VM exercises toast behavior.
 
 function element(tagName) {
     const classes = new Set();

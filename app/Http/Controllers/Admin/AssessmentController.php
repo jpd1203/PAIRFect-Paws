@@ -72,8 +72,8 @@ class AssessmentController extends Controller
         if (! MatchingConfiguration::validValue($pet->medical_needs)) {
             $missingInformation[] = 'veterinary medical-needs level';
         }
-        if (! in_array($pet->life_stage, ['young', 'adult', 'senior'], true)) {
-            $missingInformation[] = 'verified life stage';
+        if ($pet->life_stage === null) {
+            $missingInformation[] = 'life stage (supported species and known recorded age required)';
         }
         if ($pet->has_aggression_history === null || $pet->aggression_history_verified_at === null) {
             $missingInformation[] = 'verified aggression history';

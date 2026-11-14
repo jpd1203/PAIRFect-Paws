@@ -106,7 +106,7 @@ function openViewAnimalModal(id) {
     setVal('vSize', a.size_display ?? 'Unavailable: classification needs staff review');
     setVal('vWeightKg', a.weight_kg);
     setVal('vHeightCm', a.height_cm);
-    setVal('vLifeStage', a.life_stage);
+    document.getElementById('viewAnimalForm')?.dispatchEvent?.(new Event('pairfect:pet-fields-loaded'));
     setVal('vAggression', a.has_aggression_history === null ? '' : Number(a.has_aggression_history));
     setVal('vVocalization', a.high_vocalization === null ? '' : Number(a.high_vocalization));
 

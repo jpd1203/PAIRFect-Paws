@@ -1,6 +1,7 @@
 import '../css/app.css';
 import './philippine-address';
 import './post-adoption-camera';
+import './pet-life-stage';
 
 /**
  * Global site behavior: mobile sidebar toggle, profile dropdown, toast

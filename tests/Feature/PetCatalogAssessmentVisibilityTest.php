@@ -72,8 +72,8 @@ class PetCatalogAssessmentVisibilityTest extends TestCase
     {
         $matches = app(ApplicationMatchService::class);
 
-        $youngKitten = $this->matchingPet(['name' => 'Kitten Young', 'age' => 2]);
-        $youngDog = $this->matchingPet(['name' => 'Dog Young', 'age' => 24]);
+        $youngKitten = $this->matchingPet(['name' => 'Kitten Young', 'species' => 'Cat', 'age' => 2]);
+        $youngDog = $this->matchingPet(['name' => 'Dog Young', 'age' => 23]);
         $adultCat = $this->matchingPet(['name' => 'Cat Adult', 'age' => 36]);
         $seniorDog = $this->matchingPet(['name' => 'Dog Senior', 'age' => 96]);
 
@@ -97,7 +97,7 @@ class PetCatalogAssessmentVisibilityTest extends TestCase
         $response->assertSee('<option value="Adult"', false);
         $response->assertSee('<option value="Senior"', false);
 
-        // 2. Filter by 'Young' returns both <= 6 mo and 7-24 mo pets
+        // 2. Young is species-specific (cat <12 months, dog <24 months).
         $responseYoung = $this->actingAs($user)->get(route('animal.index', ['age' => 'Young']));
         $responseYoung->assertOk()
             ->assertSee('Kitten Young')
@@ -105,7 +105,7 @@ class PetCatalogAssessmentVisibilityTest extends TestCase
             ->assertDontSee('Cat Adult')
             ->assertDontSee('Dog Senior');
 
-        // 3. Filter by 'Adult' returns 25-84 mo pets
+        // 3. Adult uses the same species-specific policy as stored life stage.
         $responseAdult = $this->actingAs($user)->get(route('animal.index', ['age' => 'Adult']));
         $responseAdult->assertOk()
             ->assertDontSee('Kitten Young')
@@ -113,7 +113,7 @@ class PetCatalogAssessmentVisibilityTest extends TestCase
             ->assertSee('Cat Adult')
             ->assertDontSee('Dog Senior');
 
-        // 4. Filter by 'Senior' returns >= 85 mo pets
+        // 4. Senior uses dog >=96 months and cat >=132 months.
         $responseSenior = $this->actingAs($user)->get(route('animal.index', ['age' => 'Senior']));
         $responseSenior->assertOk()
             ->assertDontSee('Kitten Young')

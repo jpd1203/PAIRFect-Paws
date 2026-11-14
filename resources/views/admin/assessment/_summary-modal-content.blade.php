@@ -102,7 +102,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="p-3 rounded-xl border border-gray-200 bg-white">
                 <span class="text-xs text-gray-500 block">Life Stage</span>
-                <span class="text-sm font-semibold {{ $animal->life_stage === null ? 'text-gray-600' : 'text-gray-800' }}">{{ $animal->life_stage === null ? 'Not verified' : ucfirst($animal->life_stage) }}</span>
+                <span class="text-sm font-semibold {{ $animal->life_stage === null ? 'text-gray-600' : 'text-gray-800' }}">{{ $animal->age_group }}</span>
             </div>
             <div class="p-3 rounded-xl border border-gray-200 bg-white">
                 <span class="text-xs text-gray-500 block">Vocalization</span>

@@ -166,16 +166,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Life Stage</label>
-                            <div class="select-wrapper">
-                                <select name="life_stage" class="form-select">
-                                    <option value="">Not yet verified</option>
-                                    <option value="young">Young</option>
-                                    <option value="adult">Adult</option>
-                                    <option value="senior">Senior</option>
-                                </select>
-                                <i class="fa-solid fa-chevron-down select-arrow"></i>
-                            </div>
+                            @include('partials.pet-life-stage', ['lifeStageInputId' => 'addLifeStage'])
                         </div>
 
                         <div class="form-group">

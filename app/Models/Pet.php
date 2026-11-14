@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AvailabilityStatus;
 use App\Enums\Species;
+use App\Services\PetLifeStageClassifier;
 use App\Services\PetSizeClassifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,7 @@ class Pet extends Model
         'branch_id', 'intake_date', 'photo_path', 'is_archived', 'version',
         'energy_level', 'trainability', 'independence', 'temperament',
         'medical_needs', 'is_reactive_to_pets', 'has_aggression_history',
-        'aggression_history_verified_at', 'high_vocalization', 'life_stage', 'assessment_scoring_version',
+        'aggression_history_verified_at', 'high_vocalization', 'assessment_scoring_version',
         'last_assessed_at', 'assessment_count', 'physical_size', 'vaccination_record_status', 'last_assessed_by',
         'weight_kg', 'height_cm',
     ];
@@ -54,6 +55,9 @@ class Pet extends Model
         });
 
         static::saving(function (Pet $pet) {
+            $pet->life_stage = app(PetLifeStageClassifier::class)->classify(
+                $pet->getAttributes()['species'] ?? null, $pet->getAttributes()['age'] ?? null,
+            );
             $classifier = app(PetSizeClassifier::class);
             if ($classifier->requiresHistoricalReview($pet)
                 || ! $pet->exists || $pet->isDirty(['species', 'weight_kg', 'age', 'physical_size'])) {
@@ -107,7 +111,8 @@ class Pet extends Model
             ->where('size_classification_status', 'classified')
             ->whereIn('size_rule_version', PetSizeClassifier::COMPATIBLE_VERSIONS)
             ->whereIn('physical_size', ['Extra Small', 'Small', 'Medium', 'Large', 'Extra Large'])
-            ->whereIn('life_stage', ['young', 'adult', 'senior'])
+            ->whereIn('species', array_keys(PetLifeStageClassifier::THRESHOLDS))
+            ->whereNotNull('age')->where('age', '>=', 0)
             ->whereNotNull('has_aggression_history')
             ->whereNotNull('aggression_history_verified_at')
             ->whereNotNull('high_vocalization');
@@ -156,17 +161,19 @@ class Pet extends Model
 
     public function getAgeGroupAttribute(): string
     {
-        if ($this->age === null) {
-            return 'Unknown';
-        }
-        if ($this->age <= 24) {
-            return 'Young';
-        }
-        if ($this->age <= 84) {
-            return 'Adult';
-        }
+        return PetLifeStageClassifier::LABELS[$this->life_stage] ?? 'Unknown';
+    }
 
-        return 'Senior';
+    public function getLifeStageAttribute(): ?string
+    {
+        return app(PetLifeStageClassifier::class)->fromStored(
+            $this->getAttributes()['species'] ?? null, $this->getAttributes()['age'] ?? null,
+        );
+    }
+
+    public function scopeLifeStage(Builder $query, string $stage): Builder
+    {
+        return app(PetLifeStageClassifier::class)->constrain($query, $stage);
     }
 
     public function getAgeYearsAttribute(): ?int

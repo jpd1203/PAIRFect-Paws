@@ -1,4 +1,5 @@
 import '../css/admin.css';
+import './pet-life-stage';
 
 /**
  * Global admin panel behavior: sidebar toggle, custom modals, toast

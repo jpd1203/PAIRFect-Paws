@@ -12,6 +12,7 @@ use App\Rules\PositivePetMeasurement;
 use App\Services\AuditLogService;
 use App\Services\KnnRecommendationService;
 use App\Services\Matching\ApplicationMatchService;
+use App\Services\PetLifeStageClassifier;
 use App\Services\PetSizeClassifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -35,12 +36,8 @@ class PetController extends Controller
 
         if ($request->filled('age') && $request->age !== 'all' && $request->age !== 'All Ages') {
             $age = $request->age;
-            if ($age === 'Young') {
-                $query->where('age', '<=', 24);
-            } elseif ($age === 'Adult') {
-                $query->whereBetween('age', [25, 84]);
-            } elseif ($age === 'Senior') {
-                $query->where('age', '>=', 85);
+            if (in_array($age, PetLifeStageClassifier::LABELS, true)) {
+                $query->lifeStage(strtolower($age));
             }
         }
 
@@ -112,7 +109,6 @@ class PetController extends Controller
             'status' => ['required', Rule::enum(AvailabilityStatus::class)],
             'branch_id' => 'nullable|exists:branches,id',
             'medical_needs' => 'nullable|numeric|min:1|max:5',
-            'life_stage' => ['nullable', Rule::in(['young', 'adult', 'senior'])],
             'has_aggression_history' => 'nullable|boolean',
             'high_vocalization' => 'nullable|boolean',
             'vaccination_record_status' => 'nullable|string|max:255',
@@ -141,7 +137,6 @@ class PetController extends Controller
             'availability_status' => $validated['status'],
             'branch_id' => $validated['branch_id'] ?? null,
             'medical_needs' => $validated['medical_needs'] ?? null,
-            'life_stage' => $validated['life_stage'] ?? null,
             'has_aggression_history' => $validated['has_aggression_history'] ?? null,
             'aggression_history_verified_at' => ($validated['has_aggression_history'] ?? null) === null ? null : now(),
             'high_vocalization' => $validated['high_vocalization'] ?? null,
@@ -196,7 +191,6 @@ class PetController extends Controller
             'status' => ['required', Rule::enum(AvailabilityStatus::class)],
             'branch_id' => 'nullable|exists:branches,id',
             'medical_needs' => 'nullable|numeric|min:1|max:5',
-            'life_stage' => ['nullable', Rule::in(['young', 'adult', 'senior'])],
             'has_aggression_history' => 'nullable|boolean',
             'high_vocalization' => 'nullable|boolean',
             'vaccination_record_status' => 'nullable|string|max:255',
@@ -244,7 +238,7 @@ class PetController extends Controller
 
         // Explicit unknown selections clear canonical profile data; omitted fields retain it.
         // An unverified legacy aggression "No" remains stored but not trusted until confirmed.
-        foreach (['medical_needs', 'life_stage', 'high_vocalization', 'weight_kg', 'height_cm'] as $field) {
+        foreach (['medical_needs', 'high_vocalization', 'weight_kg', 'height_cm'] as $field) {
             if (array_key_exists($field, $validated)) {
                 $changes[$field] = $validated[$field];
             }
@@ -260,6 +254,7 @@ class PetController extends Controller
         }
 
         $changes['age'] = $age; // Explicit blank clears age; omitted age retains it.
+        $changes['life_stage'] = app(PetLifeStageClassifier::class)->classify($validated['species'], $age);
         $changes = array_replace($changes, app(PetSizeClassifier::class)->changes($pet, $changes));
 
         $updated = Pet::withoutGlobalScope('notArchived')

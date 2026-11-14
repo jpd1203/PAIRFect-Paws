@@ -172,7 +172,8 @@ class MatchingWorkflowTest extends TestCase
             ->assertSee('id="desktopProgressBar"', false);
         $animalPage = $this->get(route('admin.animals.index'))->assertOk();
         $animalPage->assertDontSee('name="physical_size"', false)->assertSee('id="vSize"', false);
-        foreach (['medical_needs', 'life_stage', 'has_aggression_history', 'high_vocalization'] as $field) {
+        $animalPage->assertDontSee('name="life_stage"', false)->assertSee('data-life-stage-output', false);
+        foreach (['medical_needs', 'has_aggression_history', 'high_vocalization'] as $field) {
             $animalPage->assertSee('name="'.$field.'"', false);
         }
         $unassessedPet = $this->matchingPet(['name' => 'Awaiting assessment'], 0);

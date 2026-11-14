@@ -76,6 +76,10 @@
 
             @include('partials.pet-measurement-inputs', ['idPrefix' => 'createPet', 'requireWeight' => true, 'showSize' => true])
 
+              <div class="form-group">
+                  @include('partials.pet-life-stage', ['lifeStageInputId' => 'createLifeStage'])
+              </div>
+
             <div class="form-group">
                 <label for="behavioral_notes">Behavioral Notes</label>
                 <textarea id="behavioral_notes" name="behavioral_notes" rows="3">{{ old('behavioral_notes') }}</textarea>
