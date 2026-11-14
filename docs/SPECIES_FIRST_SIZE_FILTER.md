@@ -8,15 +8,15 @@ Keep species values empty (All Species), Dog, Cat. Size is empty (All Sizes) or 
 
 Examples: `/recommendation/results?species=Dog&size=Medium`, or `/recommendation/results?species=Cat&include_ineligible=1`. Invalid species, unknown category, explanatory labels as values, arrays, wrong types and a nonempty size without a specific species are rejected server-side. The existing prohibited score/vector fields remain prohibited. Controller and direct service calls share the same validation.
 
-No new category thresholds are maintained by the browser. PetSizeClassifier exposes bands and labels derived from its existing integer-gram policy; the same bands supply SQL bounds and minimum ages. The classifier's approved cutoffs, adult ages and classification outcomes are unchanged.
+No category thresholds are maintained by the browser. PetSizeClassifier exposes bands and labels derived from its integer-gram policy; the same bands supply SQL bounds. The current weight-v2 revision removes age as a classification prerequisite while preserving approved weight cutoffs. See WEIGHT_BASED_PET_SIZE.md and CURRENT_WEIGHT_SIZE_REVISION.md.
 
 ## Query and trust
 
-Size-specific queries require exact species/category/status/current rule, a known adult age, positive weight and the requested weight band. Exact string guards prevent MySQL case-insensitive collations from accepting metadata or category spelling that PHP rejects. All range values are parameter-bound and derived from classifier policy.
+Size-specific queries require exact species/category/classified status, a supported rule version, positive weight and the requested weight band. V2 is age-independent; compatible classified v1 adults remain readable under their original age contract. Exact string guards prevent MySQL case-insensitive collations from accepting metadata/category spelling that PHP rejects. All range values are parameter-bound and derived from classifier policy.
 
 Every resulting row must additionally pass Pet::hasClassifiedPhysicalSize() and exact species/category checks before scoring, counting or pagination. SQL is a narrowing step, not permission to trust malformed legacy data. Counts and page boundaries therefore cannot include false-positive historical, stale or inconsistent records. No pre-filter SQL count is used to construct the paginator.
 
-All Sizes deliberately does not add this size-specific restriction. Existing eligible-only default behavior is retained. With include_ineligible=1, juvenile, unknown-age, historical and other ineligible pets retain their existing reasons and no adult size is invented. The flag is preserved on form submission and pagination. Public catalog visibility remains unchanged. A trusted size does not bypass behavioral, safety, availability or other eligibility checks.
+All Sizes deliberately does not add this size-specific restriction. The eligible-only default is retained. With include_ineligible=1, historical/otherwise ineligible pets retain their reasons. Qualified juveniles now appear as eligible; unknown-age pets may classify but missing life stage still fails safety checks. No expected adult size is inferred. The flag remains on form submission/pagination. Public catalog visibility is unchanged. Trusted size never bypasses other eligibility checks.
 
 KNN's formula, six features, numeric mapping, weights, safety filters, scores, sorting, explanations and pagination size are unchanged. There are no schema changes or data writes in this feature.
 
@@ -28,4 +28,4 @@ The native change event resets size to All Sizes whenever species changes, even 
 
 Without JavaScript, server-rendered options and server validation still apply; apply a species selection first to obtain its size options. Automatic reset on an unsent species change requires JavaScript. No form value can bypass the backend trust checks.
 
-Pet intake, questionnaires, handover, delivery, unrelated components and deployment are outside this change. Historical classification requires a separately approved explicit staff measurement-review workflow, which has not been implemented. Ordinary edits cannot provide that attestation (Phase 15B); this filter does not reclassify or backfill records.
+Questionnaires, handover, delivery and unrelated components are unchanged. Ordinary edits retain the Phase 15B historical guard. Explicit fictional-record normalization is available through the separately reviewed current-size command; this filter never reclassifies or backfills records.

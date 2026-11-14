@@ -45,7 +45,8 @@ class SpeciesFirstSizeFilterTest extends TestCase
         $this->signIn();
         $page = $this->get(route('recommendation.results'))->assertOk()
             ->assertSee('for="recommendationSpecies"', false)->assertSee('for="recommendationSize"', false)
-            ->assertSee('aria-describedby="recommendationSizeHelp"', false)->assertSee('aria-live="polite"', false);
+            ->assertSee('aria-describedby="recommendationSizeHelp"', false)->assertSee('aria-live="polite"', false)
+            ->assertSee('Current measured-weight size')->assertDontSee('Adult weight-based size');
         $select = $this->sizeSelect($page->getContent());
         $this->assertStringContainsString('disabled', $select);
         $this->assertSame(1, substr_count($select, '<option'));
@@ -124,7 +125,7 @@ class SpeciesFirstSizeFilterTest extends TestCase
             [['size_rule_version' => 'old-rule']], [['size_rule_version' => 'WEIGHT-V1']],
             [['size_classification_status' => 'Classified']], [['physical_size' => 'medium']],
             [['weight_kg' => '30.000']], [['weight_kg' => null]], [['weight_kg' => '0']], [['weight_kg' => '-1']],
-            [['age' => 23]], [['age' => null]], [['species' => 'Cat']],
+            [['age' => 23, 'size_rule_version' => 'weight-v1']], [['age' => null, 'size_rule_version' => 'weight-v1']], [['species' => 'Cat']],
         ];
     }
 
@@ -149,7 +150,8 @@ class SpeciesFirstSizeFilterTest extends TestCase
         $matcher = app(KnnRecommendationService::class);
         $all = $matcher->recommendPets($profile, preferences: ['species' => 'Dog', 'size' => null], includeIneligible: true);
         $this->assertSame(array_map(fn ($pet) => $pet->id, $pets), $all->pluck('pet.id')->all());
-        $this->assertTrue($all->every(fn ($row) => ! $row['match']->eligible && $row['match']->exclusionReason === 'PET_SIZE_NOT_ASSESSED'));
+        $this->assertTrue($all->take(2)->every(fn ($row) => $row['match']->eligible));
+        $this->assertSame('PET_SIZE_NOT_ASSESSED', $all->last()['match']->exclusionReason);
         $this->actingAs($profile->user)->get(route('recommendation.results', ['species' => 'Dog', 'include_ineligible' => 1]))
             ->assertOk()->assertSee('Young Test Pet')->assertSee('Unknown Age Test Pet')->assertSee('Historical Test Pet')
             ->assertSee(MatchPresenter::reason('PET_SIZE_NOT_ASSESSED'))->assertSee('name="include_ineligible" value="1"', false);
@@ -157,7 +159,7 @@ class SpeciesFirstSizeFilterTest extends TestCase
             app(ApplicationMatchService::class)->refreshPetSummary($pet->fresh());
         }
         $this->get(route('pets.index'))->assertOk()->assertSee('Young Test Pet')->assertSee('Unknown Age Test Pet')->assertSee('Historical Test Pet');
-        $this->assertCount(0, $matcher->recommendPets($profile));
+        $this->assertCount(2, $matcher->recommendPets($profile));
     }
 
     public function test_size_filter_does_not_change_safety_scores_sorting_or_pagination_queries(): void

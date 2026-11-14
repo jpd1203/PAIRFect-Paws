@@ -68,8 +68,8 @@ class WeightBasedPetSizeTest extends TestCase
         $this->actingAs($this->matchingUser(Role::Administrator));
         $base = ['name' => 'Synthetic Age', 'species' => 'Cat', 'status' => 'Assessing', 'weight_kg' => '4.000'];
         $this->post(route('admin.animals.store'), $base + ['age' => 24])->assertSessionHasErrors('age');
-        foreach ([[[], null, 'age_unknown'], [['age_years' => '', 'age_months' => ''], null, 'age_unknown'],
-            [['age_years' => 0, 'age_months' => 0], 0, 'juvenile'], [['age_months' => 11], 11, 'juvenile'],
+        foreach ([[[], null, 'classified'], [['age_years' => '', 'age_months' => ''], null, 'classified'],
+            [['age_years' => 0, 'age_months' => 0], 0, 'classified'], [['age_months' => 11], 11, 'classified'],
             [['age_years' => 1], 12, 'classified']] as [$ageInput, $months, $status]) {
             $this->post(route('admin.animals.store'), $base + $ageInput)->assertSessionHasNoErrors();
             $pet = Pet::latest('id')->first();
@@ -86,8 +86,8 @@ class WeightBasedPetSizeTest extends TestCase
         $this->edit($pet, ['weight_kg' => '9.000', 'physical_size' => 'Extra Large'])->assertSessionHasNoErrors();
         $this->assertSame('Medium', $pet->refresh()->physical_size);
         $this->edit($pet, ['age_years' => 1, 'age_months' => 11])->assertSessionHasNoErrors();
-        $this->assertNull($pet->refresh()->physical_size);
-        $this->assertSame('juvenile', $pet->size_classification_status);
+        $this->assertSame('Medium', $pet->refresh()->physical_size);
+        $this->assertSame('classified', $pet->size_classification_status);
         $this->edit($pet, ['species' => 'Cat', 'weight_kg' => '4.000'])->assertSessionHasNoErrors();
         $this->assertSame('Medium', $pet->refresh()->physical_size);
         $this->assertSame(23, $pet->age);
@@ -95,8 +95,8 @@ class WeightBasedPetSizeTest extends TestCase
         $this->assertSame('Medium', $pet->refresh()->physical_size);
         $this->edit($pet, ['age_years' => '', 'age_months' => ''])->assertSessionHasNoErrors();
         $this->assertNull($pet->refresh()->age);
-        $this->assertNull($pet->physical_size);
-        $this->assertSame('age_unknown', $pet->size_classification_status);
+        $this->assertSame('Medium', $pet->physical_size);
+        $this->assertSame('classified', $pet->size_classification_status);
         $this->edit($pet, ['age_years' => 1, 'age_months' => 0, 'weight_kg' => ''])->assertSessionHasNoErrors();
         $this->assertNull($pet->refresh()->physical_size);
         $this->assertSame('weight_unavailable', $pet->size_classification_status);
@@ -151,9 +151,9 @@ class WeightBasedPetSizeTest extends TestCase
         $page = $this->get(route('pets.index'))->assertOk();
         foreach ($pets as $pet) {
             $page->assertSee($pet->name);
-            $this->assertFalse(Pet::recommendationEligible()->whereKey($pet->id)->exists());
+            $this->assertSame($pet->id !== $pets[2]->id, Pet::recommendationEligible()->whereKey($pet->id)->exists());
         }
-        $this->assertCount(0, app(KnnRecommendationService::class)->recommendPets($this->matchingAdopter()));
+        $this->assertCount(2, app(KnnRecommendationService::class)->recommendPets($this->matchingAdopter()));
     }
 
     public function test_current_numeric_size_changes_refresh_pending_but_not_terminal_matching_history(): void
@@ -196,7 +196,7 @@ class WeightBasedPetSizeTest extends TestCase
         $report = json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR);
         $this->assertTrue($report['dry_run']);
         $this->assertSame(3, $report['total']);
-        $this->assertSame(['classified' => 1, 'age_unknown' => 1, 'juvenile' => 1], $report['proposed_status_counts']);
+        $this->assertSame(['classified' => 3], $report['proposed_status_counts']);
         $this->assertSame('Large', $report['pets'][0]['proposed_size']);
         $this->assertSame($before, DB::table('pets')->orderBy('id')->get()->toJson());
         $this->assertSame(0, AuditLog::count());

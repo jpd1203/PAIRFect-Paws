@@ -31,7 +31,8 @@ class AssessmentKnnIntegrationTest extends TestCase
 
         $pet = Pet::where('name', 'New Intake')->sole();
         $this->assertSame('Assessing', $pet->availability_status->value);
-        foreach (['physical_size', 'medical_needs', 'life_stage', 'has_aggression_history', 'high_vocalization'] as $field) {
+        $this->assertSame('Medium', $pet->physical_size);
+        foreach (['medical_needs', 'life_stage', 'has_aggression_history', 'high_vocalization'] as $field) {
             $this->assertNull($pet->{$field});
         }
         $this->assertNull($pet->aggression_history_verified_at);

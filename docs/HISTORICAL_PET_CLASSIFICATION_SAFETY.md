@@ -1,5 +1,10 @@
 # Phase 15B: historical classification safety
 
+Current-policy note: the text below records Phase 15B. Ordinary-save protections
+remain, but adult-only sizing is superseded by [weight-v2](CURRENT_WEIGHT_SIZE_REVISION.md).
+That revision adds an explicit operator-designated fictional normalization command,
+not a veterinary certification workflow or ordinary-edit bypass.
+
 Phase 15C adds a narrowly allowlisted **fictional prototype fixture** normalization/rehearsal tool, not a measurement certification workflow or a general legacy-save bypass. Ordinary editing protections below remain unchanged. See [the prototype normalization runbook](PROTOTYPE_PET_NORMALIZATION.md) for identities, dry-run/hash guards, disposable-only apply and separately authorized deployment requirements.
 
 ## Enforced backend contract

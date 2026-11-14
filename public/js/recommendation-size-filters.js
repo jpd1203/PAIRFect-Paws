@@ -23,7 +23,7 @@
             size.value = available.some(option => option.value === selectedSize) ? selectedSize : '';
             if (help) {
                 help.textContent = size.disabled ? 'Select Dog or Cat before choosing a size.'
-                    : selectedSpecies + ' adult weight ranges. ' + (changed ? 'Size reset to All Sizes.' : 'Choose All Sizes or a weight category.');
+                    : selectedSpecies + ' current measured-weight ranges, not predicted adult size. ' + (changed ? 'Size reset to All Sizes.' : 'Choose All Sizes or a weight category.');
             }
         }
 

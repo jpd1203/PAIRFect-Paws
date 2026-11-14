@@ -1,59 +1,69 @@
-# Adult weight-based pet size, Phase 11A
+# Current measured-weight pet size
 
-Rule version: `weight-v1`. Application-defined categories, NOT healthy-weight assessments or veterinary diagnoses. Breed, height and life_stage cannot override the calculation.
+Current rule: weight-v2. Species and recorded CURRENT weight determine physical size,
+independently of age/life stage. This is neither expected adult size nor a healthy-weight
+assessment. Breed, height and veterinary exceptions do not override these categories.
 
 | Size | Dogs, kg | Cats, kg | Existing KNN level |
 | --- | --- | --- | --- |
-| Extra Small | 0 < w < 6.5 | 0 < w < 3.0 | 1 |
-| Small | 6.5 <= w < 9.0 | 3.0 <= w < 4.0 | 2 |
-| Medium | 9.0 <= w < 15.0 | 4.0 <= w < 5.0 | 3 |
-| Large | 15.0 <= w < 30.0 | 5.0 <= w < 6.5 | 4 |
-| Extra Large | w >= 30.0 | w >= 6.5 | 5 |
+| Extra Small | 0 < w < 6.5 | 0 < w < 3 | 1 |
+| Small | 6.5 <= w < 9 | 3 <= w < 4 | 2 |
+| Medium | 9 <= w < 15 | 4 <= w < 5 | 3 |
+| Large | 15 <= w < 30 | 5 <= w < 6.5 | 4 |
+| Extra Large | w >= 30 | w >= 6.5 | 5 |
 
-Dogs require known age >=24 months; cats >=12 months. Unknown age is NULL, never inferred from breed or life_stage. Known zero months is juvenile. Existing catalog age-group labels are unchanged and do not determine eligibility. Plain positive DECIMAL(10,3) kilograms are compared as integer grams, never binary floats. Existing technical precision limits apply; no clinical minimum/maximum is invented.
+PetSizeClassifier remains the sole authority, comparing integer grams with the existing
+positive DECIMAL(10,3) input rules. Invalid/missing weight yields no size; unknown age
+does not. Dog 6 months/5kg is Extra Small; dog 18 months/12kg is Medium; cat 8 months/4kg
+is Medium; dog 36 months/20kg is Large. Age is never inferred or altered.
 
-## Writes and age contract
+Life stage and all behavioral, medical, household and availability safeguards remain
+separate. Unknown life stage can still prevent matching for safety-information reasons.
+Forms retain age_years/age_months, canonical stored months, kg/cm units and read-only
+derived size. Model saves and version-checked staff updates use the same classifier.
+New/nonlegacy pets recalculate on changed measurements/species/age. Persisted
+legacy_unclassified cannot be promoted by ordinary edits or forged metadata.
 
-PetSizeClassifier owns thresholds and statuses. New model saves calculate size. Current-policy saves recalculate changed species, age, weight or physical_size. Persisted legacy_unclassified records retain their exact historical size/provenance on every ordinary save, including age/weight edits, pending a separately approved explicit review workflow. Authorized HTTP updates explicitly invoke the same operation before the version-checked query update, which does not run model events. Controller input cannot supply physical_size, metadata or history overrides. No manual/veterinarian exception exists.
+## Version transition and history
 
-The age column remains integer months. Forms submit age_years and age_months (0..11 additional months). Omitted age on updates retains it; both blank fields clear it; a provided component uses zero for an omitted component. The ambiguous old age request field is rejected. The years maximum is a technical signed integer storage bound, not shelter age policy. Historical erroneous/unknown ages cannot be reconstructed automatically.
+The age-independent policy warrants weight-v2; KNN's algorithm version is unchanged.
+Valid CLASSIFIED weight-v1 adults remain trusted on read without writes: exact
+metadata/category/species, original v1 eligible age (dog >=24, cat >=12 months), and
+matching actual weight band are required. These ages are backward-read compatibility
+checks ONLY, not v2 restrictions. A v1 juvenile/age_unknown status, unknown version,
+manual label or inconsistent band is not automatically trusted on deployment.
 
-Read-only size controls show the saved server result/unavailable state and explicitly explain recalculation on save. They submit no size and duplicate no thresholds in JavaScript. Existing form structure/classes and unrelated frontend work are preserved. Auth, status protections, audit logging and optimistic locking remain intact.
+New/changed measurements calculate v2. Explicit normalization upgrades selected
+historical records using existing species/weight only. It preserves the earliest
+legacy_physical_size snapshot, or snapshots the previous manual label when a legacy
+record has no snapshot. No destructive migration, auto-backfill or history rewrite.
+See [implementation and operator runbook](CURRENT_WEIGHT_SIZE_REVISION.md).
 
-## Schema and history
+Metadata/history remain non-mass-assignable; original null history is retained on
+ordinary edits. Age forms still reject the ambiguous legacy age request field.
+No seventh matching dimension, guessed measurements or numeric size fallback exists.
 
-Additive columns: legacy_physical_size (nullable string); size_classification_status (string, default legacy_unclassified); size_rule_version (nullable string, weight-v1 after evaluation).
+## Matching and filters
 
-Evaluated statuses: classified, age_unknown, juvenile, weight_unavailable, unsupported_species. Only current-version classified size consistent with the actual species, age and weight is trusted for matching. Metadata is not mass-assignable from form input.
+Pet::hasClassifiedPhysicalSize() validates stored provenance and recalculated category.
+Size-specific SQL uses server weight bands/exact strings, permitting v2 at any age
+and valid v1 adults. The existing per-row trust check runs before scoring, counting
+and pagination. All Sizes retains include_ineligible behavior. Current size does not
+mean a pet is available for adoption.
 
-The migration snapshots old physical_size into legacy_physical_size, changing NO existing size, age, weight, timestamp, assessment or application score. It never classifies history. Ordinary authorized edits do not establish reviewed measurements or promote historical records. Both historical size fields (including nulls) and provenance are preserved. A future, explicitly authorized review workflow requires separate approval; it does not exist in Phase 15B. Quiet imports/direct SQL intentionally evaluating classification must use the shared changes operation; it preserves persisted legacy provenance too. Merely supplying a historical size does not make a pet eligible. See HISTORICAL_PET_CLASSIFICATION_SAFETY.md for the review boundary and privileged-write limitations.
+Six features, numeric size levels, weights, distances, penalties, scores, sorting,
+pagination, distinct-assessor requirements and terminal history are unchanged.
+Qualified juveniles can match; missing weight, unknown life stage, incomplete
+assessments, safety exclusions and unavailable pets still fail their respective checks.
 
-## Dry-run historical impact report
+FreshStart/Pilot preserve original fictional ages/weights; their three formerly
+age-excluded dogs now classify, making all 15 size candidates. PrototypePetSeeder
+still creates 15 pets/44 assessments: its complete juvenile becomes eligible
+(11 eligible for the seeded profile), unknown-age cat classifies but retains the
+unknown-life-stage safety exclusion, and missing-weight/incomplete/unavailable
+examples remain deliberate. Existing deployed records are NOT assumed to match seeds.
 
-Before proposing any historical reclassification: `php artisan pets:size-impact --json`.
-
-There is deliberately no apply/backfill option. The command includes archived pets and reports current/proposed size/status, eligibility, age and weight by ID. No pets, matching results, audit or notification records are written. Treat actual reports as private operational data.
-
-Synthetic impact example verified in isolated tests:
-
-| Historical input | Old manual size | Proposed result | Action now |
-| --- | --- | --- | --- |
-| Dog, 36 months, 15.000 kg | Small | Large, classified | Report only |
-| Dog, unknown age, 15.000 kg | Small | Unavailable, age_unknown | Staff must verify age |
-| Cat, 11 months, 15.000 kg | Small | Unavailable, juvenile | No adult size |
-
-Actual historical population impact is NOT measured: this task does not access real development/production databases. The trust gate can substantially reduce recommendations until historical profiles are explicitly reviewed, even when manual and proposed labels agree. Public catalog visibility is not subject to this size gate. No automatic historical backfill is authorized.
-
-Migration risks: additive DDL/history-copy UPDATE can lock or scan a large pets table; review backup/maintenance timing. Code requires migration before new requests. Down drops provenance/history columns, does not reverse later authorized classifications, and is not a lossless production rollback. No production/development migration was performed here.
-
-## Matching preservation and Phase 11B contract
-
-KNN formula, six dimensions, weights, numeric size levels, penalties, scoring version, observer and safety rules are unchanged. Mapper supplies NULL for unclassified/stale/invalid size, retaining PET_SIZE_NOT_ASSESSED with a new adult-weight explanation. Same-band edits preserve matching vectors/fingerprints; cross-band/eligibility changes refresh nonterminal applications using the existing service. Terminal score history remains intact. Fully assessed juveniles, unknown-age and historical pets remain browseable under existing availability/archive rules.
-
-Latest main RecommendationController, pagination, include_ineligible behavior and config/matching.php are unchanged. Opt-in MatchingDemoSeeder uses explicit synthetic weights reproducing its former five levels; other historical data/imports are not backfilled.
-
-New fictional DefenseDemo and FreshStart/Pilot records also receive explicit synthetic weights. Existing stored animals are not changed. FreshStart/Pilot retain their original ages: Koko (18 months), Daisy (14) and Tala (10) are juvenile dogs, so all 15 remain fully behavior-assessed/browseable but only 12 meet adult-size matching eligibility. No fake adult ages or manual exceptions are introduced to keep an old recommendation count.
-
-Phase 11B should consume species (Dog/Cat), weight_kg decimal string, age integer months/null, size_classification_status, size_rule_version, and the existing five physical_size names only when trusted. Backend authority is hasClassifiedPhysicalSize(); computed size_display is presentation-friendly. A raw historical physical_size is not proof of current classification. Existing PET_SIZE_NOT_ASSESSED remains the compatibility exclusion contract.
-
-Species-first adopter controls, preference/cross-species filtering changes and any new public API belong to Phase 11B and are NOT implemented. Never invent a numeric fallback, manual override, healthy-weight label or seventh matching dimension.
+pets:size-impact --json stays read-only. The separate opt-in pets:normalize-current-size
+requires explicit IDs and fictional-dataset attestation; apply additionally needs a
+reviewed plan hash, exact DB confirmation and backup reference. No live database was
+inspected or changed. [Frontend handoff](FRONTEND_HANDOFF_WEIGHT_SIZE_REVISION.md).

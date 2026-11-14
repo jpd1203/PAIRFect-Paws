@@ -5,17 +5,20 @@ namespace App\Services;
 use App\Enums\Species;
 use App\Models\Pet;
 
-/** Application-defined adult weight bands; never a healthy-weight assessment. */
+/** Current measured-weight bands; neither adult-size prediction nor a health assessment. */
 final class PetSizeClassifier
 {
-    public const VERSION = 'weight-v1';
+    public const VERSION = 'weight-v2';
+
+    public const COMPATIBLE_VERSIONS = ['weight-v2', 'weight-v1'];
 
     private const BANDS = [
         'Dog' => [6500, 9000, 15000, 30000],
         'Cat' => [3000, 4000, 5000, 6500],
     ];
 
-    private const MINIMUM_AGES = ['Dog' => 24, 'Cat' => 12];
+    // Read compatibility ONLY: v1 could classify adults, never juveniles/unknown ages.
+    public const LEGACY_MINIMUM_AGES = ['Dog' => 24, 'Cat' => 12];
 
     private const SIZES = ['Extra Small', 'Small', 'Medium', 'Large', 'Extra Large'];
 
@@ -34,7 +37,7 @@ final class PetSizeClassifier
             $range = $lower === 0 ? "below {$maximum} kg"
                 : ($maximum === null ? "{$minimum} kg and above" : "{$minimum} to under {$maximum} kg");
             $bands[$size] = ['minimum_kg' => $minimum, 'maximum_kg' => $maximum,
-                'minimum_age_months' => self::MINIMUM_AGES[$species], 'label' => "{$size} ({$range})"];
+                'label' => "{$size} ({$range})"];
             $lower = $upper ?? $lower;
         }
 
@@ -60,13 +63,11 @@ final class PetSizeClassifier
         return (string) intdiv($grams, 1000).($fraction === '' ? '' : '.'.$fraction);
     }
 
-    public function classify(Species|string|null $species, mixed $weightKg, ?int $ageMonths): array
+    public function classify(Species|string|null $species, mixed $weightKg, ?int $ageMonths = null): array
     {
         $species = $species instanceof Species ? $species->value : $species;
         $status = match (true) {
             ! isset(self::BANDS[$species ?? '']) => 'unsupported_species',
-            $ageMonths === null || $ageMonths < 0 => 'age_unknown',
-            $ageMonths < self::MINIMUM_AGES[$species] => 'juvenile',
             default => 'classified',
         };
         $grams = $this->grams($weightKg);
@@ -120,7 +121,11 @@ final class PetSizeClassifier
     {
         return ! $this->requiresHistoricalReview($pet)
             && $pet->size_classification_status === 'classified'
-            && $pet->size_rule_version === self::VERSION
+            && ($pet->size_rule_version === self::VERSION
+                || ($pet->size_rule_version === 'weight-v1'
+                    && $pet->age !== null
+                    && isset(self::LEGACY_MINIMUM_AGES[$pet->getAttributes()['species'] ?? ''])
+                    && $pet->age >= self::LEGACY_MINIMUM_AGES[$pet->getAttributes()['species']]))
             && $pet->physical_size !== null
             && $this->classify($pet->getAttributes()['species'] ?? null, $pet->getAttributes()['weight_kg'] ?? null, $pet->age)['physical_size'] === $pet->physical_size;
     }

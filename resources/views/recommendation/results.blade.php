@@ -37,7 +37,7 @@
             </div>
 
             <div class="select-wrapper">
-                <label for="recommendationSize" class="sr-only">Adult weight-based size</label>
+                <label for="recommendationSize" class="sr-only">Current measured-weight size</label>
                 <select id="recommendationSize" name="size" class="rounded border p-2" aria-describedby="recommendationSizeHelp" @disabled($selectedSpecies === '')>
                     <option value="">All Sizes</option>
                     @foreach ($sizeOptionsBySpecies[$selectedSpecies] ?? [] as $option)
@@ -47,7 +47,7 @@
                 <i class="fa-solid fa-chevron-down select-arrow"></i>
             </div>
         </div>
-        <p id="recommendationSizeHelp" class="sr-only" aria-live="polite">{{ $selectedSpecies === '' ? 'Select Dog or Cat before choosing a size.' : $selectedSpecies.' adult weight ranges. All Sizes includes other size and classification states when ineligible pets are requested.' }}</p>
+        <p id="recommendationSizeHelp" class="sr-only" aria-live="polite">{{ $selectedSpecies === '' ? 'Select Dog or Cat before choosing a size.' : $selectedSpecies.' current measured-weight ranges, not predicted adult size. All Sizes includes other classification states when ineligible pets are requested.' }}</p>
         <button class="btn btn-primary flex items-center gap-2" type="submit">
             <i class="fa-solid fa-filter text-xs"></i>
             <span>Apply Filters</span>

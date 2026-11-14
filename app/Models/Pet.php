@@ -105,7 +105,7 @@ class Pet extends Model
             ->whereHas('assessmentRecords', fn (Builder $records) => $records->whereNotNull('responses'))
             ->whereNotNull('medical_needs')
             ->where('size_classification_status', 'classified')
-            ->where('size_rule_version', PetSizeClassifier::VERSION)
+            ->whereIn('size_rule_version', PetSizeClassifier::COMPATIBLE_VERSIONS)
             ->whereIn('physical_size', ['Extra Small', 'Small', 'Medium', 'Large', 'Extra Large'])
             ->whereIn('life_stage', ['young', 'adult', 'senior'])
             ->whereNotNull('has_aggression_history')
@@ -113,7 +113,7 @@ class Pet extends Model
             ->whereNotNull('high_vocalization');
     }
 
-    /** A size filter means current adult classification, not a historical label. */
+    /** A size filter means trusted current-weight classification, not a historical label. */
     public function scopeWithClassifiedSize(Builder $query, string $species, string $size): Builder
     {
         $band = app(PetSizeClassifier::class)->bandsFor($species)[$size] ?? null;
@@ -121,13 +121,18 @@ class Pet extends Model
             return $query->whereRaw('1 = 0');
         }
         foreach (['species' => $species, 'physical_size' => $size,
-            'size_classification_status' => 'classified', 'size_rule_version' => PetSizeClassifier::VERSION] as $column => $value) {
+            'size_classification_status' => 'classified'] as $column => $value) {
             // Exact PHP strings must not become case-insensitive on MySQL.
             $query->where('pets.'.$column, $value)
                 ->whereRaw('HEX(pets.'.$column.') = ?', [strtoupper(bin2hex($value))]);
         }
-        $query->where('pets.age', '>=', $band['minimum_age_months'])
-            ->where('pets.weight_kg', $band['minimum_kg'] === '0' ? '>' : '>=', $band['minimum_kg']);
+        $query->where(function (Builder $rules) use ($species): void {
+            $rules->whereRaw('HEX(pets.size_rule_version) = ?', [strtoupper(bin2hex(PetSizeClassifier::VERSION))])
+                ->orWhere(function (Builder $legacy) use ($species): void {
+                    $legacy->whereRaw('HEX(pets.size_rule_version) = ?', [strtoupper(bin2hex('weight-v1'))])
+                        ->where('pets.age', '>=', PetSizeClassifier::LEGACY_MINIMUM_AGES[$species]);
+                });
+        })->where('pets.weight_kg', $band['minimum_kg'] === '0' ? '>' : '>=', $band['minimum_kg']);
         if ($band['maximum_kg'] !== null) {
             $query->where('pets.weight_kg', '<', $band['maximum_kg']);
         }
@@ -186,11 +191,12 @@ class Pet extends Model
         }
 
         return match ($this->size_classification_status) {
-            'juvenile' => 'Unavailable: not yet eligible for adult size',
-            'age_unknown' => 'Unavailable: age is unknown',
-            'weight_unavailable' => 'Unavailable: measured weight is missing or invalid',
+            'juvenile', 'age_unknown', 'legacy_unclassified' => "This pet's current-weight size classification has not yet been updated.",
+            'weight_unavailable' => ($this->getAttributes()['weight_kg'] ?? null) === null
+                ? "Current physical size cannot be calculated because the pet's measured weight is unavailable."
+                : 'Current physical size requires a valid measured weight.',
             'unsupported_species' => 'Unavailable: unsupported species',
-            default => 'Unavailable: classification needs staff review',
+            default => "This pet's current-weight size classification has not yet been updated.",
         };
     }
 

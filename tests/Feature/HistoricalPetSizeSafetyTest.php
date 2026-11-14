@@ -257,6 +257,6 @@ class HistoricalPetSizeSafetyTest extends TestCase
         }
         $this->get(route('pets.index'))->assertOk()->assertSee($legacy->name);
         $this->assertSame($snapshots, $terminals->map(fn ($application) => $application->fresh()->getAttributes())->all());
-        $this->assertSame('weight-v1', $trusted[0]->size_rule_version);
+        $this->assertSame(PetSizeClassifier::VERSION, $trusted[0]->size_rule_version);
     }
 }

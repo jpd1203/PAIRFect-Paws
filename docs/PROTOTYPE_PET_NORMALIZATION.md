@@ -1,5 +1,13 @@
 # Phase 15C: fictional prototype pet normalization
 
+Current-policy note: fixture audit counts below describe the original Phase 15C
+snapshot. Under [weight-v2](CURRENT_WEIGHT_SIZE_REVISION.md), the complete juvenile
+fixture is eligible (11, formerly 10), and all 15 FreshStart/Pilot pets classify.
+The unknown-age fixture now has size but still lacks safety-required life stage.
+The new current-size command uses recorded measurements ONLY; the older manifest
+repair command below can restore fictional age/weight inputs and is NOT the upgrade
+procedure for existing records. Never substitute it for current-size normalization.
+
 This is test-data preparation, not veterinary certification, a healthy-weight assessment or a staff measurement-attestation workflow. Fictional inputs may be assigned intentionally. Actual deployed contents have NOT been inspected and must not be assumed to match any seeder.
 
 ## Fixture audit and recommended sources

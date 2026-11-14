@@ -84,7 +84,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="p-3 rounded-xl border border-gray-200 bg-white">
                 <span class="text-xs text-gray-500 block">Physical Size</span>
-                <span class="text-sm font-semibold text-gray-800">{{ $animal->physical_size ?: 'Not recorded' }}</span>
+                <span class="text-sm font-semibold text-gray-800">{{ $animal->size_display }}</span>
             </div>
             <div class="p-3 rounded-xl border border-gray-200 bg-white">
                 <span class="text-xs text-gray-500 block">Medical Needs Level</span>

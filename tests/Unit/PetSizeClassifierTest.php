@@ -32,15 +32,12 @@ class PetSizeClassifierTest extends TestCase
         $result = (new PetSizeClassifier)->classify($species, $weight, 24);
         $this->assertSame($expected, $result['physical_size']);
         $this->assertSame('classified', $result['size_classification_status']);
-        $this->assertSame('weight-v1', $result['size_rule_version']);
+        $this->assertSame('weight-v2', $result['size_rule_version']);
     }
 
     public static function unavailable(): array
     {
         return [
-            ['Dog', '9', 23, 'juvenile'], ['Cat', '4', 11, 'juvenile'],
-            ['Dog', '9', null, 'age_unknown'], ['Cat', '4', null, 'age_unknown'],
-            ['Dog', '9', 0, 'juvenile'], ['Dog', '9', -1, 'age_unknown'],
             ['Bird', '9', 24, 'unsupported_species'], [null, '9', 24, 'unsupported_species'],
             ...array_map(fn ($weight) => ['Dog', $weight, 24, 'weight_unavailable'], [null, '', 0, -1, 'NaN', NAN, INF, '1e2', '6.5001', [], true, '10000000']),
         ];
@@ -54,10 +51,14 @@ class PetSizeClassifierTest extends TestCase
         $this->assertSame($status, $result['size_classification_status']);
     }
 
-    public function test_exact_adult_eligibility_boundaries(): void
+    public function test_age_does_not_determine_current_physical_size(): void
     {
         $classifier = new PetSizeClassifier;
         $this->assertSame('Medium', $classifier->classify('Dog', '9.000', 24)['physical_size']);
         $this->assertSame('Medium', $classifier->classify('Cat', '4.000', 12)['physical_size']);
+        foreach ([null, -1, 0, 6, 8, 11, 18, 23, 24, 36] as $age) {
+            $this->assertSame('Medium', $classifier->classify('Dog', '9.000', $age)['physical_size']);
+            $this->assertSame('Medium', $classifier->classify('Cat', '4.000', $age)['physical_size']);
+        }
     }
 }

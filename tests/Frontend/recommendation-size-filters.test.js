@@ -37,12 +37,13 @@ test('All Species only offers All Sizes and disables the size control', () => {
 
 test('restored query parameters select raw category values using species-specific server labels', () => {
     for (const selected of ['Dog', 'Cat']) {
-        const { species, size } = fixture('?species=' + selected + '&size=Medium');
+        const { species, size, help } = fixture('?species=' + selected + '&size=Medium');
         assert.equal(species.value, selected);
         assert.equal(size.disabled, false);
         assert.equal(size.value, 'Medium');
         assert.equal(size.options[2].textContent, policy[selected][1].label);
         assert.equal(size.options[2].value, 'Medium');
+        assert.match(help.textContent, /current measured-weight ranges, not predicted adult size/);
     }
 });
 

@@ -11,7 +11,7 @@ class PetSizeImpact extends Command
 {
     protected $signature = 'pets:size-impact {--json : Output the dry-run report as JSON}';
 
-    protected $description = 'Preview adult weight-based size classifications without changing pets or matching records';
+    protected $description = 'Preview current-weight size classifications without changing pets or matching records';
 
     public function handle(PetSizeClassifier $classifier): int
     {

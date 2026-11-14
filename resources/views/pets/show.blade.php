@@ -171,7 +171,7 @@
                     </div>
                     <div class="flex justify-between p-2">
                         <dt class="text-gray-500">Physical Size</dt>
-                        <dd class="text-right font-medium text-gray-900">{{ $pet->physical_size ?: 'Unknown' }}</dd>
+                        <dd class="text-right font-medium text-gray-900">{{ $pet->size_display }}</dd>
                     </div>
                     <div class="flex justify-between p-2"><dt class="text-gray-500">Weight</dt><dd class="text-right font-medium text-gray-900">{{ $pet->weight_display }}</dd></div>
                     <div class="flex justify-between p-2"><dt class="text-gray-500">Height</dt><dd class="text-right font-medium text-gray-900">{{ $pet->height_display }}</dd></div>

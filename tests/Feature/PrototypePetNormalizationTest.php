@@ -72,11 +72,11 @@ class PrototypePetNormalizationTest extends TestCase
         $this->assertDatabaseCount('assessment_records', 44);
         $profile = User::where('email', 'prototype-adopter@example.test')->sole()->adopterProfile;
         $matcher = app(KnnRecommendationService::class);
-        $this->assertCount(10, $matcher->recommendPets($profile));
+        $this->assertCount(11, $matcher->recommendPets($profile));
         foreach (['Dog', 'Cat'] as $species) {
             foreach (array_keys(config('matching.size_levels')) as $size) {
                 $matches = $matcher->recommendPets($profile, preferences: ['species' => $species, 'size' => $size]);
-                $this->assertCount(1, $matches);
+                $this->assertCount($species === 'Dog' && $size === 'Medium' ? 2 : 1, $matches);
                 $pet = $matches->first()['pet'];
                 $this->assertTrue($pet->hasClassifiedPhysicalSize());
                 $this->assertSame($species, $pet->species->value);
@@ -86,14 +86,15 @@ class PrototypePetNormalizationTest extends TestCase
         }
         $all = $matcher->recommendPets($profile, includeIneligible: true);
         $this->assertCount(15, $all);
-        foreach (['dog-juvenile' => 'PET_SIZE_NOT_ASSESSED', 'cat-age-unknown' => 'PET_SIZE_NOT_ASSESSED',
+        $this->assertTrue($all->first(fn ($row) => $row['pet']->name === PrototypePetFixtures::pets()['dog-juvenile']['pet']['name'])['match']->eligible);
+        foreach (['cat-age-unknown' => 'SAFETY_INFORMATION_INCOMPLETE',
             'dog-weight-missing' => 'PET_SIZE_NOT_ASSESSED', 'cat-incomplete' => 'PET_PROFILE_INCOMPLETE',
             'dog-unavailable' => 'PET_UNAVAILABLE'] as $key => $reason) {
             $row = $all->first(fn ($row) => $row['pet']->name === PrototypePetFixtures::pets()[$key]['pet']['name']);
             $this->assertFalse($row['match']->eligible);
             $this->assertSame($reason, $row['match']->exclusionReason);
         }
-        $this->assertSame(['juvenile' => 1, 'age_unknown' => 1, 'weight_unavailable' => 1],
+        $this->assertSame(['weight_unavailable' => 1],
             Pet::where('size_classification_status', '!=', 'classified')->get()->countBy('size_classification_status')->all());
         Mail::assertNothingSent();
         Mail::assertNothingQueued();
@@ -318,8 +319,8 @@ class PrototypePetNormalizationTest extends TestCase
         $before = $this->snapshot(['assessment_records']);
         $normalizer = app(PrototypePetNormalizer::class);
         $this->assertSame(30, $normalizer->apply($normalizer->plan()['plan_hash'], $this->confirmation())['changed']);
-        $this->assertSame(24, Pet::recommendationEligible()->count());
-        $this->assertSame(6, Pet::where('size_classification_status', 'juvenile')->whereNull('physical_size')->count());
+        $this->assertSame(30, Pet::recommendationEligible()->count());
+        $this->assertSame(0, Pet::where('size_classification_status', 'juvenile')->count());
         $this->assertSame($before, $this->snapshot(array_keys($before)));
     }
 
@@ -347,9 +348,9 @@ class PrototypePetNormalizationTest extends TestCase
         $normalizer = app(PrototypePetNormalizer::class);
         $this->assertSame(15, $normalizer->apply($normalizer->plan()['plan_hash'], $this->confirmation())['changed']);
         $profile = User::where('email', 'prototype-adopter@example.test')->sole()->adopterProfile;
-        $this->assertCount(10, app(KnnRecommendationService::class)->recommendPets($profile));
-        $this->assertSame(1, Pet::where('size_classification_status', 'juvenile')->whereNull('physical_size')->count());
-        $this->assertSame(1, Pet::where('size_classification_status', 'age_unknown')->whereNull('physical_size')->count());
+        $this->assertCount(11, app(KnnRecommendationService::class)->recommendPets($profile));
+        $this->assertSame(0, Pet::where('size_classification_status', 'juvenile')->count());
+        $this->assertSame(0, Pet::where('size_classification_status', 'age_unknown')->count());
         $this->assertSame(1, Pet::where('size_classification_status', 'weight_unavailable')->whereNull('physical_size')->count());
         $this->assertDatabaseCount('assessment_records', 44);
         $this->assertSame(15, Pet::where('legacy_physical_size', 'Small')->count());
