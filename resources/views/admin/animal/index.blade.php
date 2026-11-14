@@ -204,6 +204,8 @@
             'description' => $p->description,
             'physical_size' => $p->physical_size, 'medical_needs' => $p->medical_needs,
             'size_display' => $p->size_display,
+            'size_classification_status' => $p->size_classification_status,
+            'has_classified_size' => $p->hasClassifiedPhysicalSize(),
             'weight_kg' => $p->weight_kg, 'height_cm' => $p->height_cm,
             'life_stage' => $p->life_stage,
             'has_aggression_history' => $p->aggression_history_verified_at === null ? null : $p->has_aggression_history,

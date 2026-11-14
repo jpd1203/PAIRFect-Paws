@@ -15,6 +15,7 @@ use App\Services\Matching\ApplicationMatchService;
 use App\Services\PetLifeStageClassifier;
 use App\Services\PetSizeClassifier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -196,6 +197,7 @@ class PetController extends Controller
             'vaccination_record_status' => 'nullable|string|max:255',
             'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
             'version' => 'required|integer',
+            'review_current_size' => 'sometimes|boolean',
         ]);
 
         $submittedVersion = (int) $validated['version'];
@@ -255,12 +257,41 @@ class PetController extends Controller
 
         $changes['age'] = $age; // Explicit blank clears age; omitted age retains it.
         $changes['life_stage'] = app(PetLifeStageClassifier::class)->classify($validated['species'], $age);
-        $changes = array_replace($changes, app(PetSizeClassifier::class)->changes($pet, $changes));
+        $classifier = app(PetSizeClassifier::class);
+        $changes = array_replace($changes, $classifier->changes($pet, $changes));
+        $reviewedHistoricalSize = $request->boolean('review_current_size') && $classifier->requiresHistoricalReview($pet);
+        if ($reviewedHistoricalSize) {
+            $weightForReview = array_key_exists('weight_kg', $changes) ? $changes['weight_kg'] : $pet->weight_kg;
+            $classification = $classifier->classify($validated['species'], $weightForReview);
+            if ($classification['size_classification_status'] !== 'classified') {
+                return back()->withErrors([
+                    'review_current_size' => 'Enter a valid measured weight before updating this historical size.',
+                ])->withInput();
+            }
+            $changes = array_replace($changes, $classification, [
+                'legacy_physical_size' => $pet->getRawOriginal('legacy_physical_size')
+                    ?? $pet->getRawOriginal('physical_size'),
+            ]);
+        }
 
-        $updated = Pet::withoutGlobalScope('notArchived')
-            ->where('id', $pet->id)
-            ->where('version', $submittedVersion)
-            ->update($changes);
+        $updated = DB::transaction(function () use ($pet, $submittedVersion, $changes, $reviewedHistoricalSize): int {
+            $affected = Pet::withoutGlobalScope('notArchived')
+                ->where('id', $pet->id)
+                ->where('version', $submittedVersion)
+                ->update($changes);
+            if ($affected === 1 && $reviewedHistoricalSize) {
+                AuditLogService::log(
+                    auth()->id(),
+                    'Reviewed Historical Current Size',
+                    'Pet',
+                    $pet->id,
+                    "Verified recorded species/weight for current-size classification; "
+                        ."preserved original size history; rule ".PetSizeClassifier::VERSION
+                );
+            }
+
+            return $affected;
+        });
 
         if ($updated === 0) {
             return back()->withErrors([
@@ -279,7 +310,9 @@ class PetController extends Controller
         );
 
         return redirect()->route('admin.animals.index')
-            ->with('success', 'Pet updated successfully.');
+            ->with('success', $reviewedHistoricalSize
+                ? 'Pet updated. Current physical size calculated from the recorded weight; original size history preserved.'
+                : 'Pet updated successfully.');
     }
 
     /**

@@ -103,7 +103,17 @@ function openViewAnimalModal(id) {
     setVal('vVacc', a.vacc);
     setVal('vStatus', a.status);
     setVal('vMedical', a.medical_needs);
-    setVal('vSize', a.size_display ?? 'Unavailable: classification needs staff review');
+    const requiresSizeReview = a.size_classification_status === 'legacy_unclassified';
+    setVal('vSize', a.has_classified_size ? a.physical_size : (requiresSizeReview ? 'Needs size review' : 'Not calculated'));
+    const reviewContainer = document.getElementById('vSizeReviewContainer');
+    const reviewCheckbox = document.getElementById('vSizeReview');
+    reviewContainer?.classList.toggle('hidden', !requiresSizeReview);
+    if (reviewCheckbox) {
+        reviewCheckbox.checked = false;
+        reviewCheckbox.disabled = !requiresSizeReview;
+    }
+    const measuredWeight = document.getElementById('vWeightKg');
+    if (measuredWeight) measuredWeight.required = false;
     setVal('vWeightKg', a.weight_kg);
     setVal('vHeightCm', a.height_cm);
     document.getElementById('viewAnimalForm')?.dispatchEvent?.(new Event('pairfect:pet-fields-loaded'));
@@ -172,6 +182,10 @@ function openViewAnimalModal(id) {
 
 // Initialize interactive listeners on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('vSizeReview')?.addEventListener('change', event => {
+        const weight = document.getElementById('vWeightKg');
+        if (weight) weight.required = event.currentTarget.checked;
+    });
     // Switch to relevant tab if a hidden required input fails validation
     document.addEventListener(
         'invalid',

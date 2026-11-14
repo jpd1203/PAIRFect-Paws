@@ -1,1 +1,1 @@
-<p class="mt-1 text-xs text-gray-500">Current physical size is calculated from species and measured weight, regardless of age. Life stage is separate. A puppy or kitten's current size does not predict adult size. Breed and height do not change the result. Historical labels require an explicit classification update. These application-defined categories are not healthy-weight assessments.</p>
+<p class="mt-1 text-xs text-gray-500">Based on species and measured weight, not age or expected adult size. Older records need a one-time size review.</p>

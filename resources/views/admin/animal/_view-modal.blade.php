@@ -153,6 +153,14 @@
 
                         <div class="form-group">
                             @include('partials.pet-calculated-size', ['sizeInputId' => 'vSize', 'sizePet' => null])
+                            <div id="vSizeReviewContainer" class="hidden mt-2">
+                                <label class="flex items-start gap-2 text-sm text-gray-700" for="vSizeReview">
+                                    <input id="vSizeReview" type="checkbox" name="review_current_size" value="1" disabled>
+                                    <span>Verify recorded weight and calculate current size when saving.</span>
+                                </label>
+                                <p class="mt-1 text-xs text-gray-500">The original manual size remains in history.</p>
+                                @error('review_current_size')<p class="text-sm text-red-700" role="alert">{{ $message }}</p>@enderror
+                            </div>
                         </div>
 
                         <div class="form-group">

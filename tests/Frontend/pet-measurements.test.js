@@ -7,8 +7,8 @@ const source = readFileSync(new URL('../../public/js/admin/animal.js', import.me
 
 function fixture() {
     const animals = [
-        { id: 1, species: 'Dog', physical_size: 'Medium', size_display: 'Medium', weight_kg: '12.500', height_cm: '38.125' },
-        { id: 2, species: 'Cat', physical_size: 'Extra Large', size_display: 'Unavailable: classification needs staff review', weight_kg: null, height_cm: null },
+        { id: 1, species: 'Dog', physical_size: 'Medium', size_display: 'Medium', has_classified_size: true, size_classification_status: 'classified', weight_kg: '12.500', height_cm: '38.125' },
+        { id: 2, species: 'Cat', physical_size: 'Extra Large', size_display: 'Unavailable: classification needs staff review', has_classified_size: false, size_classification_status: 'legacy_unclassified', weight_kg: null, height_cm: null },
         { id: 3, species: 'Dog', physical_size: 'Large', weight_kg: '12.500', height_cm: null },
     ];
     const fields = Object.fromEntries(['vSpecies', 'vSize', 'vWeightKg', 'vHeightCm'].map(id => [id, { value: '' }]));
@@ -41,14 +41,14 @@ test('switching to a historical pet clears prior measurements instead of fabrica
     open(2);
     assert.equal(fields.vWeightKg.value, '');
     assert.equal(fields.vHeightCm.value, '');
-    assert.equal(fields.vSize.value, 'Unavailable: classification needs staff review');
+    assert.equal(fields.vSize.value, 'Needs size review');
     assert.equal(fields.vSpecies.value, 'Cat');
 });
 
 test('raw historical size is never shown as a current calculated result', () => {
     const { fields, open } = fixture();
     open(3);
-    assert.equal(fields.vSize.value, 'Unavailable: classification needs staff review');
+    assert.equal(fields.vSize.value, 'Not calculated');
 });
 
 test('calculated size has no submitted name or editable selector', () => {
