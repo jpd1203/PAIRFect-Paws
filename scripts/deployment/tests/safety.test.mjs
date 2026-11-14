@@ -22,26 +22,26 @@ const evidence = () => ({ release_sha: sha, migration_digest: digest, deployed_s
     evidence: Object.fromEntries(keys.map(k => [k, { reference: 'private-evidence/' + k, sha256: digest }])) });
 const workflow = readFileSync(new URL('../../../.github/workflows/master_pairfectpaws.yml', import.meta.url), 'utf8');
 const conditions = [...workflow.matchAll(/^    if: (github.event_name[^\n]+)/gm)].map(m => m[1]);
-for (const [event, ref, release, repo, expected] of [
-    ['push', 'master', sha, repository, false],
-    ['pull_request', 'master', sha, repository, false],
-    ['pull_request_target', 'master', sha, repository, false],
-    ['workflow_dispatch', 'main', sha, repository, false],
-    ['workflow_dispatch', 'feature/demo', sha, repository, false],
-    ['workflow_dispatch', 'master', 'd'.repeat(40), repository, false],
-    ['workflow_dispatch', 'master', sha, 'someone/fork', false],
-    ['workflow_dispatch', 'master', sha, repository, true],
+for (const [event, ref, release, repo, autoDeployExpected, manualGateExpected] of [
+    ['push', 'master', sha, repository, true, false],
+    ['pull_request', 'master', sha, repository, false, false],
+    ['pull_request_target', 'master', sha, repository, false, false],
+    ['workflow_dispatch', 'main', sha, repository, false, false],
+    ['workflow_dispatch', 'master', sha, repository, false, true],
+    ['push', 'main', sha, repository, false, false],
+    ['push', 'master', sha, 'someone/fork', false, false],
 ]) test('Actual workflow guards: ' + [event, ref, release[0], repo].join('/'), () => {
     assert.equal(conditions.length, 2);
     const github = { event_name: event, ref: 'refs/heads/' + ref, sha, repository: repo, run_attempt: 1 };
     const inputs = { release_sha: release };
     for (const condition of conditions) {
-        assert.equal(Function('github', 'inputs', 'return (' + condition + ')')(github, inputs), expected);
+        assert.equal(Function('github', 'inputs', 'return (' + condition + ')')(github, inputs), autoDeployExpected);
     }
-    assert.equal(allowedEvent(event, github.ref, sha, release, repo), expected);
+    // Retained gate helpers describe the stricter manual-deployment policy, not this pilot workflow.
+    assert.equal(allowedEvent(event, github.ref, sha, release, repo), manualGateExpected);
 });
-test('Reruns cannot reuse a previous run approval or deploy artifact', () => {
-    const github = { event_name: 'workflow_dispatch', ref: 'refs/heads/master', sha,
+test('Reruns cannot repeat an automatic deployment', () => {
+    const github = { event_name: 'push', ref: 'refs/heads/master', sha,
         repository, run_attempt: 2 };
     for (const condition of conditions) {
         assert.equal(Function('github', 'inputs', 'return (' + condition + ')')(github, { release_sha: sha }), false);
@@ -76,9 +76,11 @@ test('Validation dependencies, permissions and serial database suite order', () 
     assert.ok(workflow.indexOf('npm run build') < workflow.indexOf('php artisan test'));
     assert.ok(workflow.indexOf('Complete SQLite') < workflow.indexOf('Complete MySQL'));
     assert.ok(workflow.includes('cancel-in-progress: false'));
-    assert.ok(workflow.includes('environment: prototype-existing-site'));
+    assert.ok(!workflow.includes('environment: prototype-existing-site'));
+    assert.ok(workflow.includes('Reject superseded master release before activation'));
+    assert.ok(workflow.includes('SITE_URL: https://pairfectpaws.app'));
     assert.ok(!/migrate:fresh|queue:retry|workflow_call|pull_request_target/.test(workflow));
-    assert.equal((workflow.match(/node scripts\/deployment\/gate.mjs remote/g) ?? []).length, 2);
+    assert.equal((workflow.match(/node scripts\/deployment\/gate.mjs remote/g) ?? []).length, 0);
     assert.ok(workflow.includes("clean: 'false'"));
 });
 test('Complete exact-release evidence accepted structurally', () => {
