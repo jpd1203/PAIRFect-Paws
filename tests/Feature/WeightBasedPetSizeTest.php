@@ -102,23 +102,23 @@ class WeightBasedPetSizeTest extends TestCase
         $this->assertSame('weight_unavailable', $pet->size_classification_status);
     }
 
-    public function test_existing_manual_history_requires_explicit_review_even_after_measurement_edits(): void
+    public function test_existing_manual_history_is_preserved_when_measurements_recalculate_size(): void
     {
         $pet = $this->historical();
         $this->assertFalse($pet->hasClassifiedPhysicalSize());
         $this->actingAs($this->matchingUser(Role::Administrator));
-        $this->edit($pet, ['weight_kg' => '15.000'])->assertSessionHasNoErrors();
-        $this->assertSame('Small', $pet->refresh()->physical_size);
+        $this->edit($pet, ['weight_kg' => '9.000'])->assertSessionHasNoErrors();
+        $this->assertSame('Medium', $pet->refresh()->physical_size);
         $this->assertSame('Small', $pet->legacy_physical_size);
-        $this->assertSame('legacy_unclassified', $pet->size_classification_status);
-        $this->assertFalse($pet->hasClassifiedPhysicalSize());
+        $this->assertSame('classified', $pet->size_classification_status);
+        $this->assertTrue($pet->hasClassifiedPhysicalSize());
         $this->edit($pet, ['weight_kg' => '30.000', 'legacy_physical_size' => 'forged'])->assertSessionHasNoErrors();
-        $this->assertSame('Small', $pet->refresh()->physical_size);
+        $this->assertSame('Extra Large', $pet->refresh()->physical_size);
         $this->assertSame('Small', $pet->legacy_physical_size);
         $this->assertSame('30.000', $pet->weight_kg);
-        $this->assertSame('legacy_unclassified', $pet->size_classification_status);
-        $this->assertNull($pet->size_rule_version);
-        $this->assertFalse($pet->hasClassifiedPhysicalSize());
+        $this->assertSame('classified', $pet->size_classification_status);
+        $this->assertSame(PetSizeClassifier::VERSION, $pet->size_rule_version);
+        $this->assertTrue($pet->hasClassifiedPhysicalSize());
     }
 
     public function test_raw_unclassified_history_and_stale_classifications_cannot_enter_knn(): void

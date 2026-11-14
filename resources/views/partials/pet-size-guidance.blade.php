@@ -1,1 +1,1 @@
-<p class="mt-1 text-xs text-gray-500">Based on species and measured weight, not age or expected adult size. Older records need a one-time size review.</p>
+<p class="mt-1 text-xs text-gray-500">Size updates on save when species or measured weight changes, regardless of age. Life stage is separate. These are not healthy-weight assessments or expected adult sizes. Original size history is preserved.</p>

@@ -41,7 +41,7 @@ test('switching to a historical pet clears prior measurements instead of fabrica
     open(2);
     assert.equal(fields.vWeightKg.value, '');
     assert.equal(fields.vHeightCm.value, '');
-    assert.equal(fields.vSize.value, 'Needs size review');
+    assert.equal(fields.vSize.value, 'Not calculated');
     assert.equal(fields.vSpecies.value, 'Cat');
 });
 

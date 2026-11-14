@@ -32,27 +32,24 @@ function openPet(pet) {
     return element;
 }
 
-test('legacy pet gets short size status and one-time review control', () => {
+test('legacy pet gets short size status without a review control', () => {
     const e = openPet({ id: 1, name: 'Maple', species: 'Cat', weight_kg: '3.000',
         size_classification_status: 'legacy_unclassified', has_classified_size: false,
         size_display: 'This pet has a very long historical classification message' });
-    assert.equal(e('vSize').value, 'Needs size review');
-    assert.equal(e('vSizeReviewContainer').classList.contains('hidden'), false);
-    assert.equal(e('vSizeReview').disabled, false);
-    assert.equal(e('vSizeReview').checked, false);
+    assert.equal(e('vSize').value, 'Not calculated');
+    assert.equal(e('vWeightKg').value, '3.000');
+    assert.doesNotMatch(modal, /review_current_size|vSizeReview/);
 });
 
-test('trusted pet shows its calculated size and cannot submit a stale review', () => {
+test('trusted pet shows its server-calculated size', () => {
     const e = openPet({ id: 2, name: 'Milo', species: 'Dog', weight_kg: '12.000',
         physical_size: 'Medium', size_classification_status: 'classified', has_classified_size: true });
     assert.equal(e('vSize').value, 'Medium');
-    assert.equal(e('vSizeReviewContainer').classList.contains('hidden'), true);
-    assert.equal(e('vSizeReview').disabled, true);
 });
 
-test('review input is explicit and size remains unsubmitted/read-only', () => {
-    assert.match(modal, /name="review_current_size" value="1" disabled/);
+test('size remains unsubmitted/read-only and requires no verification checkbox', () => {
+    assert.doesNotMatch(modal + sizeField + script, /review_current_size|vSizeReview/);
     assert.match(sizeField, /readonly/);
     assert.doesNotMatch(sizeField, /name="physical_size"/);
-    assert.match(sizeField, /Needs size review/);
+    assert.match(sizeField, /Not calculated/);
 });

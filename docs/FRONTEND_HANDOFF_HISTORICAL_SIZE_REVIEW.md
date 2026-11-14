@@ -1,5 +1,9 @@
 # Frontend handoff — historical current-size review in Pet Management
 
+> Superseded by `FRONTEND_HANDOFF_PHASE_AUTOMATIC_SIZE.md`: staff no longer need
+> a review checkbox. A genuine species or measured-weight change recalculates size
+> on save; unrelated edits continue to preserve historical classification.
+
 ## User-visible correction
 
 In the existing staff **Animal Profile → Health & Status** modal, the read-only size

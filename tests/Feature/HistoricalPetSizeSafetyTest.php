@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
+use RuntimeException;
 use Tests\Concerns\BuildsMatchingFixtures;
 use Tests\TestCase;
 
@@ -63,9 +64,7 @@ class HistoricalPetSizeSafetyTest extends TestCase
             'photo' => [['photo_path' => 'synthetic/replacement.jpg']],
             'availability' => [['availability_status' => 'Assessing']],
             'age' => [['age' => 48]],
-            'weight' => [['weight_kg' => '30.000']],
-            'age and weight' => [['age' => 48, 'weight_kg' => '30.000']],
-            'species' => [['species' => 'Cat', 'age' => 12, 'weight_kg' => '6.500']],
+            'equivalent weight' => [['weight_kg' => '12']],
             'manual size' => [['physical_size' => 'Extra Large']],
             'metadata only' => [['size_classification_status' => 'classified', 'size_rule_version' => 'weight-v1', 'legacy_physical_size' => 'Extra Large']],
         ];
@@ -89,8 +88,7 @@ class HistoricalPetSizeSafetyTest extends TestCase
             'cosmetic' => [['name' => 'Synthetic correction', 'description' => 'Corrected story']],
             'availability' => [['status' => 'Assessing']],
             'age' => [['age_years' => 4, 'age_months' => 0]],
-            'weight' => [['weight_kg' => '30.000']],
-            'age and weight' => [['age_years' => 4, 'weight_kg' => '30.000']],
+            'equivalent weight' => [['weight_kg' => '12']],
             'forged history' => [['physical_size' => 'Extra Large', 'size_classification_status' => 'classified', 'size_rule_version' => 'weight-v1', 'legacy_physical_size' => 'Extra Large']],
         ];
     }
@@ -114,7 +112,7 @@ class HistoricalPetSizeSafetyTest extends TestCase
         $this->assertSame(2, (int) $pet->version);
         $this->assertDatabaseHas('audit_logs', ['action' => 'Updated Animal Profile', 'entity_id' => $pet->id]);
         if (isset($changes['weight_kg'])) {
-            $this->assertSame($changes['weight_kg'], $pet->weight_kg);
+            $this->assertEquals((float) $changes['weight_kg'], (float) $pet->weight_kg);
         }
         if (isset($changes['age_years'])) {
             $this->assertSame(48, $pet->age);
@@ -131,13 +129,12 @@ class HistoricalPetSizeSafetyTest extends TestCase
         Storage::disk('public')->assertExists($pet->photo_path);
     }
 
-    public function test_explicit_staff_size_review_uses_recorded_weight_and_preserves_manual_history(): void
+    public function test_staff_measurement_edit_recalculates_size_without_review_and_preserves_manual_history(): void
     {
         $pet = $this->legacy(['physical_size' => 'Extra Large', 'legacy_physical_size' => 'Small']);
         $this->actingAs($this->matchingUser(Role::Administrator));
 
         $this->edit($pet, [
-            'review_current_size' => '1',
             'weight_kg' => '3.000',
             'species' => 'Cat',
             'physical_size' => 'Extra Large', // Forged browser value must not override the classifier.
@@ -151,7 +148,7 @@ class HistoricalPetSizeSafetyTest extends TestCase
         $this->assertTrue($pet->hasClassifiedPhysicalSize());
         $this->assertSame(2, (int) $pet->version);
         $this->assertDatabaseHas('audit_logs', [
-            'action' => 'Reviewed Historical Current Size', 'entity_id' => $pet->id,
+            'action' => 'Recalculated Historical Current Size', 'entity_id' => $pet->id,
         ]);
 
         // Subsequent normal measurement edits use the established automatic policy.
@@ -160,22 +157,21 @@ class HistoricalPetSizeSafetyTest extends TestCase
         $this->assertSame('Small', $pet->fresh()->legacy_physical_size);
     }
 
-    public function test_explicit_review_with_missing_weight_refuses_promotion_and_audit(): void
+    public function test_missing_weight_does_not_fabricate_a_classification(): void
     {
         $pet = $this->legacy();
         DB::table('pets')->where('id', $pet->id)->update(['weight_kg' => null]);
         $pet->refresh();
-        $before = $pet->getAttributes();
+        $before = $this->history($pet);
         $this->actingAs($this->matchingUser(Role::Volunteer));
 
-        $this->edit($pet, ['review_current_size' => '1', 'weight_kg' => null])
-            ->assertSessionHasErrors('review_current_size');
+        $this->edit($pet, ['weight_kg' => null])->assertSessionHasNoErrors();
 
-        $this->assertSame($before, $pet->fresh()->getAttributes());
-        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertProtected($pet, $before);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'Recalculated Historical Current Size']);
     }
 
-    public function test_stale_explicit_review_cannot_change_persisted_history(): void
+    public function test_stale_measurement_edit_cannot_change_persisted_history(): void
     {
         $pet = $this->legacy();
         $this->actingAs($this->matchingUser(Role::Administrator));
@@ -184,23 +180,24 @@ class HistoricalPetSizeSafetyTest extends TestCase
         $before = $pet->fresh()->getAttributes();
         $audits = AuditLog::count();
 
-        $this->edit($pet, ['version' => $staleVersion, 'review_current_size' => '1'])
+        $this->edit($pet, ['version' => $staleVersion, 'weight_kg' => '30.000'])
             ->assertSessionHasErrors('concurrency');
 
         $this->assertSame($before, $pet->fresh()->getAttributes());
         $this->assertSame($audits, AuditLog::count());
     }
 
-    public function test_explicit_review_requires_staff_authorization_and_is_available_in_staff_edit(): void
+    public function test_measurement_changes_require_staff_authorization_and_edit_has_no_review_checkbox(): void
     {
         $pet = $this->legacy();
         $this->actingAs($this->matchingUser(Role::Adopter));
-        $this->edit($pet, ['review_current_size' => '1'])->assertRedirect();
+        $this->edit($pet, ['weight_kg' => '30.000'])->assertRedirect();
         $this->assertSame('legacy_unclassified', $pet->fresh()->size_classification_status);
 
         $this->actingAs($this->matchingUser(Role::Administrator));
         $this->get(route('admin.pets.edit', $pet))->assertOk()
-            ->assertSee('Verify recorded weight and calculate current size when saving.');
+            ->assertSee('Size updates on save when species or measured weight changes')
+            ->assertDontSee('name="review_current_size"', false);
     }
 
     public function test_original_provenance_cannot_be_forged_before_trust_check_or_direct_classification_write(): void
@@ -212,24 +209,27 @@ class HistoricalPetSizeSafetyTest extends TestCase
             'size_rule_version' => PetSizeClassifier::VERSION, 'legacy_physical_size' => 'Extra Large'];
         $pet->forceFill($forged);
         $this->assertFalse($pet->hasClassifiedPhysicalSize());
-        $changes = array_replace($forged, ['age' => 48, 'weight_kg' => '30.000']);
+        $changes = array_replace($forged, ['age' => 48, 'weight_kg' => '12.000']);
         $protected = $classifier->changes($pet, $changes);
         $this->assertSame($before, array_intersect_key($protected, array_flip(self::HISTORY)));
         $this->assertSame(1, DB::table('pets')->where('id', $pet->id)->where('version', $pet->version)
             ->update(array_replace($changes, $protected, ['version' => $pet->version + 1])));
         $this->assertProtected($pet, $before);
-        $this->assertSame('30.000', $pet->weight_kg);
+        $this->assertSame('12.000', $pet->weight_kg);
         $this->assertSame(48, $pet->age);
     }
 
-    public function test_model_update_and_update_or_create_cannot_promote_history(): void
+    public function test_model_update_and_update_or_create_recalculate_on_weight_changes(): void
     {
         $pet = $this->legacy();
-        $before = $this->history($pet);
         $pet->update(['age' => 48, 'weight_kg' => '30.000']);
-        $this->assertProtected($pet, $before);
+        $this->assertTrue($pet->refresh()->hasClassifiedPhysicalSize());
+        $this->assertSame('Extra Large', $pet->physical_size);
+        $this->assertSame('Small', $pet->legacy_physical_size);
         Pet::updateOrCreate(['id' => $pet->id], ['name' => 'Synthetic updated import', 'weight_kg' => '15.000']);
-        $this->assertProtected($pet, $before);
+        $this->assertTrue($pet->refresh()->hasClassifiedPhysicalSize());
+        $this->assertSame('Large', $pet->physical_size);
+        $this->assertSame('Small', $pet->legacy_physical_size);
     }
 
     public static function historicalValues(): array
@@ -247,7 +247,7 @@ class HistoricalPetSizeSafetyTest extends TestCase
         $pet = $this->legacy($values);
         $before = $this->history($pet);
         $this->actingAs($this->matchingUser(Role::Administrator));
-        $this->edit($pet, ['age_years' => 4, 'weight_kg' => '30.000'])->assertSessionHasNoErrors();
+        $this->edit($pet, ['age_years' => 4])->assertSessionHasNoErrors();
         $this->assertProtected($pet, $before);
     }
 
@@ -314,7 +314,7 @@ class HistoricalPetSizeSafetyTest extends TestCase
         ]));
         $snapshots = $terminals->map(fn ($application) => $application->fresh()->getAttributes())->all();
         $this->actingAs($this->matchingUser(Role::Administrator));
-        $this->edit($legacy, ['age_years' => 4, 'weight_kg' => '30.000'])->assertSessionHasNoErrors();
+        $this->edit($legacy, ['age_years' => 4])->assertSessionHasNoErrors();
         $this->assertFalse($legacy->refresh()->hasClassifiedPhysicalSize());
         $this->assertSame($before, $matcher->recommendPets($profile)->map(fn ($row) => $row['match']->toArray())->all());
         $all = $matcher->recommendPets($profile, preferences: ['species' => 'Dog'], includeIneligible: true);
@@ -330,5 +330,106 @@ class HistoricalPetSizeSafetyTest extends TestCase
         $this->get(route('pets.index'))->assertOk()->assertSee($legacy->name);
         $this->assertSame($snapshots, $terminals->map(fn ($application) => $application->fresh()->getAttributes())->all());
         $this->assertSame(PetSizeClassifier::VERSION, $trusted[0]->size_rule_version);
+    }
+
+    public static function measurementChanges(): array
+    {
+        return [
+            'weight only' => [['weight_kg' => '30.000'], 'Extra Large'],
+            'species only' => [['species' => 'Cat'], 'Extra Large'],
+            'juvenile' => [['age' => 2, 'weight_kg' => '7.000'], 'Small'],
+            'unknown age' => [['age' => null, 'weight_kg' => '7.000'], 'Small'],
+            'cleared weight' => [['weight_kg' => null], null],
+        ];
+    }
+
+    #[DataProvider('measurementChanges')]
+    public function test_model_measurement_changes_use_classifier_and_preserve_original_snapshot(array $changes, ?string $size): void
+    {
+        $pet = $this->legacy(['physical_size' => 'Large', 'legacy_physical_size' => null]);
+        $pet->forceFill(array_replace($changes, [
+            'physical_size' => 'Medium', 'legacy_physical_size' => 'forged',
+            'size_rule_version' => 'forged',
+        ]))->save();
+
+        $pet->refresh();
+        $this->assertSame($size, $pet->physical_size);
+        $this->assertSame('Large', $pet->legacy_physical_size);
+        $this->assertSame(PetSizeClassifier::VERSION, $pet->size_rule_version);
+        $this->assertSame($size !== null, $pet->hasClassifiedPhysicalSize());
+        $this->assertSame($size === null ? 'weight_unavailable' : 'classified', $pet->size_classification_status);
+    }
+
+    public function test_staff_species_only_change_uses_existing_weight(): void
+    {
+        $pet = $this->legacy();
+        $this->actingAs($this->matchingUser(Role::Volunteer));
+        $this->edit($pet, ['species' => 'Cat'])->assertSessionHasNoErrors();
+        $this->assertTrue($pet->refresh()->hasClassifiedPhysicalSize());
+        $this->assertSame('Extra Large', $pet->physical_size);
+        $this->assertSame('Small', $pet->legacy_physical_size);
+    }
+
+    public function test_invalid_weight_cannot_change_history_or_generate_audit(): void
+    {
+        $pet = $this->legacy();
+        $before = $pet->getAttributes();
+        $this->actingAs($this->matchingUser(Role::Administrator));
+        $this->edit($pet, ['weight_kg' => '-1'])->assertSessionHasErrors('weight_kg');
+        $this->assertSame($before, $pet->fresh()->getAttributes());
+        $this->assertDatabaseCount('audit_logs', 0);
+    }
+
+    public function test_forged_review_checkbox_does_not_promote_unchanged_measurements(): void
+    {
+        $pet = $this->legacy();
+        $before = $this->history($pet);
+        $this->actingAs($this->matchingUser(Role::Administrator));
+        $this->edit($pet, ['review_current_size' => '1', 'weight_kg' => '12'])->assertSessionHasNoErrors();
+        $this->assertProtected($pet, $before);
+    }
+
+    public function test_recalculation_enables_size_filter_without_rewriting_terminal_applications_and_repeated_save_is_safe(): void
+    {
+        $profile = $this->matchingAdopter();
+        $pet = $this->legacy();
+        $terminal = AdoptionApplication::create([
+            'user_id' => $profile->user_id, 'pet_id' => $pet->id, 'status' => 'Rejected',
+            'knn_score' => 88, 'compatibility_result' => ['synthetic' => 'historical decision'],
+        ]);
+        $before = $terminal->fresh()->getAttributes();
+        $this->actingAs($this->matchingUser(Role::Administrator));
+        $this->edit($pet, ['weight_kg' => '7.000'])->assertSessionHasNoErrors();
+        $pet->refresh();
+        $this->assertSame([$pet->id], app(KnnRecommendationService::class)
+            ->recommendPets($profile, preferences: ['species' => 'Dog', 'size' => 'Small'])->pluck('pet.id')->all());
+        $this->assertSame($before, $terminal->fresh()->getAttributes());
+
+        $this->edit($pet, ['weight_kg' => '7'])->assertSessionHasNoErrors();
+        $this->assertSame('Small', $pet->fresh()->legacy_physical_size);
+        $this->assertSame(1, AuditLog::where('action', 'Recalculated Historical Current Size')->count());
+    }
+
+    public function test_recalculation_rolls_back_if_its_audit_cannot_be_saved(): void
+    {
+        $pet = $this->legacy();
+        $before = $pet->getAttributes();
+        $this->actingAs($this->matchingUser(Role::Administrator));
+        $this->withoutExceptionHandling();
+        AuditLog::creating(function (AuditLog $log): void {
+            if ($log->action === 'Recalculated Historical Current Size') {
+                throw new RuntimeException('synthetic recalculation audit failure');
+            }
+        });
+        try {
+            $this->edit($pet, ['weight_kg' => '30.000']);
+            $this->fail('The audit failure must abort the measurement update.');
+        } catch (RuntimeException $e) {
+            $this->assertSame('synthetic recalculation audit failure', $e->getMessage());
+        } finally {
+            AuditLog::flushEventListeners();
+        }
+        $this->assertSame($before, $pet->fresh()->getAttributes());
+        $this->assertDatabaseCount('audit_logs', 0);
     }
 }

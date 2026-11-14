@@ -91,7 +91,7 @@ class CurrentWeightSizeRevisionTest extends TestCase
         $this->assertStringContainsString('valid measured weight', $invalid->size_display);
         $historical = $this->historical();
         $this->assertStringContainsString('has not yet been updated', $historical->size_display);
-        $historical->update(['weight_kg' => '20', 'size_classification_status' => 'classified', 'size_rule_version' => 'weight-v2']);
+        $historical->update(['size_classification_status' => 'classified', 'size_rule_version' => 'weight-v2']);
         $this->assertFalse($historical->fresh()->hasClassifiedPhysicalSize());
     }
 
@@ -211,6 +211,11 @@ class CurrentWeightSizeRevisionTest extends TestCase
         } catch (RuntimeException $e) {
             $this->assertStringContainsString('stale', $e->getMessage());
         }
+        $this->assertSame($before, $pet->fresh()->getAttributes());
+        // The weight edit now classifies that pet. Use two still-historical records
+        // to exercise rollback after the normalizer's second audit fails.
+        $pet = $this->historical();
+        $before = $pet->getAttributes();
         $second = $this->historical();
         $secondBefore = $second->getAttributes();
         $plan = $normalizer->plan([$pet->id, $second->id], CurrentWeightSizeNormalizer::DATASET);

@@ -88,7 +88,7 @@ final class PetSizeClassifier
         return ['physical_size' => $size, 'size_classification_status' => $status, 'size_rule_version' => self::VERSION];
     }
 
-    /** Persisted provenance, not editable attributes, defines the review boundary. */
+    /** Persisted provenance identifies records that have not yet been recalculated. */
     public function requiresHistoricalReview(Pet $pet): bool
     {
         return $pet->exists && $pet->getRawOriginal('size_classification_status') === 'legacy_unclassified';
@@ -97,8 +97,14 @@ final class PetSizeClassifier
     /** Same operation for model events and the version-checked query-builder path. */
     public function changes(Pet $pet, array $overrides = []): array
     {
-        if ($this->requiresHistoricalReview($pet)) {
-            // Ordinary saves are not an attestation that historical measurements were reviewed.
+        $values = array_replace($pet->getAttributes(), $overrides);
+        $historical = $this->requiresHistoricalReview($pet);
+        $species = $values['species'] ?? null;
+        $species = $species instanceof Species ? $species->value : $species;
+        $measurementChanged = $species !== $pet->getRawOriginal('species')
+            || $this->grams($values['weight_kg'] ?? null) !== $this->grams($pet->getRawOriginal('weight_kg'));
+        if ($historical && ! $measurementChanged) {
+            // Unrelated edits and equivalent weight formatting must not promote old data.
             return [
                 'physical_size' => $pet->getRawOriginal('physical_size'),
                 'legacy_physical_size' => $pet->getRawOriginal('legacy_physical_size'),
@@ -107,11 +113,10 @@ final class PetSizeClassifier
             ];
         }
 
-        $values = array_replace($pet->getAttributes(), $overrides);
         $result = $this->classify($values['species'] ?? null, $values['weight_kg'] ?? null,
             isset($values['age']) ? (int) $values['age'] : null);
-        if ($pet->exists && ($pet->size_classification_status === 'legacy_unclassified' || $pet->size_rule_version === null)) {
-            $result['legacy_physical_size'] = $pet->legacy_physical_size ?? $pet->getRawOriginal('physical_size');
+        if ($pet->exists && ($historical || $pet->getRawOriginal('size_rule_version') === null)) {
+            $result['legacy_physical_size'] = $pet->getRawOriginal('legacy_physical_size') ?? $pet->getRawOriginal('physical_size');
         }
 
         return $result;

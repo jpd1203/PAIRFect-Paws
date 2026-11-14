@@ -162,9 +162,14 @@ class PrototypePetNormalizationTest extends TestCase
         $this->assertSame($result['applied'][0]['changes'], $notes['changes']);
         $this->assertSame(0, $normalizer->apply($normalizer->plan()['plan_hash'], $this->confirmation())['changed']);
         $this->assertSame(1, AuditLog::where('action', 'Normalized Prototype Pet Fixture')->count());
-        // Unrecognized legacy records still cannot be promoted through ordinary saves.
-        $unknown->update(['age' => 36, 'weight_kg' => '12.000']);
+        // The fixture tool does not touch unknown records. Unrelated saves still
+        // preserve history; a later explicit weight change uses the normal policy.
+        $unknown->update(['age' => 36]);
         $this->assertFalse($unknown->refresh()->hasClassifiedPhysicalSize());
+        $unknown->update(['weight_kg' => '12.000']);
+        $this->assertTrue($unknown->refresh()->hasClassifiedPhysicalSize());
+        $this->assertSame('Medium', $unknown->physical_size);
+        $this->assertSame('Small', $unknown->legacy_physical_size);
     }
 
     public function test_stale_plan_rolls_back_without_audit_or_fixture_changes(): void
