@@ -28,6 +28,7 @@ class Handover extends Model
         'staff_name',
         'courier',
         'tracking_number',
+        'tracking_url',
         'proof_name',
         'proof_path',
         'proof_url',
@@ -45,7 +46,32 @@ class Handover extends Model
         'reopen_reason',
         'reminders',
         'history',
+        'scheduled_method', 'scheduled_start_at', 'scheduled_end_at', 'schedule_status',
+        'schedule_version', 'schedule_confirmed_at', 'schedule_confirmed_by_user_id',
+        'reschedule_options', 'reschedule_reason', 'reschedule_status', 'reschedule_requested_at',
+        'reschedule_reviewed_at', 'reschedule_reviewed_by_user_id',
+        'schedule_24h_reminder_sent_at', 'schedule_2h_reminder_sent_at', 'receipt_reminder_sent_at',
+        'follow_up_flagged_at', 'missed_pickup_notified_at',
     ];
+
+    protected $hidden = [
+        'tracking_url', 'delivery_readiness_notes', 'delivery_address_fingerprint',
+        'delivery_readiness_destination_fingerprint', 'delivery_readiness_schedule_fingerprint',
+    ];
+
+    protected static function booted(): void
+    {
+        static::updating(function (Handover $handover): void {
+            if ($handover->isDirty('adopter_address')) {
+                $handover->forceFill([
+                    'delivery_address_status' => null, 'delivery_address_fingerprint' => null,
+                    'delivery_address_verified_by_user_id' => null, 'delivery_address_verified_at' => null,
+                    'delivery_recipient_available' => null,
+                    'delivery_clearance_version' => (int) $handover->delivery_clearance_version + 1,
+                ]);
+            }
+        });
+    }
 
     protected function casts(): array
     {
@@ -58,6 +84,15 @@ class Handover extends Model
             'reminders' => 'array',
             'history' => 'array',
             'reopen_count' => 'integer',
+            'scheduled_start_at' => 'datetime', 'scheduled_end_at' => 'datetime',
+            'schedule_confirmed_at' => 'datetime', 'schedule_version' => 'integer',
+            'reschedule_options' => 'array', 'reschedule_requested_at' => 'datetime',
+            'reschedule_reviewed_at' => 'datetime', 'schedule_24h_reminder_sent_at' => 'datetime',
+            'schedule_2h_reminder_sent_at' => 'datetime', 'receipt_reminder_sent_at' => 'datetime',
+            'follow_up_flagged_at' => 'datetime', 'missed_pickup_notified_at' => 'datetime',
+            'delivery_clearance_version' => 'integer', 'delivery_address_verified_at' => 'datetime',
+            'delivery_contacted_at' => 'datetime', 'delivery_recipient_available' => 'boolean',
+            'delivery_readiness_schedule_version' => 'integer', 'delivery_readiness_release_attempt' => 'integer',
         ];
     }
 
@@ -84,6 +119,29 @@ class Handover extends Model
     public function releaseHandledBy()
     {
         return $this->belongsTo(User::class, 'release_handled_by_user_id');
+    }
+
+    public function canSelectScheduleMethod(): bool
+    {
+        return $this->schedule_status === 'unscheduled'
+            && $this->scheduled_start_at === null
+            && $this->scheduled_end_at === null
+            && $this->schedule_confirmed_at === null
+            && $this->schedule_confirmed_by_user_id === null
+            && $this->reschedule_status !== 'pending'
+            && $this->released_at === null
+            && $this->adopter_outcome === null
+            && $this->received_at === null;
+    }
+
+    public function deliveryAddressVerifiedBy()
+    {
+        return $this->belongsTo(User::class, 'delivery_address_verified_by_user_id');
+    }
+
+    public function deliveryContactedBy()
+    {
+        return $this->belongsTo(User::class, 'delivery_contacted_by_user_id');
     }
 
     public function ensureCanRelease(): void
@@ -122,6 +180,11 @@ class Handover extends Model
     public function notifications()
     {
         return $this->hasMany(HandoverNotification::class)->latest();
+    }
+
+    public function transportIncidents()
+    {
+        return $this->hasMany(HandoverTransportIncident::class)->orderByDesc('id');
     }
 
     /**
@@ -183,7 +246,7 @@ class Handover extends Model
     {
         if ($this->adopter_outcome === 'not_received') {
             return [
-                'label' => 'Delivery failed',
+                'label' => 'Not received - requires investigation',
                 'class' => 'badge-rejected',
                 'border' => 'border-status-danger-text',
                 'icon' => 'fa-solid fa-triangle-exclamation',
@@ -238,6 +301,7 @@ class Handover extends Model
     {
         $petName = $this->pet?->name ?? 'your pet';
         $methodLabel = $this->release_method_label;
+        $hasLiveTracking = $this->release_method === 'delivery' && filled($this->tracking_url);
 
         $defaults = match ($kind) {
             'prepared' => [
@@ -249,14 +313,16 @@ class Handover extends Model
             ],
             'released' => [
                 'title' => "{$petName} has been released via {$methodLabel}",
-                'body' => "Please confirm once {$petName} is with you — your adoption is not complete until you confirm receipt.",
+                'body' => $hasLiveTracking
+                    ? "{$petName} is on the way. Live courier tracking is available from your Handover Status page. Confirm receipt once {$petName} is safely with you."
+                    : "Please confirm once {$petName} is with you — your adoption is not complete until you confirm receipt.",
                 'channels' => ['In-app', 'Email', 'SMS'],
-                'action_label' => 'Confirm receipt',
-                'action_url' => route('adopter.confirm', $this),
+                'action_label' => $hasLiveTracking ? 'View handover status' : 'Confirm receipt',
+                'action_url' => route($hasLiveTracking ? 'adopter.handover.status' : 'adopter.confirm', $this),
             ],
             'reminder' => [
                 'title' => "Reminder: Please confirm receipt of {$petName}",
-                'body' => "It has been several days since {$petName} was released. Please confirm receipt so post-adoption check-ins can begin.",
+                'body' => "Please review {$petName}'s handover and confirm receipt once your pet has arrived so post-adoption check-ins can begin.",
                 'channels' => ['In-app', 'SMS'],
                 'action_label' => 'Confirm receipt',
                 'action_url' => route('adopter.confirm', $this),

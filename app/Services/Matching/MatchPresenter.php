@@ -30,7 +30,7 @@ final class MatchPresenter
         return match ($reason) {
             'ADOPTER_PROFILE_INCOMPLETE' => 'Complete the personality and household profile before calculating compatibility.',
             'PET_PROFILE_INCOMPLETE' => 'The pet needs three distinct observers and complete behavioral scores.',
-            'PET_SIZE_NOT_ASSESSED' => 'The pet needs a veterinary-assessed physical size before matching.',
+            'PET_SIZE_NOT_ASSESSED' => 'Adult weight-based size is unavailable. Staff must verify age and measured weight; dogs must be at least 24 months and cats at least 12 months. Historical size labels alone cannot be used for matching.',
             'MEDICAL_NEEDS_NOT_ASSESSED' => 'The pet needs a veterinary-assessed medical-needs level before matching.',
             'SAFETY_INFORMATION_INCOMPLETE' => 'The pet needs verified life stage and shelter safety information before matching.',
             'PET_UNAVAILABLE' => 'The pet is not currently available for matching.',

@@ -2,7 +2,6 @@
     $outcome = $record->adopter_outcome;
     $isReceived = ($outcome === 'received');
     $isFailed = ($outcome === 'not_received');
-    $days = $record->days_waiting ?? 0;
     $reminders = $record->reminders ?? [];
     $lastReminder = count($reminders) > 0 ? end($reminders) : null;
 @endphp
@@ -35,13 +34,13 @@
                     @elseif ($isFailed)
                         Adopter says the pet never arrived
                     @else
-                        Waiting on adopter &middot; {{ $days }} {{ $days === 1 ? 'day' : 'days' }}
+                        Waiting on adopter receipt confirmation
                     @endif
                 </p>
 
                 @if ($outcome)
                     <p class="mt-1 text-xs text-text-muted m-0">
-                        {{ $record->adopter_confirmed_at ? $record->adopter_confirmed_at->format('M j, Y · g:i A') : 'Recorded' }}
+                        {{ $record->adopter_confirmed_at ? \App\Support\ManilaTime::format($record->adopter_confirmed_at, 'M j, Y · g:i A') : 'Recorded' }}
                     </p>
                     @if ($record->adopter_note)
                         <p class="mt-2 rounded-lg bg-white/90 border border-[#e2ddd7] px-3 py-2 text-xs italic text-text-dark m-0">
@@ -54,11 +53,7 @@
                 @else
                     <p class="mt-1 text-xs text-text-muted m-0">
                         Confirmation request sent to {{ $record->adopter_phone }} and {{ $record->adopter_email }}.
-                        @if ($days >= 2)
-                            <span class="font-bold text-status-processing-text">A reminder is due now.</span>
-                        @else
-                            Automatic reminder after 2 days of no response.
-                        @endif
+                        Delivery follow-up uses the confirmed window: receipt reminder after one hour, staff follow-up after three hours.
                     </p>
                 @endif
             </div>
@@ -74,7 +69,7 @@
                             @if (count($reminders) === 0)
                                 No reminders sent yet.
                             @else
-                                {{ count($reminders) }} sent &middot; last {{ date('M j, g:i A', strtotime($lastReminder['at'])) }} ({{ $lastReminder['channel'] }})
+                                {{ count($reminders) }} sent &middot; last {{ \App\Support\ManilaTime::parseAndFormat($lastReminder['at'] ?? null, 'M j, g:i A', 'Time not available') }} ({{ $lastReminder['channel'] }})
                             @endif
                         </p>
                     </div>
@@ -122,7 +117,7 @@
                             </label>
                             <textarea id="reopen-reason" name="reason" rows="2" required
                                       class="form-control"
-                                      placeholder="e.g. Delivery failed — courier could not complete handover">{{ $isFailed ? 'Delivery failed — adopter reported pet not received' : '' }}</textarea>
+                                      placeholder="e.g. Staff reviewed the reported delivery issue and agreed to arrange a new handover">{{ $isFailed ? 'Adopter reported pet not received - requires investigation' : '' }}</textarea>
                         </div>
                         
                         <div class="flex justify-end gap-2">

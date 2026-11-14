@@ -85,6 +85,7 @@
             <div class="review-container" id="rInterviewContainer" style="display: none;">
                 <div class="review-section" id="rInterviewSection">
                     <h6>Interview</h6>
+                    <div class="review-row"><span>Staff-assisted Identity Verification</span><a class="btn btn-secondary btn-sm" id="rIdentityLink" href="#">Review / Verify Identity</a></div>
                     <div class="review-row"><span>Interview Date</span><span id="rInterviewDate"></span></div>
                     <div class="review-row"><span>Conducted By</span><span id="rConductedBy"></span></div>
                     <div class="review-row" id="rInterviewModeRow"><span>Interview Type</span><span id="rInterviewMode"></span></div>

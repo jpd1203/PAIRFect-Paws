@@ -43,7 +43,11 @@
         </div>
 
         <div class="flex flex-col gap-1.5 mt-3">
-            <button type="button" class="btn btn-secondary cursor-pointer" onclick="openPetModal({{ $pet->id }})">View</button>
+            @if (auth()->check())
+                <button type="button" class="btn btn-secondary cursor-pointer" onclick="openPetModal({{ $pet->id }})">View</button>
+            @else
+                <a class="btn btn-secondary" href="{{ route('pets.show', ['pet' => $pet, 'from' => 'matching']) }}" onclick="if (typeof openPetModal === 'function') { event.preventDefault(); openPetModal({{ $pet->id }}); }">View</a>
+            @endif
             @if (! $result['eligible'])
                 <button type="button" class="btn btn-adoptMe text-center opacity-50 cursor-not-allowed" disabled>Ineligible to adopt</button>
             @elseif (auth()->check() && auth()->user()->isAdopter() && auth()->user()->hasVerifiedEmail())

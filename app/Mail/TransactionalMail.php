@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Mail\Concerns\UsesResendIdempotency;
+use App\Services\HandoverMailOutboxService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -21,6 +22,37 @@ class TransactionalMail extends Mailable implements ShouldBeEncrypted, ShouldQue
 
     /** @var list<int> */
     public array $backoff = [60, 300, 900];
+
+    public ?int $handoverOutboxId = null;
+
+    public ?string $handoverOutboxToken = null;
+
+    public function forHandoverOutbox(int $id, string $token, string $key): static
+    {
+        $this->handoverOutboxId = $id;
+        $this->handoverOutboxToken = $token;
+        $this->initializeDeliveryIdempotency('pairfectpaws-handover-'.$key);
+
+        return $this;
+    }
+
+    public function send($mailer)
+    {
+        if ($this->handoverOutboxId !== null) {
+            return app(HandoverMailOutboxService::class)->deliver(
+                $this->handoverOutboxId, $this->handoverOutboxToken, fn () => parent::send($mailer),
+            );
+        }
+
+        return parent::send($mailer);
+    }
+
+    public function failed(\Throwable $exception): void
+    {
+        if ($this->handoverOutboxId !== null) {
+            app(HandoverMailOutboxService::class)->failed($this->handoverOutboxId, $this->handoverOutboxToken, $exception);
+        }
+    }
 
     /**
      * @param  list<string>  $lines

@@ -57,14 +57,14 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Age*</label>
+                            <label class="form-label">Age (blank if unknown)</label>
                             <div class="flex gap-2">
                                 <div class="relative flex-1">
-                                    <input type="number" name="age_years" min="0" max="30" class="form-control pr-8" placeholder="0" required>
+                                    <input type="number" name="age_years" min="0" max="30" class="form-control pr-8" placeholder="0">
                                     <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium pointer-events-none">yrs</span>
                                 </div>
                                 <div class="relative flex-1">
-                                    <input type="number" name="age_months" min="0" max="11" class="form-control pr-8" placeholder="0" required>
+                                    <input type="number" name="age_months" min="0" max="11" class="form-control pr-8" placeholder="0">
                                     <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium pointer-events-none">mos</span>
                                 </div>
                             </div>
@@ -162,17 +162,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Physical Size</label>
-                            <div class="select-wrapper">
-                                <select name="physical_size" class="form-select">
-                                    <option value="">Not yet veterinary-assessed</option>
-                                    @foreach (array_keys(config('matching.size_levels')) as $size)
-                                        <option value="{{ $size }}">{{ $size }}</option>
-                                    @endforeach
-                                </select>
-                                <i class="fa-solid fa-chevron-down select-arrow"></i>
-                            </div>
-                            <p class="mt-1 text-xs text-gray-500">Based on veterinary assessment. Required before matching.</p>
+                            @include('partials.pet-calculated-size', ['sizeInputId' => 'addSize', 'sizePet' => null])
                         </div>
 
                         <div class="form-group">
@@ -213,6 +203,8 @@
                             </div>
                         </div>
                     </div>
+
+                    @include('partials.pet-measurement-inputs', ['idPrefix' => 'add', 'requireWeight' => true])
 
                     <div class="flex flex-col-reverse sm:flex-row justify-between gap-2.5 pt-2">
                         <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="switchAnimalModalTab('add', 1)">

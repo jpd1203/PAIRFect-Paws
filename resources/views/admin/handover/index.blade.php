@@ -30,12 +30,14 @@
             </a>
             <a href="{{ route('admin.handover.index', ['tab' => 'failed', 'search' => $search]) }}" 
                class="filter-btn badge-rejected {{ $currentTab === 'failed' ? 'active' : '' }}">
-                Failed ({{ $stats['reported_failed'] }})
+                Not Received ({{ $stats['reported_failed'] }})
             </a>
             <a href="{{ route('admin.handover.index', ['tab' => 'monitoring', 'search' => $search]) }}" 
                class="filter-btn badge-completed {{ $currentTab === 'monitoring' ? 'active' : '' }}">
                 Monitoring ({{ $stats['monitoring_active'] }})
             </a>
+            <a href="{{ route('admin.handover.index', ['tab' => 'investigations', 'search' => $search]) }}" class="filter-btn {{ $currentTab === 'investigations' ? 'active' : '' }}">Unresolved investigations ({{ $stats['investigations'] }})</a>
+            <a href="{{ route('admin.handover.index', ['tab' => 'overdue', 'search' => $search]) }}" class="filter-btn {{ $currentTab === 'overdue' ? 'active' : '' }}">Overdue deliveries ({{ $stats['overdue'] }})</a>
         </div>
 
         <form method="GET" action="{{ route('admin.handover.index') }}" class="relative w-full sm:w-72">
@@ -56,7 +58,6 @@
         @forelse ($records as $record)
             @php
                 $badge = $record->status_badge;
-                $days = $record->days_waiting;
                 $isDelivery = ($record->release_method === 'delivery');
             @endphp
             <a href="{{ route('admin.handover.show', $record) }}" 
@@ -84,20 +85,26 @@
 
                     <!-- Meta / Details Row -->
                     <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#777]">
-                        <span>Approved {{ $record->approved_at ? $record->approved_at->format('M j, Y') : 'Recently' }}</span>
+                        <span>Approved {{ $record->approved_at ? \App\Support\ManilaTime::format($record->approved_at, 'M j, Y') : 'Recently' }}</span>
 
                         @if ($record->released_at)
                             <span class="flex items-center gap-1">
-                                <i class="{{ $isDelivery ? 'fa-solid fa-truck' : 'fa-solid fa-house-user' }} text-[#9e9e9e]"></i>
+                                <i class="{{ $isDelivery ? 'fa-solid fa-truck text-primary' : 'fa-solid fa-house-user text-completed-fg' }}"></i>
                                 {{ $isDelivery ? (($record->courier ?: 'Courier') . ' · ' . ($record->tracking_number ?: 'In transit')) : 'Picked up at shelter' }}
                             </span>
                         @endif
 
-                        @if ($days !== null && !$record->adopter_outcome)
+                        @if (app(\App\Services\HandoverTransportIncidentService::class)->isOverdue($record))
                             <span class="font-bold text-status-processing-text">
-                                {{ $days }} {{ $days === 1 ? 'day' : 'days' }} without confirmation
+                                Overdue delivery receipt - staff investigation required
                             </span>
                         @endif
+                        @if ($record->missed_pickup_notified_at && !$record->released_at)
+                            <span class="font-bold text-status-processing-text">Missed / Uncompleted Pickup</span>
+                        @endif
+                        @foreach($record->transportIncidents->where('status', '!=', 'resolved') as $case)
+                            <span class="font-bold">Investigation #{{ $case->id }} (attempt {{ $case->release_attempt }}): {{ $case->assignedTo?->full_name ?? 'Needs assignment' }} - {{ \App\Support\ManilaTime::parseAndFormat($case->next_follow_up_at, 'M j g:i A', 'Needs follow-up scheduling') }}</span>
+                        @endforeach
                     </div>
                 </div>
 

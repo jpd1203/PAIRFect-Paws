@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-<body class="bg-white text-gray-900 font-secondary antialiased">
+<body class="bg-white text-gray-900 font-secondary antialiased {{ auth()->check() ? 'overflow-hidden' : '' }}">
 
 @auth
     <!-- Mobile-only top bar with hamburger toggle -->
@@ -64,11 +64,37 @@
 
     <div id="toastHost" class="toast-host"></div>
 
-    @if (session('toast'))
+    @php
+        $toastPayload = null;
+        if (session('toast')) {
+            $toastPayload = is_array(session('toast'))
+                ? ['message' => session('toast.message') ?? session('toast')['message'] ?? '', 'type' => session('toast.type') ?? session('toast')['type'] ?? 'success']
+                : ['message' => session('toast'), 'type' => 'success'];
+        } elseif (session('success')) {
+            $toastPayload = ['message' => session('success'), 'type' => 'success'];
+        } elseif (session('status') && is_string(session('status')) && session('status') !== 'verification-link-sent') {
+            $toastPayload = ['message' => session('status'), 'type' => 'success'];
+        } elseif (session('error')) {
+            $toastPayload = ['message' => session('error'), 'type' => 'error'];
+        } elseif (session('warning')) {
+            $toastPayload = ['message' => session('warning'), 'type' => 'error'];
+        } elseif (session('info')) {
+            $toastPayload = ['message' => session('info'), 'type' => 'success'];
+        }
+    @endphp
+
+    @if ($toastPayload && !empty($toastPayload['message']))
         <script>
-            window.addEventListener('DOMContentLoaded', function () {
-                window.PAIRfectPaws?.showToast(@json(session('toast.message')), @json(session('toast.type', 'success')));
-            });
+            (function () {
+                function fireToast() {
+                    window.PAIRfectPaws?.showToast(@json($toastPayload['message']), @json($toastPayload['type']));
+                }
+                if (document.readyState === 'loading') {
+                    window.addEventListener('DOMContentLoaded', fireToast);
+                } else {
+                    fireToast();
+                }
+            })();
         </script>
     @endif
 

@@ -44,7 +44,8 @@ final class MatchingProfileMapper
         return new PetData(
             (int) $pet->id, [
                 ...$aggregation['features'],
-                'physical_size' => $this->config->values['size_levels'][$pet->physical_size] ?? null,
+                'physical_size' => $pet->hasClassifiedPhysicalSize()
+                    ? ($this->config->values['size_levels'][$pet->physical_size] ?? null) : null,
                 'medical_needs' => $pet->medical_needs,
             ],
             $pet->species->value, $pet->availability_status->value,

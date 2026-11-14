@@ -14,8 +14,6 @@ use App\Support\ManilaTime;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class ReservationQueueService
@@ -397,6 +395,13 @@ class ReservationQueueService
                 ]);
             }
 
+            app(IdentityVerificationService::class)->requireInterview($candidate);
+            if (! in_array($candidate->document_verification_status, [
+                DocumentVerificationStatus::Verified, DocumentVerificationStatus::LegacyReview,
+            ], true)) {
+                throw ValidationException::withMessages(['decision' => 'The supporting document must be verified before approval.']);
+            }
+
             $approvedAt = now();
 
             $candidate->update([
@@ -649,14 +654,7 @@ class ReservationQueueService
             return;
         }
 
-        try {
-            Mail::to($application->user)->queue(new StatusUpdateMail($application, $event, $previousInterviewDate));
-        } catch (\Throwable $exception) {
-            Log::error('Reservation notification could not be queued.', [
-                'application_id' => $application->id,
-                'event' => $event,
-                'exception' => $exception::class,
-            ]);
-        }
+        app(RecoverableEmailDispatcher::class)->queue($application->user,
+            new StatusUpdateMail($application, $event, $previousInterviewDate), $event, $application->id);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\Role;
 use App\Notifications\QueuedResetPassword;
 use App\Notifications\QueuedVerifyEmail;
+use App\Services\RecoverableEmailDispatcher;
 use App\Support\PhilippineAddress;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -86,13 +87,13 @@ class User extends Authenticatable implements MustVerifyEmailContract
     /** Dispatch the verification notification on its immediate auth channel. */
     public function sendEmailVerificationNotification(): void
     {
-        $this->notify(new QueuedVerifyEmail);
+        app(RecoverableEmailDispatcher::class)->auth($this, new QueuedVerifyEmail);
     }
 
     /** Dispatch the password reset notification on its immediate auth channel. */
     public function sendPasswordResetNotification($token): void
     {
-        $this->notify(new QueuedResetPassword($token));
+        app(RecoverableEmailDispatcher::class)->auth($this, new QueuedResetPassword($token));
     }
 
     // Relationships

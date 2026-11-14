@@ -19,12 +19,27 @@ function showToast(message, type = 'success') {
     if (!host || !message) return;
 
     const toast = document.createElement('div');
-    toast.className = `toast ${type === 'error' ? 'toast-error' : ''}`;
-    toast.textContent = message;
+    const isError = type === 'error' || type === 'danger';
+    toast.className = `toast ${isError ? 'toast-error' : ''} flex items-center gap-2.5`;
+
+    const icon = document.createElement('i');
+    icon.className = `fa-solid ${isError ? 'fa-circle-exclamation text-status-danger-text' : 'fa-circle-check text-status-success-text'} shrink-0 text-base`;
+
+    const text = document.createElement('span');
+    text.textContent = message;
+
+    toast.appendChild(icon);
+    toast.appendChild(text);
     host.appendChild(toast);
 
-    setTimeout(() => toast.remove(), 4500);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-6px)';
+        toast.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
+    }, 4500);
 }
+window.showToast = showToast;
 
 function initSidebar() {
     const toggle = document.getElementById('sidebarToggle');

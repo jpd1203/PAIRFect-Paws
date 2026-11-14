@@ -249,6 +249,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/adoption-profiles/{application}/document', [Admin\AdoptionProfileController::class, 'document'])->name('adoption-profiles.document');
 
         // Handover & Release
+        Route::post('/handover/{handover}/transport-incidents', [Admin\HandoverTransportIncidentController::class, 'store'])->name('handover.incidents.store');
+        Route::post('/handover/{handover}/transport-incidents/{incident}', [Admin\HandoverTransportIncidentController::class, 'update'])->name('handover.incidents.update');
+        Route::get('/handover/{handover}/transport-incidents/{incident}/evidence', [Admin\HandoverTransportIncidentController::class, 'evidenceView'])->name('handover.incidents.evidence');
+        Route::post('/handover/{handover}/delivery/address-verification', [Admin\HandoverDeliveryController::class, 'verifyAddress'])->name('handover.delivery.address');
+        Route::post('/handover/{handover}/delivery/readiness', [Admin\HandoverDeliveryController::class, 'readiness'])->name('handover.delivery.readiness');
+        Route::get('/applications/{application}/identity-verification', [Admin\IdentityVerificationController::class, 'show'])->name('applications.identity');
+        Route::post('/applications/{application}/identity-verification', [Admin\IdentityVerificationController::class, 'store'])->name('applications.identity.store');
+        Route::post('/handover/{handover}/schedule', [\App\Http\Controllers\HandoverScheduleController::class, 'propose'])->name('handover.schedule');
+        Route::post('/handover/{handover}/reschedule/review', [\App\Http\Controllers\HandoverScheduleController::class, 'review'])->name('handover.reschedule.review');
         Route::get('/handover', [Admin\HandoverController::class, 'index'])->name('handover.index');
         Route::get('/handover/{handover}', [Admin\HandoverController::class, 'show'])->name('handover.show');
         Route::post('/handover/{handover}/mark-released', [Admin\HandoverController::class, 'markReleased'])->name('handover.release');
@@ -292,6 +301,9 @@ Route::middleware('auth')->group(function () {
 
 // ─── Handover & Adopter Confirmation Link Routes ──────────────────────────────
 Route::middleware(['auth', 'adopter', 'verified'])->group(function () {
+    Route::post('/adopter/{handover}/schedule/confirm', [\App\Http\Controllers\HandoverScheduleController::class, 'confirm'])->name('adopter.handover.schedule.confirm');
+    Route::post('/adopter/{handover}/schedule/method', [\App\Http\Controllers\HandoverScheduleController::class, 'selectMethod'])->name('adopter.handover.schedule.method');
+    Route::post('/adopter/{handover}/reschedule', [\App\Http\Controllers\HandoverScheduleController::class, 'requestReschedule'])->name('adopter.handover.reschedule');
     Route::get('/adopter', [HandoverConfirmationController::class, 'userHandoverRedirect'])->name('adopter.handover.my');
     Route::get('/confirm/{handover}', [HandoverConfirmationController::class, 'confirmView'])->name('adopter.confirm');
     Route::post('/confirm/{handover}', [HandoverConfirmationController::class, 'submitConfirmation'])->name('adopter.confirm.submit');

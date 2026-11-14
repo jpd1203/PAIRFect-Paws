@@ -31,7 +31,10 @@ class FreshStartPetsSeederTest extends TestCase
 
         $this->assertSame(15, Pet::count());
         $this->assertSame(45, AssessmentRecord::count());
-        $this->assertSame(15, Pet::recommendationEligible()->count());
+        $this->assertSame(12, Pet::recommendationEligible()->count());
+        $this->assertSame(['Daisy', 'Koko', 'Tala'], Pet::where('size_classification_status', 'juvenile')->orderBy('name')->pluck('name')->all());
+        $this->assertSame(3, Pet::where('size_classification_status', 'juvenile')->whereNull('physical_size')->count());
+        $this->assertSame(15, Pet::fullyAssessed()->count());
         $this->assertSame(0, Pet::where('assessment_count', '!=', 3)->count());
         $this->assertSame(0, AssessmentRecord::whereNull('responses')->count());
         $this->assertSame(15, AssessmentRecord::select('pet_id')->groupBy('pet_id')->havingRaw('COUNT(DISTINCT assessor_id) = 3')->get()->count());

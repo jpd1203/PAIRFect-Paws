@@ -12,6 +12,8 @@ use App\Services\Matching\MatchingProfileMapper;
 use App\Services\Matching\MatchPresenter;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -61,26 +63,42 @@ class KnnRecommendationService
         if (! $this->profiles->adopterIsComplete($adopter)) {
             throw ValidationException::withMessages(['profile' => MatchPresenter::reason('ADOPTER_PROFILE_INCOMPLETE')]);
         }
+        $preferences = $this->validatePreferences($preferences);
         $query = ($includeIneligible ? Pet::query() : Pet::recommendationEligible())->with('assessmentRecords');
         if (! empty($preferences['species'])) {
             $query->where('species', $preferences['species']);
         }
         if (! empty($preferences['size'])) {
-            $query->where('physical_size', $preferences['size']);
+            $query->withClassifiedSize($preferences['species'], $preferences['size']);
         }
 
-        $matches = $query->get()->map(function (Pet $pet) use ($adopter) {
-            $match = $this->calculateMatch($adopter, $pet);
+        // Trust the complete selected row before scoring/counting/paginating, even
+        // for malformed legacy data SQLite might permit but native MySQL would not.
+        $matches = $query->get()->filter(fn (Pet $pet) => empty($preferences['size'])
+            || ($pet->hasClassifiedPhysicalSize() && $pet->species->value === $preferences['species']
+                && $pet->physical_size === $preferences['size']))->map(function (Pet $pet) use ($adopter) {
+                    $match = $this->calculateMatch($adopter, $pet);
 
-            return ['pet' => $pet, 'match' => $match, 'distance' => $match->adjustedDistance, 'result' => $this->presenter->stored($match)];
-        })->filter(fn ($item) => $includeIneligible || $item['match']->eligible)
+                    return ['pet' => $pet, 'match' => $match, 'distance' => $match->adjustedDistance, 'result' => $this->presenter->stored($match)];
+                })->filter(fn ($item) => $includeIneligible || $item['match']->eligible)
             ->sort(fn ($a, $b) => ($b['match']->eligible <=> $a['match']->eligible)
-                ?: ($b['match']->compatibilityScore <=> $a['match']->compatibilityScore)
-                ?: ($a['match']->adjustedDistance <=> $b['match']->adjustedDistance)
-                ?: ($a['pet']->id <=> $b['pet']->id))
+                        ?: ($b['match']->compatibilityScore <=> $a['match']->compatibilityScore)
+                        ?: ($a['match']->adjustedDistance <=> $b['match']->adjustedDistance)
+                        ?: ($a['pet']->id <=> $b['pet']->id))
             ->values();
 
         return $limit === null ? $matches : $matches->take($limit);
+    }
+
+    public function validatePreferences(array $input): array
+    {
+        return Validator::make($input, [
+            'species' => ['nullable', 'string', 'required_with:size', Rule::in(['Dog', 'Cat'])],
+            'size' => ['nullable', 'string', Rule::in(array_keys(config('matching.size_levels')))],
+            'score' => 'prohibited', 'knn_score' => 'prohibited', 'distance' => 'prohibited',
+            'energy' => 'prohibited', 'trainability' => 'prohibited', 'temperament' => 'prohibited',
+            'medical' => 'prohibited', 'independence' => 'prohibited', 'profile' => 'prohibited',
+        ])->validate();
     }
 
     public function matchLabel(float $score): string

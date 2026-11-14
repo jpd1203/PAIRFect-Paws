@@ -15,7 +15,7 @@
                  class="h-16 w-16 rounded-xl object-cover border border-[#e2ddd7] bg-neutral-light shadow-card">
             <div>
                 <h2>{{ $record->pet?->name ?? 'Pet' }} &rarr; {{ $record->adopter_name }}</h2>
-                <p>{{ strtoupper($record->code) }} &middot; Approved {{ $record->approved_at ? $record->approved_at->format('M j, Y') : 'Recently' }} &middot; {{ $record->pet?->species ?? 'Animal' }}, {{ $record->pet?->age_group ?? 'Age' }}</p>
+                <p>{{ strtoupper($record->code) }} &middot; Approved {{ $record->approved_at ? \App\Support\ManilaTime::format($record->approved_at, 'M j, Y') : 'Recently' }} &middot; {{ $record->pet?->species ?? 'Animal' }}, {{ $record->pet?->age_group ?? 'Age' }}</p>
             </div>
         </div>
     </div>
@@ -49,6 +49,11 @@
         
         <!-- Left Column: Release Details & Adopter Confirmation -->
         <div class="space-y-5">
+            @if($errors->any())<div class="modal-note caution" role="alert">{{ $errors->first() }}</div>@endif
+            @if(session('success'))<div class="modal-note">{{ session('success') }}</div>@endif
+            @include('admin.handover._schedule')
+            @include('admin.handover._delivery-clearance')
+            @include('admin.handover._transport-investigations')
             @if ($record->released_at)
                 @include('admin.handover._recorded_release', ['record' => $record])
                 @include('admin.handover._adopter_confirmation', ['record' => $record])
@@ -100,7 +105,7 @@
                         @foreach ($history as $idx => $entry)
                             @php
                                 $isLatest = ($idx === 0);
-                                $entryTime = isset($entry['at']) ? date('M j, Y · g:i A', strtotime($entry['at'])) : '';
+                                $entryTime = \App\Support\ManilaTime::parseAndFormat($entry['at'] ?? null, 'M j, Y · g:i A', 'Time not available');
                             @endphp
                             <li class="flex gap-3">
                                 <div class="relative mt-1 flex w-3 justify-center">
@@ -110,7 +115,7 @@
                                     @endif
                                 </div>
                                 <div class="min-w-0 pb-1 flex-1">
-                                    <p class="text-sm font-semibold leading-snug text-text-dark m-0">{{ $entry['label'] ?? '' }}</p>
+                                    <p class="text-sm font-semibold leading-snug text-text-dark m-0">{{ \App\Support\HandoverHistoryLabel::forStaff($entry['label'] ?? '') }}</p>
                                     <p class="mt-0.5 text-xs text-[#777] m-0">
                                         {{ $entryTime }} &middot; <span class="font-medium text-text-muted">{{ $entry['actor'] ?? 'System' }}</span>
                                     </p>

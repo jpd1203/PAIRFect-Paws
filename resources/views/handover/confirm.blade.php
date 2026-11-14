@@ -5,7 +5,7 @@
 @section('notification-bell-in-header', true)
 @section('content')
 
-    <div class="sticky-header">
+    <div class="nonsticky-header custom-scrollbar">
         <div class="main-content-header">
             <div class="heading-text">
                 <h2>Confirm Pet Receipt</h2>
@@ -14,7 +14,7 @@
 
             @include('partials.notification-bell')
         </div>
-    </div>
+    
 
     <div class="content-area">
 
@@ -53,12 +53,17 @@
                 </div>
             </section>
 
+            @include('handover._schedule-summary')
             @if ($record->released_at && $record->release_method)
             @php
-                $isDelivery = ($record->release_method === 'delivery');
+                $releaseMethod = match ($record->release_method) {
+                    'delivery' => 'Third-party delivery' . ($record->courier ? ' · ' . $record->courier : ''),
+                    'pickup' => 'Shelter pickup',
+                    default => 'Not recorded',
+                };
                 $dateTime = ($record->release_date && $record->release_time)
                     ? $record->release_date->format('M j, Y') . ' · ' . date('g:i A', strtotime($record->release_time))
-                    : $record->released_at->format('M j, Y · g:i A');
+                    : \App\Support\ManilaTime::format($record->released_at, 'M j, Y · g:i A');
             @endphp
 
             <!-- Release Summary Card with Proof Photo -->
@@ -70,11 +75,11 @@
                 <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6 items-start">
                     <div class="space-y-4">
                         <div class="flex items-start gap-3">
-                            <i class="fa-solid fa-truck mt-0.5 text-[#9e9e9e] text-base w-5"></i>
+                            <i class="{{ $record->release_method === 'pickup' ? 'fa-solid fa-house-user text-completed-fg' : 'fa-solid fa-truck text-primary' }} mt-0.5 text-base w-5"></i>
                             <div>
                                 <span class="text-[11px] font-bold uppercase tracking-wider text-[#777] block">RELEASE METHOD</span>
                                 <span class="text-sm font-bold text-text-dark block mt-0.5">
-                                    {{ $isDelivery ? ('Third-party delivery' . ($record->courier ? ' · ' . $record->courier : '')) : 'Shelter pickup' }}
+                                    {{ $releaseMethod }}
                                 </span>
                             </div>
                         </div>
@@ -108,17 +113,23 @@
                         @endif
                     </div>
 
-                    @if ($record->photo_url)
-                        <div class="flex flex-col items-center sm:items-end justify-center">
-                            <figure class="w-full sm:w-56 m-0">
-                                <img src="{{ $record->photo_url }}" alt="Pet photo"
-                                     class="w-full h-36 rounded-xl object-cover border border-[#e2ddd7] shadow-sm bg-neutral-light">
-                                <figcaption class="mt-1.5 text-center text-xs text-[#777] font-medium">
-                                    Pet photo
-                                </figcaption>
-                            </figure>
-                        </div>
-                    @endif
+                    <div>
+                        @if ($record->photo_url)
+                            <div class="flex flex-col items-center sm:items-end justify-center">
+                                <figure class="w-full sm:w-56 m-0">
+                                    <img src="{{ $record->photo_url }}" alt="Pet photo"
+                                        class="w-full h-36 rounded-xl object-cover border border-[#e2ddd7] shadow-sm bg-neutral-light">
+                                    <figcaption class="mt-1.5 text-center text-xs text-[#777] font-medium">
+                                        Pet photo
+                                    </figcaption>
+                                </figure>
+                            </div>
+                        @endif
+
+                        @if (!$record->adopter_outcome)
+                                @include('handover._live_tracking')
+                            @endif
+                    </div>
                 </div>
             </section>
             @endif
@@ -202,15 +213,14 @@
                                       class="form-control resize-y"></textarea>
                         </div>
 
-                        <div class="flex items-center gap-4 flex-wrap justify-between pt-4 border-t border-[#e2ddd7]">
+                        <div class="flex items-center justify-end gap-4 flex-wrap pt-4 border-t border-[#e2ddd7]">
+                            <button type="submit" name="outcome" value="not_received"
+                                    onclick="return confirm('Are you sure you want to report that your pet has not arrived? Staff will be alerted immediately.');"
+                                    class="btn btn-secondary">
+                                <i class="fa-solid fa-triangle-exclamation mr-2"></i> No, I haven't received my pet
+                            </button>
                             <button type="submit" name="outcome" value="received" class="btn btn-primary">
                                 <i class="fa-solid fa-circle-check mr-2"></i> Yes, I've received {{ $record->pet?->name }}
-                            </button>
-
-                            <button type="submit" name="outcome" value="not_received"
-                                    onclick="return confirm('Are you sure you want to report that {{ $record->pet?->name }} has not arrived? Staff will be alerted immediately.');"
-                                    class="btn btn-danger">
-                                <i class="fa-solid fa-triangle-exclamation mr-2"></i> No, I haven't received my pet
                             </button>
                         </div>
                     </form>
@@ -221,6 +231,7 @@
 
         </div>
 
+    </div>
     </div>
 
 @endsection

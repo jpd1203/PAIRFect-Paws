@@ -25,7 +25,7 @@
                         <i class="fa-solid fa-shield-cat mr-1"></i> Handover Status
                     </a>
 
-                    @if (!$record->adopter_outcome)
+                    @if (!$record->adopter_outcome && $record->released_at)
                         <a href="{{ route('adopter.confirm', $record) }}" class="btn btn-secondary btn-sm">
                             <i class="fa-solid fa-clipboard-check mr-1"></i> Confirm Receipt
                         </a>
@@ -45,7 +45,7 @@
                             {{ $record->pet?->name ?? 'Pet' }}
                         </h2>
                         <p class="mt-1 text-sm text-[#777] m-0">
-                            {{ $record->pet?->species ?? 'Pet' }} &middot; {{ $record->pet?->age_group ?? 'Adult' }} &middot; Approved {{ $record->approved_at ? $record->approved_at->format('M j, Y') : 'Recently' }}
+                            {{ $record->pet?->species ?? 'Pet' }} &middot; {{ $record->pet?->age_group ?? 'Adult' }} &middot; Approved {{ $record->approved_at ? \App\Support\ManilaTime::format($record->approved_at, 'M j, Y') : 'Recently' }}
                         </p>
                     </div>
                 </section>
@@ -53,11 +53,13 @@
                 @php
                     $outcome = $record->adopter_outcome;
                     $isReleased = !empty($record->released_at);
-                    $days = $record->days_waiting ?? 0;
-                    $isUrgent = ($isReleased && !$outcome && $days >= 2);
+                    $isUrgent = ($isReleased && !$outcome && $record->follow_up_flagged_at);
                 @endphp
 
                 <!-- Dynamic Alert Banner -->
+                @if($errors->any())<div class="modal-note caution" role="alert">{{ $errors->first() }}</div>@endif
+                @if(session('success'))<div class="modal-note">{{ session('success') }}</div>@endif
+                @include('handover._schedule-actions')
                 @if ($outcome === 'received')
                     <div class="flex flex-col sm:flex-row sm:items-center gap-4 rounded-card border border-status-success-text/30 bg-status-success-bg p-5 shadow-card">
                         <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white border border-status-success-text/20 text-status-success-text shadow-sm">
@@ -82,10 +84,10 @@
                         </div>
                         <div class="min-w-0 flex-1">
                             <h3 class="text-base font-bold text-text-dark font-primary m-0">
-                                We know {{ $record->pet?->name }} hasn't arrived
+                                You reported that {{ $record->pet?->name }} has not arrived
                             </h3>
                             <p class="mt-1 text-sm text-text-muted m-0">
-                                The shelter is arranging a new handover and will call you at {{ $record->adopter_phone }}.
+                                Shelter staff have been notified to investigate your report and follow up with you. This report does not establish a verified delivery failure.
                             </p>
                         </div>
                     </div>
@@ -104,7 +106,7 @@
                             </h3>
                             <p class="mt-1 text-sm text-text-muted m-0">
                                 @if ($isUrgent)
-                                    It has been {{ $days }} days since release. Confirm receipt so your adoption can be completed.
+                                    Your scheduled delivery window has ended and staff follow-up is required. Confirm receipt once your pet has arrived.
                                 @else
                                     Confirm once your pet is with you &mdash; this is the last step of your adoption.
                                 @endif
@@ -121,10 +123,26 @@
                         </div>
                         <div class="min-w-0 flex-1">
                             <h3 class="text-base font-bold text-text-dark font-primary m-0">
-                                Approved &mdash; waiting on a handover schedule
+                                @if ($record->schedule_status === 'confirmed')
+                                    Schedule confirmed &mdash; awaiting release
+                                @elseif ($record->schedule_status === 'proposed')
+                                    Handover schedule &mdash; awaiting your confirmation
+                                @elseif ($record->schedule_status === 'reschedule_pending')
+                                    Handover schedule &mdash; awaiting staff review
+                                @else
+                                    Approved &mdash; waiting on a handover schedule
+                                @endif
                             </h3>
                             <p class="mt-1 text-sm text-[#777] m-0">
-                                The shelter is arranging when and how {{ $record->pet?->name }} will be released to you.
+                                @if ($record->schedule_status === 'confirmed')
+                                    Your agreed handover window is shown above. The shelter has not released {{ $record->pet?->name }} yet.
+                                @elseif ($record->schedule_status === 'proposed')
+                                    Confirm the proposed window above or request an alternative schedule.
+                                @elseif ($record->schedule_status === 'reschedule_pending')
+                                    The shelter will review your requested alternatives before confirming the handover.
+                                @else
+                                    The shelter is arranging when and how {{ $record->pet?->name }} will be released to you.
+                                @endif
                             </p>
                         </div>
                     </div>
@@ -149,7 +167,7 @@
 
                         <!-- Step 2: Handover scheduled -->
                         <li class="flex items-center gap-3.5">
-                            @if ($isReleased)
+                            @if ($isReleased || $record->schedule_status === 'confirmed')
                                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-status-success-text text-white text-xs font-bold shadow-sm">
                                     <i class="fa-solid fa-check text-[11px]"></i>
                                 </span>
@@ -215,10 +233,14 @@
 
                 @if ($isReleased && $record->release_method)
                 @php
-                    $isDelivery = ($record->release_method === 'delivery');
+                    $releaseMethod = match ($record->release_method) {
+                        'delivery' => 'Third-party delivery' . ($record->courier ? ' · ' . $record->courier : ''),
+                        'pickup' => 'Shelter pickup',
+                        default => 'Not recorded',
+                    };
                     $dateTime = ($record->release_date && $record->release_time)
                         ? $record->release_date->format('M j, Y') . ' · ' . date('g:i A', strtotime($record->release_time))
-                        : $record->released_at->format('M j, Y · g:i A');
+                        : \App\Support\ManilaTime::format($record->released_at, 'M j, Y · g:i A');
                 @endphp
 
                 <!-- RELEASE DETAILS Section -->
@@ -234,13 +256,13 @@
 
                             <!-- Release Method -->
                             <div class="flex items-start gap-3">
-                                <i class="fa-solid fa-truck mt-0.5 text-[#9e9e9e] text-base w-5"></i>
+                                <i class="{{ $record->release_method === 'pickup' ? 'fa-solid fa-house-user text-completed-fg' : 'fa-solid fa-truck text-primary' }} mt-0.5 text-base w-5"></i>
                                 <div>
                                     <span class="text-[11px] font-bold uppercase tracking-wider text-[#777] block">
                                         RELEASE METHOD
                                     </span>
                                     <span class="text-sm font-bold text-text-dark block mt-0.5">
-                                        {{ $isDelivery ? ('Third-party delivery' . ($record->courier ? ' · ' . $record->courier : '')) : 'Shelter pickup' }}
+                                        {{ $releaseMethod }}
                                     </span>
                                 </div>
                             </div>
@@ -288,22 +310,32 @@
                                 </div>
                             @endif
 
+                            
                         </div>
 
                         <!-- Right: Proof of Handover Photo -->
-                        @if ($record->photo_url)
-                            <div class="flex flex-col items-center sm:items-end justify-center">
-                                <figure class="w-full sm:w-56 m-0">
-                                    <img src="{{ $record->photo_url }}" alt="Pet photo"
-                                        class="w-full h-36 rounded-xl object-cover border border-[#e2ddd7] shadow-sm bg-neutral-light">
-                                    <figcaption class="mt-1.5 text-center text-xs text-[#777] font-medium">
-                                        Pet photo
-                                    </figcaption>
-                                </figure>
-                            </div>
-                        @endif
+                        <div>
+                            @if ($record->photo_url)
+                                <div class="flex flex-col items-center sm:items-end justify-center">
+                                    <figure class="w-full sm:w-56 m-0">
+                                        <img src="{{ $record->photo_url }}" alt="Pet photo"
+                                            class="w-full h-36 rounded-xl object-cover border border-[#e2ddd7] shadow-sm bg-neutral-light">
+                                        <figcaption class="mt-1.5 text-center text-xs text-[#777] font-medium">
+                                            Pet photo
+                                        </figcaption>
+                                    </figure>
+                                </div>
+                                
+                            @endif
+                            @include('handover._live_tracking') 
+                        </div>
+
+                        
 
                     </div>
+                    
+
+                    
                 </section>
                 @endif
 

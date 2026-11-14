@@ -7,6 +7,7 @@ use App\Models\AdopterProfile;
 use App\Models\AssessmentRecord;
 use App\Models\Pet;
 use App\Models\User;
+use App\Services\PetSizeClassifier;
 use Illuminate\Support\Str;
 
 trait BuildsMatchingFixtures
@@ -54,7 +55,9 @@ trait BuildsMatchingFixtures
     protected function completePetAssessment(Pet $pet): Pet
     {
         $pet->forceFill([
-            'physical_size' => 'Medium', 'medical_needs' => 2, 'life_stage' => 'adult',
+            ...app(PetSizeClassifier::class)->classify($pet->species, $pet->species->value === 'Dog' ? '12' : '4', 36),
+            'weight_kg' => $pet->species->value === 'Dog' ? '12' : '4', 'age' => 36,
+            'medical_needs' => 2, 'life_stage' => 'adult',
             'has_aggression_history' => false, 'aggression_history_verified_at' => now(), 'high_vocalization' => false,
         ])->saveQuietly();
         for ($i = 0; $i < 3; $i++) {
@@ -73,8 +76,14 @@ trait BuildsMatchingFixtures
 
     protected function matchingPet(array $overrides = [], int $observers = 3): Pet
     {
+        // Known synthetic measurements, not a bypass of server classification.
+        $weights = ($overrides['species'] ?? 'Dog') === 'Dog'
+            ? ['Extra Small' => '1', 'Small' => '7', 'Medium' => '12', 'Large' => '20', 'Extra Large' => '30']
+            : ['Extra Small' => '2', 'Small' => '3', 'Medium' => '4', 'Large' => '5', 'Extra Large' => '6.5'];
+        $size = array_key_exists('physical_size', $overrides) ? $overrides['physical_size'] : 'Medium';
         $pet = Pet::create(array_replace([
             'name' => 'Matching Pet', 'species' => 'Dog', 'age' => 36, 'sex' => 'Male',
+            'weight_kg' => $weights[$size ?? ''] ?? null,
             'availability_status' => 'Available', 'physical_size' => 'Medium',
             'medical_needs' => 3, 'life_stage' => 'adult', 'has_aggression_history' => false,
             'high_vocalization' => false,

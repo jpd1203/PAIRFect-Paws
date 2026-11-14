@@ -37,7 +37,9 @@ class PilotAssessedPetsTest extends TestCase
         $this->assertCount(15, $pilotPets);
         $this->assertSame(45, AssessmentRecord::whereIn('pet_id', $pilotPets->modelKeys())->count());
         $this->assertTrue($pilotPets->every(fn (Pet $pet): bool => $pet->assessment_count === 3));
-        $this->assertSame(15, Pet::recommendationEligible()->whereIn('id', $pilotPets->modelKeys())->count());
+        $this->assertSame(12, Pet::recommendationEligible()->whereIn('id', $pilotPets->modelKeys())->count());
+        $this->assertSame(3, $pilotPets->where('size_classification_status', 'juvenile')->count());
+        $this->assertTrue($pilotPets->where('size_classification_status', 'juvenile')->every(fn (Pet $pet): bool => $pet->physical_size === null));
         $this->assertSame(3, User::where('email', 'like', 'pilot-assessor-%@example.invalid')->where('is_active', false)->count());
 
         $this->artisan('pilot:seed-assessed-pets', ['--confirm-pilot' => true])->assertSuccessful();

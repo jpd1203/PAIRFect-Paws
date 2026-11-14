@@ -27,6 +27,7 @@ use RuntimeException;
 final class DefenseDemoSeeder extends Seeder
 {
     public const BRANCH = 'PAIRfect Paws Defense Demonstration (Fictional)';
+
     public const PASSWORD = 'DefenseDemo2026!';
 
     public function run(): void
@@ -104,6 +105,10 @@ final class DefenseDemoSeeder extends Seeder
                 'pepper' => ['Pepper', 'Dog', 3, 3, 2, 1, 'Medium', false, false, 3],
                 'coco' => ['Coco', 'Cat', 2, 3, 2, 1, 'Small', false, false, 3],
             ] as $key => [$name, $species, $energy, $trainability, $attachment, $fear, $size, $aggression, $vocal, $observers]) {
+                // Explicit fictional measured weights keep this new QA scenario reproducible.
+                $demoWeights = $species === 'Dog'
+                    ? ['Small' => '7', 'Medium' => '12', 'Large' => '20']
+                    : ['Small' => '3', 'Medium' => '4', 'Large' => '5'];
                 $intake = $now->subDays(in_array($key, ['luna', 'nala'], true) ? 150 : 40);
                 $assessed = $intake->addDay()->setTime(11, 0)->utc();
                 $pets[$key] = Pet::create([
@@ -119,6 +124,7 @@ final class DefenseDemoSeeder extends Seeder
                     'availability_status' => AvailabilityStatus::Available->value,
                     'intake_date' => $intake->toDateString(),
                     'physical_size' => $size, 'medical_needs' => $key === 'luna' ? 4 : 1, 'life_stage' => 'adult',
+                    'weight_kg' => $demoWeights[$size],
                     'has_aggression_history' => $aggression, 'high_vocalization' => $vocal,
                 ]);
                 foreach (array_slice($staff, 0, $observers) as $observer) {

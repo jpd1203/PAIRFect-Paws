@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\KnnRecommendationService;
 use App\Services\Matching\ApplicationMatchService;
 use App\Services\Matching\BfiScorer;
+use App\Services\PetSizeClassifier;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -28,17 +29,21 @@ class MatchingDemoSeeder extends Seeder
             $sizes = ['Extra Small', 'Small', 'Medium', 'Large', 'Extra Large'];
             for ($i = 1; $i <= 12; $i++) {
                 $species = $i <= 6 ? 'Dog' : 'Cat';
+                // Explicitly synthetic measured weights for this opt-in QA dataset only.
+                $weight = ($species === 'Dog' ? ['1', '7', '12', '20', '30'] : ['2', '3', '4', '5', '6.5'])[($i - 1) % 5];
                 $pet = Pet::firstOrNew(['name' => "Matching Demo {$species} {$i}"]);
                 $pet->fill([
                     'species' => $species, 'sex' => $i % 2 ? 'Male' : 'Female',
                     'age' => $i === 6 ? 120 : 36, 'life_stage' => $i === 6 ? 'senior' : 'adult',
                     'availability_status' => 'Available', 'is_archived' => false,
                     'physical_size' => $sizes[($i - 1) % 5], 'medical_needs' => $i === 6 ? 5 : 2,
+                    'weight_kg' => $weight,
                     'has_aggression_history' => $i === 5, 'aggression_history_verified_at' => now(),
                     'high_vocalization' => $i === 4,
                     'description' => 'Synthetic matching QA record; not a real shelter animal.',
                     'last_assessed_at' => now(), 'last_assessed_by' => 'Matching demo observers',
-                ])->saveQuietly();
+                ]);
+                $pet->forceFill(app(PetSizeClassifier::class)->changes($pet))->saveQuietly();
 
                 $answers = $this->behaviorAnswers(strtolower($species), $i);
                 foreach ($observers as $observer) {

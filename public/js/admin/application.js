@@ -116,6 +116,7 @@ function openReviewModal(id) {
     if (verifRow) {
         verifRow.style.display = (a.verification_url || a.document_verification_status) ? 'flex' : 'none';
     }
+    document.getElementById('rIdentityLink').href = a.identity_url;
     document.getElementById('rQueuePosition').textContent = a.queue_position
         ? `#${a.queue_position}`
         : ['approved', 'rejected', 'withdrawn', 'noshow', 'closed'].includes(a.status)

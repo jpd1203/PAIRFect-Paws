@@ -301,7 +301,8 @@ class MonitoringController extends Controller
         $validated = $request->validate([
             'resolution_outcome' => ['required', Rule::enum(ResolutionOutcome::class)],
             'resolution_note' => ['required', 'string', 'max:2000'],
-            'return_date' => ['required_if:resolution_outcome,pet_returned', 'nullable', 'date', 'before_or_equal:today'],
+            // Compare calendar dates using the same real Manila day as the return form, not UTC's day.
+            'return_date' => ['required_if:resolution_outcome,pet_returned', 'nullable', 'date', 'before_or_equal:'.today(PostAdoptionScheduleService::TIMEZONE)->toDateString()],
             'return_reason' => ['required_if:resolution_outcome,pet_returned', 'nullable', 'string', 'max:2000'],
             'return_condition' => ['required_if:resolution_outcome,pet_returned', 'nullable', 'string', 'max:2000'],
             'return_handled_by_user_id' => [

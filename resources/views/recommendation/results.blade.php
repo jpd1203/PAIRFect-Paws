@@ -6,7 +6,7 @@
     <div class="main-content-header">
         <div class="heading-text">
             <h2>Pet Recommendation</h2>
-            <p>Explore all pets, with eligible matches first and reasons shown for ineligible pets.</p>
+            <p>Explore compatible, adoptable pets matching your personality and household profile.</p>
         </div>
         @include('partials.notification-bell')
     </div>
@@ -20,43 +20,38 @@
         </div>
     @endif
     <a class="btn btn-secondary mb-4" href="{{ route('recommendation.intake') }}">Update My Profile</a>
-    <form method="GET" action="{{ route('recommendation.results') }}" class="flex flex-wrap gap-4 mb-5">
+    <form id="recommendationFilters" method="GET" action="{{ route('recommendation.results') }}" class="flex flex-wrap gap-4 mb-5">
+        @if(request()->boolean('include_ineligible'))
+            <input type="hidden" name="include_ineligible" value="1">
+        @endif
         <div class="filter-section m-0">
             <div class="select-wrapper">
-                <select name="species" class="rounded border p-2">
+                <label for="recommendationSpecies" class="sr-only">Species</label>
+                <select id="recommendationSpecies" name="species" class="rounded border p-2">
                     <option value="">All Species</option>
                     @foreach (['Dog', 'Cat'] as $species)
-                        <option @selected(request('species') === $species)>{{ $species }}</option>
+                        <option value="{{ $species }}" @selected($selectedSpecies === $species)>{{ $species }}</option>
                     @endforeach
                 </select>
                 <i class="fa-solid fa-chevron-down select-arrow"></i>
             </div>
 
             <div class="select-wrapper">
-                <select name="size" class="rounded border p-2">
-                    <option value="">All sizes</option>
-                    @foreach (array_keys(config('matching.size_levels')) as $size)
-                        <option @selected(request('size') === $size)>{{ $size }}</option>
+                <label for="recommendationSize" class="sr-only">Adult weight-based size</label>
+                <select id="recommendationSize" name="size" class="rounded border p-2" aria-describedby="recommendationSizeHelp" @disabled($selectedSpecies === '')>
+                    <option value="">All Sizes</option>
+                    @foreach ($sizeOptionsBySpecies[$selectedSpecies] ?? [] as $option)
+                        <option value="{{ $option['value'] }}" @selected($selectedSize === $option['value'])>{{ $option['label'] }}</option>
                     @endforeach
                 </select>
                 <i class="fa-solid fa-chevron-down select-arrow"></i>
             </div>
         </div>
-
-        <!-- <div class="filter-section">
-            <label>Size
-                <div class="select-wrapper">
-                    <select name="size" class="rounded border p-2">
-                        <option value="">All sizes</option>
-                        @foreach (array_keys(config('matching.size_levels')) as $size)
-                            <option @selected(request('size') === $size)>{{ $size }}</option>
-                        @endforeach
-                    </select>
-                    <i class="fa-solid fa-chevron-down select-arrow"></i>
-                </div>
-            </label>
-        </div> -->
-        <button class="btn btn-primary" type="submit">Filter Recommendations</button>
+        <p id="recommendationSizeHelp" class="sr-only" aria-live="polite">{{ $selectedSpecies === '' ? 'Select Dog or Cat before choosing a size.' : $selectedSpecies.' adult weight ranges. All Sizes includes other size and classification states when ineligible pets are requested.' }}</p>
+        <button class="btn btn-primary flex items-center gap-2" type="submit">
+            <i class="fa-solid fa-filter text-xs"></i>
+            <span>Apply Filters</span>
+        </button>
     </form>
     @if ($errors->any())
         <p class="text-red-700">{{ $errors->first() }}</p>
@@ -75,9 +70,14 @@
 </div>
 
     <!-- Modal Overlay -->
-    <div class="modal-overlay" id="petModal">
+    <div class="modal-overlay" id="petModal" role="dialog" aria-modal="true" aria-label="Pet profile">
         <div class="pet-modal" id="petModalContent">
             <!-- Filled in dynamically via fetch() -->
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script id="recommendationSizeOptions" type="application/json">@json($sizeOptionsBySpecies)</script>
+    <script src="{{ asset('js/recommendation-size-filters.js') }}" defer></script>
+@endpush

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AvailabilityStatus;
 use App\Enums\Species;
+use App\Services\PetSizeClassifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,6 +18,7 @@ class Pet extends Model
         'medical_needs', 'is_reactive_to_pets', 'has_aggression_history',
         'aggression_history_verified_at', 'high_vocalization', 'life_stage', 'assessment_scoring_version',
         'last_assessed_at', 'assessment_count', 'physical_size', 'vaccination_record_status', 'last_assessed_by',
+        'weight_kg', 'height_cm',
     ];
 
     protected function casts(): array
@@ -26,6 +28,9 @@ class Pet extends Model
             'availability_status' => AvailabilityStatus::class,
             'is_archived' => 'boolean',
             'intake_date' => 'date',
+            'weight_kg' => 'decimal:3',
+            'height_cm' => 'decimal:3',
+            'age' => 'integer',
             'last_assessed_at' => 'datetime',
             'energy_level' => 'float',
             'trainability' => 'float',
@@ -49,6 +54,11 @@ class Pet extends Model
         });
 
         static::saving(function (Pet $pet) {
+            $classifier = app(PetSizeClassifier::class);
+            if ($classifier->requiresHistoricalReview($pet)
+                || ! $pet->exists || $pet->isDirty(['species', 'weight_kg', 'age', 'physical_size'])) {
+                $pet->forceFill($classifier->changes($pet));
+            }
             if ($pet->isDirty('has_aggression_history')) {
                 $pet->aggression_history_verified_at = $pet->has_aggression_history === null ? null : now();
             }
@@ -94,6 +104,8 @@ class Pet extends Model
             ->where('availability_status', AvailabilityStatus::Available->value)
             ->whereHas('assessmentRecords', fn (Builder $records) => $records->whereNotNull('responses'))
             ->whereNotNull('medical_needs')
+            ->where('size_classification_status', 'classified')
+            ->where('size_rule_version', PetSizeClassifier::VERSION)
             ->whereIn('physical_size', ['Extra Small', 'Small', 'Medium', 'Large', 'Extra Large'])
             ->whereIn('life_stage', ['young', 'adult', 'senior'])
             ->whereNotNull('has_aggression_history')
@@ -101,11 +113,33 @@ class Pet extends Model
             ->whereNotNull('high_vocalization');
     }
 
+    /** A size filter means current adult classification, not a historical label. */
+    public function scopeWithClassifiedSize(Builder $query, string $species, string $size): Builder
+    {
+        $band = app(PetSizeClassifier::class)->bandsFor($species)[$size] ?? null;
+        if ($band === null) {
+            return $query->whereRaw('1 = 0');
+        }
+        foreach (['species' => $species, 'physical_size' => $size,
+            'size_classification_status' => 'classified', 'size_rule_version' => PetSizeClassifier::VERSION] as $column => $value) {
+            // Exact PHP strings must not become case-insensitive on MySQL.
+            $query->where('pets.'.$column, $value)
+                ->whereRaw('HEX(pets.'.$column.') = ?', [strtoupper(bin2hex($value))]);
+        }
+        $query->where('pets.age', '>=', $band['minimum_age_months'])
+            ->where('pets.weight_kg', $band['minimum_kg'] === '0' ? '>' : '>=', $band['minimum_kg']);
+        if ($band['maximum_kg'] !== null) {
+            $query->where('pets.weight_kg', '<', $band['maximum_kg']);
+        }
+
+        return $query;
+    }
+
     // ─── Accessors used by frontend Blade templates ────────────────────────
 
     public function getAgeDisplayAttribute(): string
     {
-        if (! $this->age) {
+        if ($this->age === null) {
             return 'Unknown';
         }
         if ($this->age >= 12) {
@@ -117,7 +151,7 @@ class Pet extends Model
 
     public function getAgeGroupAttribute(): string
     {
-        if (! $this->age) {
+        if ($this->age === null) {
             return 'Unknown';
         }
         if ($this->age <= 24) {
@@ -132,12 +166,32 @@ class Pet extends Model
 
     public function getAgeYearsAttribute(): ?int
     {
-        return $this->age ? intdiv($this->age, 12) : null;
+        return $this->age === null ? null : intdiv($this->age, 12);
     }
 
     public function getAgeMonthsAttribute(): ?int
     {
-        return $this->age ? $this->age % 12 : null;
+        return $this->age === null ? null : $this->age % 12;
+    }
+
+    public function hasClassifiedPhysicalSize(): bool
+    {
+        return app(PetSizeClassifier::class)->isCurrent($this);
+    }
+
+    public function getSizeDisplayAttribute(): string
+    {
+        if ($this->hasClassifiedPhysicalSize()) {
+            return $this->physical_size;
+        }
+
+        return match ($this->size_classification_status) {
+            'juvenile' => 'Unavailable: not yet eligible for adult size',
+            'age_unknown' => 'Unavailable: age is unknown',
+            'weight_unavailable' => 'Unavailable: measured weight is missing or invalid',
+            'unsupported_species' => 'Unavailable: unsupported species',
+            default => 'Unavailable: classification needs staff review',
+        };
     }
 
     public function getStatusAttribute(): string
@@ -152,6 +206,21 @@ class Pet extends Model
     public function getSpeciesDisplayAttribute(): string
     {
         return $this->species?->value ?? 'Unknown';
+    }
+
+    public function getWeightDisplayAttribute(): string
+    {
+        return $this->measurementDisplay($this->weight_kg, 'kg');
+    }
+
+    public function getHeightDisplayAttribute(): string
+    {
+        return $this->measurementDisplay($this->height_cm, 'cm');
+    }
+
+    private function measurementDisplay(?string $value, string $unit): string
+    {
+        return $value === null ? 'Not recorded' : rtrim(rtrim($value, '0'), '.').' '.$unit;
     }
 
     public function getSexDisplayAttribute(): string
