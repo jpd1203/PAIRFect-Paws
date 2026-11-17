@@ -73,7 +73,7 @@
     @endif
 
     <!-- Escalation & Follow-Up Policy Box -->
-    <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-4 text-xs space-y-2">
+    <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3 text-xs space-y-2">
         <div class="flex items-center gap-2 text-text-dark font-bold">
             <i class="fa-regular fa-clock text-primary"></i>
             <span>Standard Escalation & Follow-Up Timelines (Asia/Manila)</span>
@@ -97,7 +97,7 @@
     <!-- Investigations Case List -->
     <div class="space-y-4">
         @forelse ($record->transportIncidents as $case)
-            <article id="transport-case-{{ $case->id }}" class="border border-[#e2ddd7] rounded-xl bg-white p-4.5 space-y-3.5 shadow-xs break-words scroll-mt-20">
+            <article id="transport-case-{{ $case->id }}" class="border border-[#e2ddd7] rounded-xl bg-white p-3 space-y-3 shadow-xs break-words scroll-mt-20">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e2ddd7] pb-3">
                     <div class="flex items-center gap-2">
                         <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-neutral-light border border-[#e2ddd7] text-primary">
@@ -180,7 +180,7 @@
 
                 <!-- Evidence Links -->
                 @if($case->evidence_path || ($case->release_context['release_proof_path'] ?? null))
-                    <div class="flex flex-wrap gap-2 text-xs pt-1">
+                    <div class="flex flex-wrap justify-end gap-2 text-xs pt-2 pb-1">
                         @if($case->evidence_path)
                             <a class="btn btn-secondary btn-sm flex items-center gap-1.5 no-underline" href="{{ route('admin.handover.incidents.evidence', [$record, $case]) }}">
                                 <i class="fa-solid fa-paperclip"></i> Download private supporting evidence
@@ -196,7 +196,7 @@
 
                 <!-- Resolution or Management Form -->
                 @if ($case->status === 'resolved')
-                    <div class="rounded-xl border border-completed-fg/30 bg-completed-bg/25 p-3.5 space-y-1.5 text-xs">
+                    <div class="rounded-xl border border-completed-fg/30 bg-completed-bg/25 p-3 space-y-1.5 text-xs">
                         <div class="flex items-center gap-1.5 font-bold text-completed-fg">
                             <i class="fa-solid fa-circle-check"></i>
                             <span>{{ \App\Models\HandoverTransportIncident::OUTCOMES[$case->resolution_outcome] ?? $case->resolution_outcome }}</span>
@@ -252,7 +252,7 @@
                         @endif
 
                         @if($isAdministrator)
-                            <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3.5 space-y-2.5">
+                            <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3 space-y-2.5">
                                 <span class="font-bold text-xs text-text-dark block">Resolution Actions (Admin Only)</span>
                                 <div>
                                     <label class="form-label text-xs font-medium text-text-dark" for="incidentOutcome{{ $case->id }}">Resolution outcome (only when resolving)</label>
@@ -271,10 +271,12 @@
                             </div>
                         @endif
 
-                        <button type="submit" class="btn btn-primary btn-sm flex items-center gap-1.5">
-                            <i class="fa-solid fa-floppy-disk"></i>
-                            <span>Save investigation update</span>
-                        </button>
+                        <div class="flex flex-col sm:flex-row sm:justify-end gap-2 pt-2 pb-1">
+                            <button type="submit" class="btn btn-primary btn-sm inline-flex items-center justify-center gap-1.5 w-full sm:w-auto">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                <span>Save investigation update</span>
+                            </button>
+                        </div>
                     </form>
                 @else
                     <p class="text-xs text-[#777] italic m-0">Only an administrator or the assigned volunteer can update this investigation. Only administrators can assign or resolve it.</p>
@@ -311,7 +313,7 @@
 
     <!-- Report Concern Section -->
     @if($record->released_at && $record->release_method === 'delivery')
-        <details class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-4 text-sm group">
+        <details class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3 text-sm group">
             <summary class="cursor-pointer font-bold text-text-dark flex items-center justify-between list-none">
                 <span class="flex items-center gap-2">
                     <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
@@ -339,8 +341,8 @@
                     <label class="form-label text-xs font-bold text-text-dark" for="transportEvidence">Optional private evidence image (JPEG, PNG, WebP; up to 5 MB)</label>
                     <input class="form-control text-xs rounded-lg" id="transportEvidence" type="file" name="evidence" accept="image/jpeg,image/png,image/webp">
                 </div>
-                <div class="flex justify-end pt-1">
-                    <button type="submit" class="btn btn-secondary btn-sm flex items-center gap-1.5">
+                <div class="flex flex-col sm:flex-row sm:justify-end gap-2 pt-2 pb-1">
+                    <button type="submit" class="btn btn-secondary btn-sm inline-flex items-center justify-center gap-1.5 w-full sm:w-auto">
                         <i class="fa-solid fa-flag"></i>
                         <span>Record reported concern</span>
                     </button>

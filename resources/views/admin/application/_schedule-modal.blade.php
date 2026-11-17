@@ -49,7 +49,7 @@
             </div>
             <div class="custom-modal-footer-1">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('scheduleInterviewModal')">Cancel</button>
-                <button type="submit" class="btn btn-primary">Confirm</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-calendar-check mr-1.5"></i>Confirm</button>
             </div>
         </form>
     </div>
@@ -143,8 +143,8 @@
                     Cancel
                 </button>
                 <button type="submit" id="topScheduleSubmit" disabled
-                        class="rounded-xl border border-teal-600 bg-teal-100 px-6 py-2 text-sm font-bold text-teal-900 hover:bg-teal-200 transition disabled:cursor-not-allowed disabled:opacity-50">
-                    Confirm
+                        class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-teal-600 bg-teal-100 px-6 py-2 text-sm font-bold text-teal-900 hover:bg-teal-200 transition disabled:cursor-not-allowed disabled:opacity-50">
+                    <i class="fa-solid fa-calendar-check"></i> Confirm
                 </button>
             </div>
         </form>

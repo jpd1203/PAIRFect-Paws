@@ -1113,6 +1113,21 @@ function initInteractiveApplicationFilters() {
 
     clearBtn?.addEventListener('click', window.resetApplicationFilters);
 
+    const applyBtn = document.getElementById('applyFiltersBtn');
+    applyBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        runFilters();
+
+        const params = new URLSearchParams();
+        if (fromInput?.value) params.set('from', fromInput.value);
+        if (toInput?.value) params.set('to', toInput.value);
+        if (statusSelect?.value) params.set('status', statusSelect.value);
+        if (searchInput?.value) params.set('search', searchInput.value);
+
+        const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        window.history.replaceState({}, '', newUrl);
+    });
+
     // Form submit:
     form?.addEventListener('submit', (e) => {
         // If clicking Export, let it submit naturally to download CSV

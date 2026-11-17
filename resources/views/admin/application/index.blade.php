@@ -66,25 +66,25 @@
         </div>
 
         {{-- From Date --}}
-        <div class="flex items-center gap-1.5 shrink-0 bg-gray-50/60 hover:bg-white border border-gray-300 rounded-xl px-2.5 h-10 text-sm transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white">
+        <div onclick="this.querySelector('input')?.showPicker?.()" class="flex items-center gap-1.5 shrink-0 bg-gray-50/60 hover:bg-white border border-gray-300 rounded-xl px-2.5 h-10 text-sm transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white cursor-pointer w-full sm:w-auto">
             <label for="appFromDate" class="text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer select-none">From</label>
             <input type="date" id="appFromDate" name="from" value="{{ $filters['from'] ?? '' }}"
-                   class="border-0 p-0 text-sm focus:outline-none focus:ring-0 text-gray-700 bg-transparent cursor-pointer"
+                   class="border-0 p-0 text-sm focus:outline-none focus:ring-0 text-gray-700 bg-transparent cursor-pointer flex-1 w-full"
                    aria-label="Application start date">
         </div>
 
         {{-- To Date --}}
-        <div class="flex items-center gap-1.5 shrink-0 bg-gray-50/60 hover:bg-white border border-gray-300 rounded-xl px-2.5 h-10 text-sm transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white">
+        <div onclick="this.querySelector('input')?.showPicker?.()" class="flex items-center gap-1.5 shrink-0 bg-gray-50/60 hover:bg-white border border-gray-300 rounded-xl px-2.5 h-10 text-sm transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 focus-within:bg-white cursor-pointer w-full sm:w-auto">
             <label for="appToDate" class="text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer select-none">To</label>
             <input type="date" id="appToDate" name="to" value="{{ $filters['to'] ?? '' }}"
-                   class="border-0 p-0 text-sm focus:outline-none focus:ring-0 text-gray-700 bg-transparent cursor-pointer"
+                   class="border-0 p-0 text-sm focus:outline-none focus:ring-0 text-gray-700 bg-transparent cursor-pointer flex-1 w-full"
                    aria-label="Application end date">
         </div>
 
         {{-- Status Dropdown --}}
-        <div class="shrink-0 min-w-[145px]">
+        <div class="shrink-0 w-full sm:w-auto min-w-[145px]">
             <select id="appStatusSelect" name="status"
-                    class="form-select !h-10 !py-1.5 !px-3 text-sm font-medium border-gray-300 rounded-xl bg-gray-50/60 hover:bg-white focus:bg-white transition"
+                    class="form-select w-full !h-10 !py-1.5 !px-3 text-sm font-medium border-gray-300 rounded-xl bg-gray-50/60 hover:bg-white focus:bg-white transition"
                     aria-label="Filter application status">
                 <option value="">All statuses</option>
                 @foreach (\App\Enums\ApplicationStatus::cases() as $reportStatus)
@@ -94,14 +94,14 @@
         </div>
 
         {{-- Action Buttons --}}
-        <div class="flex items-center gap-1.5 shrink-0">
-            <button type="submit" id="applyFiltersBtn" class="btn btn-primary !h-10 !px-3.5 text-sm whitespace-nowrap shadow-xs hover:shadow transition" title="Apply filters">
+        <div class="flex items-center gap-1.5 w-full sm:w-auto shrink-0 justify-between sm:justify-start">
+            <button type="button" id="applyFiltersBtn" class="btn btn-primary !h-10 !px-3.5 text-sm whitespace-nowrap shadow-xs hover:shadow transition flex-1 sm:flex-initial" title="Apply filters">
                 <i class="fa-solid fa-filter text-xs"></i> Apply
             </button>
-            <button type="button" id="clearFiltersBtn" class="btn btn-secondary !h-10 !px-3 text-sm whitespace-nowrap hover:bg-gray-100 transition" title="Reset all filters">
+            <button type="button" id="clearFiltersBtn" class="btn btn-secondary !h-10 !px-3 text-sm whitespace-nowrap hover:bg-gray-100 transition flex-1 sm:flex-initial" title="Reset all filters">
                 <i class="fa-solid fa-rotate-left text-xs"></i> Clear
             </button>
-            <button type="submit" formaction="{{ route('admin.applications.export') }}" class="btn btn-secondary !h-10 !px-3 text-sm whitespace-nowrap border-gray-300 hover:border-gray-400 transition" title="Export Applications CSV">
+            <button type="submit" formaction="{{ route('admin.applications.export') }}" class="btn btn-secondary !h-10 !px-3 text-sm whitespace-nowrap border-gray-300 hover:border-gray-400 transition flex-1 sm:flex-initial" title="Export Applications CSV">
                 <i class="fa-solid fa-download text-xs"></i> Export
             </button>
         </div>
@@ -186,7 +186,7 @@
                         <tr data-search-row data-search-text="{{ $app->pet?->name }} {{ $app->first_name }} {{ $app->last_name }} {{ $app->email }}"
                             data-filter-row data-status="{{ $app->status_slug }} {{ strtolower($app->status->value) }}{{ $app->is_primary_candidate ? ' primarycandidate' : '' }}"
                             data-status-raw="{{ $app->status->value }}"
-                            data-date="{{ $app->created_at->format('Y-m-d') }}"
+                            data-date="{{ \App\Support\ManilaTime::format($app->created_at, 'Y-m-d') }}"
                             id="application-row-{{ $app->id }}"
                             class="{{ $isHighlighted ? 'highlighted-application-row' : '' }}">
                             <td class="px-5 py-3.5 text-left">

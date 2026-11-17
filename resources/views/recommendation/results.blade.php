@@ -20,14 +20,14 @@
         </div>
     @endif
     <a class="btn btn-secondary mb-4" href="{{ route('recommendation.intake') }}">Update My Profile</a>
-    <form id="recommendationFilters" method="GET" action="{{ route('recommendation.results') }}" class="flex flex-wrap gap-4 mb-5">
+    <form id="recommendationFilters" method="GET" action="{{ route('recommendation.results') }}" class="flex flex-col sm:flex-row flex-wrap gap-4 mb-5">
         @if(request()->boolean('include_ineligible'))
             <input type="hidden" name="include_ineligible" value="1">
         @endif
-        <div class="filter-section m-0">
-            <div class="select-wrapper">
+        <div class="filter-section m-0 w-full sm:w-auto flex flex-col sm:flex-row gap-3">
+            <div class="select-wrapper w-full sm:w-auto">
                 <label for="recommendationSpecies" class="sr-only">Species</label>
-                <select id="recommendationSpecies" name="species" class="rounded border p-2">
+                <select id="recommendationSpecies" name="species" class="w-full rounded border p-2">
                     <option value="">All Species</option>
                     @foreach (['Dog', 'Cat'] as $species)
                         <option value="{{ $species }}" @selected($selectedSpecies === $species)>{{ $species }}</option>
@@ -36,9 +36,9 @@
                 <i class="fa-solid fa-chevron-down select-arrow"></i>
             </div>
 
-            <div class="select-wrapper">
+            <div class="select-wrapper w-full sm:w-auto">
                 <label for="recommendationSize" class="sr-only">Adult weight-based size</label>
-                <select id="recommendationSize" name="size" class="rounded border p-2" aria-describedby="recommendationSizeHelp" @disabled($selectedSpecies === '')>
+                <select id="recommendationSize" name="size" class="w-full rounded border p-2" aria-describedby="recommendationSizeHelp" @disabled($selectedSpecies === '')>
                     <option value="">All Sizes</option>
                     @foreach ($sizeOptionsBySpecies[$selectedSpecies] ?? [] as $option)
                         <option value="{{ $option['value'] }}" @selected($selectedSize === $option['value'])>{{ $option['label'] }}</option>
@@ -48,7 +48,7 @@
             </div>
         </div>
         <p id="recommendationSizeHelp" class="sr-only" aria-live="polite">{{ $selectedSpecies === '' ? 'Select Dog or Cat before choosing a size.' : $selectedSpecies.' adult weight ranges. All Sizes includes other size and classification states when ineligible pets are requested.' }}</p>
-        <button class="btn btn-primary flex items-center gap-2" type="submit">
+        <button class="btn btn-primary flex items-center justify-center gap-2 w-full sm:w-auto" type="submit">
             <i class="fa-solid fa-filter text-xs"></i>
             <span>Apply Filters</span>
         </button>

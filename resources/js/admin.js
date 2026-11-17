@@ -173,6 +173,7 @@ function initModalBackdrops() {
 /** Generic live-search: [data-search-input] filters [data-search-row] and [data-filter-row] by their [data-search-text]. */
 function applyRowFilters(scope) {
     if (!scope) return;
+    if (scope.id === 'applicationTableBody') return;
     const term = [...document.querySelectorAll('[data-search-input]')]
         .find((input) => (input.dataset.searchScope || '') === scope.id)?.value.trim().toLowerCase() || '';
     const bar = [...document.querySelectorAll('[data-filter-bar]')]
