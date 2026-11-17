@@ -109,7 +109,6 @@
                                 </select>
                                 <i class="fa-solid fa-chevron-down select-arrow"></i>
                             </div>
-                            <p class="mt-1 text-xs text-gray-500">Use the veterinary health evaluation.</p>
                         </div>
 
                         <div class="form-group">
@@ -148,15 +147,15 @@
                                 </select>
                                 <i class="fa-solid fa-chevron-down select-arrow"></i>
                             </div>
-                            <p class="mt-1 text-xs text-gray-500">Use the veterinary health evaluation. Required before matching.</p>
+                            <p class="mt-1 text-xs text-gray-500">Based on veterinary assessment.</p>
                         </div>
 
                         <div class="form-group">
-                            @include('partials.pet-calculated-size', ['sizeInputId' => 'vSize', 'sizePet' => null])
+                            @include('partials.pet-calculated-size', ['sizeInputId' => 'vSize', 'sizePet' => null, 'compactGuidance' => true])
                         </div>
 
                         <div class="form-group">
-                            @include('partials.pet-life-stage', ['lifeStageInputId' => 'vLifeStage'])
+                            @include('partials.pet-life-stage', ['lifeStageInputId' => 'vLifeStage', 'compactGuidance' => true])
                         </div>
 
                         <div class="form-group">
@@ -169,7 +168,7 @@
                                 </select>
                                 <i class="fa-solid fa-chevron-down select-arrow"></i>
                             </div>
-                            <p class="mt-1 text-xs text-gray-500">Select No only after checking the animal's documented history.</p>
+                            <p class="mt-1 text-xs text-gray-500">Use documented history; leave Unknown if unconfirmed.</p>
                         </div>
 
                         <div class="form-group">
@@ -185,7 +184,8 @@
                         </div>
                     </div>
 
-                    @include('partials.pet-measurement-inputs', ['idPrefix' => 'v'])
+                    @include('partials.pet-measurement-inputs', ['idPrefix' => 'v', 'compactGuidance' => true])
+                    @include('admin.animal._health-field-guidance')
 
                     <div class="flex flex-col-reverse sm:flex-row justify-between gap-2.5 pt-2">
                         <button type="button" class="btn btn-secondary w-full sm:w-auto" onclick="switchAnimalModalTab('view', 1)">

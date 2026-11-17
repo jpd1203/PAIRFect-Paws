@@ -1,3 +1,3 @@
-<label class="form-label" for="{{ $lifeStageInputId }}">Life stage (calculated from recorded age)</label>
+<label class="form-label" for="{{ $lifeStageInputId }}">{{ ($compactGuidance ?? false) ? 'Life Stage' : 'Life stage (calculated from recorded age)' }}</label>
 <input id="{{ $lifeStageInputId }}" class="form-control" type="text" readonly data-life-stage-output data-life-stage-policy="{{ json_encode(\App\Services\PetLifeStageClassifier::THRESHOLDS) }}" value="{{ isset($lifeStagePet) ? $lifeStagePet->age_group : 'Unknown' }}" aria-describedby="{{ $lifeStageInputId }}Help">
-<p id="{{ $lifeStageInputId }}Help" class="mt-1 text-xs text-gray-500">Calculated from species and recorded age, not a veterinary diagnosis. Blank age means Unknown. Recorded age does not advance automatically.</p>
+<p id="{{ $lifeStageInputId }}Help" class="mt-1 text-xs text-gray-500">{{ ($compactGuidance ?? false) ? 'Automatically calculated from species and age.' : 'Calculated from species and recorded age, not a veterinary diagnosis. Blank age means Unknown. Recorded age does not advance automatically.' }}</p>

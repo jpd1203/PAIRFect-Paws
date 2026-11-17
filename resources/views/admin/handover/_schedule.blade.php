@@ -1,10 +1,8 @@
 @include('handover._schedule-summary')
 @if(!$record->released_at && !$record->adopter_outcome)
-    <section class="bg-white border border-[#e2ddd7] rounded-card shadow-card overflow-hidden">
-        <div class="border-b border-[#e2ddd7] px-6 py-4 bg-secondary-bg">
-            <h3 class="text-base font-bold text-text-dark font-primary m-0">Propose Handover Schedule</h3>
-            <p class="mt-0.5 text-xs text-[#777] m-0">All times are Asia/Manila. This is a proposed window, not an actual release.</p>
-        </div>
+    <details id="scheduleProposal" class="bg-white border border-[#e2ddd7] rounded-card shadow-card p-4 sm:p-5 scroll-mt-20" @if(!$uiConfirmed || $uiExpired || ($errors->any() && (old('method') !== null || old('decision') !== null))) open @endif>
+        <summary class="cursor-pointer text-base font-bold">{{ $uiConfirmed && !$uiExpired ? 'Propose another schedule' : 'Propose Handover Schedule' }}</summary>
+        <p class="mt-2 text-xs text-[#777]">All times are Asia/Manila. A new proposal requires adopter confirmation before release.</p>
         <form method="POST" action="{{ route('admin.handover.schedule', $record) }}" class="space-y-3">
             @csrf
             <div class="px-6 py-2">
@@ -22,26 +20,26 @@
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2">
                     <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-[#e2ddd7] bg-white p-3.5 transition has-[:checked]:border-completed-fg has-[:checked]:bg-completed-bg/30 has-[:checked]:ring-1 has-[:checked]:ring-completed-fg">
-                        <input type="radio" name="method" value="pickup" {{ ($record->scheduled_method ?? 'pickup') === 'pickup' ? 'checked' : '' }} class="mt-1 h-4 w-4 shrink-0 accent-completed-solid" required>
+                        <input type="radio" name="method" value="pickup" @checked(old('method', $record->scheduled_method ?? 'pickup') === 'pickup') class="mt-1 h-4 w-4 shrink-0 accent-completed-solid" required>
                         <div>
                             <span class="flex items-center gap-1.5 text-sm font-bold text-text-dark"><i class="fa-solid fa-house-user text-completed-fg"></i> Pickup at shelter</span>
-                            <span class="mt-0.5 block text-xs text-[#777]">Adopter collects the pet in person</span>
                         </div>
                     </label>
 
                     <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-[#e2ddd7] bg-white p-3.5 transition has-[:checked]:border-primary has-[:checked]:bg-primary-muted/25 has-[:checked]:ring-1 has-[:checked]:ring-primary">
-                        <input type="radio" name="method" value="delivery" {{ $record->scheduled_method === 'delivery' ? 'checked' : '' }} class="mt-1 h-4 w-4 shrink-0 accent-primary" required>
+                        <input type="radio" name="method" value="delivery" @checked(old('method', $record->scheduled_method) === 'delivery') class="mt-1 h-4 w-4 shrink-0 accent-primary" required>
                         <div>
                             <span class="flex items-center gap-1.5 text-sm font-bold text-text-dark"><i class="fa-solid fa-truck text-primary"></i> Third-party delivery</span>
-                            <span class="mt-0.5 block text-xs text-[#777]">Pet is transported through an approved pet transport or courier service.</span>
                         </div>
                     </label>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-3 mt-4">
-                    <div><label for="schedule-date" class="form-label">Handover Date</label><input id="schedule-date" type="date" name="date" class="form-control" required></div>
-                    <div><label for="schedule-start" class="form-label">Start Time</label><input id="schedule-start" type="time" name="start_time" class="form-control" required></div>
-                    <div><label for="schedule-end" class="form-label">End Time</label><input id="schedule-end" type="time" name="end_time" class="form-control" required></div>
+                    <div><label for="schedule-date" class="form-label">Handover Date</label><input id="schedule-date" type="date" name="date" value="{{ old('date') }}" class="form-control" required aria-invalid="{{ $errors->has('date') ? 'true' : 'false' }}" aria-describedby="scheduleDateError">@error('date')<p id="scheduleDateError" class="text-xs text-red-700" role="alert">{{ $message }}</p>@enderror</div>
+                    <div><label for="schedule-start" class="form-label">Start Time</label><input id="schedule-start" type="time" name="start_time" value="{{ old('start_time') }}" class="form-control" required aria-invalid="{{ $errors->has('start_time') ? 'true' : 'false' }}" aria-describedby="scheduleStartError">@error('start_time')<p id="scheduleStartError" class="text-xs text-red-700" role="alert">{{ $message }}</p>@enderror</div>
+                    <div><label for="schedule-end" class="form-label">End Time</label><input id="schedule-end" type="time" name="end_time" value="{{ old('end_time') }}" class="form-control" required aria-invalid="{{ $errors->has('end_time') ? 'true' : 'false' }}" aria-describedby="scheduleEndError">@error('end_time')<p id="scheduleEndError" class="text-xs text-red-700" role="alert">{{ $message }}</p>@enderror</div>
                 </div>
+                @error('schedule_version')<p class="text-sm text-red-700" role="alert">{{ $message }}</p>@enderror
+                @error('method')<p class="text-sm text-red-700" role="alert">{{ $message }}</p>@enderror
             </div>
             <div class="flex flex-wrap items-center justify-end gap-2.5 border-t border-[#e2ddd7] bg-secondary-bg px-6 py-4">
                 <button type="submit" class="btn btn-primary">
@@ -49,12 +47,11 @@
                 </button>
             </div>
         </form>
-    </section>
+    </details>
     @if($record->reschedule_status === 'pending')
         <section class="bg-white border border-[#e2ddd7] rounded-card shadow-card overflow-hidden scroll-mt-20" id="rescheduleReviewSection">
             <div class="border-b border-[#e2ddd7] px-6 py-4 bg-secondary-bg">
-                <h3 class="text-base font-bold text-text-dark font-primary m-0">Release Details</h3>
-                <p class="mt-0.5 text-xs text-[#777] m-0">Record how and when {{ $record->pet?->name ?? 'the pet' }} physically left the shelter.</p>
+                <h3 class="text-base font-bold text-text-dark font-primary m-0">Review reschedule request</h3>
             </div>
 
             @if($record->reschedule_reason)
@@ -96,21 +93,20 @@
     @endif
     @if($record->application)
         <section class="bg-white border border-[#e2ddd7] rounded-card shadow-card overflow-hidden scroll-mt-20" id="identityVerificationSection">
-            <div class="border-b border-[#e2ddd7] px-6 py-4 bg-secondary-bg">
-                <h3 class="text-base font-bold text-text-dark font-primary m-0">Identity Verification Status</h3>
-                <p class="mt-0.5 text-xs text-[#777] m-0">Interview identity: {{ app(\App\Services\IdentityVerificationService::class)->isVerified($record->application) ? 'Verified' : 'Verification required' }}</p>
-            </div>
-            <div class="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <p class="text-sm font-semibold text-text-dark m-0">Review applicant identity</p>
-                    <p class="text-xs text-[#777] mt-1 m-0">Check the interview identity verification details before release.</p>
+                    <h3 class="text-base font-bold m-0">Identity Verification</h3>
+                    <p class="text-sm mt-1 mb-0">Interview identity: <strong>{{ $uiInterviewVerified ? 'Verified' : 'Verification required' }}</strong></p>
+                    @if(!$uiInterviewVerified)<p class="text-xs text-amber-800 mt-1 mb-0">Complete interview identity verification before release.</p>@endif
                 </div>
-                <a class="btn btn-primary shrink-0" href="{{ route('admin.applications.identity', ['application' => $record->application, 'from' => 'handover', 'handover' => $record->id]) }}"><i class="fa-solid fa-eye"></i> Review Interview Identity</a>
+                <a class="btn btn-secondary shrink-0" href="{{ route('admin.applications.identity', ['application' => $record->application, 'from' => 'handover', 'handover' => $record->id]) }}">View Verification</a>
             </div>
         </section>
         @if($record->scheduled_method === 'pickup' && $record->schedule_status === 'confirmed')
-            <p class="text-sm">Final pickup identity: {{ app(\App\Services\IdentityVerificationService::class)->isVerified($record->application, 'pickup_handover', $record->reopen_count) ? 'Verified' : 'Pending' }}</p>
-            @include('admin.application._identity-form', ['identityStage' => 'pickup_handover', 'identityApplication' => $record->application])
+            <details id="pickupIdentityDetails" class="rounded-card border border-[#e2ddd7] bg-white p-4" @if(!$uiPickupVerified || ($errors->any() && old('stage') === 'pickup_handover')) open @endif>
+                <summary class="cursor-pointer font-semibold text-sm">Final pickup identity: {{ $uiPickupVerified ? 'Verified' : 'Pending' }}</summary>
+                @include('admin.application._identity-form', ['identityStage' => 'pickup_handover', 'identityApplication' => $record->application])
+            </details>
         @endif
     @endif
 @endif

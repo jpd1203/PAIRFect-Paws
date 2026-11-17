@@ -72,7 +72,7 @@ class HandoverReadinessFeedbackTest extends TestCase
             libxml_clear_errors();
             libxml_use_internal_errors($previous);
         }
-        $nodes = (new DOMXPath($document))->query('//h3[normalize-space()="Handover Log"]/parent::section');
+        $nodes = (new DOMXPath($document))->query('//details[@id="handoverLog"]');
         $this->assertSame(1, $nodes->length);
 
         return $document->saveHTML($nodes->item(0));

@@ -2,11 +2,14 @@
     $incidentService = app(\App\Services\HandoverTransportIncidentService::class);
     $isAdministrator = auth()->user()->role === \App\Enums\Role::Administrator;
     $pendingHours = $incidentService->maximumPendingHours();
-    $hasIncidents = $record->transportIncidents->isNotEmpty();
+    $hasIncidents = $record->transportIncidents->where('status', '!=', 'resolved')->isNotEmpty();
     $isOverdue = $incidentService->isOverdue($record);
+    $incidentErrors = $errors->any() && (old('category') !== null || old('findings') !== null || old('release_attempt') !== null);
 @endphp
 
-<section class="rounded-card border border-[#e2ddd7] bg-white p-6 shadow-card space-y-5" aria-labelledby="transportInvestigationsHeading">
+<details id="transportInvestigations" class="rounded-card border border-[#e2ddd7] bg-white p-4 shadow-card scroll-mt-20 min-w-0" @if($uiTransportAlert || $incidentErrors) open @endif>
+<summary class="cursor-pointer font-bold text-sm">Transport Concerns: {{ $uiTransportAlert ? 'Attention required' : 'No active issues' }} — View Investigation &amp; Follow-Up</summary>
+<section class="pt-4 space-y-5" aria-labelledby="transportInvestigationsHeading">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e2ddd7] pb-4">
         <div>
@@ -34,7 +37,9 @@
     </div>
 
     <!-- Handover Status & Attempt Context Bar -->
-    <div class="grid gap-3 sm:grid-cols-2">
+    <details class="text-xs">
+    <summary class="cursor-pointer font-semibold">View release context</summary>
+    <div class="grid gap-3 sm:grid-cols-2 mt-3">
         <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3.5 flex flex-col justify-between min-w-0">
             <div class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#777]">
                 <i class="fa-solid fa-traffic-light text-[#9e9e9e]"></i>
@@ -62,6 +67,8 @@
         </div>
     </div>
 
+    </details>
+
     @if ($isOverdue)
         <div class="modal-note caution flex items-start gap-3 m-0">
             <i class="fa-solid fa-triangle-exclamation text-amber-700 text-base mt-0.5 shrink-0"></i>
@@ -73,7 +80,9 @@
     @endif
 
     <!-- Escalation & Follow-Up Policy Box -->
-    <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-4 text-xs space-y-2">
+    <details class="text-xs">
+    <summary class="cursor-pointer font-semibold">Escalation and follow-up timelines</summary>
+    <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-4 text-xs space-y-2 mt-3">
         <div class="flex items-center gap-2 text-text-dark font-bold">
             <i class="fa-regular fa-clock text-primary"></i>
             <span>Standard Escalation & Follow-Up Timelines (Asia/Manila)</span>
@@ -94,9 +103,14 @@
         </p>
     </div>
 
+    </details>
+
     <!-- Investigations Case List -->
     <div class="space-y-4">
-        @forelse ($record->transportIncidents as $case)
+        @forelse ($record->transportIncidents->sortBy(fn ($case) => $case->status === 'resolved' ? 1 : 0) as $case)
+            @if($case->status === 'resolved')
+                <details class="text-sm"><summary class="cursor-pointer font-semibold">Resolved investigation #{{ $case->id }} — {{ \App\Models\HandoverTransportIncident::CATEGORIES[$case->category] ?? $case->category }}</summary>
+            @endif
             <article id="transport-case-{{ $case->id }}" class="border border-[#e2ddd7] rounded-xl bg-white p-4.5 space-y-3.5 shadow-xs break-words scroll-mt-20">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e2ddd7] pb-3">
                     <div class="flex items-center gap-2">
@@ -300,6 +314,7 @@
                     </ol>
                 </details>
             </article>
+            @if($case->status === 'resolved')</details>@endif
         @empty
             <div class="rounded-xl border border-dashed border-[#e2ddd7] bg-neutral-light/30 p-5 text-center">
                 <i class="fa-solid fa-shield-heart text-[#9e9e9e] text-2xl mb-1.5 block"></i>
@@ -349,3 +364,4 @@
         </details>
     @endif
 </section>
+</details>

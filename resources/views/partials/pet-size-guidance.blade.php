@@ -1,1 +1,5 @@
-<p class="mt-1 text-xs text-gray-500">Size updates on save when species or measured weight changes, regardless of age. Life stage is separate. These are not healthy-weight assessments or expected adult sizes. Original size history is preserved.</p>
+@if($compactGuidance ?? false)
+    <p class="mt-1 text-xs text-gray-500">Automatically calculated from species and weight.</p>
+@else
+    <p class="mt-1 text-xs text-gray-500">Size updates on save when species or measured weight changes, regardless of age. Life stage is separate. These are not healthy-weight assessments or expected adult sizes. Original size history is preserved.</p>
+@endif

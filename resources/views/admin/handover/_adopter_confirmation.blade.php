@@ -6,11 +6,11 @@
     $lastReminder = count($reminders) > 0 ? end($reminders) : null;
 @endphp
 
-<section aria-label="Adopter confirmation" class="bg-white border border-[#e2ddd7] rounded-card shadow-card overflow-hidden">
+<section id="adopterConfirmationSection" aria-label="Adopter confirmation" class="bg-white border border-[#e2ddd7] rounded-card shadow-card overflow-hidden scroll-mt-20">
     <div class="border-b border-[#e2ddd7] px-6 py-4 bg-secondary-bg">
         <h3 class="text-base font-bold text-text-dark font-primary m-0">Adopter Confirmation</h3>
         <p class="mt-0.5 text-xs text-[#777] m-0">
-            The second half of the handover &mdash; {{ $record->adopter_name }} must confirm the pet arrived.
+            {{ $isReceived ? 'Receipt confirmed.' : 'The adopter must confirm receipt separately from staff release.' }}
         </p>
     </div>
 
