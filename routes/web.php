@@ -13,8 +13,11 @@ use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PetController;
 use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\ResearchScenarioController;
 use App\Http\Controllers\TimeTravelController;
 use App\Http\Middleware\EnsureVerificationLinkMatchesUser;
+use App\Http\Middleware\ResearchApplicationRouting;
+use App\Http\Middleware\ResearchParticipant;
 use App\Models\Pet;
 use App\Services\PetLifeStageClassifier;
 use Illuminate\Http\Request;
@@ -154,7 +157,15 @@ Route::middleware('auth')->group(function () {
             ]);
         })->name('animal.index');
 
-        Route::middleware('verified')->group(function () {
+        Route::middleware(['verified', ResearchApplicationRouting::class])->group(function () {
+            Route::prefix('research')->name('research.')->middleware(ResearchParticipant::class)
+                ->controller(ResearchScenarioController::class)->group(function () {
+                    Route::get('/scenarios', 'index')->name('index');
+                    Route::get('/pets/{pet}', 'preview')->name('preview');
+                    Route::post('/pets/{pet}', 'apply')->name('apply');
+                    Route::post('/placements/{placement}/receipt', 'receive')->whereNumber('placement')->name('receive');
+                    Route::post('/placements/{placement}/checkins', 'checkin')->whereNumber('placement')->name('checkin');
+                });
             // My Application
             Route::get('/application', [ApplicationController::class, 'index'])->name('application.index');
             Route::post('/applications/{application}/reschedule', [ApplicationController::class, 'requestReschedule'])

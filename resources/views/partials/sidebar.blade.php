@@ -95,9 +95,9 @@
                 @endif
             </a>
 
-            <a href="{{ route('adopter.handover.my') }}"
+            <a href="{{ route(config('research.enabled') ? 'research.index' : 'adopter.handover.my') }}"
                class="menu-item {{ $isActive('adopter.handover.my', 'adopter.handover.status', 'adopter.confirm', 'adopter.handover.notifications') ? 'active' : '' }}"
-               @if (! $hasHandoverAccess) data-handover-unavailable @endif
+               @if (! config('research.enabled') && ! $hasHandoverAccess) data-handover-unavailable @endif
                data-sidebar-dismissible="adopter_handover"
                data-badge-count="{{ $adopterHandoverCount }}">
                 <i class="fa-solid fa-truck-ramp-box fa-lg"></i> Handover Status
