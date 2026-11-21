@@ -42,6 +42,13 @@
             @endif -->
             @include('partials.time-travel-banner')
             @include('partials.email-verification-banner')
+            @if(\App\Support\ResearchMode::ready())
+                <aside class="p-3 border rounded">Research testing mode — fictional pets and simulated outcomes only.
+                    @if(auth()->user()->isAdopter())
+                        <a class="underline" href="{{ route('research.index') }}">My simulated handovers and check-ins</a>
+                    @endif
+                </aside>
+            @endif
             @yield('content')
         </div>
 

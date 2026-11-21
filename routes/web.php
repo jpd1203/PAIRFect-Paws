@@ -13,10 +13,16 @@ use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PetController;
 use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\ResearchScenarioController;
 use App\Http\Controllers\TimeTravelController;
 use App\Http\Middleware\EnsureVerificationLinkMatchesUser;
+use App\Http\Middleware\ResearchApplicationRouting;
+use App\Http\Middleware\ResearchAwareAdopterVerification;
+use App\Http\Middleware\ResearchParticipant;
+use App\Http\Middleware\ResearchRegistrationThrottle;
 use App\Models\Pet;
 use App\Services\PetLifeStageClassifier;
+use App\Support\ResearchMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -46,7 +52,7 @@ Route::view('/privacy-notice', 'legal.privacy')->name('legal.privacy');
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.store');
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [AuthController::class, 'register'])->name('register.store');
+Route::post('/register', [AuthController::class, 'register'])->middleware(ResearchRegistrationThrottle::class)->name('register.store');
 Route::get('/access-denied', [AuthController::class, 'accessDenied'])->name('access-denied');
 
 Route::middleware('guest')->group(function () {
@@ -129,6 +135,9 @@ Route::middleware('auth')->group(function () {
         // Browse pets (adopter dashboard sidebar)
         Route::get('/animal', function (Request $request) {
             $query = Pet::fullyAssessed()->whereIn('availability_status', ['Available', 'Soft-Reserved']);
+            if (ResearchMode::ready()) {
+                $query->whereIn('pets.id', fn ($catalog) => $catalog->select('pet_id')->from('research_catalog'));
+            }
 
             if ($request->filled('species') && $request->species !== 'All Species') {
                 $query->where('species', $request->species);
@@ -154,7 +163,17 @@ Route::middleware('auth')->group(function () {
             ]);
         })->name('animal.index');
 
-        Route::middleware('verified')->group(function () {
+        Route::middleware([ResearchAwareAdopterVerification::class, ResearchApplicationRouting::class])->group(function () {
+            Route::prefix('research')->name('research.')->middleware(ResearchParticipant::class)
+                ->controller(ResearchScenarioController::class)->group(function () {
+                    Route::get('/scenarios', 'index')->name('index');
+                    Route::get('/pets/{pet}', 'preview')->name('preview');
+                    Route::post('/pets/{pet}', 'apply')->name('apply');
+                    Route::post('/placements/{placement}/continue', 'continueAdoption')->whereNumber('placement')->name('continue');
+                    Route::post('/placements/{placement}/withdraw', 'withdraw')->whereNumber('placement')->name('withdraw');
+                    Route::post('/placements/{placement}/receipt', 'receive')->whereNumber('placement')->name('receive');
+                    Route::post('/placements/{placement}/checkins', 'checkin')->whereNumber('placement')->name('checkin');
+                });
             // My Application
             Route::get('/application', [ApplicationController::class, 'index'])->name('application.index');
             Route::post('/applications/{application}/reschedule', [ApplicationController::class, 'requestReschedule'])

@@ -1,4 +1,7 @@
 <header class="bg-maroon-500 sticky top-0 z-40 shadow-sm">
+    @if(\App\Support\ResearchMode::ready())
+        <p class="bg-white p-2 text-center text-gray-900">Research testing: this catalog is fictional. No real pets are placed through this site during the study.</p>
+    @endif
     <nav class="flex w-full items-center justify-between px-4 py-3 sm:px-8 lg:px-12" aria-label="Main navigation">
         <a href="{{ route('landing') }}" class="flex items-center gap-3">
             <img

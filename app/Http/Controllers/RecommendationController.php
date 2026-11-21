@@ -12,6 +12,7 @@ use App\Services\Matching\MatchingProfileMapper;
 use App\Services\Matching\MatchPresenter;
 use App\Services\PetSizeClassifier;
 use App\Support\ApplicationOptions;
+use App\Support\ResearchMode;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
@@ -78,9 +79,10 @@ class RecommendationController extends Controller
         $request->session()->forget('url.intended');
 
         $returnPetId = $request->session()->pull('matching_return_pet');
-        if ($user?->hasVerifiedEmail()
+        $research = ResearchMode::allowsAdopter($user);
+        if (($research || $user?->hasVerifiedEmail())
             && $returnPetId
-            && Pet::whereKey($returnPetId)->where('availability_status', 'Available')->exists()) {
+            && Pet::whereKey($returnPetId)->whereIn('availability_status', $research ? ['Available', 'Soft-Reserved'] : ['Available'])->exists()) {
             return redirect()->route('application.apply', $returnPetId)
                 ->with('success', 'Personality assessment saved. Continue your application for the selected pet.');
         }

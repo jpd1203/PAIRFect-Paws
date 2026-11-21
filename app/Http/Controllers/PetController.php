@@ -14,6 +14,7 @@ use App\Services\KnnRecommendationService;
 use App\Services\Matching\ApplicationMatchService;
 use App\Services\PetLifeStageClassifier;
 use App\Services\PetSizeClassifier;
+use App\Support\ResearchMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -71,7 +72,7 @@ class PetController extends Controller
         if (! $request->user() && $request->session()->has('guest_adopter_profile')) {
             $profile = (new AdopterProfile)->forceFill($request->session()->get('guest_adopter_profile'));
         }
-        $match = $profile ? $matcher->calculateMatch($profile, $pet) : null;
+        $match = $profile ? $matcher->calculateMatch($profile, $pet, existingApplication: ResearchMode::catalogPet($pet)) : null;
 
         return view('animal._pet-modal-content', compact('pet', 'match'));
     }
@@ -205,15 +206,16 @@ class PetController extends Controller
         }
         $age = $this->ageInMonths($validated, $pet->age);
 
+        $researchCatalog = ResearchMode::catalogPet($pet);
         $hasActivePrimary = AdoptionApplication::where('pet_id', $pet->id)
             ->where('is_primary_candidate', true)
             ->exists();
-        if ($hasActivePrimary && $validated['status'] !== AvailabilityStatus::SoftReserved->value) {
+        if (! $researchCatalog && $hasActivePrimary && $validated['status'] !== AvailabilityStatus::SoftReserved->value) {
             return back()->withErrors([
                 'status' => 'This pet has an active primary candidate and must remain Soft-Reserved. Manage the application queue instead.',
             ])->withInput();
         }
-        if (! $hasActivePrimary && $validated['status'] === AvailabilityStatus::SoftReserved->value) {
+        if (! $researchCatalog && ! $hasActivePrimary && $validated['status'] === AvailabilityStatus::SoftReserved->value) {
             return back()->withErrors([
                 'status' => 'Soft-Reserved is controlled automatically by the application queue.',
             ])->withInput();
@@ -229,7 +231,8 @@ class PetController extends Controller
             'health_status' => $validated['health_status'] ?? null,
             'behavioral_notes' => $validated['behavioral_notes'] ?? null,
             'description' => $validated['description'] ?? null,
-            'availability_status' => $validated['status'],
+            // The active research queue owns availability; a stale photo edit must not restock a pet.
+            'availability_status' => $researchCatalog ? null : $validated['status'],
             'branch_id' => $validated['branch_id'] ?? null,
             'medical_needs' => $validated['medical_needs'] ?? null,
             'vaccination_record_status' => $validated['vaccination_record_status'] ?? null,
@@ -308,6 +311,8 @@ class PetController extends Controller
     public function archive(Pet $pet)
     {
         Gate::authorize('archive', $pet);
+
+        abort_if(ResearchMode::catalogPet($pet), 409, 'Research catalog pets cannot be archived during the active batch.');
 
         if (AdoptionApplication::where('pet_id', $pet->id)->where('is_primary_candidate', true)->exists()) {
             return back()->withErrors([

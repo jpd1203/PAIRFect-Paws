@@ -50,6 +50,8 @@
             @endif
             @if (! $result['eligible'])
                 <button type="button" class="btn btn-adoptMe text-center opacity-50 cursor-not-allowed" disabled>Ineligible to adopt</button>
+            @elseif (\App\Support\ResearchMode::allowsAdopter(auth()->user()))
+                <a class="btn btn-adoptMe text-center" href="{{ route('application.apply', $pet) }}">{{ $pet->availability_status->value === 'Soft-Reserved' ? 'Join Waitlist' : 'Simulate Adoption' }}</a>
             @elseif (auth()->check() && auth()->user()->isAdopter() && auth()->user()->hasVerifiedEmail())
                 <a class="btn btn-adoptMe text-center" href="{{ route('application.apply', $pet) }}">Adopt</a>
             @elseif (auth()->guest())

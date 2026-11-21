@@ -115,6 +115,9 @@
                             <label class="form-label" for="vVacc">Vaccination Status</label>
                             <div class="select-wrapper">
                                 <select id="vVacc" name="vaccination_record_status" class="form-select">
+                                    @if(\App\Support\ResearchMode::ready())
+                                        <option>Unknown</option>
+                                    @endif
                                     <option>Complete</option>
                                     <option>Incomplete</option>
                                 </select>
@@ -132,6 +135,9 @@
                                 </select>
                                 <i class="fa-solid fa-chevron-down select-arrow"></i>
                             </div>
+                            @if(\App\Support\ResearchMode::ready())
+                                <small>Research catalog availability is managed by the shared queue. Editing a photo does not change it.</small>
+                            @endif
                         </div>
 
                         <div class="form-group">

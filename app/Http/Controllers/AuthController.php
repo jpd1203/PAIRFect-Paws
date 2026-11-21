@@ -3,12 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Role;
+use App\Models\AdopterProfile;
+use App\Models\Pet;
 use App\Models\User;
 use App\Services\PhilippineLocationService;
+use App\Support\ResearchMode;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
@@ -31,6 +36,7 @@ class AuthController extends Controller
             if ($redirectTo && $this->isValidRedirect($redirectTo)) {
                 return redirect()->to($redirectTo);
             }
+
             return $this->redirectByRole(Auth::user());
         }
 
@@ -40,7 +46,7 @@ class AuthController extends Controller
 
         $intendedPet = null;
         if ($redirectTo && preg_match('#/apply/(\d+)#', $redirectTo, $matches)) {
-            $intendedPet = \App\Models\Pet::find($matches[1]);
+            $intendedPet = Pet::find($matches[1]);
         }
 
         return view('auth.login', compact('intendedPet', 'redirectTo'));
@@ -53,10 +59,11 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        $throttleKey = strtolower($credentials['email']) . '|' . $request->ip();
+        $throttleKey = strtolower($credentials['email']).'|'.$request->ip();
 
-        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 5)) {
-            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
             return back()->withErrors([
                 'email' => "Too many login attempts. Please try again in {$seconds} seconds.",
             ])->onlyInput('email');
@@ -72,13 +79,14 @@ class AuthController extends Controller
         }
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            \Illuminate\Support\Facades\RateLimiter::hit($throttleKey);
+            RateLimiter::hit($throttleKey);
+
             return back()->withErrors([
                 'email' => 'The provided credentials do not match our records.',
             ])->onlyInput('email');
         }
 
-        \Illuminate\Support\Facades\RateLimiter::clear($throttleKey);
+        RateLimiter::clear($throttleKey);
         $request->session()->regenerate();
 
         $redirectTo = $request->input('redirect');
@@ -90,7 +98,7 @@ class AuthController extends Controller
             $user = Auth::user();
             if ($user->isAdopter()) {
                 $user->forceFill(['matching_onboarding_pending' => false])->save();
-                $profile = $user->adopterProfile ?? new \App\Models\AdopterProfile(['user_id' => $user->id]);
+                $profile = $user->adopterProfile ?? new AdopterProfile(['user_id' => $user->id]);
                 $profile->fill($guestData)->save();
             }
             $request->session()->forget('guest_adopter_profile');
@@ -109,6 +117,7 @@ class AuthController extends Controller
             if (Auth::user()->role !== Role::Adopter) {
                 return redirect()->route('admin.dashboard');
             }
+
             return redirect()->to($redirectTo);
         }
 
@@ -128,7 +137,7 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+            'password' => ['required', 'confirmed', Password::defaults()],
             'terms_accepted' => 'accepted',
             'privacy_consent' => 'accepted',
             ...PhilippineLocationService::validationRules(),
@@ -162,7 +171,9 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        event(new Registered($user));
+        if (! ResearchMode::allowsAdopter($user)) {
+            event(new Registered($user));
+        }
 
         $petId = $this->isValidRedirect($redirectTo) ? $this->intendedPetId($redirectTo) : null;
         if ($petId !== null) {
@@ -171,7 +182,7 @@ class AuthController extends Controller
 
         if ($guestData = $request->session()->get('guest_adopter_profile')) {
             $user->forceFill(['matching_onboarding_pending' => false])->save();
-            $profile = new \App\Models\AdopterProfile(['user_id' => $user->id]);
+            $profile = new AdopterProfile(['user_id' => $user->id]);
             $profile->fill($guestData)->save();
             $request->session()->forget('guest_adopter_profile');
         }
@@ -180,7 +191,9 @@ class AuthController extends Controller
             session(['url.intended' => $redirectTo]);
         }
 
-        return redirect()->route('verification.notice');
+        return redirect()->route(ResearchMode::allowsAdopter($user)
+            ? ($user->matching_onboarding_pending ? 'recommendation.onboarding' : 'recommendation.results')
+            : 'verification.notice');
     }
 
     // ─── Logout ───────────────────────────────────────────────────────────────
