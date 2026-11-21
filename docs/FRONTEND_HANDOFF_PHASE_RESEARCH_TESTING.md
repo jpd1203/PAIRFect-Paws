@@ -2,7 +2,8 @@
 
 | Changed file | Study-specific behavior |
 | --- | --- |
-| `resources/views/components/navbar.blade.php`, `resources/views/layouts/app.blade.php` | Show research labels only when mode and the dedicated database are active. |
+| `resources/views/components/navbar.blade.php` | The public navigation no longer includes the research catalog sentence. Navbar links and layout are unchanged. |
+| `resources/views/layouts/app.blade.php` | Keeps the authenticated research notice when the mode and dedicated database are active; retain explicit simulation labels on research flows. |
 | `resources/views/partials/email-verification-banner.blade.php` | Suppress the verification banner only for active research adopters. |
 | `resources/views/partials/sidebar.blade.php` | My Applications/Handover lead to the research scenarios. The normal unavailable toast no longer intercepts the research handover link. |
 | `resources/views/recommendation/intake.blade.php`, `resources/views/recommendation/results.blade.php` | Remove misleading verification guidance for research adopters and describe simulated review. |
