@@ -26,7 +26,7 @@ php artisan tinker --execute='dump(DB::table("research_catalog")->count(), App\M
 php artisan config:cache
 ```
 
-Expect **70 / 70 / 210 / 0 / 0** before use. Stop on errors. The catalog transaction refuses a database with users or pets; it never clears one. For a failed rehearsal or a new wave, provision a different empty research schema and repeat, retaining the previous one. Do not retry initialization by deleting rows. No generated pet images. An authorized operator may provision a new named research administrator through an audited account-provisioning process, then upload approved fictional pet photos via Animal Records. Synthetic observers cannot log in.
+Expect **70 / 70 / 210 / 0 / 0** before use. Stop on errors. The catalog transaction refuses a database with users or pets; it never clears one. For a failed rehearsal or a new wave, provision a different empty research schema and repeat, retaining the previous one. Do not retry initialization by deleting rows. No generated pet images. For survey 01, use the administrator bootstrap below, then upload approved fictional pet photos via Animal Records. Synthetic observers cannot log in.
 
 7. Share the website only with approved participants and obtain study consent before they register. They register using the normal form, are signed in immediately, complete the household/personality profile, and can apply without email verification or any SSH action. Existing terms/privacy consent and normal staff verification remain required. The research registration limit is 10 attempts/minute per IP; stagger registrations if respondents share a network. Tell participants not to upload IDs, addresses beyond the existing registration requirements, or real handover media. Use the study-approved data-minimization instructions.
 
@@ -46,3 +46,26 @@ Expect **70 / 70 / 210 / 0 / 0** before use. Stop on errors. The catalog transac
    For a new batch, require explicit administrator/study-owner approval, close enrollment and pause writes, export and restore-test the outgoing research schema and archive it securely with its photos/configuration. Preserve users, consent, questionnaire answers and scenario history there. Provision a different empty `pairfect_research_*` schema and repeat initialization; do not carry old sessions or seed over the preserved responses. The earlier 50-pet prototype batch (if used) must be retained separately, not migrated in place.
 
 8. **Recovery:** restrict traffic; pause research jobs, take an access-controlled research data backup under the approved retention policy, then restore the recorded original DB connection, original APP_KEY, session/cache settings, uploads and mail/worker configuration. Redeploy the pre-survey source through a reviewed recovery commit/PR, not a force push. Clear/rebuild configuration cache; verify RELEASE.json, schema compatibility, uploads, login, and queues before admitting normal traffic. Do not run down migrations on the original DB. Set RESEARCH_MODE=false during the controlled switch back; turning the flag off alone does not switch databases. Never resume normal traffic with the research database still connected. Never roll research rows into real shelter history.
+
+## First administrator in the already initialized survey 01
+
+Deploy the reviewed release containing the command first; **do not reinitialize the research database** and do not run an admin/demo seeder. In Azure App Service SSH:
+
+```sh
+cd /home/site/wwwroot
+php artisan list research
+php artisan tinker --execute='dump(app()->environment(), config("research.enabled"), DB::connection()->getDatabaseName(), DB::selectOne("select database() as name", [], false)->name);'
+php artisan research:provision-admin
+```
+
+Stop if the command is absent or the preflight doesn't report `production`, `true`, and `pairfect_research_survey01` twice. Do not point the app at `pairfect_paws` to run this. If configuration is stale, diagnose it before proceeding; do not pass credentials or configuration overrides on the command line.
+
+Enter the operator-approved first and last names and email for the named administrator. Answer yes only after confirming independently that the person controls that address. This deliberately uses the same privileged verification convention as the existing staff creation UI; the `verified` middleware is not bypassed. Use a password manager, enter the password at both hidden prompts, and keep it out of command arguments, chat and logs. The command refuses to overwrite or promote any user, to run without a terminal, or to create a second administrator. It creates no profile, sends no email, and records an audit event. For later accounts use the existing staff management screen.
+
+On success, note the printed numeric user ID. Replace `123` below with that ID; this shows role and access state without selecting credentials:
+
+```sh
+php artisan tinker --execute='dump(DB::selectOne("select database() as name", [], false)->name, App\Models\User::findOrFail(123, ["id", "role", "is_active", "email_verified_at"])->toArray(), DB::table("research_catalog")->count());'
+```
+
+Expect the survey database, `Administrator`, an active account with a verification timestamp, and 70 catalog records. Sign in at `/login`, open `/admin/dashboard` and `/admin/animals`, and save one approved fictional image through an Animal Records edit. Refresh and confirm it loads. In a separate adopter session, visit both admin URLs and confirm access is denied. Confirm the release and SSH verification were run with the research-only credential; the original database should not be connected to or written to during this procedure. No provisioning migration is needed for an already initialized shared research schema.
