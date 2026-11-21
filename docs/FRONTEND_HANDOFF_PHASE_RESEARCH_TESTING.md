@@ -1,10 +1,16 @@
-# Frontend handoff: research testing
+# Frontend handoff: shared research testing
 
-- `resources/views/layouts/app.blade.php`: authenticated research-mode banner and adopter shortcut. Off by default.
-- `resources/views/components/navbar.blade.php`: public navigation identifies the fictional catalog while the study is active.
-- `resources/views/recommendation/results.blade.php`: explains automatic simulated approval instead of promising a real staff review in research mode.
-- `resources/views/partials/sidebar.blade.php`: Handover Status points to the research dashboard in research mode and bypasses only the normal **client-side** no-handover toast. Server-side enrollment and ownership remain mandatory.
-- `resources/views/research/apply.blade.php`: fictional pet, real server KNN result, explicit simulated-application POST. No personal documents or images requested.
-- `resources/views/research/scenarios.blade.php`: per-participant placements, simulated approval/release, manual receipt confirmation and ordered accelerated reports. Controls use existing button, border and spacing classes and native labeled selects; no CSS, JS, or unrelated layout changes.
+| Changed file | Study-specific behavior |
+| --- | --- |
+| `resources/views/components/navbar.blade.php`, `resources/views/layouts/app.blade.php` | Show research labels only when mode and the dedicated database are active. |
+| `resources/views/partials/email-verification-banner.blade.php` | Suppress the verification banner only for active research adopters. |
+| `resources/views/partials/sidebar.blade.php` | My Applications/Handover lead to the research scenarios. The normal unavailable toast no longer intercepts the research handover link. |
+| `resources/views/recommendation/intake.blade.php`, `resources/views/recommendation/results.blade.php` | Remove misleading verification guidance for research adopters and describe simulated review. |
+| `resources/views/recommendation/_match-card.blade.php`, `resources/views/animal/_pet-modal-content.blade.php` | Distinguish Simulate Adoption and Join Waitlist. Retain the existing eligibility reasons and disabled actions. |
+| `resources/views/research/apply.blade.php` | Submit an application or join a waitlist. No document upload or real handover data. |
+| `resources/views/research/scenarios.blade.php` | Status, ranked waitlist position, Withdraw, primary-only Continue, confirmation, and three successive practice reports. |
+| `resources/views/admin/animal/_view-modal.blade.php` | Support Unknown vaccination and explain that photo/record edits do not change research availability. |
 
-Keep CSRF, role/verification/enrollment gates, route bindings, eligibility and ownership server-side. Keep research labels even if restyling. Preserve the POSTs and their input names: receipt has no client-controlled owner/status; check-ins submit milestone, appetite, adjustment. All three milestones are immediately testable in sequence after receipt, not scheduled real appointments. No real incident or staff notification is generated. Groupmates can adjust spacing, headings and responsive layout; verify long names and keyboard navigation on phones before the study. Feature tests render both pages; no device screenshots are claimed.
+Preserve the existing register form, CSRF and consent checkboxes. Keep the study labels, POST methods, ownership checks, route parameters, and form names: check-ins submit only `milestone`, `appetite`, and `adjustment`. Owner, eligibility, ranking, approval, and reservation status are all server-controlled. Never enable Continue for a waitlisted respondent or real handover actions for simulated records. Staff verification is unchanged.
+
+No JS or CSS files changed. Groupmates can adjust layout, spacing, or typography while retaining those contracts. Local Chromium evidence: 1440×1000 registration and questionnaire through reservation; a separate 390×844 session joined that pet's waitlist, was promoted after withdrawal, and completed the simulated receipt and all three reports. This wasn't a real-device compatibility audit.

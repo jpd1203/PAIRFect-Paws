@@ -10,6 +10,7 @@ use App\Services\Matching\KnnMatcher;
 use App\Services\Matching\MatchingConfiguration;
 use App\Services\Matching\MatchingProfileMapper;
 use App\Services\Matching\MatchPresenter;
+use App\Support\ResearchMode;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -64,7 +65,11 @@ class KnnRecommendationService
             throw ValidationException::withMessages(['profile' => MatchPresenter::reason('ADOPTER_PROFILE_INCOMPLETE')]);
         }
         $preferences = $this->validatePreferences($preferences);
-        $query = ($includeIneligible ? Pet::query() : Pet::recommendationEligible())->with('assessmentRecords');
+        $research = ResearchMode::ready();
+        $query = ($includeIneligible || $research ? Pet::query() : Pet::recommendationEligible())->with('assessmentRecords');
+        if ($research) {
+            $query->whereIn('pets.id', fn ($catalog) => $catalog->select('pet_id')->from('research_catalog'));
+        }
         if (! empty($preferences['species'])) {
             $query->where('species', $preferences['species']);
         }
@@ -76,8 +81,8 @@ class KnnRecommendationService
         // for malformed legacy data SQLite might permit but native MySQL would not.
         $matches = $query->get()->filter(fn (Pet $pet) => empty($preferences['size'])
             || ($pet->hasClassifiedPhysicalSize() && $pet->species->value === $preferences['species']
-                && $pet->physical_size === $preferences['size']))->map(function (Pet $pet) use ($adopter) {
-                    $match = $this->calculateMatch($adopter, $pet);
+                && $pet->physical_size === $preferences['size']))->map(function (Pet $pet) use ($adopter, $research) {
+                    $match = $this->calculateMatch($adopter, $pet, existingApplication: $research);
 
                     return ['pet' => $pet, 'match' => $match, 'distance' => $match->adjustedDistance, 'result' => $this->presenter->stored($match)];
                 })->filter(fn ($item) => $includeIneligible || $item['match']->eligible)

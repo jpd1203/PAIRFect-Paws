@@ -8,9 +8,11 @@ use App\Enums\DocumentVerificationStatus;
 use App\Mail\StatusUpdateMail;
 use App\Models\AdoptionApplication;
 use App\Models\Pet;
+use App\Models\ResearchPlacement;
 use App\Models\User;
 use App\Services\Matching\ApplicantRankingService;
 use App\Support\ManilaTime;
+use App\Support\ResearchMode;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -175,7 +177,7 @@ class ReservationQueueService
             $result['event'] === 'interview_rescheduled' ? 'An assigned interview was rescheduled' : 'An interview was assigned to you',
             $staffEmailLines,
             'Open Applications',
-            route('admin.applications.index', ['highlight' => $application->id]) . '#application-row-' . $application->id,
+            route('admin.applications.index', ['highlight' => $application->id]).'#application-row-'.$application->id,
             'interview_assignment_staff',
             $application->id,
         );
@@ -412,24 +414,7 @@ class ReservationQueueService
                 'adopted_at' => $approvedAt,
             ]);
 
-            $remaining = AdoptionApplication::with('user')
-                ->where('pet_id', $pet->id)
-                ->where('id', '!=', $candidate->id)
-                ->whereNotIn('status', self::TERMINAL_STATUSES)
-                ->lockForUpdate()
-                ->get();
-
-            if ($remaining->isNotEmpty()) {
-                AdoptionApplication::whereKey($remaining->modelKeys())->update([
-                    'status' => ApplicationStatus::Closed->value,
-                    'is_primary_candidate' => false,
-                    'queue_closed_at' => now(),
-                ]);
-            }
-
-            // Close waitlisted applications before the availability hook runs, so
-            // their last valid compatibility snapshots remain in adoption history.
-            $pet->update(['availability_status' => AvailabilityStatus::Adopted->value]);
+            $remaining = $this->closeQueueLocked($pet, $candidate);
 
             $this->handovers->forApprovedApplication($candidate);
 
@@ -578,13 +563,110 @@ class ReservationQueueService
         return compact('flagged', 'promoted');
     }
 
-    private function promoteNextLocked(Pet $pet, ?int $actorId, string $notes): ?AdoptionApplication
+    private function closeQueueLocked(Pet $pet, AdoptionApplication $winner): Collection
     {
-        $next = $this->ranking->eligibleForPet($pet, [ApplicationStatus::Waitlisted])->first();
+        $remaining = $winner->newQuery()->with('user')->where('pet_id', $pet->id)
+            ->whereKeyNot($winner->id)->whereNotIn('status', self::TERMINAL_STATUSES)->lockForUpdate()->get();
+        if ($remaining->isNotEmpty()) {
+            $winner->newQuery()->whereKey($remaining->modelKeys())->update([
+                'status' => ApplicationStatus::Closed->value,
+                'is_primary_candidate' => false,
+                'queue_closed_at' => now(),
+            ]);
+        }
+        // Close waiting rows before the pet hook can invalidate score snapshots.
+        $pet->update(['availability_status' => AvailabilityStatus::Adopted->value]);
+
+        return $remaining;
+    }
+
+    public function submitResearch(User $user, Pet $catalogPet): void
+    {
+        DB::transaction(function () use ($user, $catalogPet): void {
+            $pet = $this->lockResearchPet($user, $catalogPet->id);
+            $queue = ResearchPlacement::where('pet_id', $pet->id);
+            if ((clone $queue)->where('user_id', $user->id)->lockForUpdate()->first()) {
+                return;
+            }
+            abort_unless(in_array($pet->availability_status, [AvailabilityStatus::Available, AvailabilityStatus::SoftReserved], true), 422, 'This pet is not accepting research applications.');
+            abort_if((clone $queue)->where('status', ApplicationStatus::Approved->value)->lockForUpdate()->first(), 422, 'This research pet has already been adopted.');
+            $candidate = ResearchPlacement::create([
+                'user_id' => $user->id, 'pet_id' => $pet->id, 'status' => ApplicationStatus::Waitlisted,
+            ]);
+            $this->requireResearchEligibility($candidate, $pet);
+            if (! $queue->where('is_primary_candidate', true)->lockForUpdate()->first()) {
+                $this->promoteNextLocked($pet, null, '', research: true);
+            }
+        });
+    }
+
+    public function withdrawResearch(User $user, ResearchPlacement $application): void
+    {
+        DB::transaction(function () use ($user, $application): void {
+            $pet = $this->lockResearchPet($user, $application->pet_id);
+            $candidate = $this->lockOwnedResearchApplication($user, $application);
+            if ($candidate->status === ApplicationStatus::Withdrawn) {
+                return;
+            }
+            abort_unless(in_array($candidate->status, [ApplicationStatus::PrimaryCandidate, ApplicationStatus::Waitlisted], true), 409);
+            $primary = $candidate->is_primary_candidate;
+            $candidate->update(['status' => ApplicationStatus::Withdrawn, 'is_primary_candidate' => false, 'queue_closed_at' => now()]);
+            if ($primary && $pet->availability_status === AvailabilityStatus::SoftReserved) {
+                $this->promoteNextLocked($pet, null, '', research: true);
+            }
+        });
+    }
+
+    public function approveResearch(User $user, ResearchPlacement $application): void
+    {
+        DB::transaction(function () use ($user, $application): void {
+            $pet = $this->lockResearchPet($user, $application->pet_id);
+            $candidate = $this->lockOwnedResearchApplication($user, $application);
+            if ($candidate->status === ApplicationStatus::Approved) {
+                return;
+            }
+            abort_unless($candidate->is_primary_candidate && $candidate->status === ApplicationStatus::PrimaryCandidate
+                && $pet->availability_status === AvailabilityStatus::SoftReserved, 409, 'Only the current primary candidate can continue.');
+            $this->requireResearchEligibility($candidate, $pet);
+            $now = now();
+            $candidate->update([
+                'status' => ApplicationStatus::Approved, 'is_primary_candidate' => false,
+                'approved_at' => $now, 'released_at' => $now, 'queue_closed_at' => $now,
+            ]);
+            $this->closeQueueLocked($pet, $candidate);
+        });
+    }
+
+    private function lockResearchPet(User $user, int $id): Pet
+    {
+        abort_unless(ResearchMode::allowsAdopter($user), 403);
+        $pet = Pet::withoutGlobalScope('notArchived')->lockForUpdate()->findOrFail($id);
+        abort_unless(ResearchMode::catalogPet($pet), 404);
+
+        return $pet;
+    }
+
+    private function lockOwnedResearchApplication(User $user, ResearchPlacement $application): ResearchPlacement
+    {
+        return ResearchPlacement::where('user_id', $user->id)->lockForUpdate()->findOrFail($application->id);
+    }
+
+    private function requireResearchEligibility(ResearchPlacement $candidate, Pet $pet): void
+    {
+        $this->ranking->refreshResearch($candidate, $pet);
+        abort_unless($this->ranking->isEligible($candidate), 422, 'This matching profile is not currently eligible for the pet.');
+    }
+
+    private function promoteNextLocked(Pet $pet, ?int $actorId, string $notes, bool $research = false): ?AdoptionApplication
+    {
+        $next = ($research ? $this->ranking->eligibleResearchForPet($pet)
+            : $this->ranking->eligibleForPet($pet, [ApplicationStatus::Waitlisted]))->first();
 
         if (! $next) {
             $pet->update(['availability_status' => AvailabilityStatus::Available->value]);
-            AuditLogService::log($actorId, 'Reservation Queue Exhausted — Pet Reopened', 'Pet', $pet->id);
+            if (! $research) {
+                AuditLogService::log($actorId, 'Reservation Queue Exhausted — Pet Reopened', 'Pet', $pet->id);
+            }
 
             return null;
         }
@@ -593,10 +675,12 @@ class ReservationQueueService
             'status' => ApplicationStatus::PrimaryCandidate->value,
             'is_primary_candidate' => true,
             'queue_promoted_at' => now(),
-            'admin_review_flagged_at' => null,
+            ...($research ? [] : ['admin_review_flagged_at' => null]),
         ]);
         $pet->update(['availability_status' => AvailabilityStatus::SoftReserved->value]);
-        AuditLogService::log($actorId, 'Waitlist Candidate Promoted', 'AdoptionApplication', $next->id, $notes);
+        if (! $research) {
+            AuditLogService::log($actorId, 'Waitlist Candidate Promoted', 'AdoptionApplication', $next->id, $notes);
+        }
 
         return $next->fresh(['user', 'pet']);
     }
@@ -619,7 +703,7 @@ class ReservationQueueService
             [$message, 'Sign in to the protected application queue for details.'],
             'Review Applications',
             $applicationId
-                ? route('admin.applications.index', ['highlight' => $applicationId]) . '#application-row-' . $applicationId
+                ? route('admin.applications.index', ['highlight' => $applicationId]).'#application-row-'.$applicationId
                 : route('admin.applications.index'),
             true,
             'reservation_queue_staff',

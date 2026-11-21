@@ -6,7 +6,24 @@
 <a href="{{ route('recommendation.intake') }}">Find a pet match</a>
 @if($errors->any()) <p role="alert">{{ $errors->first() }}</p> @endif
 @forelse($placements as $p)
-<section class="p-4 border rounded my-3"><h2>{{ $p->name }} — simulated adoption approved</h2>
+<section class="p-4 border rounded my-3"><h2>{{ $p->pet->name }} — {{ $p->status_display }}</h2>
+@if($p->status === \App\Enums\ApplicationStatus::PrimaryCandidate)
+<p>This pet is reserved for you. Continuing closes the shared queue and simulates staff approval and release.</p>
+<form method="POST" action="{{ route('research.continue',$p) }}">@csrf
+<button class="btn btn-primary">Continue Simulated Adoption</button></form>
+@elseif($p->status === \App\Enums\ApplicationStatus::Waitlisted)
+<p>Waitlisted applicants can only continue after promotion. If the primary withdraws, the highest-ranked eligible applicant moves up.</p>
+@if($positions->get($p->id))
+<p>Current waitlist position: {{ $positions->get($p->id) }}.</p>
+@else
+<p>Your profile or the pet is no longer eligible for promotion.</p>
+@endif
+@endif
+@if(in_array($p->status, [\App\Enums\ApplicationStatus::PrimaryCandidate, \App\Enums\ApplicationStatus::Waitlisted], true))
+<form method="POST" action="{{ route('research.withdraw',$p) }}">@csrf
+<button class="btn btn-secondary">Withdraw simulated application</button></form>
+@endif
+@if($p->status === \App\Enums\ApplicationStatus::Approved)
 <p>Simulated staff handover complete. Match: {{ $p->compatibility_score }}%.</p>
 @if(!$p->received_at)
 <form method="POST" action="{{ route('research.receive',$p->id) }}">@csrf
@@ -26,6 +43,7 @@
 @break
 @endif
 @endforeach
+@endif
 @endif
 </section>
 @empty

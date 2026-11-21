@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ApplicationStatus;
 use App\Models\Pet;
+use App\Models\ResearchPlacement;
 use App\Services\KnnRecommendationService;
+use App\Services\Matching\ApplicantRankingService;
+use App\Services\ReservationQueueService;
 use App\Support\ResearchMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,19 +15,27 @@ use Illuminate\Validation\Rule;
 
 final class ResearchScenarioController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, ApplicantRankingService $ranking)
     {
-        $placements = DB::table('research_placements as p')->join('pets', 'pets.id', '=', 'p.pet_id')
-            ->where('p.user_id', $request->user()->id)->orderByDesc('p.id')->get(['p.*', 'pets.name']);
+        $placements = ResearchPlacement::with('pet')->where('user_id', $request->user()->id)->latest('id')->get();
         $submitted = DB::table('research_checkins')->whereIn('placement_id', $placements->pluck('id'))->get()->groupBy('placement_id');
+        $positions = $placements->where('status', ApplicationStatus::Waitlisted)->mapWithKeys(function (ResearchPlacement $p) use ($ranking) {
+            $offset = $ranking->eligibleResearchForPet($p->pet, locked: false)->search(fn ($candidate) => $candidate->id === $p->id);
 
-        return view('research.scenarios', compact('placements', 'submitted'));
+            return [$p->id => $offset === false ? null : $offset + 1];
+        });
+
+        return view('research.scenarios', compact('placements', 'submitted', 'positions'));
     }
 
     public function preview(Request $request, Pet $pet, KnnRecommendationService $matcher)
     {
-        $this->catalog($pet);
-        $match = $matcher->calculateMatch($request->user()->adopterProfile, $pet);
+        abort_unless(ResearchMode::catalogPet($pet), 404);
+        $existing = ResearchPlacement::where('user_id', $request->user()->id)->where('pet_id', $pet->id)->exists();
+        if ($existing) {
+            return to_route('research.index');
+        }
+        $match = $matcher->calculateMatch($request->user()->adopterProfile, $pet, existingApplication: true);
         if ($match->exclusionReason === 'ADOPTER_PROFILE_INCOMPLETE') {
             return redirect()->route('recommendation.intake', ['return_pet' => $pet->id]);
         }
@@ -31,34 +43,31 @@ final class ResearchScenarioController extends Controller
         return view('research.apply', compact('pet', 'match'));
     }
 
-    private function catalog(Pet $pet): void
+    public function apply(Request $request, Pet $pet, ReservationQueueService $queue)
     {
-        abort_unless(DB::table('research_catalog')->where('pet_id', $pet->id)->exists(), 404);
+        $queue->submitResearch($request->user(), $pet);
+
+        return to_route('research.index');
     }
 
-    public function apply(Request $request, Pet $pet, KnnRecommendationService $matcher)
+    public function continueAdoption(Request $request, ResearchPlacement $placement, ReservationQueueService $queue)
     {
-        DB::transaction(function () use ($request, $pet, $matcher) {
-            $user = $request->user();
-            abort_unless(DB::table('research_participants')->where('user_id', $user->id)->lockForUpdate()->first(), 403);
-            $this->catalog($pet);
-            if (DB::table('research_placements')->where(['user_id' => $user->id, 'pet_id' => $pet->id])->exists()) {
-                return;
-            }
-            $match = $matcher->calculateMatch($user->adopterProfile, $pet);
-            abort_unless($match->eligible && $match->compatibilityScore !== null, 422, 'This simulated application is not eligible for auto-approval.');
-            $now = now();
-            DB::table('research_placements')->insert(['user_id' => $user->id, 'pet_id' => $pet->id, 'compatibility_score' => $match->compatibilityScore,
-                'algorithm_version' => $match->algorithmVersion, 'approved_at' => $now, 'released_at' => $now]);
-        });
+        $queue->approveResearch($request->user(), $placement);
+
+        return to_route('research.index');
+    }
+
+    public function withdraw(Request $request, ResearchPlacement $placement, ReservationQueueService $queue)
+    {
+        $queue->withdrawResearch($request->user(), $placement);
 
         return to_route('research.index');
     }
 
     public function receive(Request $request, int $placement)
     {
-        $owned = DB::table('research_placements')->where(['id' => $placement, 'user_id' => $request->user()->id]);
-        abort_unless((clone $owned)->whereNotNull('released_at')->exists(), 404);
+        $owned = DB::table('research_placements')->where(['id' => $placement, 'user_id' => $request->user()->id])->where('status', ApplicationStatus::Approved->value)->whereNotNull('released_at');
+        abort_unless((clone $owned)->exists(), 404);
         $owned->whereNull('received_at')->update(['received_at' => now()]);
 
         return to_route('research.index');

@@ -7,6 +7,7 @@ use App\Notifications\QueuedResetPassword;
 use App\Notifications\QueuedVerifyEmail;
 use App\Services\RecoverableEmailDispatcher;
 use App\Support\PhilippineAddress;
+use App\Support\ResearchMode;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -87,6 +88,9 @@ class User extends Authenticatable implements MustVerifyEmailContract
     /** Dispatch the verification notification on its immediate auth channel. */
     public function sendEmailVerificationNotification(): void
     {
+        if (ResearchMode::allowsAdopter($this)) {
+            return;
+        }
         app(RecoverableEmailDispatcher::class)->auth($this, new QueuedVerifyEmail);
     }
 

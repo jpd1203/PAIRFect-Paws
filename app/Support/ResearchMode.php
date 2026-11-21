@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\Pet;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 final class ResearchMode
@@ -22,4 +24,14 @@ final class ResearchMode
     }
 
     public const MILESTONES = ['3-day', '3-week', '3-month'];
+
+    public static function allowsAdopter(?User $user): bool
+    {
+        return $user?->isAdopter() && $user->is_active && self::ready();
+    }
+
+    public static function catalogPet(Pet $pet): bool
+    {
+        return self::ready() && DB::table('research_catalog')->where('pet_id', $pet->id)->exists();
+    }
 }
