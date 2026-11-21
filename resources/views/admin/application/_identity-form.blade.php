@@ -42,7 +42,7 @@
         <label class="form-label" for="identity-notes-{{ $identityStage }}">Discrepancy / Staff Notes</label>
         <textarea id="identity-notes-{{ $identityStage }}" class="form-control" name="discrepancy_note" maxlength="2000" rows="2"></textarea>
         <div class="flex flex-wrap items-center justify-end gap-2.5">
-        <button class="btn btn-primary" type="submit">Save Identity Verification</button>
+            <button class="btn btn-primary" type="submit"><i class="fa-solid fa-shield-halved mr-1.5"></i>Save Identity Verification</button>
         </div>
     </form>
 </section>

@@ -15,29 +15,37 @@
 
     <!-- Filters & Search Toolbar -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 my-5 flex-wrap">
-        <div class="filter-bar !my-0">
-            <a href="{{ route('admin.handover.index', ['search' => $search]) }}" 
-               class="filter-btn {{ $currentTab === 'all' ? 'filter-all active' : '' }}">
-                All ({{ $stats['total_count'] }})
-            </a>
-            <a href="{{ route('admin.handover.index', ['tab' => 'needs_handover', 'search' => $search]) }}" 
-               class="filter-btn {{ $currentTab === 'needs_handover' ? 'filter-all active' : '' }}">
-                Needs Handover ({{ $stats['needs_handover'] }})
-            </a>
-            <a href="{{ route('admin.handover.index', ['tab' => 'awaiting', 'search' => $search]) }}" 
-               class="filter-btn badge-pending {{ $currentTab === 'awaiting' ? 'active' : '' }}">
-                Awaiting ({{ $stats['awaiting'] }})
-            </a>
-            <a href="{{ route('admin.handover.index', ['tab' => 'failed', 'search' => $search]) }}" 
-               class="filter-btn badge-rejected {{ $currentTab === 'failed' ? 'active' : '' }}">
-                Not Received ({{ $stats['reported_failed'] }})
-            </a>
-            <a href="{{ route('admin.handover.index', ['tab' => 'monitoring', 'search' => $search]) }}" 
-               class="filter-btn badge-completed {{ $currentTab === 'monitoring' ? 'active' : '' }}">
-                Monitoring ({{ $stats['monitoring_active'] }})
-            </a>
-            <a href="{{ route('admin.handover.index', ['tab' => 'investigations', 'search' => $search]) }}" class="filter-btn {{ $currentTab === 'investigations' ? 'active' : '' }}">Unresolved investigations ({{ $stats['investigations'] }})</a>
-            <a href="{{ route('admin.handover.index', ['tab' => 'overdue', 'search' => $search]) }}" class="filter-btn {{ $currentTab === 'overdue' ? 'active' : '' }}">Overdue deliveries ({{ $stats['overdue'] }})</a>
+        <div class="filter-bar-container w-full sm:w-auto flex-1 min-w-0">
+            <button type="button" class="tab-scroll-arrow tab-scroll-left" aria-label="Scroll tabs left" style="display: none;">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="filter-bar !my-0">
+                <a href="{{ route('admin.handover.index', ['search' => $search]) }}"
+                   class="filter-btn {{ $currentTab === 'all' ? 'filter-all active' : '' }}">
+                    All ({{ $stats['total_count'] }})
+                </a>
+                <a href="{{ route('admin.handover.index', ['tab' => 'needs_handover', 'search' => $search]) }}"
+                   class="filter-btn {{ $currentTab === 'needs_handover' ? 'filter-all active' : '' }}">
+                    Needs Handover ({{ $stats['needs_handover'] }})
+                </a>
+                <a href="{{ route('admin.handover.index', ['tab' => 'awaiting', 'search' => $search]) }}"
+                   class="filter-btn badge-pending {{ $currentTab === 'awaiting' ? 'active' : '' }}">
+                    Awaiting ({{ $stats['awaiting'] }})
+                </a>
+                <a href="{{ route('admin.handover.index', ['tab' => 'failed', 'search' => $search]) }}"
+                   class="filter-btn badge-rejected {{ $currentTab === 'failed' ? 'active' : '' }}">
+                    Not Received ({{ $stats['reported_failed'] }})
+                </a>
+                <a href="{{ route('admin.handover.index', ['tab' => 'monitoring', 'search' => $search]) }}"
+                   class="filter-btn badge-completed {{ $currentTab === 'monitoring' ? 'active' : '' }}">
+                    Monitoring ({{ $stats['monitoring_active'] }})
+                </a>
+                <a href="{{ route('admin.handover.index', ['tab' => 'investigations', 'search' => $search]) }}" class="filter-btn {{ $currentTab === 'investigations' ? 'active' : '' }}">Unresolved investigations ({{ $stats['investigations'] }})</a>
+                <a href="{{ route('admin.handover.index', ['tab' => 'overdue', 'search' => $search]) }}" class="filter-btn {{ $currentTab === 'overdue' ? 'active' : '' }}">Overdue deliveries ({{ $stats['overdue'] }})</a>
+            </div>
+            <button type="button" class="tab-scroll-arrow tab-scroll-right" aria-label="Scroll tabs right" style="display: none;">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
         </div>
 
         <form method="GET" action="{{ route('admin.handover.index') }}" class="relative w-full sm:w-72">

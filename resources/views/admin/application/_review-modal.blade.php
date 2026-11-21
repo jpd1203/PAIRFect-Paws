@@ -78,14 +78,14 @@
 
                 <div class="review-row" id="rCompatRow">
                     <span>Compatibility Result</span>
-                    <button type="button" class="btn btn-secondary btn-sm" id="rCompatBtn">View</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="rCompatBtn"><i class="fa-solid fa-chart-pie mr-1"></i>View</button>
                 </div>
             </div>
 
             <div class="review-container" id="rInterviewContainer" style="display: none;">
                 <div class="review-section" id="rInterviewSection">
                     <h6>Interview</h6>
-                    <div class="review-row"><span>Staff-assisted Identity Verification</span><a class="btn btn-secondary btn-sm" id="rIdentityLink" href="#">Review / Verify Identity</a></div>
+                    <div class="review-row"><span>Staff-assisted Identity Verification</span><a class="btn btn-secondary btn-sm" id="rIdentityLink" href="#"><i class="fa-solid fa-user-check mr-1"></i>Review / Verify Identity</a></div>
                     <div class="review-row"><span>Interview Date</span><span id="rInterviewDate"></span></div>
                     <div class="review-row"><span>Conducted By</span><span id="rConductedBy"></span></div>
                     <div class="review-row" id="rInterviewModeRow"><span>Interview Type</span><span id="rInterviewMode"></span></div>
@@ -134,9 +134,9 @@
                             <textarea class="form-control" name="interview_location" id="rRescheduleLocation" maxlength="1000" rows="3" disabled></textarea>
                         </div>
                         <div class="flex flex-wrap justify-end gap-2 my-3">
-                            <button type="button" class="btn btn-blue" id="rRescheduleAcceptBtn">Accept Selected Time</button>
-                            <button type="button" class="btn btn-secondary" id="rRescheduleDifferentBtn">Set Different Time</button>
-                            <button type="submit" class="btn btn-danger" id="rRescheduleDeclineBtn" form="rRescheduleDeclineForm">Decline Request</button>
+                            <button type="button" class="btn btn-blue" id="rRescheduleAcceptBtn"><i class="fa-solid fa-calendar-check mr-1.5"></i>Accept Selected Time</button>
+                            <button type="button" class="btn btn-secondary" id="rRescheduleDifferentBtn"><i class="fa-solid fa-calendar-plus mr-1.5"></i>Set Different Time</button>
+                            <button type="submit" class="btn btn-danger" id="rRescheduleDeclineBtn" form="rRescheduleDeclineForm"><i class="fa-solid fa-calendar-xmark mr-1.5"></i>Decline Request</button>
                         </div>
                     </form>
                     <form id="rRescheduleDeclineForm" method="POST" class="hidden">@csrf</form>
@@ -157,16 +157,16 @@
         <div class="custom-modal-footer" id="rActionsRow">
             <button type="button" class="btn btn-secondary" onclick="closeModal('applicationReviewModal')">Close</button>
             @if(auth()->user()->isAdmin())
-                <button type="button" class="btn btn-danger" id="rRejectBtn">Reject</button>
+                <button type="button" class="btn btn-danger" id="rRejectBtn"><i class="fa-solid fa-circle-xmark mr-1.5"></i>Reject</button>
             @endif
-            <button type="button" class="btn btn-blue" id="rScheduleBtn">Schedule Interview</button>
+            <button type="button" class="btn btn-blue" id="rScheduleBtn"><i class="fa-solid fa-calendar-check mr-1.5"></i>Schedule Interview</button>
             @if(auth()->user()->isAdmin())
-                <button type="button" class="btn btn-success" id="rApproveBtn">Approve</button>
+                <button type="button" class="btn btn-success" id="rApproveBtn"><i class="fa-solid fa-circle-check mr-1.5"></i>Approve</button>
             @endif
-            <button type="button" class="btn btn-yellow" id="rNoShowBtn">Mark No Show</button>
-            <button type="button" class="btn btn-secondary" id="rWithdrawBtn">Mark Withdrawn</button>
+            <button type="button" class="btn btn-yellow" id="rNoShowBtn"><i class="fa-solid fa-user-xmark mr-1.5"></i>Mark No Show</button>
+            <button type="button" class="btn btn-secondary" id="rWithdrawBtn"><i class="fa-solid fa-ban mr-1.5"></i>Mark Withdrawn</button>
             @if(auth()->user()->isAdmin())
-                <button type="button" class="btn btn-primary" id="rOverrideBtn">Administrative Override</button>
+                <button type="button" class="btn btn-primary" id="rOverrideBtn"><i class="fa-solid fa-user-shield mr-1.5"></i>Administrative Override</button>
             @endif
         </div>
 

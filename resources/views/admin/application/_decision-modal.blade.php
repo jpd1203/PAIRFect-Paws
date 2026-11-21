@@ -19,9 +19,9 @@
                 </div>
             </div>
             <div class="custom-modal-footer flex items-center justify-end gap-3 p-5 pt-2">
-                <button type="button" class="btn btn-decision-close" onclick="closeModal('makeDecisionModal')">Cancel</button>
-                <button type="button" class="btn btn-decision-reject" id="decisionModalRejectBtn" onclick="handleDecisionSubmit('Rejected')"><i class="fa-solid fa-circle-xmark mr-1.5"></i>Reject</button>
-                <button type="button" class="btn btn-decision-approve" id="decisionModalApproveBtn" onclick="handleDecisionSubmit('Approved')"><i class="fa-solid fa-circle-check mr-1.5"></i>Approve</button>
+                <button type="button" class="btn btn-secondary btn-decision-close" onclick="closeModal('makeDecisionModal')">Cancel</button>
+                <button type="button" class="btn btn-danger btn-decision-reject" id="decisionModalRejectBtn" onclick="handleDecisionSubmit('Rejected')"><i class="fa-solid fa-circle-xmark mr-1.5"></i>Reject</button>
+                <button type="button" class="btn btn-success btn-decision-approve" id="decisionModalApproveBtn" onclick="handleDecisionSubmit('Approved')"><i class="fa-solid fa-circle-check mr-1.5"></i>Approve</button>
             </div>
         </form>
     </div>

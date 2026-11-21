@@ -964,7 +964,7 @@
                 </div>
                 <div class="custom-modal-footer-1">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('monitoringReminderModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Send Reminder</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane mr-1.5"></i>Send Reminder</button>
                 </div>
             </form>
         </div>
@@ -992,7 +992,7 @@
                 </div>
                 <div class="custom-modal-footer-1">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('monitoringFlagModal')">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Flag Case</button>
+                    <button type="submit" class="btn btn-danger"><i class="fa-solid fa-flag mr-1.5"></i>Flag Case</button>
                 </div>
             </form>
         </div>
@@ -1099,7 +1099,9 @@
                         @csrf
                         <h3 class="mb-3 font-semibold">Resolve Case</h3>
                         @include('admin.monitoring._resolution-fields', ['fieldPrefix' => 'monitoring-view'])
-                        <button type="submit" class="btn btn-primary mt-3">Record Outcome</button>
+                        <div class="flex justify-end mt-3">
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-circle-check mr-1.5"></i>Record Outcome</button>
+                        </div>
                     </form>
                 @endif
             </div>

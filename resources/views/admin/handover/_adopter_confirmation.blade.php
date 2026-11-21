@@ -124,8 +124,8 @@
                             <button type="button" onclick="toggleReopenDrawer()" class="btn btn-secondary btn-sm">
                                 Cancel
                             </button>
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                Confirm Reopen
+                            <button type="submit" class="btn btn-primary btn-sm inline-flex items-center gap-1.5">
+                                <i class="fa-solid fa-rotate-left"></i> Confirm Reopen
                             </button>
                         </div>
                     </form>
