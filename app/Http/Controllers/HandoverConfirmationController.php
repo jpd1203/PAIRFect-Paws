@@ -6,11 +6,13 @@ use App\Enums\ApplicationStatus;
 use App\Models\AdoptionApplication;
 use App\Models\Handover;
 use App\Models\HandoverNotification;
-use App\Services\HandoverService;
+use App\Models\ResearchPlacement;
+use App\Services\AuditLogService;
 use App\Services\HandoverNotificationService;
+use App\Services\HandoverService;
 use App\Services\HandoverTransportIncidentService;
 use App\Services\PostAdoptionScheduleService;
-use App\Services\AuditLogService;
+use App\Support\ResearchMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -200,6 +202,26 @@ class HandoverConfirmationController extends Controller
     public function userHandoverRedirect(Request $request)
     {
         $user = $request->user();
+
+        if (ResearchMode::ready()) {
+            $placement = ResearchPlacement::query()
+                ->where('user_id', $user->id)
+                ->where('status', ApplicationStatus::Approved->value)
+                ->orderByRaw('CASE WHEN received_at IS NULL THEN 0 ELSE 1 END')
+                ->latest('approved_at')
+                ->latest('id')
+                ->first();
+
+            if ($placement) {
+                return redirect()->route('research.handover', $placement);
+            }
+
+            return redirect()->route('application.index')->with('toast', [
+                'type' => 'error',
+                'message' => 'You have no pending handovers. Handover Status becomes available after an adoption is approved.',
+            ]);
+        }
+
         $handover = Handover::query()
             ->where('user_id', $user->id)
             ->latest('approved_at')

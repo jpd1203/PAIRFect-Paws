@@ -21,7 +21,7 @@
 
                 <!-- Sub Navigation Tabs -->
                 <div class="flex items-center gap-2 border-b border-[#e2ddd7] pb-3 flex-wrap">
-                    <a href="{{ ($researchHandover ?? false) ? route('research.index', ['section' => 'handover']) : route('adopter.handover.status', $record) }}" class="btn btn-primary btn-sm">
+                    <a href="{{ ($researchHandover ?? false) ? route('research.handover', $record->id) : route('adopter.handover.status', $record) }}" class="btn btn-primary btn-sm">
                         <i class="fa-solid fa-shield-cat mr-1"></i> Handover Status
                     </a>
 
@@ -29,6 +29,18 @@
                         <a href="{{ ($researchHandover ?? false) ? route('research.receipt', $record->id) : route('adopter.confirm', $record) }}" class="btn btn-secondary btn-sm">
                             <i class="fa-solid fa-clipboard-check mr-1"></i> Confirm Receipt
                         </a>
+                    @endif
+
+                    @if (($researchHandover ?? false) && isset($researchHandovers) && $researchHandovers->count() > 1)
+                        <div class="ml-auto flex items-center gap-2 flex-wrap" aria-label="Switch pet handover">
+                            @foreach ($researchHandovers as $item)
+                                <a href="{{ route('research.handover', $item) }}"
+                                   class="btn btn-sm {{ (int) $item->id === (int) $record->id ? 'btn-primary' : 'btn-secondary' }}"
+                                   @if((int) $item->id === (int) $record->id) aria-current="page" @endif>
+                                    <i class="fa-solid fa-paw mr-1"></i> {{ $item->pet?->name ?? 'Pet #'.$item->id }}
+                                </a>
+                            @endforeach
+                        </div>
                     @endif
                 </div>
 

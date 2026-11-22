@@ -7,11 +7,13 @@ use App\Enums\AvailabilityStatus;
 use App\Enums\DocumentVerificationStatus;
 use App\Models\AdoptionApplication;
 use App\Models\Pet;
+use App\Models\ResearchPlacement;
 use App\Services\AuditLogService;
 use App\Services\DocumentVerificationNotificationService;
 use App\Services\DocumentVerificationService;
 use App\Services\EmailNotificationService;
 use App\Services\KnnRecommendationService;
+use App\Services\Matching\ApplicantRankingService;
 use App\Services\Matching\ApplicationMatchService;
 use App\Services\Matching\MatchingProfileMapper;
 use App\Services\Matching\MatchPresenter;
@@ -19,6 +21,7 @@ use App\Services\PhilippineLocationService;
 use App\Support\AdoptionForm;
 use App\Support\ManilaTime;
 use App\Support\PhilippineAddress;
+use App\Support\ResearchMode;
 use App\ValueObjects\DocumentVerificationResult;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -37,10 +40,36 @@ class ApplicationController extends Controller
         private ApplicationMatchService $matching,
         private MatchingProfileMapper $matchingProfiles,
         private KnnRecommendationService $matcher,
+        private ApplicantRankingService $ranking,
     ) {}
 
     public function index()
     {
+        if (ResearchMode::ready()) {
+            $applications = ResearchPlacement::with('pet')
+                ->where('user_id', Auth::id())
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->get();
+
+            $positions = $applications
+                ->where('status', ApplicationStatus::Waitlisted)
+                ->mapWithKeys(function (ResearchPlacement $placement) {
+                    $offset = $placement->pet
+                        ? $this->ranking->eligibleResearchForPet($placement->pet, locked: false)
+                            ->search(fn ($candidate) => $candidate->id === $placement->id)
+                        : false;
+
+                    return [$placement->id => $offset === false ? null : $offset + 1];
+                });
+
+            return view('application.index', [
+                'applications' => $applications,
+                'positions' => $positions,
+                'researchMode' => true,
+            ]);
+        }
+
         $applications = AdoptionApplication::with('pet')
             // Adopter responses never load staff-only interview, decision, ranking,
             // OCR, or audit notes from the application record.

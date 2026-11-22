@@ -21,7 +21,19 @@ final class ResearchHandoverController extends Controller
     {
         $this->authorizePlacement($request, $placement);
 
-        return view('handover.status', ['record' => $records->handover($placement), 'researchHandover' => true]);
+        $researchHandovers = ResearchPlacement::with('pet')
+            ->where('user_id', $request->user()->id)
+            ->where('status', ApplicationStatus::Approved->value)
+            ->orderByRaw('CASE WHEN received_at IS NULL THEN 0 ELSE 1 END')
+            ->latest('approved_at')
+            ->latest('id')
+            ->get();
+
+        return view('handover.status', [
+            'record' => $records->handover($placement),
+            'researchHandover' => true,
+            'researchHandovers' => $researchHandovers,
+        ]);
     }
 
     public function receipt(Request $request, ResearchPlacement $placement, ResearchAdminRecords $records)

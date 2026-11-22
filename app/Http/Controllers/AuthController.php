@@ -171,10 +171,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        $research = ResearchMode::allowsAdopter($user);
-        if (! $research) {
-            event(new Registered($user));
-        }
+        event(new Registered($user));
 
         $petId = $this->isValidRedirect($redirectTo) ? $this->intendedPetId($redirectTo) : null;
         if ($petId !== null) {
@@ -186,12 +183,6 @@ class AuthController extends Controller
             $profile = new AdopterProfile(['user_id' => $user->id]);
             $profile->fill($guestData)->save();
             $request->session()->forget('guest_adopter_profile');
-        }
-
-        if ($research) {
-            $request->session()->forget(['matching_return_pet', 'url.intended']);
-
-            return to_route('animal.index');
         }
 
         if ($redirectTo && $this->isValidRedirect($redirectTo)) {

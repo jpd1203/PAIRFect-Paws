@@ -80,7 +80,7 @@ class RecommendationController extends Controller
 
         $returnPetId = $request->session()->pull('matching_return_pet');
         $research = ResearchMode::allowsAdopter($user);
-        if (($research || $user?->hasVerifiedEmail())
+        if ($user?->hasVerifiedEmail()
             && $returnPetId
             && Pet::whereKey($returnPetId)->whereIn('availability_status', $research ? ['Available', 'Soft-Reserved'] : ['Available'])->exists()) {
             return redirect()->route('application.apply', $returnPetId)

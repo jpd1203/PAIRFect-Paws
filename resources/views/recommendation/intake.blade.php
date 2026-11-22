@@ -30,7 +30,7 @@
                 </div>
             </div>
 
-            @if (auth()->check() && ! auth()->user()->hasVerifiedEmail() && ! \App\Support\ResearchMode::allowsAdopter(auth()->user()))
+            @if (auth()->check() && ! auth()->user()->hasVerifiedEmail())
                 <div role="alert" class="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-center justify-between gap-3">
                     <div>
                         You can complete your profile and view pet recommendations now. Verify your email address before you can apply to adopt a pet.

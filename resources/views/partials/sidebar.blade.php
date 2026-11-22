@@ -7,11 +7,10 @@
 @php
     $isActive = fn (string ...$routeNames) => collect($routeNames)->contains(fn ($r) => request()->routeIs($r));
     $user = auth()->user();
-    $researchSection = $isActive('research.index') ? request()->query('section') : null;
-    $applicationsActive = $isActive('application.index', 'application.apply', 'application.submit', 'research.preview')
-        || ($isActive('research.index') && ! in_array($researchSection, ['handover', 'check-ins'], true));
-    $handoverActive = $researchSection === 'handover'
-        || $isActive('adopter.handover.my', 'adopter.handover.status', 'adopter.confirm', 'adopter.handover.notifications', 'research.handover');
+    $isResearch = \App\Support\ResearchMode::ready();
+    $applicationsActive = $isActive('application.index', 'application.apply', 'application.submit', 'research.preview');
+    $handoverActive = $isActive('adopter.handover.my', 'adopter.handover.status', 'adopter.confirm', 'adopter.handover.notifications', 'research.handover', 'research.receipt');
+    $checkinsActive = $isActive('monitoring.my-checkins', 'monitoring.index', 'research.report');
 
     $adopterApplicationsCount = 0;
     $adopterHandoverCount = 0;
@@ -19,45 +18,70 @@
     $adopterDueReportsCount = 0;
     $adopterOverdueCount = 0;
     $adopterFlaggedCount = 0;
+    $hasReceivedResearchPet = false;
 
     if ($user) {
-        $adopterApplicationsCount = $user->adoptionApplications()
-            ->whereIn('status', [
-                \App\Enums\ApplicationStatus::Pending->value,
-                \App\Enums\ApplicationStatus::UnderReview->value,
-                \App\Enums\ApplicationStatus::InterviewScheduled->value,
-                \App\Enums\ApplicationStatus::DocumentFlagged->value,
-            ])
-            ->count();
+        if ($isResearch) {
+            $adopterApplicationsCount = \App\Models\ResearchPlacement::where('user_id', $user->id)
+                ->whereIn('status', [
+                    \App\Enums\ApplicationStatus::Pending->value,
+                    \App\Enums\ApplicationStatus::PrimaryCandidate->value,
+                    \App\Enums\ApplicationStatus::Waitlisted->value,
+                ])
+                ->count();
 
-        $adopterHandoverCount = \App\Models\Handover::where('user_id', $user->id)
-            ->whereNull('adopter_confirmed_at')
-            ->count();
-        $hasHandoverAccess = \App\Models\Handover::where('user_id', $user->id)->exists()
-            || $user->adoptionApplications()
+            $adopterHandoverCount = \App\Models\ResearchPlacement::where('user_id', $user->id)
+                ->where('status', \App\Enums\ApplicationStatus::Approved->value)
+                ->whereNull('received_at')
+                ->count();
+
+            $hasHandoverAccess = \App\Models\ResearchPlacement::where('user_id', $user->id)
                 ->where('status', \App\Enums\ApplicationStatus::Approved->value)
                 ->exists();
 
-        $approvedLogsBase = \App\Models\PostAdoptionLog::query()
-            ->afterCompletedHandover()
-            ->whereHas('adoptionApplication', function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                  ->where('status', \App\Enums\ApplicationStatus::Approved->value);
-            });
+            $hasReceivedResearchPet = \App\Models\ResearchPlacement::where('user_id', $user->id)
+                ->where('status', \App\Enums\ApplicationStatus::Approved->value)
+                ->whereNotNull('received_at')
+                ->exists();
+        } else {
+            $adopterApplicationsCount = $user->adoptionApplications()
+                ->whereIn('status', [
+                    \App\Enums\ApplicationStatus::Pending->value,
+                    \App\Enums\ApplicationStatus::UnderReview->value,
+                    \App\Enums\ApplicationStatus::InterviewScheduled->value,
+                    \App\Enums\ApplicationStatus::DocumentFlagged->value,
+                ])
+                ->count();
 
-        $approvedLogs = $approvedLogsBase
-            ->select(['id', 'application_id', 'scheduled_date', 'submitted_date', 'is_flagged', 'resolved_at'])
-            ->get();
-        $webDemo = app(\App\Services\PostAdoptionWebDemoService::class);
-        $adopterDueReportsCount = $approvedLogs
-            ->filter(fn ($log) => !$log->submitted_date && $webDemo->isDue($log))->count();
-        $adopterOverdueCount = $approvedLogs
-            ->filter(fn ($log) => !$log->submitted_date && $webDemo->isOverdue($log))->count();
-        $adopterFlaggedCount = $approvedLogs
-            ->filter(fn ($log) => $log->display_is_flagged)->count();
+            $adopterHandoverCount = \App\Models\Handover::where('user_id', $user->id)
+                ->whereNull('adopter_confirmed_at')
+                ->count();
+            $hasHandoverAccess = \App\Models\Handover::where('user_id', $user->id)->exists()
+                || $user->adoptionApplications()
+                    ->where('status', \App\Enums\ApplicationStatus::Approved->value)
+                    ->exists();
+
+            $approvedLogsBase = \App\Models\PostAdoptionLog::query()
+                ->afterCompletedHandover()
+                ->whereHas('adoptionApplication', function ($q) use ($user) {
+                    $q->where('user_id', $user->id)
+                      ->where('status', \App\Enums\ApplicationStatus::Approved->value);
+                });
+
+            $approvedLogs = $approvedLogsBase
+                ->select(['id', 'application_id', 'scheduled_date', 'submitted_date', 'is_flagged', 'resolved_at'])
+                ->get();
+            $webDemo = app(\App\Services\PostAdoptionWebDemoService::class);
+            $adopterDueReportsCount = $approvedLogs
+                ->filter(fn ($log) => !$log->submitted_date && $webDemo->isDue($log))->count();
+            $adopterOverdueCount = $approvedLogs
+                ->filter(fn ($log) => !$log->submitted_date && $webDemo->isOverdue($log))->count();
+            $adopterFlaggedCount = $approvedLogs
+                ->filter(fn ($log) => $log->display_is_flagged)->count();
+        }
     }
 
-    $hasReceivedPet = $user && $user->adoptionApplications()
+    $hasReceivedPet = ! $isResearch && $user && $user->adoptionApplications()
         ->where('status', \App\Enums\ApplicationStatus::Approved->value)
         ->whereHas('handover', function ($query) {
             $query->where('adopter_outcome', 'received');
@@ -101,10 +125,10 @@
                 @endif
             </a>
 
-            <a href="{{ \App\Support\ResearchMode::ready() ? route('research.index', ['section' => 'handover']) : route('adopter.handover.my') }}"
+            <a href="{{ route('adopter.handover.my') }}"
                class="menu-item{{ $handoverActive ? ' active' : '' }}"
                @if($handoverActive) aria-current="page" @endif
-               @if (! \App\Support\ResearchMode::ready() && ! $hasHandoverAccess) data-handover-unavailable @endif
+               @if (! $hasHandoverAccess) data-handover-unavailable @endif
                data-sidebar-dismissible="adopter_handover"
                data-badge-count="{{ $adopterHandoverCount }}">
                 <i class="fa-solid fa-truck-ramp-box fa-lg"></i> Handover Status
@@ -117,10 +141,9 @@
             </a>
         </div>
 
-@if (\App\Support\ResearchMode::allowsAdopter($user) && \App\Models\ResearchPlacement::where('user_id', $user->id)->whereNotNull('received_at')->exists())
+@if (\App\Support\ResearchMode::allowsAdopter($user) && $hasReceivedResearchPet)
         <div class="menu-title">POST-ADOPTION</div>
         <div class="menu-section">
-            @php($checkinsActive = $researchSection === 'check-ins' || $isActive('research.report'))
             <a href="{{ route('monitoring.my-checkins') }}" class="menu-item{{ $checkinsActive ? ' active' : '' }}"
                @if($checkinsActive) aria-current="page" @endif>
                 <i class="fa-solid fa-circle-check fa-lg"></i> My Check-ins
@@ -197,10 +220,10 @@
     ];
 
     // If currently on an active route, automatically mark it as dismissed
-    @if ($isActive('application.index', 'application.apply', 'application.submit'))
+    @if ($isActive('application.index', 'application.apply', 'application.submit', 'research.preview'))
         try { localStorage.setItem('sidebar_badge_dismissed_adopter_applications', 'true'); } catch (e) {}
     @endif
-    @if ($isActive('adopter.handover.my', 'adopter.handover.status', 'adopter.confirm', 'adopter.handover.notifications'))
+    @if ($isActive('adopter.handover.my', 'adopter.handover.status', 'adopter.confirm', 'adopter.handover.notifications', 'research.handover', 'research.receipt'))
         try { localStorage.setItem('sidebar_badge_dismissed_adopter_handover', 'true'); } catch (e) {}
     @endif
     @if ($isActive('monitoring.submit-report', 'monitoring.create', 'monitoring.capture-challenge', 'monitoring.submit'))

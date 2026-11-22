@@ -56,7 +56,12 @@
                                         @endif
                                     "></span>
 
-                                    <strong> {{ $log->milestone->shortLabel() }}</strong>&middot; Due:{{ $log->scheduled_date->format('F j, Y') }}
+                                    <strong> {{ $log->milestone->shortLabel() }}</strong>
+                                    @if($log->scheduled_date)
+                                        &middot; Due:{{ $log->scheduled_date->format('F j, Y') }}
+                                    @elseif($log->display_status === 'Pending')
+                                        &middot; Ready now
+                                    @endif
                                 </div>
 
                                 <div class="schedule-actions">
@@ -91,11 +96,11 @@
 
                                     {{-- Submit report --}}
                                     @if(in_array($log->display_status, ['Pending', 'Overdue'], true))
-                                        <a class="btn btn-primary" href="{{ route('monitoring.create', $log) }}"><i class="fa-solid fa-paper-plane"></i>
+                                        <a class="btn btn-primary" href="{{ $log->submit_url ?? route('monitoring.create', $log) }}"><i class="fa-solid fa-paper-plane"></i>
                                             Submit Now
                                         </a>
                                     @elseif($log->display_status === 'Upcoming')
-                                        <span class="text-[#888] text-sm">Opens {{ $log->scheduled_date->format('M d') }}</span>
+                                        <span class="text-[#888] text-sm">{{ $log->scheduled_date ? 'Opens '.$log->scheduled_date->format('M d') : 'Unlocks after previous check-in' }}</span>
                                     @elseif($log->display_status === 'Placement ended')
                                         <span class="text-[#888] text-sm">No further report is required</span>
                                     @else
@@ -147,7 +152,7 @@
                                                         @endif
                                                     </div>
                                                 </td>
-                                                <td><button type="button" class="btn btn-secondary" onclick="openReportViewModal({{ $report->id }})"><i class="fa-solid fa-eye"></i>View</button></td>
+                                                <td><button type="button" class="btn btn-secondary" @if($report->modal_url) data-modal-url="{{ $report->modal_url }}" @endif onclick="openReportViewModal({{ $report->id }}, this.dataset.modalUrl || null)"><i class="fa-solid fa-eye"></i>View</button></td>
                                             </tr>
                                         @endforeach
                                     </tbody>

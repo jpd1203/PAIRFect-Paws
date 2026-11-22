@@ -21,7 +21,6 @@ use App\Http\Controllers\TimeTravelController;
 use App\Http\Middleware\EnsureVerificationLinkMatchesUser;
 use App\Http\Middleware\ProtectResearchAdminWorkflow;
 use App\Http\Middleware\ResearchApplicationRouting;
-use App\Http\Middleware\ResearchAwareAdopterVerification;
 use App\Http\Middleware\ResearchParticipant;
 use App\Http\Middleware\ResearchRecommendationAccess;
 use App\Http\Middleware\ResearchRegistrationThrottle;
@@ -177,7 +176,7 @@ Route::middleware('auth')->group(function () {
             ]);
         })->name('animal.index');
 
-        Route::middleware([ResearchAwareAdopterVerification::class, ResearchApplicationRouting::class])->group(function () {
+        Route::middleware(['verified', ResearchApplicationRouting::class])->group(function () {
             Route::prefix('research')->name('research.')->middleware(ResearchParticipant::class)
                 ->controller(ResearchScenarioController::class)->group(function () {
                     Route::get('/scenarios', 'index')->name('index');
@@ -186,6 +185,10 @@ Route::middleware('auth')->group(function () {
                     Route::post('/placements/{placement}/continue', 'continueAdoption')->whereNumber('placement')->name('continue');
                     Route::post('/placements/{placement}/withdraw', 'withdraw')->whereNumber('placement')->name('withdraw');
                 });
+            Route::get('/research/checkins/{report}/modal', [ResearchCheckInController::class, 'modal'])
+                ->whereNumber('report')
+                ->middleware(ResearchParticipant::class)
+                ->name('research.checkin.modal');
             Route::prefix('research/placements/{placement}')->name('research.')->middleware(ResearchParticipant::class)->where(['placement' => '[0-9]+'])->group(function () {
                 Route::get('/handover', [ResearchHandoverController::class, 'show'])->name('handover');
                 Route::post('/handover/method', [ResearchHandoverController::class, 'selectMethod'])->middleware('throttle:12,1')->name('handover.method');
@@ -350,7 +353,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // ─── Handover & Adopter Confirmation Link Routes ──────────────────────────────
-Route::middleware(['auth', 'adopter', 'verified'])->group(function () {
+Route::middleware(['auth', 'adopter', 'verified', ResearchApplicationRouting::class])->group(function () {
     Route::post('/adopter/{handover}/schedule/confirm', [HandoverScheduleController::class, 'confirm'])->name('adopter.handover.schedule.confirm');
     Route::post('/adopter/{handover}/schedule/method', [HandoverScheduleController::class, 'selectMethod'])->name('adopter.handover.schedule.method');
     Route::post('/adopter/{handover}/reschedule', [HandoverScheduleController::class, 'requestReschedule'])->name('adopter.handover.reschedule');

@@ -57,4 +57,19 @@ final class ResearchPlacement extends AdoptionApplication
     {
         return $this->compatibility_score !== null ? (float) $this->compatibility_score : null;
     }
+
+    public function canUploadReplacementDocument(): bool
+    {
+        return false;
+    }
+
+    public function getSubmittedOnAttribute()
+    {
+        return $this->created_at ?? $this->approved_at;
+    }
+
+    public function getLastUpdatedAttribute()
+    {
+        return $this->updated_at ?? $this->received_at ?? $this->released_at ?? $this->approved_at ?? $this->created_at;
+    }
 }
