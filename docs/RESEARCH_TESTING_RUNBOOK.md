@@ -28,9 +28,9 @@ php artisan config:cache
 
 Expect **70 / 70 / 210 / 0 / 0** before use. Stop on errors. The catalog transaction refuses a database with users or pets; it never clears one. For a failed rehearsal or a new wave, provision a different empty research schema and repeat, retaining the previous one. Do not retry initialization by deleting rows. No generated pet images. For survey 01, use the administrator bootstrap below, then upload approved fictional pet photos via Animal Records. Synthetic observers cannot log in.
 
-7. Share the website only with approved participants and obtain study consent before they register. They register using the normal form, are signed in immediately, complete the household/personality profile, and can apply without email verification or any SSH action. Existing terms/privacy consent and normal staff verification remain required. The research registration limit is 10 attempts/minute per IP; stagger registrations if respondents share a network. Tell participants not to upload IDs, addresses beyond the existing registration requirements, or real handover media. Use the study-approved data-minimization instructions.
+7. Share the website only with approved participants and obtain study consent before they register. They register using the normal form, are signed in immediately, complete the household/personality profile, and can apply without email verification or any SSH action. Existing terms/privacy consent and normal staff verification remain required. The research registration limit is 10 attempts/minute per IP; stagger registrations if respondents share a network. Provide synthetic IDs and safe practice media guidance; tell participants they can skip the ID and must not submit another person's document, real handover evidence, or unnecessary personal data. Use the study-approved data-minimization instructions.
 
-   In two browser contexts, pick the same eligible pet: A applies and gets **Primary Candidate**; B sees **Soft-Reserved** and joins the waitlist. B cannot continue. Withdraw A and refresh B to verify promotion. On another pet, have A continue while B is waitlisted: A sees simulated release, B sees Closed, and a new application is rejected. Test two submits against the same pet together (and two overlapping Continue clicks); confirm only one primary and one approved release per pet. The current primary isn't displaced by new applicants; promotion sorts by current KNN score descending, then created time and ID ascending. Confirm receipt manually and submit 3-day, 3-week, then 3-month practice reports without delay. Normal application, handover, OCR, courier, and production monitoring records/notifications must remain absent. Existing recommendation restrictions still apply; being assessed is not a guarantee of a match.
+   In two browser contexts, pick the same eligible pet: A applies and gets **Primary Candidate**; B sees **Soft-Reserved** and joins the waitlist. B cannot continue. Withdraw A and refresh B to verify promotion. On another pet, have A continue while B is waitlisted: A is approved, B sees Closed, and a new application is rejected. Test two submits against the same pet together (and two overlapping Continue clicks); confirm only one primary and one approval per pet. The current primary isn't displaced by new applicants; promotion sorts by current KNN score descending, then created time and ID ascending. Select a handover method, confirm the schedule, confirm receipt, and submit 3-day, 3-week, then 3-month practice reports without delay. Normal applications, handovers, courier actions, and production monitoring records/notifications must remain absent. Existing recommendation restrictions still apply; being assessed is not a guarantee of a match.
 
    Check remaining availability from MySQL on the research connection:
 
@@ -49,7 +49,7 @@ Expect **70 / 70 / 210 / 0 / 0** before use. Stop on errors. The catalog transac
 
 ## Upgrade an already active survey to the full participant interface
 
-Do not provision a new schema, reseed, run the administrator bootstrap again, or rerun the fresh setup for an existing survey. Prior submissions remain in place. New research applications require the Adoption and Data Processing Agreement, but do not collect or replace IDs. Normal adoption still requires ID upload.
+Do not provision a new schema, reseed, run the administrator bootstrap again, or rerun the fresh setup for an existing survey. Prior submissions remain in place. This earlier upgrade removed IDs from research applications; the workflow-restoration upgrade below supersedes that part by restoring an optional initial upload, not replacements. Normal adoption still requires an ID.
 
 The app no longer presents Study Information or records study participation consent. Before distributing access, collect voluntary study consent, provide example application details, and explain outside the app that no real placement or delivery occurs and how to withdraw. Do not treat the application's data-processing agreement as study consent. This release adds no migration and does not change earlier consent or document status records; the additive migration below remains required if it was not already applied.
 
@@ -76,7 +76,7 @@ php artisan config:cache
 
 ### Cleanup of temporary files from earlier releases
 
-Research applications no longer send data to Google Vision, and the old `RESEARCH_OCR_ENABLED` setting has no effect. Do not change the normal application's provider settings for this release. Previously recorded verification outcomes and consent metadata are retained.
+Between the removal and restoration of research ID upload, `RESEARCH_OCR_ENABLED` had no effect. The restored workflow below uses this flag, off by default. Previously recorded verification outcomes and consent metadata are retained.
 
 An earlier release used `storage/app/research-ocr`, a private, non-served disk. Do not expose it or include it in a backup. The hourly scheduler or the following dedicated command still prunes abandoned files older than one hour. If research does not run the ordinary scheduler, use this command to clear any leftover generated files:
 
@@ -94,6 +94,39 @@ This upgrade introduces no migrations, new tables, seeders, or Azure settings. I
 2. Put the isolated branch through a reviewed PR to `master`. After explicit authorization, merge only after GitHub validation passes. Watch the existing deployment run, then check `RELEASE.json` on App Service against the exact merged commit. Leave the existing research connection, flags, and storage settings in place.
 3. In a staff browser session, inspect existing study records on Applications, Compatibility, Handover & Release and Monitoring. Check a current waitlist rank against the adopter-side rank. Confirm the report shows its actual answers/time without an inferred due date, and staff cannot trigger real actions. For a workflow canary that writes records, use a separate disposable clone; the active study does not need new test submissions.
 4. If rollback is required, deploy a reviewed revert of this release through the same workflow. Do not roll back database migrations or reset the active research schema. Existing research data and the new audit events remain intact.
+
+## Upgrade an existing survey: camera, optional document OCR, and handover
+
+1. Rehearse the exact release and migration on a disposable restore. Get data-owner approval for the maintenance window, participant instructions/consent, private storage and retention. Reserve an approved private, writable persistent mount such as `/home/pairfect-research-private` and set `RESEARCH_PRIVATE_ROOT` to it. It must stay outside the webroot, public storage symlink, and any CDN mapping; use restricted access, encryption at rest and backups permitted by the retention plan. Preserve the current research APP_KEY, database credentials, upload locations and account/session settings; no key rotation is needed. Keep `RESEARCH_OCR_ENABLED=false` initially.
+2. Verify HTTPS, PHP `proc_open`, and a trusted Linux `ffprobe` binary on the persistent App Service runtime. Set `FFPROBE_PATH` to its absolute executable path and verify it runs as the web application user after restart. Ensure PHP and the request gateway accept multipart bodies with room above the 12 MB video limit. The research path rejects captures when metadata/duration verification is unavailable. Real mobile devices and permissions should be checked with operators before opening access.
+3. Use a reviewed PR targeting `master` and wait for all GitHub checks. After explicit authorization, pause participant traffic and any workers that write into the survey DB. Verify a recoverable encrypted backup of **pairfect_research_survey01** (including schema/metadata and private files where allowed), tested on an isolated restore with the matching key. Confirm the research DB account has no permission on **pairfect_paws**. Merge the reviewed PR; the existing workflow deploys the `master` artifact automatically and does **not** run migrations. Keep participants out until the schema and application are both verified.
+4. In Azure App Service SSH, confirm the runtime is the expected release and that the writer is the exact initialized research database. Abort for any mismatch or unrelated pending migrations.
+
+```sh
+cd /home/site/wwwroot
+cat RELEASE.json
+test -x "$FFPROBE_PATH" && "$FFPROBE_PATH" -version | head -n 1
+php artisan config:clear
+php artisan tinker --execute='dump(app()->environment(), config("app.debug"), config("research.enabled"), DB::selectOne("select database() as name", [], false)->name, DB::table("research_catalog")->count());'
+php artisan migrate:status
+```
+
+   Expect `production`, `false`, `true`, `pairfect_research_survey01`, and 70 catalog rows. Confirm the existing research and consent migrations are already applied. The only new migration for this release is additive; run it once while traffic remains restricted:
+
+```sh
+php artisan migrate --force --path=database/migrations/2026_11_24_000001_add_research_workflow_artifacts.php
+php artisan migrate:status
+php artisan config:cache
+```
+
+5. Check old placements, completed receipts and reports (including legacy surveys without a recording) on the existing staff pages. Use a disposable clone with a synthetic adopter to confirm pickup and delivery, reschedule, Not Received/retry, Received, all three camera reports, and private playback. Check that an adopter without permission cannot retrieve the staff file URLs. Before enabling OCR, confirm Cloud Vision API/billing and scoped Application Default Credentials (ADC), TLS/egress, processor/retention disclosures, and approval to transmit the uploaded file. Set `DOCUMENT_OCR_PROVIDER=google_vision` and `RESEARCH_OCR_ENABLED=true` only if approved; refresh the configuration cache/restart through the existing Azure procedure. Exercise one approved synthetic ID canary with the same runtime settings, and confirm that mismatch/unavailable outcomes still allow simulated approval. Keep OCR disabled if any prerequisite fails. Do not print credentials or raw OCR text.
+6. Reopen traffic only after verification. If the new application cannot be made healthy, deploy a reviewed revert of the release and leave its additive schema and data in place. A migration failure can leave partial MySQL DDL; inspect the schema and ledger under the maintenance window, and recover with an approved corrective migration or verified restore. Do not replay seeds, reset either database, or run the down migration. The other database and original uploads are not part of this upgrade.
+
+### Retention for restored research uploads
+
+Give participants the approved processor and retention information before testing; the application-specific checkbox authorizes the optional file processing but is not research participation consent. Use provided fictional IDs and practice media by default. Research OCR sends the file to Vision only after file-specific consent and only when the operator has enabled it. The app retains the file and outcome, not raw extracted text. Admins alone can download original IDs; authorized staff may review practice receipt photos and recordings. Restricted links stop serving the file once it is removed.
+
+Before enabling uploads, the data owner must assign a retention deadline and an operator. At withdrawal or expiry, use the authorized research record IDs to resolve only that person's generated relative paths from the research database; record the deletion job by internal IDs, not payloads, names, or OCR text. Verify the exact research DB and canonical private disk root, then remove the selected files from that disk and applicable backup/replica copies per policy. Do not delete a whole directory with mixed participants. Clear the associated media reference through an authorized maintenance operation if required by policy; preserve consent and recorded outcome/history only where their retention is approved. Verify the authorized URL now returns no file. Check for orphaned generated files against the same schema after interrupted uploads before purging; do not log file contents or attach uploaded IDs to support tickets. Backups and any processor-side retention follow their own approved access and expiry procedures. The legacy `research:purge-ocr-temp` command is not a retention tool for these uploads.
 
 ## First administrator in the already initialized survey 01
 

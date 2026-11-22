@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\ManilaTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Fluent;
 use Illuminate\Validation\ValidationException;
 
 class HandoverScheduleService
@@ -188,7 +189,7 @@ class HandoverScheduleService
         });
     }
 
-    public function label(Handover $handover): string
+    public function label(Handover|Fluent $handover): string
     {
         if (! $handover->scheduled_start_at || ! $handover->scheduled_end_at) {
             return 'No agreed schedule';

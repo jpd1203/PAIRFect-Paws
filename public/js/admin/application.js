@@ -112,6 +112,10 @@ function openReviewModal(id) {
         'Pending': 'Pending',
     }[a.document_verification_status] || a.document_verification_status || '—';
     document.getElementById('rDocumentStatus').textContent = docStatusDisplay;
+    const verification = a.document_verification_details;
+    document.getElementById('rDocumentVerificationDetails').textContent = verification
+        ? [verification.type, ...(verification.reasons || [])].filter(Boolean).join(' · ')
+        : '';
     const verificationLink = document.getElementById('rVerificationLink');
     verificationLink.href = a.verification_url || '#';
     verificationLink.hidden = !a.verification_url;

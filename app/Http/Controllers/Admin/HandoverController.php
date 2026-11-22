@@ -38,9 +38,10 @@ class HandoverController extends Controller
             $records = $all->filter(function ($record) use ($tab, $search) {
                 $matchesTab = match ($tab) {
                     'needs_handover' => ! $record->released_at,
-                    'awaiting' => $record->released_at && ! $record->received_at,
+                    'awaiting' => $record->released_at && ! $record->adopter_outcome,
                     'monitoring' => $record->received_at !== null,
-                    'failed', 'overdue', 'investigations' => false,
+                    'failed' => $record->adopter_outcome === 'not_received',
+                    'overdue', 'investigations' => false,
                     default => true,
                 };
 
@@ -55,8 +56,8 @@ class HandoverController extends Controller
                 'records' => $records, 'currentTab' => $tab, 'search' => $search, 'workflowReadOnly' => true,
                 'stats' => [
                     'needs_handover' => $all->whereNull('released_at')->count(),
-                    'awaiting' => $all->whereNotNull('released_at')->whereNull('received_at')->count(),
-                    'reported_failed' => 0, 'monitoring_active' => $completed, 'open_count' => $all->count() - $completed,
+                    'awaiting' => $all->whereNotNull('released_at')->whereNull('adopter_outcome')->count(),
+                    'reported_failed' => $all->where('adopter_outcome', 'not_received')->count(), 'monitoring_active' => $completed, 'open_count' => $all->count() - $completed,
                     'total_count' => $all->count(), 'investigations' => 0, 'overdue' => 0,
                 ],
             ]);

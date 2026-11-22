@@ -13,6 +13,9 @@ use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PetController;
 use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\ResearchCheckInController;
+use App\Http\Controllers\ResearchHandoverController;
+use App\Http\Controllers\ResearchMediaController;
 use App\Http\Controllers\ResearchScenarioController;
 use App\Http\Controllers\TimeTravelController;
 use App\Http\Middleware\EnsureVerificationLinkMatchesUser;
@@ -180,13 +183,23 @@ Route::middleware('auth')->group(function () {
                     Route::get('/scenarios', 'index')->name('index');
                     Route::get('/pets/{pet}', 'preview')->name('preview');
                     Route::post('/pets/{pet}', 'apply')->middleware('throttle:8,1,research-apply')->name('apply');
-                    Route::get('/placements/{placement}/handover', 'handover')->name('handover');
-                    Route::get('/placements/{placement}/checkins', 'report')->name('report');
                     Route::post('/placements/{placement}/continue', 'continueAdoption')->whereNumber('placement')->name('continue');
                     Route::post('/placements/{placement}/withdraw', 'withdraw')->whereNumber('placement')->name('withdraw');
-                    Route::post('/placements/{placement}/receipt', 'receive')->whereNumber('placement')->name('receive');
-                    Route::post('/placements/{placement}/checkins', 'checkin')->whereNumber('placement')->name('checkin');
                 });
+            Route::prefix('research/placements/{placement}')->name('research.')->middleware(ResearchParticipant::class)->where(['placement' => '[0-9]+'])->group(function () {
+                Route::get('/handover', [ResearchHandoverController::class, 'show'])->name('handover');
+                Route::post('/handover/method', [ResearchHandoverController::class, 'selectMethod'])->middleware('throttle:12,1')->name('handover.method');
+                Route::post('/handover/confirm', [ResearchHandoverController::class, 'confirmSchedule'])->middleware('throttle:12,1')->name('handover.confirm');
+                Route::post('/handover/reschedule', [ResearchHandoverController::class, 'reschedule'])->middleware('throttle:12,1')->name('handover.reschedule');
+                Route::post('/handover/retry', [ResearchHandoverController::class, 'retry'])->middleware('throttle:12,1')->name('handover.retry');
+                Route::get('/receipt', [ResearchHandoverController::class, 'receipt'])->name('receipt');
+                Route::post('/receipt', [ResearchHandoverController::class, 'receive'])->middleware('throttle:12,1')->name('receive');
+                Route::get('/receipt/photo', [ResearchMediaController::class, 'ownedReceipt'])->name('receipt.photo');
+                Route::get('/checkins', [ResearchCheckInController::class, 'show'])->name('report');
+                Route::post('/checkins', [ResearchCheckInController::class, 'store'])->middleware('throttle:8,1,research-checkin')->name('checkin');
+                Route::post('/checkins/{milestone}/capture-challenge', [ResearchCheckInController::class, 'challenge'])
+                    ->whereIn('milestone', ResearchMode::MILESTONES)->middleware('throttle:10,1,research-capture')->name('capture-challenge');
+            });
             // My Application
             Route::get('/application', [ApplicationController::class, 'index'])->name('application.index');
             Route::post('/applications/{application}/reschedule', [ApplicationController::class, 'requestReschedule'])
@@ -228,6 +241,12 @@ Route::middleware('auth')->group(function () {
 
         // Dashboard
         Route::get('/dashboard', [Admin\DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/records/{placement}/document', [ResearchMediaController::class, 'document'])
+            ->whereNumber('placement')->middleware('admin')->name('research.document');
+        Route::get('/records/{placement}/receipt-photo', [ResearchMediaController::class, 'receipt'])
+            ->whereNumber('placement')->name('research.receipt-photo');
+        Route::get('/records/checkins/{report}/video', [ResearchMediaController::class, 'video'])
+            ->whereNumber('report')->name('research.video');
 
         // Admin logout (sidebar uses admin.logout)
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

@@ -34,7 +34,7 @@
                     @if ($isReceived)
                         {{ ($workflowReadOnly ?? false) ? 'Confirmation recorded' : 'Confirmed received' }}
                     @elseif ($isFailed)
-                        Adopter says the pet never arrived
+                        {{ ($workflowReadOnly ?? false) ? 'Reported not received' : 'Adopter says the pet never arrived' }}
                     @else
                         Waiting on adopter receipt confirmation
                     @endif
@@ -50,7 +50,7 @@
                         </p>
                     @endif
                     @if ($isReceived && $record->receipt_proof_path)
-                        <a href="{{ route('handover.receipt-proof', $record) }}" target="_blank" rel="noopener" class="inline-block mt-2 text-xs font-semibold text-primary underline">View adopter Proof of Receipt photo</a>
+                        <a href="{{ ($workflowReadOnly ?? false) ? route('admin.research.receipt-photo', $record->id) : route('handover.receipt-proof', $record) }}" target="_blank" rel="noopener" class="inline-block mt-2 text-xs font-semibold text-primary underline">{{ ($workflowReadOnly ?? false) ? 'View supporting practice photo' : 'View adopter Proof of Receipt photo' }}</a>
                     @endif
                 @elseif(!($workflowReadOnly ?? false))
                     <p class="mt-1 text-xs text-text-muted m-0">

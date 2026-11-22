@@ -45,7 +45,7 @@ final class ResearchQueueConcurrencyTest extends TestCase
             [$primary->user_id, $primary->id], [$waitlisted->user_id, $waitlisted->id], [$primary->user_id, $primary->id],
         ]));
         $this->assertSame(1, ResearchPlacement::where('status', 'Approved')->count());
-        $this->assertSame(1, ResearchPlacement::whereNotNull('released_at')->count());
+        $this->assertSame(0, ResearchPlacement::whereNotNull('released_at')->count());
         $this->assertSame('Closed', $waitlisted->fresh()->status->value);
         $this->assertSame('Adopted', $pet->fresh()->availability_status->value);
     }

@@ -28,12 +28,7 @@
                             <h3 class="font-semibold">Confirmation recorded</h3>
                             <a class="btn btn-primary mt-3" href="{{ route('research.index', ['section' => 'check-ins']) }}#checkins-{{ $placement->id }}">View Check-Ins</a>
                         @else
-                            <h3 class="font-semibold">Confirm Pet Receipt</h3>
-                            <p class="my-3">Record your confirmation to unlock the post-adoption check-ins.</p>
-                            <form method="POST" action="{{ route('research.receive', $placement) }}">
-                                @csrf
-                                <button class="btn btn-primary">Confirm Receipt</button>
-                            </form>
+                            <a class="btn btn-primary" href="{{ route('research.handover', $placement) }}">View Handover Status</a>
                         @endif
                     </section>
                 </article>

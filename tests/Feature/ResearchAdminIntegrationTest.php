@@ -14,12 +14,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\BuildsMatchingFixtures;
+use Tests\Concerns\SubmitsResearchCheckIns;
 use Tests\TestCase;
 
 final class ResearchAdminIntegrationTest extends TestCase
 {
-    use BuildsMatchingFixtures, RefreshDatabase;
+    use BuildsMatchingFixtures, RefreshDatabase, SubmitsResearchCheckIns;
 
     public function test_respondent_workflow_appears_in_original_staff_pages_without_real_world_actions(): void
     {
@@ -67,6 +69,10 @@ final class ResearchAdminIntegrationTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['entity_name' => 'ResearchPlacement', 'entity_id' => $waiting->id, 'user_id' => null]);
         $this->assertSame(1, AuditLog::where('entity_name', 'ResearchPlacement')->count());
         $this->actingAs($staff)->get(route('admin.applications.index'))->assertOk()->assertSee('Approved automatically by the system.');
+        $this->get(route('admin.handover.index', ['tab' => 'needs_handover']))->assertOk()->assertSee('Blair Example');
+        $this->actingAs($b)->post(route('research.handover.method', $waiting), ['method' => 'delivery', 'schedule_version' => 0])->assertRedirect();
+        $this->post(route('research.handover.confirm', $waiting), ['schedule_version' => 1])->assertRedirect();
+        $this->actingAs($staff);
         $this->get(route('admin.handover.index', ['tab' => 'awaiting', 'search' => 'Blair']))->assertOk()
             ->assertSee('Blair Example')->assertSee('Awaiting adopter')->assertDontSee('Picked up at shelter');
         $this->get(route('admin.handover.show', $waiting->id))->assertOk()->assertViewIs('admin.handover.show')
@@ -74,7 +80,7 @@ final class ResearchAdminIntegrationTest extends TestCase
             ->assertDontSee('Send Email Reminder')->assertDontSee('Official physical custody');
         $this->get(route('admin.monitoring.index'))->assertOk()->assertViewHas('checkIns', fn ($logs) => $logs->isEmpty());
 
-        $this->actingAs($b)->post(route('research.receive', $waiting))->assertRedirect();
+        $this->actingAs($b)->post(route('research.receive', $waiting), ['outcome' => 'received', 'schedule_version' => 2])->assertRedirect();
         $this->actingAs($staff)->get(route('admin.handover.show', $waiting->id))->assertOk()->assertSee('Receipt confirmation recorded.');
         $this->get(route('admin.dashboard'))->assertOk()->assertViewHas('activeMonitoring', 1)
             ->assertViewHas('adoptedThisMonth', 1)->assertViewHas('pendingApplications', 0)->assertViewHas('flaggedMonitoring', 0);
@@ -82,12 +88,14 @@ final class ResearchAdminIntegrationTest extends TestCase
             ->assertViewHas('statusCounts', ['pending' => 1, 'upcoming' => 2]);
 
         $this->actingAs($b);
+        $this->probeResearchVideo();
+        Storage::fake('research-private');
         foreach (['3-day', '3-week', '3-month'] as $milestone) {
             $this->post(route('research.checkin', $waiting), [
                 'milestone' => $milestone, 'pet_current_status' => 'Poor',
                 'living_conditions' => 'Indoor Only', 'eating_habits' => 'Reduced Appetite',
                 'behavioral_observations' => 'Still adjusting', 'concerns' => 'Filed '.$milestone.' report.',
-            ])->assertRedirect();
+            ] + $this->researchCapture($waiting, $milestone, $milestone))->assertRedirect();
         }
         $this->actingAs($staff)->get(route('admin.monitoring.index'))->assertOk()->assertViewIs('admin.monitoring.index')
             ->assertSee('Filed 3-day report.')->assertSee('Filed 3-week report.')->assertSee('Filed 3-month report.')

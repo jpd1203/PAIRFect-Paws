@@ -31,20 +31,17 @@
         <form
             method="POST"
             action="{{ $researchReport ? route('research.checkin', $researchPlacement) : route('monitoring.submit', $log) }}"
-            @unless($researchReport)
             enctype="multipart/form-data"
             data-post-adoption-camera-form
             data-success-url="{{ route('monitoring.my-checkins') }}"
-            data-camera-challenge-url="{{ route('monitoring.capture-challenge', $log) }}"
-            @endunless
+            data-camera-challenge-url="{{ $researchReport ? route('research.capture-challenge', [$researchPlacement, $researchMilestone]) : route('monitoring.capture-challenge', $log) }}"
         >
             @csrf
             @if($researchReport)
                 <input type="hidden" name="milestone" value="{{ $researchMilestone }}">
-            @else
+            @endif
             <input type="hidden" name="camera_captured_at" value="" data-camera-captured-at>
             <input type="hidden" name="recording_duration_ms" value="" data-camera-recording-duration>
-            @endif
 
             <div class="form-grid">
             <div class="form-group">
@@ -118,12 +115,12 @@
             </div>
             </div>
 
-            @unless($researchReport)
             <section class="post-adoption-camera" data-camera-capture aria-labelledby="liveVideoHeading">
                 <div class="post-adoption-camera__heading">
                     <div>
-                        <h2 id="liveVideoHeading">Live 3-second welfare video*</h2>
+                        <h2 id="liveVideoHeading">{{ $researchReport ? 'Live 3-second video*' : 'Live 3-second welfare video*' }}</h2>
                         <p>Record a current video using this device's camera. Gallery uploads are not accepted.</p>
+                        @if($researchReport)<p>Use a safe practice subject. Keep other people and personal information out of view.</p>@endif
                     </div>
                     <span class="post-adoption-camera__badge">3-second live recording</span>
                 </div>
@@ -177,11 +174,10 @@
                     <p class="field-error">JavaScript is required to open the live camera and establish a secure capture session.</p>
                 </noscript>
             </section>
-            @endunless
 
             <div class="post-adoption-report-actions">
-                @unless($researchReport)<p data-camera-submit-hint>Record a live 3-second video to enable submission.</p>@endunless
-                <button type="submit" class="btn btn-primary" @unless($researchReport) data-camera-submit disabled @endunless><i class="fa-solid fa-paper-plane"></i>
+                <p data-camera-submit-hint>Record a live 3-second video to enable submission.</p>
+                <button type="submit" class="btn btn-primary" data-camera-submit disabled><i class="fa-solid fa-paper-plane"></i>
                     Submit Report
                 </button>
             </div>

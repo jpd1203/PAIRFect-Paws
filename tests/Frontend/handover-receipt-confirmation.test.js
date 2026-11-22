@@ -5,24 +5,29 @@ import { runInNewContext } from 'node:vm';
 
 const template = readFileSync(new URL('../../resources/views/handover/confirm.blade.php', import.meta.url), 'utf8');
 const button = template.match(/<button\b[^>]*\bvalue="not_received"[^>]*>/)?.[0];
-const handler = button?.match(/\bonclick="([^"]*)"/)?.[1];
-const message = 'Are you sure you want to report that your pet has not arrived? Staff will be alerted immediately.';
+const handlers = Array.from(button?.matchAll(/\bonclick="([^"]*)"/g) ?? [], (match) => match[1]);
+const messages = [
+    'Are you sure you want to record that your pet has not arrived?',
+    'Are you sure you want to report that your pet has not arrived? Staff will be alerted immediately.',
+];
 
 test('negative receipt confirmation uses only static code and the correct submit outcome', () => {
     assert.ok(button, 'Non-receipt submit button must exist');
     assert.match(button, /type="submit"/);
     assert.match(button, /name="outcome"/);
-    assert.equal(handler, `return confirm('${message}');`);
-    assert.doesNotMatch(handler, /\{\{|\{!!|\$record/);
+    assert.deepEqual(handlers, messages.map((message) => `return confirm('${message}');`));
+    handlers.forEach((handler) => assert.doesNotMatch(handler, /\{\{|\{!!|\$record/));
 });
 
 for (const accepted of [true, false]) {
     test(`confirmation ${accepted ? 'accepted permits' : 'canceled prevents'} default form submission`, () => {
-        const calls = [];
-        const result = runInNewContext(`(function () { ${handler} })()`, {
-            confirm: (text) => { calls.push(text); return accepted; },
+        handlers.forEach((handler, index) => {
+            const calls = [];
+            const result = runInNewContext(`(function () { ${handler} })()`, {
+                confirm: (text) => { calls.push(text); return accepted; },
+            });
+            assert.deepEqual(calls, [messages[index]]);
+            assert.equal(result, accepted);
         });
-        assert.deepEqual(calls, [message]);
-        assert.equal(result, accepted);
     });
 }

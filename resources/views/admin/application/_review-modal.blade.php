@@ -73,6 +73,7 @@
                     <span>OCR Verification</span>
                     <span>
                         <strong id="rDocumentStatus"></strong>
+                        <small id="rDocumentVerificationDetails" class="block mt-1"></small>
                         <a class="btn btn-secondary btn-sm ml-2" id="rVerificationLink" href="#" target="_blank"><i class="fa-solid fa-file-lines"></i>Details</a>
                     </span>
                 </div>

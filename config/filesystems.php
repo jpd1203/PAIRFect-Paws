@@ -31,6 +31,16 @@ return [
     */
 
     'disks' => [
+        'research-private' => [
+            'driver' => 'local',
+            'root' => env('RESEARCH_PRIVATE_ROOT') ?: storage_path('app/research-private'),
+            'visibility' => 'private',
+            'directory_visibility' => 'private',
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'research-ocr' => [
             'driver' => 'local',
             'root' => storage_path('app/research-ocr'),

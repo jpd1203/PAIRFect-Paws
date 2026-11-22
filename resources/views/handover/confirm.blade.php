@@ -22,7 +22,7 @@
 
             <!-- Sub Navigation Tabs -->
             <div class="flex items-center gap-2 border-b border-[#e2ddd7] pb-3 flex-wrap">
-                <a href="{{ route('adopter.handover.status', $record) }}" class="btn btn-secondary btn-sm">
+                <a href="{{ ($researchHandover ?? false) ? route('research.handover', $record->id) : route('adopter.handover.status', $record) }}" class="btn btn-secondary btn-sm">
                     <i class="fa-solid fa-arrow-left mr-1"></i> Back to Handover Status
                 </a>
 
@@ -44,7 +44,9 @@
                         {{ $record->released_at ? 'Did ' . ($record->pet?->name ?? 'your pet') . ' arrive?' : 'Awaiting handover for ' . ($record->pet?->name ?? 'your pet') }}
                     </h2>
                     <p class="mt-1 text-sm text-[#777] m-0">
-                        @if ($record->released_at)
+                        @if ($researchHandover ?? false)
+                            Select the receipt outcome for this handover.
+                        @elseif ($record->released_at)
                             Staff marked {{ $record->pet?->name ?? 'your pet' }} as released. Please confirm receipt so we can finalize your adoption.
                         @else
                             The shelter will let you know when {{ $record->pet?->name ?? 'your pet' }} has been released.
@@ -144,10 +146,12 @@
                         </div>
                         <div class="min-w-0 flex-1">
                             <h3 class="text-base font-bold font-primary {{ $isReceived ? 'text-status-success-text' : 'text-status-danger-text' }} m-0">
-                                {{ $isReceived ? "Thank you — {$record->pet?->name}'s adoption is complete!" : "Reported as not received. Shelter staff have been notified." }}
+                                {{ ($researchHandover ?? false) ? ($isReceived ? 'Receipt confirmation recorded.' : 'Reported as not received.') : ($isReceived ? "Thank you — {$record->pet?->name}'s adoption is complete!" : "Reported as not received. Shelter staff have been notified.") }}
                             </h3>
                             <p class="text-sm {{ $isReceived ? 'text-status-success-text' : 'text-status-danger-text' }} mt-1 mb-0 leading-relaxed">
-                                @if ($isReceived)
+                                @if($researchHandover ?? false)
+                                    {{ $isReceived ? 'You can now complete your post-adoption check-ins.' : 'Return to Handover Status to start a new attempt.' }}
+                                @elseif ($isReceived)
                                     Your first post-adoption check-in has been scheduled. You can track your ongoing care milestones in My Check-ins.
                                 @else
                                     Staff have received your report and will reach out to you promptly at <strong>{{ $record->adopter_phone }}</strong> to sort out {{ $record->pet?->name }}'s delivery.
@@ -164,7 +168,7 @@
                                 <p class="mt-3 text-sm text-status-success-text">
                                     Received {{ \App\Support\ManilaTime::format($record->received_at ?? $record->adopter_confirmed_at, 'M j, Y g:i A') }}.
                                     @if ($record->receipt_proof_path)
-                                        <a href="{{ route('handover.receipt-proof', $record) }}" target="_blank" rel="noopener" class="underline">View your supporting photo</a>
+                                        <a href="{{ ($researchHandover ?? false) ? route('research.receipt.photo', $record->id) : route('handover.receipt-proof', $record) }}" target="_blank" rel="noopener" class="underline">View your supporting photo</a>
                                     @endif
                                 </p>
                                 <div class="mt-4">
@@ -178,15 +182,16 @@
                 </div>
             @elseif ($record->released_at)
                 <section class="rounded-card border border-[#e2ddd7] bg-white p-6 shadow-card">
-                    <form method="POST" action="{{ route('adopter.confirm.submit', $record) }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ ($researchHandover ?? false) ? route('research.receive', $record->id) : route('adopter.confirm.submit', $record) }}" enctype="multipart/form-data">
                         @csrf
+                        @if($researchHandover ?? false)<input type="hidden" name="schedule_version" value="{{ $record->schedule_version }}">@endif
 
                         <div class="mb-5">
                             <h3 class="text-lg font-bold text-text-dark font-primary m-0 mb-1">
-                                Confirm Pet Delivery
+                                {{ ($researchHandover ?? false) ? 'Confirm Pet Receipt' : 'Confirm Pet Delivery' }}
                             </h3>
                             <p class="text-sm text-text-muted m-0 leading-relaxed">
-                                Once you confirm receipt, your adoption is finalized and post-adoption check-ins will activate.
+                                {{ ($researchHandover ?? false) ? 'Confirming receipt opens your post-adoption check-ins.' : 'Once you confirm receipt, your adoption is finalized and post-adoption check-ins will activate.' }}
                             </p>
                         </div>
 
@@ -198,9 +203,9 @@
 
                         <div class="form-group mb-5">
                             <label for="receiptProof" class="form-label">Proof of Receipt photo</label>
-                            <p class="text-sm text-text-muted mb-2">Upload a photo showing that you have received the adopted pet. This image will be stored as supporting documentation for the handover.</p>
+                            <p class="text-sm text-text-muted mb-2">{{ ($researchHandover ?? false) ? 'If you add a photo, use a provided example or a practice image you have permission to share. It does not verify a physical transfer.' : 'Upload a photo showing that you have received the adopted pet. This image will be stored as supporting documentation for the handover.' }}</p>
                             <input id="receiptProof" type="file" name="receipt_proof" accept="image/jpeg,image/png,image/webp" class="form-control" aria-describedby="receiptProofHelp">
-                            <p id="receiptProofHelp" class="text-xs text-text-muted mt-1">JPEG, PNG, or WebP; maximum 5 MB. Required when confirming receipt.</p>
+                            <p id="receiptProofHelp" class="text-xs text-text-muted mt-1">JPEG, PNG, or WebP; maximum 5 MB. {{ ($researchHandover ?? false) ? 'Optional when confirming receipt.' : 'Required when confirming receipt.' }}</p>
                             <img id="receiptProofPreview" class="hidden mt-3 h-32 w-32 rounded-xl object-cover border border-[#e2ddd7]" alt="Selected receipt photo preview">
                         </div>
 
@@ -215,7 +220,11 @@
 
                         <div class="flex items-center justify-end gap-4 flex-wrap pt-4 border-t border-[#e2ddd7]">
                             <button type="submit" name="outcome" value="not_received"
-                                    onclick="return confirm('Are you sure you want to report that your pet has not arrived? Staff will be alerted immediately.');"
+                                    @if($researchHandover ?? false)
+                                        onclick="return confirm('Are you sure you want to record that your pet has not arrived?');"
+                                    @else
+                                        onclick="return confirm('Are you sure you want to report that your pet has not arrived? Staff will be alerted immediately.');"
+                                    @endif
                                     class="btn btn-secondary">
                                 <i class="fa-solid fa-triangle-exclamation mr-2"></i> No, I haven't received my pet
                             </button>
@@ -226,7 +235,7 @@
                     </form>
                 </section>
             @else
-                <div class="rounded-card border border-[#e2ddd7] bg-white p-6 text-sm text-text-muted">Receipt confirmation becomes available after staff mark the pet as released.</div>
+                <div class="rounded-card border border-[#e2ddd7] bg-white p-6 text-sm text-text-muted">{{ ($researchHandover ?? false) ? 'Receipt confirmation is available after you confirm the handover schedule.' : 'Receipt confirmation becomes available after staff mark the pet as released.' }}</div>
             @endif
 
         </div>

@@ -1,7 +1,7 @@
 @include('handover._schedule-summary')
-@if(!$record->released_at && !$record->adopter_outcome)
+@if((($researchHandover ?? false) || !$record->released_at) && !$record->adopter_outcome)
     <section class="rounded-card border border-[#e2ddd7] bg-white p-5 shadow-card">
-        @if($record->canSelectScheduleMethod())
+        @if(($researchHandover ?? false) ? $record->schedule_status === 'unscheduled' : $record->canSelectScheduleMethod())
             <div class="{{ in_array($record->schedule_status, ['proposed'], true) ? 'border-b border-gray-200' : '' }}">
                 <div class="flex items-center justify-between mb-3">
                     <div>
@@ -22,7 +22,7 @@
                     @endif
                 </div>
 
-                <form method="POST" action="{{ route('adopter.handover.schedule.method', $record) }}">
+                <form method="POST" action="{{ ($researchHandover ?? false) ? route('research.handover.method', $record->id) : route('adopter.handover.schedule.method', $record) }}">
                     @csrf
                     <input type="hidden" name="schedule_version" value="{{ $record->schedule_version }}">
                     <div class="grid gap-3 sm:grid-cols-2">
@@ -54,7 +54,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-base font-bold text-text-dark font-primary m-0">Handover Method</h3>
-                        <p class="text-xs text-[#777] m-0 mt-0.5">The method belongs to this proposed or confirmed schedule. Ask shelter staff for a new proposal to change it.</p>
+                        <p class="text-xs text-[#777] m-0 mt-0.5">{{ ($researchHandover ?? false) ? 'The selected method applies to the current schedule.' : 'The method belongs to this proposed or confirmed schedule. Ask shelter staff for a new proposal to change it.' }}</p>
                     </div>
                     @php
                         $isPickupMethod = $record->scheduled_method === 'pickup';
@@ -72,9 +72,9 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <h4 class="text-sm font-bold text-text-dark font-primary m-0">Confirm Proposed Schedule</h4>
-                        <p class="text-xs text-text-muted mt-0.5">Shelter staff proposed a handover window. Confirm if you accept this time.</p>
+                        <p class="text-xs text-text-muted mt-0.5">{{ ($researchHandover ?? false) ? 'Confirm if you accept this proposed window.' : 'Shelter staff proposed a handover window. Confirm if you accept this time.' }}</p>
                     </div>
-                    <form method="POST" action="{{ route('adopter.handover.schedule.confirm', $record) }}" class="m-0">
+                    <form method="POST" action="{{ ($researchHandover ?? false) ? route('research.handover.confirm', $record->id) : route('adopter.handover.schedule.confirm', $record) }}" class="m-0">
                         @csrf
                         <input type="hidden" name="schedule_version" value="{{ $record->schedule_version }}">
                         <button class="btn btn-primary btn-sm" type="submit">
@@ -92,8 +92,8 @@
                     <span class="text-gray-400 transition group-open:rotate-180">▾</span>
                 </summary>
                 <div class="border-t border-gray-200 bg-gray-50/40 px-4 py-3">
-                    <p class="mb-3 text-sm leading-5 text-gray-600">Provide up to three preferred windows in Asia/Manila. A confirmed schedule remains active until staff approve a replacement.</p>
-                    <form method="POST" action="{{ route('adopter.handover.reschedule', $record) }}" class="space-y-3">
+                    <p class="mb-3 text-sm leading-5 text-gray-600">Provide up to three preferred windows in Asia/Manila. {{ ($researchHandover ?? false) ? 'Confirm the new proposal before continuing.' : 'A confirmed schedule remains active until staff approve a replacement.' }}</p>
+                    <form method="POST" action="{{ ($researchHandover ?? false) ? route('research.handover.reschedule', $record->id) : route('adopter.handover.reschedule', $record) }}" class="space-y-3">
                         @csrf
                         <input type="hidden" name="schedule_version" value="{{ $record->schedule_version }}">
                         <div class="space-y-2">

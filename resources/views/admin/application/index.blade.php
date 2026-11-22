@@ -308,8 +308,13 @@
                 'housing_type' => $app->housing_type,
                 'household_composition' => $details['household_composition'] ?? $app->household_composition,
                 'monthly_income_range' => $app->monthly_income_range,
-                'document_url' => $workflowReadOnly ? null : route('admin.applications.document', $app),
+                'document_url' => $workflowReadOnly
+                    ? ($app->document_path && auth()->user()->isAdmin() ? route('admin.research.document', $app) : null)
+                    : route('admin.applications.document', $app),
                 'document_verification_status' => $app->document_verification_status?->value ?? ($workflowReadOnly ? null : 'Pending'),
+                'document_verification_details' => $workflowReadOnly && $app->document_verification_status ? [
+                    'type' => $app->document_type, 'reasons' => $app->document_verification_reasons ?? [],
+                ] : null,
                 'verification_url' => $workflowReadOnly ? null : route('admin.applications.document-verification', $app),
                 'has_compatibility' => $app->compatibility_result !== null,
                 'compatibility' => $app->compatibility_result ?? ['overall' => 0, 'rows' => []],

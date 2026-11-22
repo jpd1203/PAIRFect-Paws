@@ -49,11 +49,24 @@ final class ResearchAdminRecords
 
     public function handover(ResearchPlacement $placement): Fluent
     {
-        $ready = $placement->released_at !== null;
-        $received = $ready && $placement->received_at !== null;
+        $schedule = $placement->handover_schedule ?? [];
+        $receipt = $placement->handover_receipt ?? [];
+        $received = $placement->received_at !== null;
+        $ready = $received || ($schedule['status'] ?? null) === 'confirmed';
+        $outcome = $received ? 'received' : ($receipt['outcome'] ?? null);
+        $occurredAt = isset($receipt['at']) ? CarbonImmutable::parse($receipt['at']) : $placement->received_at;
         $history = [['label' => 'Application approved', 'actor' => 'System', 'at' => $placement->approved_at->toISOString()]];
-        if ($ready) {
+        if (isset($schedule['reschedule']['requested_at'])) {
+            $history[] = ['label' => 'Reschedule requested', 'actor' => $placement->user?->full_name ?? 'Adopter', 'at' => $schedule['reschedule']['requested_at']];
+        }
+        if (isset($schedule['proposed_at'])) {
+            $history[] = ['label' => 'Schedule proposed', 'actor' => 'System', 'at' => $schedule['proposed_at']];
+        }
+        if ($ready && $placement->released_at) {
             $history[] = ['label' => 'Handover marked ready', 'actor' => 'System', 'at' => $placement->released_at->toISOString()];
+        }
+        if (isset($receipt['previous_not_received']['at'])) {
+            $history[] = ['label' => 'Reported not received', 'actor' => $placement->user?->full_name ?? 'Adopter', 'at' => $receipt['previous_not_received']['at']];
         }
         if ($received) {
             $history[] = ['label' => 'Receipt confirmation recorded', 'actor' => $placement->user?->full_name ?? 'Adopter', 'at' => $placement->received_at->toISOString()];
@@ -64,14 +77,22 @@ final class ResearchAdminRecords
             'pet' => $placement->pet, 'photo_url' => $placement->pet?->image_url,
             'adopter_name' => trim($placement->first_name.' '.$placement->last_name),
             'adopter_phone' => $placement->phone_number, 'adopter_email' => $placement->email, 'adopter_address' => $placement->address,
-            'approved_at' => $placement->approved_at, 'released_at' => $placement->released_at, 'received_at' => $received ? $placement->received_at : null,
-            'adopter_outcome' => $received ? 'received' : null, 'adopter_confirmed_at' => $received ? $placement->received_at : null,
-            'history' => $history, 'transportIncidents' => collect(),
+            'approved_at' => $placement->approved_at, 'released_at' => $ready ? $placement->released_at : null, 'received_at' => $placement->received_at,
+            'adopter_outcome' => $outcome, 'adopter_confirmed_at' => $occurredAt, 'adopter_note' => $receipt['note'] ?? null,
+            'receipt_proof_path' => $receipt['path'] ?? null,
+            'scheduled_method' => $schedule['method'] ?? null, 'schedule_status' => $schedule['status'] ?? 'unscheduled',
+            'schedule_version' => $schedule['version'] ?? 0, 'reschedule_status' => isset($schedule['reschedule']) ? 'proposal updated' : null,
+            'reschedule_reason' => $schedule['reschedule']['reason'] ?? null,
+            'scheduled_start_at' => isset($schedule['start_at']) ? CarbonImmutable::parse($schedule['start_at']) : null,
+            'scheduled_end_at' => isset($schedule['end_at']) ? CarbonImmutable::parse($schedule['end_at']) : null,
+            'schedule_confirmed_at' => isset($schedule['confirmed_at']) ? CarbonImmutable::parse($schedule['confirmed_at']) : null,
+            'history' => collect($history)->sortBy('at')->values()->all(), 'transportIncidents' => collect(),
             'current_step' => $received ? 'monitoring' : ($ready ? 'awaiting' : 'approved'),
             'completed_steps' => ['approved' => true, 'handover_set' => $ready, 'awaiting' => $received, 'monitoring' => $received],
             'monitoring_locked' => ! $received,
             'status_badge' => match (true) {
                 $received => ['label' => 'Monitoring active', 'class' => 'badge-completed', 'icon' => 'fa-solid fa-circle-check'],
+                $outcome === 'not_received' => ['label' => 'Not received', 'class' => 'badge-rejected', 'icon' => 'fa-solid fa-triangle-exclamation'],
                 $ready => ['label' => 'Awaiting adopter', 'class' => 'badge-pending', 'icon' => 'fa-solid fa-clock'],
                 default => ['label' => 'Needs handover', 'class' => 'badge-upcoming', 'icon' => 'fa-solid fa-box-archive'],
             },
@@ -103,6 +124,7 @@ final class ResearchAdminRecords
                     'milestone_display' => $milestone->label(), 'status_slug' => $status, 'status_display' => ucfirst($status),
                     'submitted_date' => $report ? CarbonImmutable::parse($report->submitted_at, 'UTC') : null,
                     'survey_data' => $report ? json_decode($report->answers, true) : [],
+                    'video_path' => $report?->video_path,
                 ]);
             });
         });
