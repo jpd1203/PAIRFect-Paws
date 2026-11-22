@@ -20,7 +20,8 @@ final class AdoptionForm
             'time_availability' => 'required|string|max:255',
             'prior_pet_experience' => 'required|string|max:255',
             'household_composition' => 'required|string|max:255',
-            'document' => ($research ? 'nullable|' : 'required|').self::DOCUMENT_RULE,
+            'document' => 'required|'.self::DOCUMENT_RULE,
+            ...($research ? ['document_consent' => 'accepted'] : []),
             'agreed_to_terms' => 'accepted',
             ...PhilippineLocationService::validationRules(),
         ];

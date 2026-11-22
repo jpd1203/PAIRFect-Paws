@@ -49,7 +49,7 @@ Expect **70 / 70 / 210 / 0 / 0** before use. Stop on errors. The catalog transac
 
 ## Upgrade an already active survey to the full participant interface
 
-This is an additive upgrade. Do not provision a new schema, reseed, run the administrator bootstrap again, or rerun the fresh setup for an existing survey. The research consent and optional document outcome columns are new; prior submissions remain in place and show Not Submitted rather than being treated as verified. Existing respondents see the versioned study introduction once at their next protected step.
+This is an additive upgrade. Do not provision a new schema, reseed, run the administrator bootstrap again, or rerun the fresh setup for an existing survey. The research consent and document outcome columns are new; prior submissions remain in place and show Not Submitted rather than being treated as verified. A supporting file and explicit document consent are required on new applications. Existing respondents see the versioned study introduction once at their next protected step.
 
 1. Confirm study-owner approval, restore-tested backups of the **research** schema and its necessary configuration, and availability of the existing study APP_KEY. Pause participant traffic during deploy and migration. Keep research-only database credentials in use and leave the original database untouched.
 2. After explicit authorization, publish a reviewed PR targeting master. Wait for validation and the existing automatic deployment. Initially leave `RESEARCH_OCR_ENABLED=false`. In Azure SSH:
@@ -70,11 +70,11 @@ php artisan migrate:status
 php artisan config:cache
 ```
 
-3. Check an existing respondent can accept the updated study disclosure, use the full adoption form without a file, and see retained applications. Verify reservation, next applicant promotion, continuation, receipt confirmation and the shared welfare form. Test production templates separately with Research Mode off on a disposable environment. Use a reviewed code rollback if needed; leave the additive columns in place to retain study submissions.
+3. Check an existing respondent can accept the updated study disclosure, submit the full adoption form with an approved non-ID sample and see retained applications. Verify the form rejects a missing file or consent. Confirm reservation, next applicant promotion, continuation, receipt confirmation and the shared welfare form. Test production templates separately with Research Mode off on a disposable environment. Use a reviewed code rollback if needed; leave the additive columns in place to retain study submissions.
 
-### Optional Google Vision and ID retention
+### Google Vision opt-in and document retention
 
-Default is off. First approve the third-party processor, the synthetic-only sample instructions, the consent copy, a documented study retention period and the operator responsible for deletion. Configure `DOCUMENT_OCR_PROVIDER=google_vision` and the app's Application Default Credentials using authorized, read-only secret storage outside Git and the web root. Confirm API enablement, billing, quota/IAM and HTTPS egress from App Service. Do not print the credentials or access token. See [Vision setup](https://docs.cloud.google.com/vision/docs/setup) and [Application Default Credentials](https://docs.cloud.google.com/docs/authentication/application-default-credentials).
+Google Vision is off by default. A supporting file is required even with OCR off, but is not sent to Google in that case. First approve the third-party processor, the sample and redaction instructions, the consent copy, a documented study retention period and the operator responsible for deletion. Configure `DOCUMENT_OCR_PROVIDER=google_vision` and the app's Application Default Credentials using authorized, read-only secret storage outside Git and the web root. Confirm API enablement, billing, quota/IAM and HTTPS egress from App Service. Do not print the credentials or access token. See [Vision setup](https://docs.cloud.google.com/vision/docs/setup) and [Application Default Credentials](https://docs.cloud.google.com/docs/authentication/application-default-credentials).
 
 After approval, set `RESEARCH_OCR_ENABLED=true` for the research runtime, refresh config, and use a synthetic sample matching example application data in a restricted test session before accepting any participant uploads. Test a mismatched sample too. A text match is not proof of identity. If Vision is unavailable, the UI reports the failure without claiming any staff review has occurred. Switch the flag off on failure. Never use genuine government IDs for the canary.
 

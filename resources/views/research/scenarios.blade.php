@@ -26,7 +26,7 @@
                         <span class="label">Document Verification</span>
                         <span class="value font-semibold">{{ match($p->document_verification_status?->value) {
                             'Verified' => 'Name and address matched by OCR',
-                            'NeedsResubmission' => 'Replacement Required',
+                            'NeedsResubmission' => 'Not Automatically Verified',
                             'ManualReview' => 'Automatic Check Unavailable',
                             default => 'Not Submitted',
                         } }}</span>
@@ -40,7 +40,7 @@
                     @if($p->acceptsResearchReplacement())
                         <form action="{{ route('research.document', $p) }}" method="POST" enctype="multipart/form-data" class="mt-3 border-t pt-3">
                             @csrf
-                            <label class="block" for="replacement_document_{{ $p->id }}">Upload a replacement sample (optional)</label>
+                            <label class="block" for="replacement_document_{{ $p->id }}">Upload a replacement document (optional)</label>
                             <input id="replacement_document_{{ $p->id }}" type="file" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
                             @include('research._document-consent', ['consentId' => $p->id])
                             <button type="submit" class="btn btn-secondary">Submit Replacement</button>

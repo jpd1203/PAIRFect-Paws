@@ -31,7 +31,7 @@
                 <a class="btn btn-secondary mt-3" href="{{ route('recommendation.intake', ['return_pet' => $pet->id]) }}">Review / Update Assessment</a>
             </section>
             @if (session('success'))<p class="mb-4 text-green-800">{{ session('success') }}</p>@endif
-            @if (old('motivation_statement'))<p class="mb-4 text-amber-800">Your entered details were restored. @if($research) If you want to include a document, reattach it and confirm your consent. @else Please reattach your supporting document before submitting. @endif</p>@endif
+            @if (old('motivation_statement'))<p class="mb-4 text-amber-800">Your entered details were restored. Please reattach your supporting document before submitting.</p>@endif
 
             @if ($errors->any())
                 <div class="mb-5 rounded-lg border border-status-danger-text bg-status-danger-bg px-4 py-3 text-status-danger-text text-sm">
@@ -157,12 +157,12 @@
 
                     <div class="form-group">
                         <label for="application_document">
-                            {{ $research ? 'Supporting ID (optional)' : 'Upload Government ID Showing Your Name and Residential Address*' }}
+                            {{ $research ? 'Upload Supporting Document*' : 'Upload Government ID Showing Your Name and Residential Address*' }}
                         </label>
 
-                        <input type="file" id="application_document" name="document" accept=".pdf,.jpg,.jpeg,.png" @required(!$research)>
+                        <input type="file" id="application_document" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
                         @if($research)
-                            <p class="mt-2 text-sm">Use a synthetic study sample styled as a Philippine National ID or LTO driver's license, with the example name and address you enter above. PDF, JPG or PNG up to 10 MB. You can leave this blank.</p>
+                            <p class="mt-2 text-sm">Upload a supporting document, such as redacted proof of address or a sample document. A government ID is not required. Remove sensitive details you don't need to share. PDF, JPG or PNG up to 10 MB.</p>
                             @if(! config('research.ocr_enabled') || config('document_verification.provider') !== 'google_vision')
                                 <p class="mt-2 text-sm">Automatic document checking is currently unavailable.</p>
                             @endif
@@ -178,7 +178,7 @@
                         <input type="checkbox" id="agreement_terms" name="agreed_to_terms" value="1" required>
                         <label for="agreement_terms">
                             @if($research)
-                                I agree to submit these details under the <a class="underline" href="{{ route('study.intro') }}">study and data processing agreement</a>.
+                                I agree to submit these details under the <a class="underline" href="{{ route('study.intro') }}">Adoption and Data Processing Agreement</a>.
                             @else
                             I have read, understood, and agree to the terms of the 
                             <a href="javascript:void(0)" onclick="openTermsModal()" style="color: var(--primary-color); text-decoration: underline;">Adoption and Data Processing Agreement</a>.

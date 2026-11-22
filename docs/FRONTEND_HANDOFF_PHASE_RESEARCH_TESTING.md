@@ -2,8 +2,8 @@
 
 | File | What to review |
 | --- | --- |
-| `resources/views/application/apply.blade.php` | Both modes use this form, including personality, address, household, motivation, file picker and validation. Study submit action and separate optional file consent are conditional. |
-| `resources/views/research/{study,_document-consent,unavailable}.blade.php` | One-time study introduction, opt-in for sending documents, normal-style availability feedback. The original research-only apply template was removed. |
+| `resources/views/application/apply.blade.php` | Both modes require a file. The study accepts a supporting PDF/JPG/PNG without requiring a government ID, and requires separate document-processing consent. Live adoption still uses its original ID wording. |
+| `resources/views/research/{study,_document-consent,unavailable}.blade.php` | One-time study introduction, explicit consent for document processing, and normal-style availability feedback. The original research-only apply template was removed. |
 | `resources/views/research/scenarios.blade.php` | My Applications uses existing card and status styling; preserves waitlist position, primary-only Continue, withdrawal, document status/replacement and links to owned handover/check-ins. |
 | `resources/views/research/handover.blade.php` | Normal handover card/header and receipt confirmation structure; no actual delivery, physical proof, schedule or contact details. |
 | `resources/views/monitoring/create.blade.php` | The same welfare fields and inline errors in both modes. Study milestones are accelerated and the study branch does not prompt for a camera or store videos. |

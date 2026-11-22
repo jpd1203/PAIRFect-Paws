@@ -86,19 +86,17 @@ final class ResearchScenarioController extends Controller
         if (! $match->eligible) {
             throw ValidationException::withMessages(['pet_id' => MatchPresenter::reason($match->exclusionReason)]);
         }
-        $validated = $request->validate(AdoptionForm::rules(research: true));
-        if (isset($validated['document'])) {
-            $request->validate(['document_consent' => 'accepted'], [
-                'document_consent.accepted' => 'Confirm consent to check the document, or leave the upload blank.',
-            ]);
-        }
+        $validated = $request->validate(AdoptionForm::rules(research: true), [
+            'document.required' => 'Upload a supporting document to continue. It does not have to be an ID.',
+            'document_consent.accepted' => 'Accept the document processing terms to submit your application.',
+        ]);
         $details = Arr::only($validated, [
             'first_name', 'last_name', 'email', 'phone_number', 'motivation_statement', 'physical_activity_level',
             'time_availability', 'prior_pet_experience', 'household_composition',
         ]);
         $details['address'] = $locations->resolveAddress($validated);
         $details['agreed_at'] = now()->toISOString();
-        $attributes = isset($validated['document']) ? $documents->process($validated['document'], $details) : [];
+        $attributes = $documents->process($validated['document'], $details);
         $queue->submitResearch($user, $pet, ['application_details' => $details, ...$attributes]);
 
         return to_route('research.index')->with('success', 'Application submitted.');
