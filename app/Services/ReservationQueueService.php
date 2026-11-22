@@ -635,6 +635,7 @@ class ReservationQueueService
                 'approved_at' => $now, 'released_at' => $now, 'queue_closed_at' => $now,
             ]);
             $this->closeQueueLocked($pet, $candidate);
+            AuditLogService::log(null, 'automatically approved an application and marked the handover ready', 'ResearchPlacement', $candidate->id);
         });
     }
 

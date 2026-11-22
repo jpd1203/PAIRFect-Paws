@@ -136,7 +136,7 @@
                                 <i class="fa-solid fa-chevron-down select-arrow"></i>
                             </div>
                             @if(\App\Support\ResearchMode::ready())
-                                <small>Research catalog availability is managed by the shared queue. Editing a photo does not change it.</small>
+                                <small>Availability is managed by the application queue. Editing a photo does not change it.</small>
                             @endif
                         </div>
 

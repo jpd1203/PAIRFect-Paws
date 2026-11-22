@@ -6,9 +6,10 @@
 @section('content')
     @php
         $now = \Carbon\Carbon::now('Asia/Manila');
+        $workflowReadOnly = $workflowReadOnly ?? false;
 
         // Helper to extract report payload for view modal
-        $buildReportPayload = function ($checkIn) {
+        $buildReportPayload = function ($checkIn) use ($workflowReadOnly) {
             $survey = is_array($checkIn->survey_data) ? $checkIn->survey_data : [];
             $verification = is_array(data_get($survey, '_verification'))
                 ? data_get($survey, '_verification')
@@ -37,7 +38,7 @@
                 'adopter' => $checkIn->user?->full_name ?: 'Unknown adopter',
                 'pet' => $checkIn->pet?->name ?: 'Unknown pet',
                 'milestone' => $checkIn->milestone_display,
-                'due_date' => $checkIn->due_date->format('M j, Y'),
+                'due_date' => $checkIn->due_date?->format('M j, Y') ?? 'Not scheduled',
                 'submitted_date' => $checkIn->submitted_date
                     ? \App\Support\ManilaTime::format($checkIn->submitted_date, 'M j, Y g:i A')
                     : 'Not submitted',
@@ -66,8 +67,8 @@
                 'follow_up_submitted_at' => $checkIn->follow_up_submitted_at
                     ? \App\Support\ManilaTime::format($checkIn->follow_up_submitted_at, 'M j, Y g:i A')
                     : null,
-                'can_resolve' => $checkIn->is_flagged && !$checkIn->resolved_at,
-                'resolve_url' => route('admin.monitoring.resolve', $checkIn),
+                'can_resolve' => !$workflowReadOnly && $checkIn->is_flagged && !$checkIn->resolved_at,
+                'resolve_url' => $workflowReadOnly ? null : route('admin.monitoring.resolve', $checkIn),
                 'verification_method' => data_get($verification, 'method') ?: 'Not available',
                 'challenge_id' => data_get($verification, 'capture_challenge_id') ?: 'Not available',
                 'challenge_issued_at' => \App\Support\ManilaTime::parseAndFormat(
@@ -95,14 +96,14 @@
         // Group check-ins by adoption application
         $adoptions = $checkIns
             ->groupBy('application_id')
-            ->map(function ($logs, $appId) use ($buildReportPayload, $now) {
+            ->map(function ($logs, $appId) use ($workflowReadOnly) {
                 $firstLog = $logs->first();
                 $application = $firstLog->adoptionApplication;
                 $user = $application?->user;
                 $pet = $application?->pet;
 
                 // Sort logs chronologically
-                $sortedLogs = $logs->sortBy('scheduled_date')->values();
+                $sortedLogs = ($workflowReadOnly ? $logs : $logs->sortBy('scheduled_date'))->values();
 
                 // Compute overall adoption status
                 $statuses = $sortedLogs->pluck('status_slug')->all();
@@ -119,10 +120,10 @@
                 }
 
                 // Latest submitted report
-                $latestSubmitted = $sortedLogs
-                    ->whereNotNull('submitted_date')
-                    ->sortByDesc('submitted_date')
-                    ->first();
+                $submittedLogs = $sortedLogs->whereNotNull('submitted_date');
+                $latestSubmitted = ($workflowReadOnly
+                    ? $submittedLogs->sortBy([['submitted_date', 'desc'], ['id', 'desc']])
+                    : $submittedLogs->sortByDesc('submitted_date'))->first();
 
                 // Next pending/overdue/upcoming check-in
                 $nextCheckIn = $sortedLogs
@@ -147,7 +148,7 @@
                     'latest_submitted' => $latestSubmitted,
                     'next_check_in' => $nextCheckIn,
                     'primary_check_in' => $primaryCheckIn,
-                    'adopted_at' => $application?->adopted_at ?? $firstLog->created_at,
+                    'adopted_at' => $workflowReadOnly ? $application?->approved_at : ($application?->adopted_at ?? $firstLog->created_at),
                 ];
             })
             ->values();
@@ -426,7 +427,11 @@
                                         {{ $nextCheck->milestone_display }}
                                     </p>
                                     <p class="truncate text-xs text-muted mt-0.5">
-                                        {{ $nextCheck->status_slug === 'overdue' ? 'Was due' : 'Due' }} {{ $nextCheck->due_date->format('M j, Y') }}
+                                        @if($nextCheck->due_date)
+                                            {{ $nextCheck->status_slug === 'overdue' ? 'Was due' : 'Due' }} {{ $nextCheck->due_date->format('M j, Y') }}
+                                        @else
+                                            Available now
+                                        @endif
                                     </p>
                                 @else
                                     <p class="text-sm font-medium text-completed-fg flex items-center gap-1.5">
@@ -453,7 +458,14 @@
 
                             {{-- Col 6: Primary Quick Action Button --}}
                             <div class="flex justify-center">
-                                @if ($adoption->overall_status === 'flagged')
+                                @if ($workflowReadOnly && $latestSub)
+                                    <button type="button" class="btn btn-secondary w-[130px] h-[36px]"
+                                        data-report="{{ json_encode($buildReportPayload($latestSub), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}" onclick="openMonitoringViewModal(this)">
+                                        <i class="fa-solid fa-file-lines text-muted"></i> View Report
+                                    </button>
+                                @elseif ($workflowReadOnly)
+                                    <span class="text-xs text-muted font-medium">Awaiting report</span>
+                                @elseif ($adoption->overall_status === 'flagged')
                                     <button
                                         type="button"
                                         class="btn btn-secondary w-[130px] h-[36px]"
@@ -543,7 +555,7 @@
                                                     {{ $log->milestone_display }}
                                                 </td>
                                                 <td class="py-2.5 pr-4 text-muted">
-                                                    {{ $log->due_date->format('M j, Y') }}
+                                                    {{ $log->due_date?->format('M j, Y') ?? '—' }}
                                                 </td>
                                                 <td class="py-2.5 pr-4 text-muted">
                                                     @if ($log->submitted_date)
@@ -568,7 +580,9 @@
                                                     @endif
                                                 </td>
                                                 <td class="py-2.5 pr-4 text-muted">
-                                                    @if($log->has_presentation_demo)
+                                                    @if($workflowReadOnly)
+                                                        —
+                                                    @elseif($log->has_presentation_demo)
                                                         {{ $log->display_reminders_sent }} demo / {{ $log->reminders_sent }} official
                                                     @else
                                                         {{ $log->reminders_sent }} sent
@@ -585,7 +599,7 @@
                                                             <i class="fa-solid fa-eye"></i> View
                                                         </button>
 
-                                                        @if (!$log->submitted_date && $log->status_slug !== 'upcoming' && !$log->has_presentation_demo)
+                                                        @if (!$workflowReadOnly && !$log->submitted_date && $log->status_slug !== 'upcoming' && !$log->has_presentation_demo)
                                                             <button
                                                                 type="button"
                                                                 class="btn btn-yellow btn-sm !text-xs !py-1 !px-2.5"
@@ -597,7 +611,9 @@
                                                             </button>
                                                         @endif
 
-                                                        @if($log->has_presentation_demo)
+                                                        @if($workflowReadOnly)
+                                                            {{-- No welfare intervention actions for these reports. --}}
+                                                        @elseif($log->has_presentation_demo)
                                                             @if(auth()->user()->isAdmin())
                                                                 <a class="btn btn-secondary btn-sm !text-xs" href="{{ route('admin.post-adoption-demo.index', ['application_id' => $log->application_id]) }}">Demo controls</a>
                                                             @endif
@@ -753,7 +769,7 @@
                                         <p class="text-[14px] font-medium {{ $nextCheck->status_slug === 'overdue' ? 'text-overdue-fg font-bold' : 'text-ink' }} truncate">
                                             {{ $nextCheck->milestone_display }}
                                         </p>
-                                        <p class="text-xs text-muted truncate">{{ $nextCheck->due_date->format('M j') }}</p>
+                                        <p class="text-xs text-muted truncate">{{ $nextCheck->due_date?->format('M j') ?? 'Available now' }}</p>
                                     @else
                                         <p class="text-sm font-medium text-completed-fg">All done</p>
                                     @endif
@@ -839,7 +855,7 @@
                                                         {{ $log->milestone_display }}
                                                     </td>
                                                     <td class="py-2.5 pr-4 text-muted">
-                                                        {{ $log->due_date->format('M j, Y') }}
+                                                        {{ $log->due_date?->format('M j, Y') ?? '—' }}
                                                     </td>
                                                     <td class="py-2.5 pr-4 text-muted">
                                                         @if ($log->submitted_date)
@@ -866,7 +882,9 @@
                                                     </td>
 
                                                     <td class="py-2.5 pr-4 text-muted">
-                                                        @if($log->has_presentation_demo)
+                                                        @if($workflowReadOnly)
+                                                            —
+                                                        @elseif($log->has_presentation_demo)
                                                             {{ $log->display_reminders_sent }} demo / {{ $log->reminders_sent }} official
                                                         @else
                                                             {{ $log->reminders_sent }} sent
@@ -885,7 +903,7 @@
                                                             </button>
 
                                                             {{-- Remind --}}
-                                                            @if (!$log->submitted_date && $log->status_slug !== 'upcoming' && !$log->has_presentation_demo)
+                                                            @if (!$workflowReadOnly && !$log->submitted_date && $log->status_slug !== 'upcoming' && !$log->has_presentation_demo)
                                                                 <button type="button" class="btn btn-yellow btn-sm !text-xs !py-1 !px-2.5" data-action="{{ route('admin.monitoring.reminder', $log) }}"
                                                                     data-summary="{{ $logSummary }}"
                                                                     onclick="openMonitoringReminderModal(this)"
@@ -895,7 +913,9 @@
                                                             @endif
 
                                                             {{-- Flag --}}
-                                                            @if($log->has_presentation_demo)
+                                                            @if($workflowReadOnly)
+                                                                {{-- No welfare intervention actions for these reports. --}}
+                                                            @elseif($log->has_presentation_demo)
                                                                 @if(auth()->user()->isAdmin())
                                                                     <a class="btn btn-secondary btn-sm !text-xs" href="{{ route('admin.post-adoption-demo.index', ['application_id' => $log->application_id]) }}">Demo controls</a>
                                                                 @endif
@@ -1440,7 +1460,7 @@
             const resolutionForm = document.getElementById('monitoringViewResolveForm');
             if (resolutionForm) {
                 resolutionForm.classList.toggle('hidden', !data.can_resolve);
-                resolutionForm.action = data.resolve_url;
+                resolutionForm.action = data.resolve_url || '';
                 resolutionForm.reset();
                 resolutionForm.querySelector('[data-resolution-outcome]').dispatchEvent(new Event('change'));
             }

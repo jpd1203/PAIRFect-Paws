@@ -10,15 +10,18 @@ use App\Http\Controllers\Controller;
 use App\Models\AdoptionApplication;
 use App\Models\Pet;
 use App\Models\User;
-use App\Services\AuditLogService;
 use App\Services\AdopterHistoryService;
+use App\Services\AuditLogService;
 use App\Services\DocumentVerificationNotificationService;
 use App\Services\DocumentVerificationService;
 use App\Services\EmailNotificationService;
-use App\Services\ReservationQueueService;
 use App\Services\Matching\ApplicantRankingService;
-use App\Support\ManilaTime;
+use App\Services\Matching\ApplicationMatchService;
+use App\Services\ReservationQueueService;
 use App\Support\ApplicationListFilters;
+use App\Support\ManilaTime;
+use App\Support\ResearchAdminRecords;
+use App\Support\ResearchMode;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -33,7 +36,7 @@ class ApplicationController extends Controller
         private ReservationQueueService $reservationQueue,
         private DocumentVerificationNotificationService $documentNotifications,
         private DocumentVerificationService $documentVerification,
-        private \App\Services\Matching\ApplicationMatchService $matching,
+        private ApplicationMatchService $matching,
         private ApplicantRankingService $ranking,
         private EmailNotificationService $emailNotifications,
         private AdopterHistoryService $adopterHistory,
@@ -42,29 +45,39 @@ class ApplicationController extends Controller
     /**
      * GET /admin/applications — list all applications with applicant/pet details
      */
-    public function index(Request $request)
+    public function index(Request $request, ResearchAdminRecords $research)
     {
         $filters = ApplicationListFilters::validate($request);
+        $workflowReadOnly = ResearchMode::ready();
         // Start newest-first so pet groups and applications within each group retain recency order.
-        $applications = ApplicationListFilters::apply(AdoptionApplication::with(['user', 'pet']), $filters)
+        $applications = ApplicationListFilters::apply(
+            $workflowReadOnly ? $research->applications() : AdoptionApplication::with(['user', 'pet']),
+            $filters,
+        )
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();
 
-        $this->matching->refreshMany($applications);
-        $historySummaries = $this->adopterHistory->summariesForApplications($applications);
+        if ($workflowReadOnly) {
+            $research->rankForDisplay($applications, $this->ranking);
+        } else {
+            $this->matching->refreshMany($applications);
+        }
+        $historySummaries = $workflowReadOnly ? [] : $this->adopterHistory->summariesForApplications($applications);
 
         $petGroups = $applications->groupBy('pet_id');
-        $petGroups->each(function ($petApplications) {
-            $position = 0;
-            $this->ranking->sort($petApplications)->each(
-                function ($application) use (&$position) {
-                    if ($this->ranking->isEligible($application)) {
-                        $application->setAttribute('queue_position', ++$position);
+        if (! $workflowReadOnly) {
+            $petGroups->each(function ($petApplications) {
+                $position = 0;
+                $this->ranking->sort($petApplications)->each(
+                    function ($application) use (&$position) {
+                        if ($this->ranking->isEligible($application)) {
+                            $application->setAttribute('queue_position', ++$position);
+                        }
                     }
-                }
-            );
-        });
+                );
+            });
+        }
 
         // Keep applications for the same pet adjacent without changing their queue positions.
         $applications = $petGroups->flatMap(fn ($petApplications) => $petApplications->all())->values();
@@ -75,7 +88,7 @@ class ApplicationController extends Controller
             ->orderBy('last_name')
             ->get();
 
-        return view('admin.application.index', compact('applications', 'volunteers', 'historySummaries', 'filters'));
+        return view('admin.application.index', compact('applications', 'volunteers', 'historySummaries', 'filters', 'workflowReadOnly'));
     }
 
     /**

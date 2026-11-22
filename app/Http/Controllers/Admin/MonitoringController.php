@@ -16,6 +16,8 @@ use App\Services\AuditLogService;
 use App\Services\EmailNotificationService;
 use App\Services\PostAdoptionClock;
 use App\Services\PostAdoptionScheduleService;
+use App\Support\ResearchAdminRecords;
+use App\Support\ResearchMode;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,8 +31,17 @@ class MonitoringController extends Controller
 {
     public function __construct(private EmailNotificationService $notifications) {}
 
-    public function index()
+    public function index(ResearchAdminRecords $research)
     {
+        if (ResearchMode::ready()) {
+            $checkIns = $research->checkIns();
+
+            return view('admin.monitoring.index', [
+                'checkIns' => $checkIns, 'statusCounts' => $checkIns->countBy('status_slug')->all(),
+                'staffHandlers' => collect(), 'workflowReadOnly' => true,
+            ]);
+        }
+
         $checkIns = PostAdoptionLog::query()
             ->afterCompletedHandover()
             ->with(['adoptionApplication.user', 'adoptionApplication.pet', 'resolvedBy', 'returnHandledBy'])
@@ -51,6 +62,10 @@ class MonitoringController extends Controller
 
     public function flagged()
     {
+        if (ResearchMode::ready()) {
+            return view('admin.monitoring.flagged', ['flagged' => collect(), 'staffHandlers' => collect()]);
+        }
+
         $flagged = PostAdoptionLog::query()
             ->afterCompletedHandover()
             ->with(['adoptionApplication.user', 'adoptionApplication.pet', 'resolvedBy', 'returnHandledBy'])

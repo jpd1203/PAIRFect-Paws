@@ -16,6 +16,7 @@ use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\ResearchScenarioController;
 use App\Http\Controllers\TimeTravelController;
 use App\Http\Middleware\EnsureVerificationLinkMatchesUser;
+use App\Http\Middleware\ProtectResearchAdminWorkflow;
 use App\Http\Middleware\ResearchApplicationRouting;
 use App\Http\Middleware\ResearchAwareAdopterVerification;
 use App\Http\Middleware\ResearchParticipant;
@@ -129,6 +130,7 @@ Route::middleware('auth')->group(function () {
         ->name('account.password.update');
 
     Route::get('/admin/handover/{handover}/release-proof', [Admin\HandoverController::class, 'releaseProof'])
+        ->middleware(ProtectResearchAdminWorkflow::class)
         ->name('admin.handover.release-proof');
 
     // ─── Adopter Routes ───────────────────────────────────────────────────────
@@ -222,7 +224,7 @@ Route::middleware('auth')->group(function () {
 
     // ─── Staff Routes (Volunteer + Admin) ────────────────────────────────────
 
-    Route::middleware(['staff', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware(['staff', 'verified', ProtectResearchAdminWorkflow::class])->prefix('admin')->name('admin.')->group(function () {
 
         // Dashboard
         Route::get('/dashboard', [Admin\DashboardController::class, 'index'])->name('dashboard');
@@ -343,7 +345,7 @@ Route::middleware(['auth', 'adopter', 'verified'])->group(function () {
 });
 
 Route::get('/handover/{handover}/receipt-proof', [HandoverConfirmationController::class, 'receiptProof'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', ProtectResearchAdminWorkflow::class])
     ->name('handover.receipt-proof');
 
 Route::middleware('auth')->prefix('notifications')->name('notifications.')->group(function () {

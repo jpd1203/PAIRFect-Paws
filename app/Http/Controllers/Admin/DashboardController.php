@@ -10,6 +10,8 @@ use App\Models\Pet;
 use App\Models\PostAdoptionLog;
 use App\Services\PostAdoptionClock;
 use App\Services\PostAdoptionScheduleService;
+use App\Support\ResearchAdminRecords;
+use App\Support\ResearchMode;
 use Carbon\CarbonImmutable;
 
 class DashboardController extends Controller
@@ -19,28 +21,34 @@ class DashboardController extends Controller
     /**
      * GET /admin/dashboard
      */
-    public function index()
+    public function index(ResearchAdminRecords $research)
     {
-        $totalPets = Pet::count();
-        $availablePets = Pet::where('availability_status', 'Available')->count();
+        $workflowReadOnly = ResearchMode::ready();
+        $pets = Pet::query()->when($workflowReadOnly, fn ($query) => $query->whereIn(
+            'pets.id', fn ($catalog) => $catalog->select('pet_id')->from('research_catalog'),
+        ));
+        $totalPets = (clone $pets)->count();
+        $availablePets = $pets->where('availability_status', 'Available')->count();
+        $applications = $workflowReadOnly ? $research->applications() : AdoptionApplication::query();
 
         $now = CarbonImmutable::now(PostAdoptionScheduleService::TIMEZONE);
         $monthStartUtc = $now->startOfMonth()->utc();
         $monthEndUtc = $now->endOfMonth()->utc();
         $today = $this->clock->today()->toDateString();
 
-        $adoptedThisMonth = AdoptionApplication::query()
+        $adoptedThisMonth = (clone $applications)
             ->where('status', ApplicationStatus::Approved->value)
-            ->where(function ($query) use ($monthStartUtc, $monthEndUtc) {
-                $query->whereBetween('queue_closed_at', [$monthStartUtc, $monthEndUtc])
-                    ->orWhere(function ($fallback) use ($monthStartUtc, $monthEndUtc) {
-                        $fallback->whereNull('queue_closed_at')
-                            ->whereBetween('updated_at', [$monthStartUtc, $monthEndUtc]);
-                    });
-            })
+            ->when($workflowReadOnly, fn ($query) => $query->whereBetween('approved_at', [$monthStartUtc, $monthEndUtc]),
+                fn ($query) => $query->where(function ($query) use ($monthStartUtc, $monthEndUtc) {
+                    $query->whereBetween('queue_closed_at', [$monthStartUtc, $monthEndUtc])
+                        ->orWhere(function ($fallback) use ($monthStartUtc, $monthEndUtc) {
+                            $fallback->whereNull('queue_closed_at')
+                                ->whereBetween('updated_at', [$monthStartUtc, $monthEndUtc]);
+                        });
+                }))
             ->count();
 
-        $pendingApplications = AdoptionApplication::query()
+        $pendingApplications = (clone $applications)
             ->whereIn('status', [
                 ApplicationStatus::Pending->value,
                 ApplicationStatus::DocumentFlagged->value,
@@ -51,32 +59,37 @@ class DashboardController extends Controller
             ])
             ->count();
 
-        $activeMonitoring = PostAdoptionLog::query()
-            ->afterCompletedHandover()
-            ->beforeRecordedReturn()
-            ->whereNull('submitted_date')
-            ->count();
+        $activeMonitoring = $workflowReadOnly
+            ? $research->receivedHandovers()->whereRaw(
+                '(select count(*) from research_checkins where research_checkins.placement_id = research_placements.id) < ?',
+                [count(ResearchMode::MILESTONES)],
+            )->count()
+            : PostAdoptionLog::query()
+                ->afterCompletedHandover()
+                ->beforeRecordedReturn()
+                ->whereNull('submitted_date')
+                ->count();
 
-        $flaggedMonitoring = PostAdoptionLog::query()
+        $flaggedMonitoring = $workflowReadOnly ? 0 : PostAdoptionLog::query()
             ->afterCompletedHandover()
             ->where('is_flagged', true)
             ->whereNull('resolved_at')
             ->count();
 
         $pipeline = [
-            'scheduled' => AdoptionApplication::where('status', 'InterviewScheduled')->count(),
-            'underreview' => AdoptionApplication::where('status', 'UnderReview')->count(),
-            'approved' => AdoptionApplication::where('status', 'Approved')->count(),
-            'rejected' => AdoptionApplication::where('status', 'Rejected')->count(),
+            'scheduled' => (clone $applications)->where('status', 'InterviewScheduled')->count(),
+            'underreview' => (clone $applications)->where('status', 'UnderReview')->count(),
+            'approved' => (clone $applications)->where('status', 'Approved')->count(),
+            'rejected' => (clone $applications)->where('status', 'Rejected')->count(),
         ];
 
-        $recentApplications = AdoptionApplication::with(['user', 'pet'])
+        $recentApplications = (clone $applications)->with(['user', 'pet'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->take(5)
             ->get();
 
-        $overdueCheckIns = PostAdoptionLog::query()
+        $overdueCheckIns = $workflowReadOnly ? collect() : PostAdoptionLog::query()
             ->afterCompletedHandover()
             ->beforeRecordedReturn()
             ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
@@ -86,7 +99,7 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        $unresolvedFlags = PostAdoptionLog::query()
+        $unresolvedFlags = $workflowReadOnly ? collect() : PostAdoptionLog::query()
             ->afterCompletedHandover()
             ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
             ->where('is_flagged', true)
@@ -96,6 +109,10 @@ class DashboardController extends Controller
             ->get();
 
         $recentActivity = AuditLog::with('user')
+            ->when($workflowReadOnly, fn ($query) => $query->where(fn ($activity) => $activity
+                ->where('action', '!=', 'Pet Assessed')
+                ->orWhereDoesntHave('user', fn ($actor) => $actor
+                    ->where('is_active', false)->where('email', 'like', 'observer-%@example.invalid'))))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->take(5)
@@ -112,7 +129,7 @@ class DashboardController extends Controller
             'recentApplications',
             'overdueCheckIns',
             'unresolvedFlags',
-            'recentActivity'
+            'recentActivity',
         ));
     }
 }

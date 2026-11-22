@@ -26,11 +26,12 @@
                     <h6>Reservation Queue</h6>
                     <div class="review-row"><span>Queue position</span><span id="rQueuePosition"></span></div>
                     <div class="review-row"><span>Candidate role</span><span id="rCandidateRole"></span></div>
+                    <div class="review-row" id="rPromotionRow" style="display: none;"><span>Primary assigned</span><span id="rPromotionTime"></span></div>
                     <div class="review-row" id="rTimeoutRow"><span>72-hour timeout</span><span class="text-amber-700 font-semibold">Flagged for administrative review</span></div>
                 </div>
             </div>
 
-            <div class="review-container">
+            <div class="review-container" id="rApplicantHistoryContainer">
                 <div class="review-section" aria-label="Applicant history screening">
                     <h6>Applicant History</h6>
                     <div class="review-row"><span>Review status</span><span id="rHistoryStatus" class="badge"></span></div>

@@ -5,6 +5,10 @@
 @section('content')
 
     @php
+        $workflowReadOnly = $workflowReadOnly ?? false;
+    @endphp
+    @unless($workflowReadOnly)
+    @php
         // Read-only presentation of existing safeguards; release is still validated server-side.
         $uiClearance = app(\App\Services\HandoverDeliveryClearanceService::class);
         $uiIdentity = app(\App\Services\IdentityVerificationService::class);
@@ -77,6 +81,16 @@
             $uiNextAction = "Record the pet's release.";
         }
     @endphp
+    @else
+        @php
+            $uiTransportAlert = $uiUnreleased = $uiExpired = false;
+            $uiNextAction = $record->received_at
+                ? 'Receipt confirmation recorded. Post-adoption check-ins are available.'
+                : ($record->released_at ? 'Awaiting adopter receipt confirmation.' : 'Handover is not ready yet.');
+            $uiActionTarget = $record->released_at ? 'adopterConfirmationSection' : 'handoverLog';
+            $uiActionLabel = $record->released_at ? 'View receipt confirmation' : 'View handover log';
+        @endphp
+    @endunless
     <div data-handover-page data-validation-errors="{{ json_encode($errors->messages()) }}" data-failed-form="{{ old('_ui_form', '') }}" class="min-w-0">
 
     <div class="heading-text mb-5">
@@ -115,16 +129,20 @@
                 </div>
             @endif
             @if(session('success'))<div class="modal-note">{{ session('success') }}</div>@endif
-            <h3 class="font-bold text-base m-0">Schedule and verification</h3>
-            @include('admin.handover._schedule')
-            @include('admin.handover._delivery-clearance')
+            @unless($workflowReadOnly)
+                <h3 class="font-bold text-base m-0">Schedule and verification</h3>
+                @include('admin.handover._schedule')
+                @include('admin.handover._delivery-clearance')
+            @endunless
             @if ($record->released_at)
                 @include('admin.handover._recorded_release', ['record' => $record])
                 @include('admin.handover._adopter_confirmation', ['record' => $record])
-            @else
+            @elseif (!$workflowReadOnly)
                 @include('admin.handover._release_form', ['record' => $record])
             @endif
-            @include('admin.handover._transport-investigations')
+            @unless($workflowReadOnly)
+                @include('admin.handover._transport-investigations')
+            @endunless
         </div>
 
         <!-- Right Column: Adopter Profile Card & History Timeline -->
@@ -136,6 +154,9 @@
                 <summary class="cursor-pointer font-primary font-bold text-base text-text-dark">Adopter Details</summary>
                 <div class="mt-3">
                 <p class="text-base font-bold text-text-dark m-0">{{ $record->adopter_name }}</p>
+                @if($workflowReadOnly)
+                    <a class="text-sm underline" href="{{ route('admin.applications.index', ['highlight' => $record->application->id]) }}">Application #{{ $record->application->id }}</a>
+                @endif
 
                 <ul class="mt-3 space-y-2.5 text-sm text-text-muted list-none p-0">
                     <li class="flex items-start gap-2.5">
