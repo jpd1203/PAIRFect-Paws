@@ -21,24 +21,6 @@ use Illuminate\Validation\ValidationException;
 
 final class ResearchScenarioController extends Controller
 {
-    public function intro()
-    {
-        abort_unless(ResearchMode::ready(), 404);
-
-        return view('research.study');
-    }
-
-    public function consent(Request $request)
-    {
-        abort_unless(ResearchMode::ready(), 404);
-        $request->validate(['study_consent' => 'accepted']);
-        DB::table('research_study_consents')->insertOrIgnore([
-            'user_id' => $request->user()->id, 'version' => ResearchMode::CONSENT_VERSION, 'accepted_at' => now(),
-        ]);
-
-        return to_route($request->user()->matching_onboarding_pending ? 'recommendation.onboarding' : 'animal.index');
-    }
-
     public function index(Request $request, ApplicantRankingService $ranking)
     {
         $section = $request->query('section');
@@ -46,6 +28,11 @@ final class ResearchScenarioController extends Controller
             ->when($section === 'handover', fn ($query) => $query->where('status', ApplicationStatus::Approved)->whereNotNull('released_at'))
             ->when($section === 'check-ins', fn ($query) => $query->whereNotNull('received_at'))
             ->latest('id')->get();
+
+        if ($section === 'handover') {
+            return view('research.handover', compact('placements'));
+        }
+
         $submitted = DB::table('research_checkins')->whereIn('placement_id', $placements->pluck('id'))->get()->groupBy('placement_id');
         $positions = $placements->where('status', ApplicationStatus::Waitlisted)->mapWithKeys(function (ResearchPlacement $p) use ($ranking) {
             $offset = $ranking->eligibleResearchForPet($p->pet, locked: false)->search(fn ($candidate) => $candidate->id === $p->id);
@@ -137,7 +124,7 @@ final class ResearchScenarioController extends Controller
         abort_unless((clone $owned)->exists(), 404);
         $owned->whereNull('received_at')->update(['received_at' => now()]);
 
-        return to_route('research.index');
+        return to_route('research.index', ['section' => 'handover']);
     }
 
     public function handover(Request $request, ResearchPlacement $placement)
@@ -145,7 +132,7 @@ final class ResearchScenarioController extends Controller
         $this->owned($request, $placement);
         abort_unless($placement->status === ApplicationStatus::Approved && $placement->released_at, 404);
 
-        return view('research.handover', compact('placement'));
+        return view('research.handover', ['placements' => [$placement]]);
     }
 
     public function report(Request $request, ResearchPlacement $placement)

@@ -1,11 +1,11 @@
 @extends('layouts.app')
-@php($title = match ($section) {'handover' => 'Handover Status', 'check-ins' => 'My Check-Ins', default => 'My Applications'})
+@php($title = $section === 'check-ins' ? 'My Check-Ins' : 'My Applications')
 @section('title', $title.' - PAIRfect Paws')
 @section('notification-bell-in-header', true)
 @section('content')
 <div class="nonsticky-header custom-scrollbar">
     <div class="main-content-header">
-        <div class="heading-text"><h2>{{ $title }}</h2><p>{{ match ($section) {'handover' => 'View your handover progress', 'check-ins' => 'View and complete your welfare reports', default => 'Track the progress of your adoption applications'} }}</p></div>
+        <div class="heading-text"><h2>{{ $title }}</h2><p>{{ $section === 'check-ins' ? 'View and complete your welfare reports' : 'Track the progress of your adoption applications' }}</p></div>
         @include('partials.notification-bell')
     </div>
     <div class="content-area-nonsticky">
@@ -87,7 +87,7 @@
             </article>
         @empty
             <div class="empty-state">
-                <i class="fa-solid fa-file" aria-hidden="true"></i><h3>{{ match ($section) {'handover' => 'No handovers yet', 'check-ins' => 'No check-ins yet', default => 'No applications yet'} }}</h3>
+                <i class="fa-solid fa-file" aria-hidden="true"></i><h3>{{ $section === 'check-ins' ? 'No check-ins yet' : 'No applications yet' }}</h3>
                 <a href="{{ route('recommendation.intake') }}">Find a pet match</a>
             </div>
         @endforelse

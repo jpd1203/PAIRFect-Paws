@@ -11,6 +11,8 @@ use App\Models\ResearchPlacement;
 use App\Models\User;
 use App\Services\KnnRecommendationService;
 use Database\Seeders\ResearchCatalogSeeder;
+use DOMDocument;
+use DOMXPath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +23,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
 use Tests\Concerns\BuildsMatchingFixtures;
 use Tests\TestCase;
 
@@ -66,7 +69,7 @@ final class ResearchScenarioTest extends TestCase
         $this->seed(ResearchCatalogSeeder::class);
     }
 
-    public function test_registration_suppresses_verification_in_research_only(): void
+    public function test_research_registration_and_login_start_at_browse_pets_without_an_interstitial(): void
     {
         Notification::fake();
         Queue::fake();
@@ -78,18 +81,25 @@ final class ResearchScenarioTest extends TestCase
             'city_municipality_code' => '1380600000', 'barangay_code' => '1380606197',
             'street_address' => 'Fictional Street', 'zip_code' => '1016', 'terms_accepted' => '1', 'privacy_consent' => '1'];
         $this->post(route('register.store'), array_replace($payload, ['privacy_consent' => '0']))->assertSessionHasErrors('privacy_consent');
-        $this->post(route('register.store'), $payload)->assertRedirect(route('recommendation.onboarding'));
+        $this->post(route('register.store'), $payload)->assertRedirect(route('animal.index'));
         $user = User::where('email', 'survey@example.test')->sole();
         $this->assertAuthenticatedAs($user);
         $this->assertNull($user->email_verified_at);
         $this->assertNotNull($user->privacy_consent_at);
         $this->assertTrue(Hash::check('Password123!', $user->password));
-        $this->get(route('recommendation.onboarding'))->assertRedirect(route('study.intro'));
-        $this->get(route('research.index'))->assertRedirect(route('study.intro'));
-        $this->get(route('study.intro'))->assertOk()->assertSee('Participation is voluntary');
-        $this->post(route('study.consent'), ['study_consent' => 0])->assertSessionHasErrors('study_consent');
-        $this->agree($user);
-        $this->get(route('recommendation.onboarding'))->assertOk()->assertDontSee('Verify your email');
+        $this->assertTrue($user->matching_onboarding_pending);
+        $this->get(route('animal.index'))->assertOk()->assertViewIs('animal.index')
+            ->assertSee('Available Pets')->assertDontSee('Study Information')->assertDontSee('study-information', false);
+        $this->get('/study-information')->assertRedirect(route('animal.index'));
+        $this->post('/study-information', ['study_consent' => 1])->assertMethodNotAllowed();
+        $this->assertDatabaseCount('research_study_consents', 0);
+        $this->get(route('research.index'))->assertOk()->assertDontSee('Study Information');
+        $this->get(route('recommendation.results'))->assertRedirect(route('recommendation.intake'));
+        $this->get(route('recommendation.intake'))->assertOk()->assertDontSee('Verify your email');
+        $this->post(route('logout'))->assertRedirect(route('login'));
+        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'Password123!'])
+            ->assertRedirect(route('animal.index'));
+        $this->assertAuthenticatedAs($user);
         Notification::assertNothingSent();
         Queue::assertNothingPushed();
         config(['research.enabled' => false]);
@@ -100,6 +110,9 @@ final class ResearchScenarioTest extends TestCase
         $staff->update(['email_verified_at' => null]);
         $this->actingAs($staff)->get(route('admin.applications.index'))->assertRedirect(route('verification.notice'));
         $this->get(route('research.index'))->assertRedirect(route('access-denied'));
+        $user->update(['is_active' => false]);
+        $this->actingAs($user)->get(route('animal.index'))->assertRedirect(route('access-denied'));
+        $this->get(route('recommendation.intake'))->assertForbidden();
     }
 
     public function test_queue_uses_current_compatibility_and_enforces_owner_and_current_primary(): void
@@ -115,9 +128,10 @@ final class ResearchScenarioTest extends TestCase
         $c = $this->matchingUser();
         foreach ([$a, $b, $c] as $u) {
             $u->update(['email_verified_at' => null]);
-            $this->agree($u);
         }
         $apply = route('research.apply', $pet);
+        $this->actingAs($a)->get(route('research.preview', $pet))
+            ->assertRedirect(route('recommendation.intake', ['return_pet' => $pet->id]));
         $this->actingAs($a)->postJson($apply, ['eligible' => true])->assertUnprocessable();
         $profiles = collect(range(1, 5))->map(function ($rating) use ($a, $pet) {
             $profile = $this->completeMatchingProfile($a, ['bfi_responses' => $this->variedAnswers($rating)]);
@@ -131,7 +145,8 @@ final class ResearchScenarioTest extends TestCase
                 ->assertViewIs('application.apply')->assertSee('Personal Information')->assertSee('Adopter Profile')
                 ->assertSee('Upload Government ID Showing Your Name and Residential Address')
                 ->assertSee('Adoption and Data Processing Agreement')->assertSee('id="termsModal"', false)
-                ->assertDontSee('Research testing mode');
+                ->assertSee('Do not upload a real ID.')
+                ->assertDontSee('Research testing mode')->assertDontSee('Study Information');
             $this->post($apply, $this->application() + ['document' => $this->sample()])->assertRedirect(route('research.index'));
             $this->post($apply, $this->application())->assertRedirect(route('research.index'));
         }
@@ -141,7 +156,12 @@ final class ResearchScenarioTest extends TestCase
         $this->assertSame(ApplicationStatus::PrimaryCandidate, $primary->status);
         $this->assertSame(ApplicationStatus::Waitlisted, $earlier->status);
         $this->assertSame('Soft-Reserved', $pet->fresh()->availability_status->value);
-        $this->get(route('research.index'))->assertSee('Current waitlist position: 1.')->assertSee('Automatic Check Unavailable')->assertDontSee('Continue Application');
+        $applications = $this->get(route('research.index'))->assertSee('Current waitlist position: 1.')->assertSee('Automatic Check Unavailable')->assertDontSee('Continue Application');
+        $this->assertActiveSidebarLink($applications, route('application.index'));
+        $handoverList = route('research.index', ['section' => 'handover']);
+        $empty = $this->get($handoverList)->assertOk()->assertViewIs('research.handover')
+            ->assertSee('No handovers yet')->assertDontSee('Document Verification')->assertDontSee($pet->name);
+        $this->assertActiveSidebarLink($empty, $handoverList);
         $this->assertSame(DocumentVerificationStatus::ManualReview, $later->document_verification_status);
         $this->post(route('research.continue', $later))->assertConflict();
         $this->post(route('research.continue', $primary))->assertNotFound();
@@ -160,16 +180,27 @@ final class ResearchScenarioTest extends TestCase
         $this->assertSame('Adopted', $pet->fresh()->availability_status->value);
         $other = $this->matchingUser();
         $this->completeMatchingProfile($other);
-        $this->agree($other);
+        $this->actingAs($other);
         $this->postJson($apply)->assertUnprocessable();
+        $this->get($handoverList)->assertOk()->assertSee('No handovers yet')
+            ->assertDontSee($pet->name)->assertDontSee(route('research.receive', $later));
         $this->get(route('research.handover', $later))->assertNotFound();
         $this->post(route('research.receive', $later))->assertNotFound();
         $report = ['pet_current_status' => 'Good', 'living_conditions' => 'Indoor Only', 'eating_habits' => 'Normal', 'behavioral_observations' => 'Still adjusting'];
         $this->post(route('research.checkin', $later), $report + ['milestone' => '3-day'])->assertNotFound();
-        $this->actingAs($c)->get(route('research.handover', $later))->assertOk()->assertSee('Confirm Pet Receipt');
+        $handover = $this->actingAs($c)->get($handoverList)->assertOk()->assertViewIs('research.handover')
+            ->assertSee($pet->name)->assertSee('Awaiting confirmation')->assertSee('Confirm Pet Receipt')
+            ->assertSee(route('research.receive', $later))->assertDontSee('Document Verification')->assertDontSee('Submit Replacement');
+        $this->assertActiveSidebarLink($handover, $handoverList);
+        $detail = $this->get(route('research.handover', $later))->assertOk()->assertSee('Confirm Pet Receipt');
+        $this->assertActiveSidebarLink($detail, $handoverList);
         $this->post(route('research.checkin', $later), $report + ['milestone' => '3-day'])->assertConflict();
-        $this->post(route('research.receive', $later))->assertRedirect();
-        $this->post(route('research.receive', $later))->assertRedirect();
+        $this->post(route('research.receive', $later))->assertRedirect($handoverList);
+        $this->post(route('research.receive', $later))->assertRedirect($handoverList);
+        $checkins = route('research.index', ['section' => 'check-ins']);
+        $this->get($handoverList)->assertOk()->assertSee('Receipt confirmed')
+            ->assertSee($checkins.'#checkins-'.$later->id)->assertDontSee('Confirm Pet Receipt');
+        $this->assertActiveSidebarLink($this->get($checkins)->assertOk(), route('monitoring.my-checkins'));
         $this->post(route('research.checkin', $later), $report + ['milestone' => '3-month'])->assertConflict();
         foreach (['3-day', '3-week', '3-month'] as $milestone) {
             $this->get(route('research.report', $later))->assertOk()->assertViewIs('monitoring.create')
@@ -189,6 +220,17 @@ final class ResearchScenarioTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    private function assertActiveSidebarLink(TestResponse $response, string $href): void
+    {
+        $document = new DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $links = (new DOMXPath($document))->query('//*[@id="appSidebar"]//a[@aria-current="page"]');
+
+        $this->assertCount(1, $links);
+        $this->assertSame($href, $links->item(0)->getAttribute('href'));
+        $this->assertStringContainsString('active', $links->item(0)->getAttribute('class'));
+    }
+
     private function variedAnswers(int $rating): array
     {
         return array_replace($this->bfiResponses(), ['EX1' => $rating, 'EX4' => $rating, 'EX5' => $rating]);
@@ -200,7 +242,7 @@ final class ResearchScenarioTest extends TestCase
         $this->seed(ResearchCatalogSeeder::class);
         $user = $this->matchingUser();
         $this->completeMatchingProfile($user);
-        $this->agree($user);
+        $this->actingAs($user);
         $pet = Pet::firstOrFail();
         $this->post(route('research.apply', $pet), $this->application() + ['document' => $this->sample()])->assertRedirect();
         $this->post(route('research.withdraw', ResearchPlacement::sole()))->assertRedirect();
@@ -218,7 +260,7 @@ final class ResearchScenarioTest extends TestCase
         $this->seed(ResearchCatalogSeeder::class);
         $user = $this->matchingUser();
         $this->completeMatchingProfile($user);
-        $this->agree($user);
+        $this->actingAs($user);
         $this->app->bind(GoogleAccessTokenProvider::class, fn () => new class implements GoogleAccessTokenProvider
         {
             public function accessToken(): string
@@ -247,11 +289,11 @@ final class ResearchScenarioTest extends TestCase
         $this->assertStringNotContainsString('Rizal', $placement->getRawOriginal('application_details'));
         $this->get(route('research.index'))->assertSee('Replacement Required for Verification')
             ->assertSee('You can continue your application without waiting for document verification.')
-            ->assertDontSee('999 SAMPLE ROAD');
+            ->assertSee('Privacy Notice')->assertDontSee('Study Information')->assertDontSee('999 SAMPLE ROAD');
         $other = $this->matchingUser();
-        $this->agree($other);
         $replace = route('research.document', $placement);
-        $this->post($replace, ['document' => $this->sample(), 'document_consent' => 1])->assertNotFound();
+        $this->actingAs($other)->post($replace, ['document' => $this->sample(), 'document_consent' => 1])->assertNotFound();
+        $this->actingAs($user)->post($replace, ['document' => $this->sample()])->assertSessionHasErrors('document_consent');
         $this->actingAs($user)->post($replace, ['document' => $this->sample(), 'document_consent' => 1])->assertRedirect();
         $this->assertSame(DocumentVerificationStatus::Verified, $placement->fresh()->document_verification_status);
         $this->get(route('research.index'))->assertSee('Name and address matched by OCR')->assertSee('not proof of identity');
@@ -304,11 +346,6 @@ final class ResearchScenarioTest extends TestCase
         $this->artisan('research:purge-ocr-temp')->assertSuccessful();
         $disk->assertMissing($old);
         $disk->assertExists([$fresh, 'unrelated.txt']);
-    }
-
-    private function agree(User $user): void
-    {
-        $this->actingAs($user)->post(route('study.consent'), ['study_consent' => 1])->assertRedirect();
     }
 
     private function application(): array

@@ -104,7 +104,7 @@ class AuthController extends Controller
             $request->session()->forget('guest_adopter_profile');
         }
 
-        if (Auth::user()->isAdopter() && Auth::user()->matching_onboarding_pending) {
+        if (Auth::user()->isAdopter() && Auth::user()->matching_onboarding_pending && ! ResearchMode::allowsAdopter(Auth::user())) {
             $petId = $this->isValidRedirect($redirectTo) ? $this->intendedPetId($redirectTo) : null;
             if ($petId !== null) {
                 $request->session()->put('matching_return_pet', $petId);
@@ -171,7 +171,8 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        if (! ResearchMode::allowsAdopter($user)) {
+        $research = ResearchMode::allowsAdopter($user);
+        if (! $research) {
             event(new Registered($user));
         }
 
@@ -187,13 +188,17 @@ class AuthController extends Controller
             $request->session()->forget('guest_adopter_profile');
         }
 
+        if ($research) {
+            $request->session()->forget(['matching_return_pet', 'url.intended']);
+
+            return to_route('animal.index');
+        }
+
         if ($redirectTo && $this->isValidRedirect($redirectTo)) {
             session(['url.intended' => $redirectTo]);
         }
 
-        return redirect()->route(ResearchMode::allowsAdopter($user)
-            ? ($user->matching_onboarding_pending ? 'recommendation.onboarding' : 'recommendation.results')
-            : 'verification.notice');
+        return to_route('verification.notice');
     }
 
     // ─── Logout ───────────────────────────────────────────────────────────────

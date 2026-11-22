@@ -7,7 +7,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-final class ResearchStudyConsent
+final class ResearchRecommendationAccess
 {
     public function handle(Request $request, Closure $next): Response
     {
@@ -19,9 +19,6 @@ final class ResearchStudyConsent
             return to_route('login');
         }
         abort_if($user->isAdopter() && ! $user->is_active, 403);
-        if ($user->isAdopter() && ! ResearchMode::hasConsent($user)) {
-            return to_route('study.intro');
-        }
 
         return $next($request);
     }

@@ -164,6 +164,7 @@
                         <p class="mt-2 text-[.72rem] text-[#777]">For automatic verification, use a Philippine National ID or LTO driver's license showing your full name and current residential address. Passports, bills, and other proof-of-address documents are not eligible for automatic verification.</p>
                         <small class="text-[.72rem] text-[#777]">PDF, JPG, or PNG — max 10MB. OCR extracts text only; PAIRfect Paws does not use facial recognition or biometric matching.</small>
                         @if($research)
+                            <p class="mt-2 text-[.72rem] text-[#777]">Use only the example ID provided to you. Do not upload a real ID.</p>
                             <p class="mt-2 text-[.72rem] text-[#777]">Your document is handled privately. When automatic checking is enabled, Google Cloud Vision receives it for text extraction. The app deletes the file after checking and retains the result, not the extracted text.</p>
                             @if(! config('research.ocr_enabled') || config('document_verification.provider') !== 'google_vision')
                                 <p class="mt-2 text-[.72rem] text-[#777]">Automatic document checking is currently unavailable.</p>
@@ -211,7 +212,7 @@
                     <p><strong>Document processing</strong><br>
                         I agree to the temporary processing of my uploaded ID and, when automatic checking is enabled, to sending the file to Google Cloud Vision for text extraction. The result is used to compare my name and address, not to prove my identity. The uploaded file is deleted after processing and the app keeps the outcome, not the extracted text.</p>
                     <br>
-                    <p>Read the <a class="underline" href="{{ route('legal.privacy') }}">Privacy Notice</a> or <a class="underline" href="{{ route('study.intro') }}">Study Information</a> for more about data handling and participation.</p>
+                    <p>Read the <a class="underline" href="{{ route('legal.privacy') }}">Privacy Notice</a> for more about data handling.</p>
                 @else
                 <p>By submitting this application, you are making a formal commitment to the welfare of the animal and agreeing to our shelter protocols. Please read and agree to the following terms:</p>
                 <br>

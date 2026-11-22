@@ -7,6 +7,11 @@
 @php
     $isActive = fn (string ...$routeNames) => collect($routeNames)->contains(fn ($r) => request()->routeIs($r));
     $user = auth()->user();
+    $researchSection = $isActive('research.index') ? request()->query('section') : null;
+    $applicationsActive = $isActive('application.index', 'application.apply', 'application.submit', 'research.preview')
+        || ($isActive('research.index') && ! in_array($researchSection, ['handover', 'check-ins'], true));
+    $handoverActive = $researchSection === 'handover'
+        || $isActive('adopter.handover.my', 'adopter.handover.status', 'adopter.confirm', 'adopter.handover.notifications', 'research.handover');
 
     $adopterApplicationsCount = 0;
     $adopterHandoverCount = 0;
@@ -83,7 +88,8 @@
             </a>
 
             <a href="{{ route('application.index') }}"
-               class="menu-item {{ $isActive('application.index', 'application.apply', 'application.submit', 'research.index', 'research.preview') ? 'active' : '' }}"
+               class="menu-item{{ $applicationsActive ? ' active' : '' }}"
+               @if($applicationsActive) aria-current="page" @endif
                data-sidebar-dismissible="adopter_applications"
                data-badge-count="{{ $adopterApplicationsCount }}">
                 <i class="fa-solid fa-file fa-lg"></i> My Applications
@@ -96,7 +102,8 @@
             </a>
 
             <a href="{{ \App\Support\ResearchMode::ready() ? route('research.index', ['section' => 'handover']) : route('adopter.handover.my') }}"
-               class="menu-item {{ $isActive('adopter.handover.my', 'adopter.handover.status', 'adopter.confirm', 'adopter.handover.notifications', 'research.handover') ? 'active' : '' }}"
+               class="menu-item{{ $handoverActive ? ' active' : '' }}"
+               @if($handoverActive) aria-current="page" @endif
                @if (! \App\Support\ResearchMode::ready() && ! $hasHandoverAccess) data-handover-unavailable @endif
                data-sidebar-dismissible="adopter_handover"
                data-badge-count="{{ $adopterHandoverCount }}">
@@ -113,7 +120,9 @@
 @if (\App\Support\ResearchMode::allowsAdopter($user) && \App\Models\ResearchPlacement::where('user_id', $user->id)->whereNotNull('received_at')->exists())
         <div class="menu-title">POST-ADOPTION</div>
         <div class="menu-section">
-            <a href="{{ route('monitoring.my-checkins') }}" class="menu-item">
+            @php($checkinsActive = $researchSection === 'check-ins' || $isActive('research.report'))
+            <a href="{{ route('monitoring.my-checkins') }}" class="menu-item{{ $checkinsActive ? ' active' : '' }}"
+               @if($checkinsActive) aria-current="page" @endif>
                 <i class="fa-solid fa-circle-check fa-lg"></i> My Check-ins
             </a>
         </div>
@@ -169,9 +178,6 @@
 @endif
 
     </div>
-    @if(\App\Support\ResearchMode::allowsAdopter($user))
-        <a href="{{ route('study.intro') }}" class="menu-item text-sm">Study Information</a>
-    @endif
     
     @include('partials.profile-card')
     

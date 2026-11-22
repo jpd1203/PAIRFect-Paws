@@ -19,8 +19,8 @@ use App\Http\Middleware\EnsureVerificationLinkMatchesUser;
 use App\Http\Middleware\ResearchApplicationRouting;
 use App\Http\Middleware\ResearchAwareAdopterVerification;
 use App\Http\Middleware\ResearchParticipant;
+use App\Http\Middleware\ResearchRecommendationAccess;
 use App\Http\Middleware\ResearchRegistrationThrottle;
-use App\Http\Middleware\ResearchStudyConsent;
 use App\Models\Pet;
 use App\Services\PetLifeStageClassifier;
 use App\Support\ResearchMode;
@@ -89,12 +89,12 @@ Route::get('/pets/{pet}', [PetController::class, 'show'])->name('pets.show');
 
 // Signed-in adopters may explore recommendations before email verification.
 // Formal application routes below remain protected by the verified middleware.
-Route::middleware(['auth', 'adopter', ResearchStudyConsent::class])->group(function () {
+Route::middleware(['auth', 'adopter'])->group(function () {
     Route::get('/onboarding/assessment', [RecommendationController::class, 'onboarding'])->name('recommendation.onboarding');
     Route::post('/onboarding/assessment/skip', [RecommendationController::class, 'skipOnboarding'])->name('recommendation.onboarding.skip');
 });
 
-Route::middleware(ResearchStudyConsent::class)->group(function () {
+Route::middleware(ResearchRecommendationAccess::class)->group(function () {
     Route::get('/recommendation', [RecommendationController::class, 'intake'])->name('recommendation.intake');
     Route::post('/recommendation/start', [RecommendationController::class, 'start'])->name('recommendation.start');
     Route::get('/recommendation/results', [RecommendationController::class, 'results'])->name('recommendation.results');
@@ -134,8 +134,12 @@ Route::middleware('auth')->group(function () {
     // ─── Adopter Routes ───────────────────────────────────────────────────────
 
     Route::middleware('adopter')->group(function () {
-        Route::get('/study-information', [ResearchScenarioController::class, 'intro'])->name('study.intro');
-        Route::post('/study-information', [ResearchScenarioController::class, 'consent'])->name('study.consent');
+        // Redirect bookmarks without presenting or recording study consent.
+        Route::get('/study-information', function () {
+            abort_unless(ResearchMode::ready(), 404);
+
+            return to_route('animal.index');
+        });
 
         // Browse pets (adopter dashboard sidebar)
         Route::get('/animal', function (Request $request) {
@@ -166,9 +170,9 @@ Route::middleware('auth')->group(function () {
                 'speciesFilter' => $request->species ?? 'All Species',
                 'ageFilter' => $request->age ?? 'All Ages',
             ]);
-        })->middleware(ResearchStudyConsent::class)->name('animal.index');
+        })->name('animal.index');
 
-        Route::middleware([ResearchAwareAdopterVerification::class, ResearchStudyConsent::class, ResearchApplicationRouting::class])->group(function () {
+        Route::middleware([ResearchAwareAdopterVerification::class, ResearchApplicationRouting::class])->group(function () {
             Route::prefix('research')->name('research.')->middleware(ResearchParticipant::class)
                 ->controller(ResearchScenarioController::class)->group(function () {
                     Route::get('/scenarios', 'index')->name('index');

@@ -94,7 +94,7 @@ final class ProvisionResearchAdministratorTest extends TestCase
 
         $this->actingAs($adopter)->get(route('admin.dashboard'))->assertRedirect(route('access-denied'));
         $this->get(route('admin.animals.index'))->assertRedirect(route('access-denied'));
-        $this->get(route('research.index'))->assertRedirect(route('study.intro'));
+        $this->get(route('research.index'))->assertOk();
         $admin->update(['email_verified_at' => null]);
         $this->actingAs($admin)->get(route('admin.dashboard'))->assertRedirect(route('verification.notice'));
     }
