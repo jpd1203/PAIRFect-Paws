@@ -43,6 +43,7 @@ final class ApplicantRankingService
     {
         $score = $application->compatibility_result['compatibility_score'] ?? null;
 
+        // Research captures the outcome separately; its queue and continuation must not wait for document review.
         return ($application->compatibility_result['eligible'] ?? false) === true
             && is_numeric($score) && is_finite((float) $score)
             && ($application instanceof ResearchPlacement ? $application->user?->is_active && $application->user->isAdopter() : in_array($application->document_verification_status, [

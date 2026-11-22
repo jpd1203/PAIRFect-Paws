@@ -20,6 +20,7 @@ use App\Http\Middleware\ResearchApplicationRouting;
 use App\Http\Middleware\ResearchAwareAdopterVerification;
 use App\Http\Middleware\ResearchParticipant;
 use App\Http\Middleware\ResearchRegistrationThrottle;
+use App\Http\Middleware\ResearchStudyConsent;
 use App\Models\Pet;
 use App\Services\PetLifeStageClassifier;
 use App\Support\ResearchMode;
@@ -88,15 +89,17 @@ Route::get('/pets/{pet}', [PetController::class, 'show'])->name('pets.show');
 
 // Signed-in adopters may explore recommendations before email verification.
 // Formal application routes below remain protected by the verified middleware.
-Route::middleware(['auth', 'adopter'])->group(function () {
+Route::middleware(['auth', 'adopter', ResearchStudyConsent::class])->group(function () {
     Route::get('/onboarding/assessment', [RecommendationController::class, 'onboarding'])->name('recommendation.onboarding');
     Route::post('/onboarding/assessment/skip', [RecommendationController::class, 'skipOnboarding'])->name('recommendation.onboarding.skip');
 });
 
-Route::get('/recommendation', [RecommendationController::class, 'intake'])->name('recommendation.intake');
-Route::post('/recommendation/start', [RecommendationController::class, 'start'])->name('recommendation.start');
-Route::get('/recommendation/results', [RecommendationController::class, 'results'])->name('recommendation.results');
-Route::post('/recommendation/recompute', [RecommendationController::class, 'recompute'])->name('recommendation.recompute');
+Route::middleware(ResearchStudyConsent::class)->group(function () {
+    Route::get('/recommendation', [RecommendationController::class, 'intake'])->name('recommendation.intake');
+    Route::post('/recommendation/start', [RecommendationController::class, 'start'])->name('recommendation.start');
+    Route::get('/recommendation/results', [RecommendationController::class, 'results'])->name('recommendation.results');
+    Route::post('/recommendation/recompute', [RecommendationController::class, 'recompute'])->name('recommendation.recompute');
+});
 
 // ─── Authenticated Routes ─────────────────────────────────────────────────────
 
@@ -131,6 +134,8 @@ Route::middleware('auth')->group(function () {
     // ─── Adopter Routes ───────────────────────────────────────────────────────
 
     Route::middleware('adopter')->group(function () {
+        Route::get('/study-information', [ResearchScenarioController::class, 'intro'])->name('study.intro');
+        Route::post('/study-information', [ResearchScenarioController::class, 'consent'])->name('study.consent');
 
         // Browse pets (adopter dashboard sidebar)
         Route::get('/animal', function (Request $request) {
@@ -161,14 +166,17 @@ Route::middleware('auth')->group(function () {
                 'speciesFilter' => $request->species ?? 'All Species',
                 'ageFilter' => $request->age ?? 'All Ages',
             ]);
-        })->name('animal.index');
+        })->middleware(ResearchStudyConsent::class)->name('animal.index');
 
-        Route::middleware([ResearchAwareAdopterVerification::class, ResearchApplicationRouting::class])->group(function () {
+        Route::middleware([ResearchAwareAdopterVerification::class, ResearchStudyConsent::class, ResearchApplicationRouting::class])->group(function () {
             Route::prefix('research')->name('research.')->middleware(ResearchParticipant::class)
                 ->controller(ResearchScenarioController::class)->group(function () {
                     Route::get('/scenarios', 'index')->name('index');
                     Route::get('/pets/{pet}', 'preview')->name('preview');
-                    Route::post('/pets/{pet}', 'apply')->name('apply');
+                    Route::post('/pets/{pet}', 'apply')->middleware('throttle:8,1,research-apply')->name('apply');
+                    Route::post('/placements/{placement}/document', 'replaceDocument')->middleware('throttle:4,1,research-document')->name('document');
+                    Route::get('/placements/{placement}/handover', 'handover')->name('handover');
+                    Route::get('/placements/{placement}/checkins', 'report')->name('report');
                     Route::post('/placements/{placement}/continue', 'continueAdoption')->whereNumber('placement')->name('continue');
                     Route::post('/placements/{placement}/withdraw', 'withdraw')->whereNumber('placement')->name('withdraw');
                     Route::post('/placements/{placement}/receipt', 'receive')->whereNumber('placement')->name('receive');

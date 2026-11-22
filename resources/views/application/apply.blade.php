@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', "Apply to Adopt {$pet->name} - PAIRfect Paws")
+@php($research = $research ?? false)
 
 @section('content')
 
@@ -14,7 +15,7 @@
         <div class="main-content-header">
             <div class="heading-text">
                 <h2>Apply to Adopt {{ $pet->name }}</h2>
-                <p>Complete all fields to submit your application</p>
+                <p>{{ $research ? 'Complete the required fields to submit your application' : 'Complete all fields to submit your application' }}</p>
             </div>
 
             @include('partials.notification-bell')
@@ -25,7 +26,7 @@
             <section class="form-section !mt-4" aria-label="Personality Assessment">
                 <h3>Personality Assessment</h3>
                 <p>✓ Personality questionnaire completed. Last updated: {{ $profile->bfi_completed_at?->format('F j, Y') }}.</p>
-                <p>Your saved assessment and the pet's behavioral profile determine compatibility when you submit. Shelter staff make the final adoption decision.</p>
+                <p>Your saved assessment and the pet's behavioral profile determine compatibility when you submit. @unless($research) Shelter staff make the final adoption decision. @endunless</p>
                 <p>Matching household: {{ $profile->housing_type }}; {{ $profile->has_existing_pets ? 'existing pets' : 'no existing pets' }}; {{ $profile->has_children ? 'children at home' : 'no children at home' }}. Your saved income range informs care-capacity screening.</p>
                 <a class="btn btn-secondary mt-3" href="{{ route('recommendation.intake', ['return_pet' => $pet->id]) }}">Review / Update Assessment</a>
             </section>
@@ -43,7 +44,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('application.submit') }}" method="POST" enctype="multipart/form-data" novalidate>
+            <form action="{{ $research ? route('research.apply', $pet) : route('application.submit') }}" method="POST" enctype="multipart/form-data" novalidate>
                 @csrf
                 <input type="hidden" name="pet_id" value="{{ $pet->id }}">
 
@@ -155,14 +156,21 @@
                     </div>
 
                     <div class="form-group">
-                        <label>
+                        <label for="application_document">
                             Upload Government ID Showing Your Name and Residential Address*
                         </label>
 
-                        <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
+                        <input type="file" id="application_document" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
                         <p class="mt-2 text-[.72rem] text-[#777]">For automatic verification, use a Philippine National ID or LTO driver's license showing your full name and current residential address. Passports, bills, and other proof-of-address documents are not eligible for automatic verification.</p>
                         <small class="text-[.72rem] text-[#777]">PDF, JPG, or PNG — max 10MB. OCR extracts text only; PAIRfect Paws does not use facial recognition or biometric matching.</small>
-                        <p class="mt-2 text-[.72rem] text-[#777]">Your document and extracted text are stored privately and are accessible only to authorized shelter personnel.</p>
+                        @if($research)
+                            <p class="mt-2 text-[.72rem] text-[#777]">Your document is handled privately. When automatic checking is enabled, Google Cloud Vision receives it for text extraction. The app deletes the file after checking and retains the result, not the extracted text.</p>
+                            @if(! config('research.ocr_enabled') || config('document_verification.provider') !== 'google_vision')
+                                <p class="mt-2 text-[.72rem] text-[#777]">Automatic document checking is currently unavailable.</p>
+                            @endif
+                        @else
+                            <p class="mt-2 text-[.72rem] text-[#777]">Your document and extracted text are stored privately and are accessible only to authorized shelter personnel.</p>
+                        @endif
                     </div>
 
                     <div class="checkbox-group">
@@ -170,6 +178,9 @@
                         <label for="agreement_terms">
                             I have read, understood, and agree to the terms of the 
                             <a href="javascript:void(0)" onclick="openTermsModal()" style="color: var(--primary-color); text-decoration: underline;">Adoption and Data Processing Agreement</a>.
+                            @if($research)
+                                This includes permission to send my uploaded ID to Google Cloud Vision for text extraction when enabled.
+                            @endif
                         </label>
                     </div>
 
@@ -177,7 +188,7 @@
 
                 <div class="submit-container">
                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i>
-                        Submit Application
+                        {{ $research && $pet->availability_status->value === 'Soft-Reserved' ? 'Join Waitlist' : 'Submit Application' }}
                     </button>
                 </div>
 
@@ -193,6 +204,15 @@
                 <h3 style="margin: 0; color: #333; font-weight: bold;">Adoption and Data Processing Agreement</h3>
             </div>
             <div class="modal-body custom-scrollbar" style="max-height: 50vh; overflow-y: auto; font-size: 0.95rem; line-height: 1.6; color: #555; padding-right: 10px;">
+                @if($research)
+                    <p><strong>Application and matching</strong><br>
+                        I agree that PAIRfect Paws will use my application and adopter profile to calculate pet compatibility and record my application, handover, and check-in progress.</p>
+                    <br>
+                    <p><strong>Document processing</strong><br>
+                        I agree to the temporary processing of my uploaded ID and, when automatic checking is enabled, to sending the file to Google Cloud Vision for text extraction. The result is used to compare my name and address, not to prove my identity. The uploaded file is deleted after processing and the app keeps the outcome, not the extracted text.</p>
+                    <br>
+                    <p>Read the <a class="underline" href="{{ route('legal.privacy') }}">Privacy Notice</a> or <a class="underline" href="{{ route('study.intro') }}">Study Information</a> for more about data handling and participation.</p>
+                @else
                 <p>By submitting this application, you are making a formal commitment to the welfare of the animal and agreeing to our shelter protocols. Please read and agree to the following terms:</p>
                 <br>
                 <p><strong>1. Commitment to Animal Welfare</strong><br>
@@ -215,6 +235,7 @@
                 <br>
                 <p><strong>7. Data Privacy and Algorithmic Matching</strong><br>
                 In compliance with Republic Act No. 10173 (Data Privacy Act of 2012), I consent to the collection and secure storage of my personal information, lifestyle details, and submitted identification documents. I explicitly agree to let the system use my adopter profile data in an automated pet matching calculation to help shelter staff find the most compatible animal for my household.</p>
+                @endif
             </div>
             <div class="modal-actions" style="margin-top: 25px; text-align: right;">
                 <button type="button" class="btn btn-secondary" onclick="closeTermsModal()">Close</button>

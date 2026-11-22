@@ -31,6 +31,15 @@ return [
     */
 
     'disks' => [
+        'research-ocr' => [
+            'driver' => 'local',
+            'root' => storage_path('app/research-ocr'),
+            'visibility' => 'private',
+            'directory_visibility' => 'private',
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
 
         'local' => [
             'driver' => 'local',

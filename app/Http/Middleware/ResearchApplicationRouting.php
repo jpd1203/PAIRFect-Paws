@@ -12,7 +12,10 @@ final class ResearchApplicationRouting
     public function handle(Request $request, Closure $next): Response
     {
         if (ResearchMode::ready()) {
-            if ($request->routeIs('application.index', 'applications.mine', 'monitoring.index', 'monitoring.my-checkins', 'monitoring.submit-report')) {
+            if ($request->routeIs('monitoring.index', 'monitoring.my-checkins', 'monitoring.submit-report')) {
+                return to_route('research.index', ['section' => 'check-ins']);
+            }
+            if ($request->routeIs('application.index', 'applications.mine')) {
                 return to_route('research.index');
             }
             if ($request->routeIs('application.apply', 'applications.create')) {
