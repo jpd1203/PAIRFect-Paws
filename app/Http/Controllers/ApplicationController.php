@@ -16,6 +16,7 @@ use App\Services\Matching\ApplicationMatchService;
 use App\Services\Matching\MatchingProfileMapper;
 use App\Services\Matching\MatchPresenter;
 use App\Services\PhilippineLocationService;
+use App\Support\AdoptionForm;
 use App\Support\ManilaTime;
 use App\Support\PhilippineAddress;
 use App\ValueObjects\DocumentVerificationResult;
@@ -118,7 +119,7 @@ class ApplicationController extends Controller
             'Interview reschedule requested',
             ["The adopter for application #{$application->id} has requested a different interview time.", 'Review their preferred times in the protected application queue.'],
             'Review Applications',
-            route('admin.applications.index', ['highlight' => $application->id]) . '#application-row-' . $application->id,
+            route('admin.applications.index', ['highlight' => $application->id]).'#application-row-'.$application->id,
             false,
             'interview_reschedule_requested',
             $application->id,
@@ -167,18 +168,7 @@ class ApplicationController extends Controller
 
         $validated = $request->validate([
             'pet_id' => 'required|exists:pets,id',
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone_number' => 'required|string|max:50',
-            'motivation_statement' => 'required|string|max:2000',
-            'physical_activity_level' => 'required|string|max:255',
-            'time_availability' => 'required|string|max:255',
-            'prior_pet_experience' => 'required|string|max:255',
-            'household_composition' => 'required|string|max:255',
-            'document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'agreed_to_terms' => 'accepted',
-            ...PhilippineLocationService::validationRules(),
+            ...AdoptionForm::rules(),
         ]);
 
         $address = $this->locations->resolveAddress($validated);
@@ -335,7 +325,7 @@ class ApplicationController extends Controller
                 'Sign in to review its current document-verification state.',
             ],
             'Review Applications',
-            route('admin.applications.index', ['highlight' => $application->id]) . '#application-row-' . $application->id,
+            route('admin.applications.index', ['highlight' => $application->id]).'#application-row-'.$application->id,
             true,
             'application_received_staff',
             $application->id,

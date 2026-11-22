@@ -1,17 +1,15 @@
-# Frontend handoff: shared research testing
+# Frontend handoff: research participant experience
 
-| Changed file | Study-specific behavior |
+| File | What to review |
 | --- | --- |
-| `resources/views/components/navbar.blade.php` | The public navigation no longer includes the research catalog sentence. Navbar links and layout are unchanged. |
-| `resources/views/layouts/app.blade.php` | Keeps the authenticated research notice when the mode and dedicated database are active; retain explicit simulation labels on research flows. |
-| `resources/views/partials/email-verification-banner.blade.php` | Suppress the verification banner only for active research adopters. |
-| `resources/views/partials/sidebar.blade.php` | My Applications/Handover lead to the research scenarios. The normal unavailable toast no longer intercepts the research handover link. |
-| `resources/views/recommendation/intake.blade.php`, `resources/views/recommendation/results.blade.php` | Remove misleading verification guidance for research adopters and describe simulated review. |
-| `resources/views/recommendation/_match-card.blade.php`, `resources/views/animal/_pet-modal-content.blade.php` | Distinguish Simulate Adoption and Join Waitlist. Retain the existing eligibility reasons and disabled actions. |
-| `resources/views/research/apply.blade.php` | Submit an application or join a waitlist. No document upload or real handover data. |
-| `resources/views/research/scenarios.blade.php` | Status, ranked waitlist position, Withdraw, primary-only Continue, confirmation, and three successive practice reports. |
-| `resources/views/admin/animal/_view-modal.blade.php` | Support Unknown vaccination and explain that photo/record edits do not change research availability. |
+| `resources/views/application/apply.blade.php` | Both modes use this form, including personality, address, household, motivation, file picker and validation. Study submit action and separate optional file consent are conditional. |
+| `resources/views/research/{study,_document-consent,unavailable}.blade.php` | One-time study introduction, opt-in for sending documents, normal-style availability feedback. The original research-only apply template was removed. |
+| `resources/views/research/scenarios.blade.php` | My Applications uses existing card and status styling; preserves waitlist position, primary-only Continue, withdrawal, document status/replacement and links to owned handover/check-ins. |
+| `resources/views/research/handover.blade.php` | Normal handover card/header and receipt confirmation structure; no actual delivery, physical proof, schedule or contact details. |
+| `resources/views/monitoring/create.blade.php` | The same welfare fields and inline errors in both modes. Study milestones are accelerated and the study branch does not prompt for a camera or store videos. |
+| `resources/views/layouts/app.blade.php`, `resources/views/partials/sidebar.blade.php` | No persistent research banner. A small Study Information link remains and Handover and Check-ins lead to the appropriate records. |
+| `resources/views/recommendation/{results,_match-card}.blade.php`, `resources/views/animal/_pet-modal-content.blade.php` | Normal Adopt/Join Waitlist actions and no repeated study banner. Preserve KNN eligibility messaging. |
 
-Preserve the existing register form, CSRF and consent checkboxes. Keep the study labels, POST methods, ownership checks, route parameters, and form names: check-ins submit only `milestone`, `appetite`, and `adjustment`. Owner, eligibility, ranking, approval, and reservation status are all server-controlled. Never enable Continue for a waitlisted respondent or real handover actions for simulated records. Staff verification is unchanged.
+The normal form names and cascading-address hooks are unchanged. Always preserve CSRF, the independent `study_consent` and `document_consent` inputs, and the matching/ownership/ranking gates. Do not label a text match as proof of identity or substitute a real release/camera action in study screens. Template spacing and typography can be adjusted without changing these contracts.
 
-No JS or CSS files changed. Groupmates can adjust layout, spacing, or typography while retaining those contracts. Local Chromium evidence: 1440×1000 registration and questionnaire through reservation; a separate 390×844 session joined that pet's waitlist, was promoted after withdrawal, and completed the simulated receipt and all three reports. This wasn't a real-device compatibility audit.
+No new CSS or JavaScript. Bounded Chromium QA used desktop 1440×1000 and mobile 390×844 with synthetic data. Local screenshots are in the ignored `output/playwright/` directory; no real participant data was used. Review narrower viewport controls and terminology with the study team before the survey.

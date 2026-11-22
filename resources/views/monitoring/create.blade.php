@@ -2,11 +2,13 @@
 @section('title', 'Submit Welfare Report')
 
 @php
-    $milestoneValue = $log->milestone?->value ?? (string) $log->milestone;
+    $researchReport = isset($researchPlacement);
+    $milestoneValue = $researchReport ? $researchMilestone : ($log->milestone?->value ?? (string) $log->milestone);
+    $petName = $researchReport ? $researchPlacement->pet->name : $log->adoptionApplication->pet->name;
     $milestoneLabel = match ($milestoneValue) {
-        'ThreeDays', '3_days' => '3-Day',
-        'ThreeWeeks', '3_weeks' => '3-Week',
-        'ThreeMonths', '3_months' => '3-Month',
+        'ThreeDays', '3_days', '3-day' => '3-Day',
+        'ThreeWeeks', '3_weeks', '3-week' => '3-Week',
+        'ThreeMonths', '3_months', '3-month' => '3-Month',
         default => 'Post-Adoption',
     };
 @endphp
@@ -21,26 +23,32 @@
         </button> 
     </div>
     <div class="heading-text">
-        <h2>Submit Welfare Report</h2>
-        <p>{{ $milestoneLabel }} check-in for <strong>{{ $log->adoptionApplication->pet->name }}</strong></p>
+        <h2>{{ $researchReport ? 'Post-Adoption Check-In' : 'Submit Welfare Report' }}</h2>
+        <p>{{ $milestoneLabel }} check-in for <strong>{{ $petName }}</strong></p>
     </div>
 
     <div class="card post-adoption-report-card">
         <form
             method="POST"
-            action="{{ route('monitoring.submit', $log) }}"
+            action="{{ $researchReport ? route('research.checkin', $researchPlacement) : route('monitoring.submit', $log) }}"
+            @unless($researchReport)
             enctype="multipart/form-data"
             data-post-adoption-camera-form
             data-success-url="{{ route('monitoring.my-checkins') }}"
             data-camera-challenge-url="{{ route('monitoring.capture-challenge', $log) }}"
+            @endunless
         >
             @csrf
+            @if($researchReport)
+                <input type="hidden" name="milestone" value="{{ $researchMilestone }}">
+            @else
             <input type="hidden" name="camera_captured_at" value="" data-camera-captured-at>
             <input type="hidden" name="recording_duration_ms" value="" data-camera-recording-duration>
+            @endif
 
             <div class="form-grid">
             <div class="form-group">
-                <label for="pet_current_status">Current Status of {{ $log->adoptionApplication->pet->name }}*</label>
+                <label for="pet_current_status">Current Status of {{ $petName }}*</label>
                 <div class="select-wrapper">
                     <select id="pet_current_status" name="pet_current_status" required>
                         <option value="">Select current status</option>
@@ -110,6 +118,7 @@
             </div>
             </div>
 
+            @unless($researchReport)
             <section class="post-adoption-camera" data-camera-capture aria-labelledby="liveVideoHeading">
                 <div class="post-adoption-camera__heading">
                     <div>
@@ -168,10 +177,11 @@
                     <p class="field-error">JavaScript is required to open the live camera and establish a secure capture session.</p>
                 </noscript>
             </section>
+            @endunless
 
             <div class="post-adoption-report-actions">
-                <p data-camera-submit-hint>Record a live 3-second video to enable submission.</p>
-                <button type="submit" class="btn btn-primary" data-camera-submit disabled><i class="fa-solid fa-paper-plane"></i>
+                @unless($researchReport)<p data-camera-submit-hint>Record a live 3-second video to enable submission.</p>@endunless
+                <button type="submit" class="btn btn-primary" @unless($researchReport) data-camera-submit disabled @endunless><i class="fa-solid fa-paper-plane"></i>
                     Submit Report
                 </button>
             </div>

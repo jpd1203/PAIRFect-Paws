@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\PostAdoptionCaptureChallenge;
+use App\Support\ResearchMode;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -19,6 +20,8 @@ Schedule::command('checkins:send-reminders')
     ->withoutOverlapping();
 Schedule::command('reservations:process-timeouts')->hourly()->withoutOverlapping();
 Schedule::command('matching:recompute')->hourly()->withoutOverlapping();
+Schedule::command('research:purge-ocr-temp')->hourly()->withoutOverlapping()
+    ->when(fn () => ResearchMode::ready());
 Schedule::command('handovers:process-schedule-reminders')
     ->everyFifteenMinutes()->timezone('Asia/Manila')->withoutOverlapping();
 // Delivery recovery only; the operational reminder thresholds above are unchanged.

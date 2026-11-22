@@ -83,7 +83,7 @@
             </a>
 
             <a href="{{ route('application.index') }}"
-               class="menu-item {{ $isActive('application.index', 'application.apply', 'application.submit') ? 'active' : '' }}"
+               class="menu-item {{ $isActive('application.index', 'application.apply', 'application.submit', 'research.index', 'research.preview') ? 'active' : '' }}"
                data-sidebar-dismissible="adopter_applications"
                data-badge-count="{{ $adopterApplicationsCount }}">
                 <i class="fa-solid fa-file fa-lg"></i> My Applications
@@ -95,8 +95,8 @@
                 @endif
             </a>
 
-            <a href="{{ route(\App\Support\ResearchMode::ready() ? 'research.index' : 'adopter.handover.my') }}"
-               class="menu-item {{ $isActive('adopter.handover.my', 'adopter.handover.status', 'adopter.confirm', 'adopter.handover.notifications') ? 'active' : '' }}"
+            <a href="{{ \App\Support\ResearchMode::ready() ? route('research.index', ['section' => 'handover']) : route('adopter.handover.my') }}"
+               class="menu-item {{ $isActive('adopter.handover.my', 'adopter.handover.status', 'adopter.confirm', 'adopter.handover.notifications', 'research.handover') ? 'active' : '' }}"
                @if (! \App\Support\ResearchMode::ready() && ! $hasHandoverAccess) data-handover-unavailable @endif
                data-sidebar-dismissible="adopter_handover"
                data-badge-count="{{ $adopterHandoverCount }}">
@@ -110,7 +110,14 @@
             </a>
         </div>
 
-@if ($hasReceivedPet)
+@if (\App\Support\ResearchMode::allowsAdopter($user) && \App\Models\ResearchPlacement::where('user_id', $user->id)->whereNotNull('received_at')->exists())
+        <div class="menu-title">POST-ADOPTION</div>
+        <div class="menu-section">
+            <a href="{{ route('monitoring.my-checkins') }}" class="menu-item">
+                <i class="fa-solid fa-circle-check fa-lg"></i> My Check-ins
+            </a>
+        </div>
+@elseif ($hasReceivedPet)
         <div class="menu-title">POST-ADOPTION</div>
 
         <div class="menu-section">
@@ -162,6 +169,9 @@
 @endif
 
     </div>
+    @if(\App\Support\ResearchMode::allowsAdopter($user))
+        <a href="{{ route('study.intro') }}" class="menu-item text-sm">Study Information</a>
+    @endif
     
     @include('partials.profile-card')
     

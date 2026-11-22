@@ -580,9 +580,9 @@ class ReservationQueueService
         return $remaining;
     }
 
-    public function submitResearch(User $user, Pet $catalogPet): void
+    public function submitResearch(User $user, Pet $catalogPet, array $application = []): void
     {
-        DB::transaction(function () use ($user, $catalogPet): void {
+        DB::transaction(function () use ($user, $catalogPet, $application): void {
             $pet = $this->lockResearchPet($user, $catalogPet->id);
             $queue = ResearchPlacement::where('pet_id', $pet->id);
             if ((clone $queue)->where('user_id', $user->id)->lockForUpdate()->first()) {
@@ -591,6 +591,7 @@ class ReservationQueueService
             abort_unless(in_array($pet->availability_status, [AvailabilityStatus::Available, AvailabilityStatus::SoftReserved], true), 422, 'This pet is not accepting research applications.');
             abort_if((clone $queue)->where('status', ApplicationStatus::Approved->value)->lockForUpdate()->first(), 422, 'This research pet has already been adopted.');
             $candidate = ResearchPlacement::create([
+                ...$application,
                 'user_id' => $user->id, 'pet_id' => $pet->id, 'status' => ApplicationStatus::Waitlisted,
             ]);
             $this->requireResearchEligibility($candidate, $pet);

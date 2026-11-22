@@ -47,6 +47,45 @@ Expect **70 / 70 / 210 / 0 / 0** before use. Stop on errors. The catalog transac
 
 8. **Recovery:** restrict traffic; pause research jobs, take an access-controlled research data backup under the approved retention policy, then restore the recorded original DB connection, original APP_KEY, session/cache settings, uploads and mail/worker configuration. Redeploy the pre-survey source through a reviewed recovery commit/PR, not a force push. Clear/rebuild configuration cache; verify RELEASE.json, schema compatibility, uploads, login, and queues before admitting normal traffic. Do not run down migrations on the original DB. Set RESEARCH_MODE=false during the controlled switch back; turning the flag off alone does not switch databases. Never resume normal traffic with the research database still connected. Never roll research rows into real shelter history.
 
+## Upgrade an already active survey to the full participant interface
+
+This is an additive upgrade. Do not provision a new schema, reseed, run the administrator bootstrap again, or rerun the fresh setup for an existing survey. The research consent and optional document outcome columns are new; prior submissions remain in place and show Not Submitted rather than being treated as verified. Existing respondents see the versioned study introduction once at their next protected step.
+
+1. Confirm study-owner approval, restore-tested backups of the **research** schema and its necessary configuration, and availability of the existing study APP_KEY. Pause participant traffic during deploy and migration. Keep research-only database credentials in use and leave the original database untouched.
+2. After explicit authorization, publish a reviewed PR targeting master. Wait for validation and the existing automatic deployment. Initially leave `RESEARCH_OCR_ENABLED=false`. In Azure SSH:
+
+```sh
+cd /home/site/wwwroot
+php -r 'echo json_decode(file_get_contents("RELEASE.json"), true)["release_sha"], PHP_EOL;'
+php artisan config:clear
+php artisan tinker --execute='dump(app()->environment(),config("research.enabled"),config("research.ocr_enabled"),DB::selectOne("select database() as name", [], false)->name);'
+php artisan migrate:status
+```
+
+Stop unless the release SHA matches the approved deployment, environment is production, Research Mode is on, OCR is off, and the actual database is `pairfect_research_survey01`. Review pending migrations, then apply just this migration:
+
+```sh
+php artisan migrate --force --path=database/migrations/2026_11_23_000001_add_research_consent_and_application_details.php
+php artisan migrate:status
+php artisan config:cache
+```
+
+3. Check an existing respondent can accept the updated study disclosure, use the full adoption form without a file, and see retained applications. Verify reservation, next applicant promotion, continuation, receipt confirmation and the shared welfare form. Test production templates separately with Research Mode off on a disposable environment. Use a reviewed code rollback if needed; leave the additive columns in place to retain study submissions.
+
+### Optional Google Vision and ID retention
+
+Default is off. First approve the third-party processor, the synthetic-only sample instructions, the consent copy, a documented study retention period and the operator responsible for deletion. Configure `DOCUMENT_OCR_PROVIDER=google_vision` and the app's Application Default Credentials using authorized, read-only secret storage outside Git and the web root. Confirm API enablement, billing, quota/IAM and HTTPS egress from App Service. Do not print the credentials or access token. See [Vision setup](https://docs.cloud.google.com/vision/docs/setup) and [Application Default Credentials](https://docs.cloud.google.com/docs/authentication/application-default-credentials).
+
+After approval, set `RESEARCH_OCR_ENABLED=true` for the research runtime, refresh config, and use a synthetic sample matching example application data in a restricted test session before accepting any participant uploads. Test a mismatched sample too. A text match is not proof of identity. If Vision is unavailable, the UI reports the failure without claiming any staff review has occurred. Switch the flag off on failure. Never use genuine government IDs for the canary.
+
+The app uses `storage/app/research-ocr`, a private, non-served disk outside both the public disk and the normal private download root. Do not symlink it, include it in any backup, or expose it through a storage mount. Use access-restricted storage encrypted at rest; exclude request bodies from diagnostic tracing and apply the same rules to PHP/nginx temporary upload directories. Files are removed after each check. The hourly scheduler or the following dedicated command prunes abandoned files older than one hour; schedule just this command if research does not run the ordinary scheduler:
+
+```sh
+php artisan research:purge-ocr-temp
+```
+
+Verify the purge runs on every instance that uses local temporary files. Escalate cleanup failures to the study owner without sharing uploads. No raw image, original filename, or extracted text is saved to study tables; the application details are encrypted and the outcome and consent metadata remain. At the study retention deadline, an authorized operator must revoke access, remove study exports/temporary files and securely dispose of research-only records/backups under the approved plan, including any retained encryption keys when no longer needed. App-side cleanup does not control Google's processing or provider-side retention; review those terms before enabling OCR.
+
 ## First administrator in the already initialized survey 01
 
 Deploy the reviewed release containing the command first; **do not reinitialize the research database** and do not run an admin/demo seeder. In Azure App Service SSH:

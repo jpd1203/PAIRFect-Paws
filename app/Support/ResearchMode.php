@@ -25,6 +25,14 @@ final class ResearchMode
 
     public const MILESTONES = ['3-day', '3-week', '3-month'];
 
+    public const CONSENT_VERSION = 'survey01-v1';
+
+    public static function hasConsent(User $user): bool
+    {
+        return DB::table('research_study_consents')->where('user_id', $user->id)
+            ->where('version', self::CONSENT_VERSION)->exists();
+    }
+
     public static function allowsAdopter(?User $user): bool
     {
         return $user?->isAdopter() && $user->is_active && self::ready();

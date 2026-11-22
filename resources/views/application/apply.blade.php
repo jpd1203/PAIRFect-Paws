@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', "Apply to Adopt {$pet->name} - PAIRfect Paws")
+@php($research = $research ?? false)
 
 @section('content')
 
@@ -14,7 +15,7 @@
         <div class="main-content-header">
             <div class="heading-text">
                 <h2>Apply to Adopt {{ $pet->name }}</h2>
-                <p>Complete all fields to submit your application</p>
+                <p>{{ $research ? 'Complete the required fields to submit your application' : 'Complete all fields to submit your application' }}</p>
             </div>
 
             @include('partials.notification-bell')
@@ -25,12 +26,12 @@
             <section class="form-section !mt-4" aria-label="Personality Assessment">
                 <h3>Personality Assessment</h3>
                 <p>✓ Personality questionnaire completed. Last updated: {{ $profile->bfi_completed_at?->format('F j, Y') }}.</p>
-                <p>Your saved assessment and the pet's behavioral profile determine compatibility when you submit. Shelter staff make the final adoption decision.</p>
+                <p>Your saved assessment and the pet's behavioral profile determine compatibility when you submit. @unless($research) Shelter staff make the final adoption decision. @endunless</p>
                 <p>Matching household: {{ $profile->housing_type }}; {{ $profile->has_existing_pets ? 'existing pets' : 'no existing pets' }}; {{ $profile->has_children ? 'children at home' : 'no children at home' }}. Your saved income range informs care-capacity screening.</p>
                 <a class="btn btn-secondary mt-3" href="{{ route('recommendation.intake', ['return_pet' => $pet->id]) }}">Review / Update Assessment</a>
             </section>
             @if (session('success'))<p class="mb-4 text-green-800">{{ session('success') }}</p>@endif
-            @if (old('motivation_statement'))<p class="mb-4 text-amber-800">Your entered details were restored. Please reattach your supporting document before submitting.</p>@endif
+            @if (old('motivation_statement'))<p class="mb-4 text-amber-800">Your entered details were restored. @if($research) If you want to include a document, reattach it and confirm your consent. @else Please reattach your supporting document before submitting. @endif</p>@endif
 
             @if ($errors->any())
                 <div class="mb-5 rounded-lg border border-status-danger-text bg-status-danger-bg px-4 py-3 text-status-danger-text text-sm">
@@ -43,7 +44,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('application.submit') }}" method="POST" enctype="multipart/form-data" novalidate>
+            <form action="{{ $research ? route('research.apply', $pet) : route('application.submit') }}" method="POST" enctype="multipart/form-data" novalidate>
                 @csrf
                 <input type="hidden" name="pet_id" value="{{ $pet->id }}">
 
@@ -155,21 +156,33 @@
                     </div>
 
                     <div class="form-group">
-                        <label>
-                            Upload Government ID Showing Your Name and Residential Address*
+                        <label for="application_document">
+                            {{ $research ? 'Supporting ID (optional)' : 'Upload Government ID Showing Your Name and Residential Address*' }}
                         </label>
 
-                        <input type="file" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
+                        <input type="file" id="application_document" name="document" accept=".pdf,.jpg,.jpeg,.png" @required(!$research)>
+                        @if($research)
+                            <p class="mt-2 text-sm">Use a synthetic study sample styled as a Philippine National ID or LTO driver's license, with the example name and address you enter above. PDF, JPG or PNG up to 10 MB. You can leave this blank.</p>
+                            @if(! config('research.ocr_enabled') || config('document_verification.provider') !== 'google_vision')
+                                <p class="mt-2 text-sm">Automatic document checking is currently unavailable.</p>
+                            @endif
+                            @include('research._document-consent', ['consentId' => 'application'])
+                        @else
                         <p class="mt-2 text-[.72rem] text-[#777]">For automatic verification, use a Philippine National ID or LTO driver's license showing your full name and current residential address. Passports, bills, and other proof-of-address documents are not eligible for automatic verification.</p>
                         <small class="text-[.72rem] text-[#777]">PDF, JPG, or PNG — max 10MB. OCR extracts text only; PAIRfect Paws does not use facial recognition or biometric matching.</small>
                         <p class="mt-2 text-[.72rem] text-[#777]">Your document and extracted text are stored privately and are accessible only to authorized shelter personnel.</p>
+                        @endif
                     </div>
 
                     <div class="checkbox-group">
                         <input type="checkbox" id="agreement_terms" name="agreed_to_terms" value="1" required>
                         <label for="agreement_terms">
+                            @if($research)
+                                I agree to submit these details under the <a class="underline" href="{{ route('study.intro') }}">study and data processing agreement</a>.
+                            @else
                             I have read, understood, and agree to the terms of the 
                             <a href="javascript:void(0)" onclick="openTermsModal()" style="color: var(--primary-color); text-decoration: underline;">Adoption and Data Processing Agreement</a>.
+                            @endif
                         </label>
                     </div>
 
@@ -177,7 +190,7 @@
 
                 <div class="submit-container">
                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i>
-                        Submit Application
+                        {{ $research && $pet->availability_status->value === 'Soft-Reserved' ? 'Join Waitlist' : 'Submit Application' }}
                     </button>
                 </div>
 
@@ -187,6 +200,7 @@
     </div>  
 
 
+    @unless($research)
     <div class="modal-overlay" id="termsModal">
         <div class="pet-modal report-modal" style="max-width: 600px; padding: 30px; text-align: left; background: #fff; border-radius: 8px;">
             <div class="modal-header" style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
@@ -233,5 +247,6 @@
             if (e.target.id === "termsModal") closeTermsModal();
         });
     </script>
+    @endunless
 
 @endsection
