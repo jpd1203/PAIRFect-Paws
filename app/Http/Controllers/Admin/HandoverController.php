@@ -2,13 +2,21 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ApplicationStatus;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
+use App\Models\AdoptionApplication;
 use App\Models\Handover;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\HandoverDeliveryClearanceService;
 use App\Services\HandoverNotificationService;
+use App\Services\HandoverScheduleService;
+use App\Services\HandoverTransportIncidentService;
+use App\Services\IdentityVerificationService;
 use App\Support\ManilaTime;
+use App\Support\ResearchAdminRecords;
+use App\Support\ResearchMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,8 +28,40 @@ class HandoverController extends Controller
 {
     public function __construct(private HandoverNotificationService $notifications) {}
 
-    public function index(Request $request)
+    public function index(Request $request, ResearchAdminRecords $research)
     {
+        if (ResearchMode::ready()) {
+            $all = $research->handovers()->orderByDesc('approved_at')->orderByDesc('id')->get()
+                ->map(fn ($placement) => $research->handover($placement));
+            $tab = $request->string('tab', 'all')->toString();
+            $search = $request->string('search')->trim()->toString();
+            $records = $all->filter(function ($record) use ($tab, $search) {
+                $matchesTab = match ($tab) {
+                    'needs_handover' => ! $record->released_at,
+                    'awaiting' => $record->released_at && ! $record->received_at,
+                    'monitoring' => $record->received_at !== null,
+                    'failed', 'overdue', 'investigations' => false,
+                    default => true,
+                };
+
+                return $matchesTab && ($search === '' || str_contains(
+                    mb_strtolower(implode(' ', [$record->code, $record->adopter_name, $record->pet?->name, $record->pet?->species_display])),
+                    mb_strtolower($search),
+                ));
+            });
+            $completed = $all->whereNotNull('received_at')->count();
+
+            return view('admin.handover.index', [
+                'records' => $records, 'currentTab' => $tab, 'search' => $search, 'workflowReadOnly' => true,
+                'stats' => [
+                    'needs_handover' => $all->whereNull('released_at')->count(),
+                    'awaiting' => $all->whereNotNull('released_at')->whereNull('received_at')->count(),
+                    'reported_failed' => 0, 'monitoring_active' => $completed, 'open_count' => $all->count() - $completed,
+                    'total_count' => $all->count(), 'investigations' => 0, 'overdue' => 0,
+                ],
+            ]);
+        }
+
         $query = Handover::with(['pet', 'application', 'user', 'transportIncidents.assignedTo'])
             ->orderByDesc('approved_at')
             ->orderByDesc('id');
@@ -29,10 +69,10 @@ class HandoverController extends Controller
         if ($search = trim($request->input('search', ''))) {
             $query->where(function ($q) use ($search) {
                 $q->where('code', 'like', "%{$search}%")
-                  ->orWhere('adopter_name', 'like', "%{$search}%")
-                  ->orWhere('courier', 'like', "%{$search}%")
-                  ->orWhere('tracking_number', 'like', "%{$search}%")
-                  ->orWhereHas('pet', fn ($pq) => $pq->where('name', 'like', "%{$search}%")->orWhere('species', 'like', "%{$search}%"));
+                    ->orWhere('adopter_name', 'like', "%{$search}%")
+                    ->orWhere('courier', 'like', "%{$search}%")
+                    ->orWhere('tracking_number', 'like', "%{$search}%")
+                    ->orWhereHas('pet', fn ($pq) => $pq->where('name', 'like', "%{$search}%")->orWhere('species', 'like', "%{$search}%"));
             });
         }
 
@@ -59,13 +99,13 @@ class HandoverController extends Controller
         $all = Handover::all();
         $stats = [
             'needs_handover' => $all->filter(fn ($h) => empty($h->released_at))->count(),
-            'awaiting' => $all->filter(fn ($h) => !empty($h->released_at) && empty($h->adopter_outcome))->count(),
+            'awaiting' => $all->filter(fn ($h) => ! empty($h->released_at) && empty($h->adopter_outcome))->count(),
             'reported_failed' => $all->filter(fn ($h) => $h->adopter_outcome === 'not_received')->count(),
             'monitoring_active' => $all->filter(fn ($h) => $h->adopter_outcome === 'received')->count(),
             'open_count' => $all->filter(fn ($h) => $h->adopter_outcome !== 'received')->count(),
             'total_count' => $all->count(),
             'investigations' => Handover::whereHas('transportIncidents', fn ($q) => $q->where('status', '!=', 'resolved'))->count(),
-            'overdue' => $all->filter(fn ($h) => app(\App\Services\HandoverTransportIncidentService::class)->isOverdue($h))->count(),
+            'overdue' => $all->filter(fn ($h) => app(HandoverTransportIncidentService::class)->isOverdue($h))->count(),
         ];
 
         return view('admin.handover.index', [
@@ -76,8 +116,16 @@ class HandoverController extends Controller
         ]);
     }
 
-    public function show(Handover $handover)
+    public function show(string $handover, ResearchAdminRecords $research)
     {
+        if (ResearchMode::ready()) {
+            return view('admin.handover.show', [
+                'record' => $research->handover($research->handovers()->findOrFail($handover)),
+                'workflowReadOnly' => true,
+            ]);
+        }
+
+        $handover = Handover::findOrFail($handover);
         $handover->load(['pet', 'application', 'user', 'notifications', 'releaseRecordedBy', 'releaseHandledBy', 'deliveryAddressVerifiedBy', 'deliveryContactedBy']);
         $handover->load(['transportIncidents.assignedTo', 'transportIncidents.reportedBy', 'transportIncidents.resolvedBy']);
 
@@ -151,15 +199,15 @@ class HandoverController extends Controller
         $storedPath = null;
         try {
             $handover = DB::transaction(function () use ($request, $handover, $validated, $staffMember, $deliveryProviders, &$storedPath): Handover {
-                $application = \App\Models\AdoptionApplication::query()->lockForUpdate()->findOrFail($handover->application_id);
+                $application = AdoptionApplication::query()->lockForUpdate()->findOrFail($handover->application_id);
                 $current = Handover::query()->lockForUpdate()->findOrFail($handover->id);
-                $clearance = app(\App\Services\HandoverDeliveryClearanceService::class);
+                $clearance = app(HandoverDeliveryClearanceService::class);
                 $clearance->authorizeStaff($request->user());
                 $current->ensureCanRelease();
                 if ($current->received_at) {
                     throw ValidationException::withMessages(['release_method' => 'This handover has already been confirmed.']);
                 }
-                if ($application->status !== \App\Enums\ApplicationStatus::Approved) {
+                if ($application->status !== ApplicationStatus::Approved) {
                     throw ValidationException::withMessages(['release_method' => 'Only an approved application can be released.']);
                 }
                 if ($current->schedule_status !== 'confirmed' || ! $current->scheduled_start_at || ! $current->scheduled_end_at || ! $current->schedule_confirmed_at || (int) $current->schedule_confirmed_by_user_id !== (int) $current->user_id) {
@@ -168,7 +216,7 @@ class HandoverController extends Controller
                 if ($current->scheduled_method !== $validated['release_method']) {
                     throw ValidationException::withMessages(['release_method' => 'The release method must match the confirmed schedule. Propose and confirm a new schedule to change it.']);
                 }
-                $identity = app(\App\Services\IdentityVerificationService::class);
+                $identity = app(IdentityVerificationService::class);
                 $identity->requireInterview($application);
                 if ($validated['release_method'] === 'pickup' && ! $identity->isVerified($application, 'pickup_handover', $current->reopen_count)) {
                     throw ValidationException::withMessages(['identity' => 'Final pickup identity verification must be completed before release.']);
@@ -214,7 +262,7 @@ class HandoverController extends Controller
                 $current->recordHistory("Marked as released via {$methodLabel}; handled by {$staffMember->full_name}", Auth::user()->full_name);
                 $current->save();
                 AuditLogService::log(Auth::id(), 'handover.released', 'Handover', $current->id,
-                    "Prepared to Released; recorded by user ".Auth::id()."; handled by user {$staffMember->id}; method {$current->release_method}.");
+                    'Prepared to Released; recorded by user '.Auth::id()."; handled by user {$staffMember->id}; method {$current->release_method}.");
 
                 // Persist bell/mail intent with the release; the outbox dispatches after commit.
                 $this->notifications->create($current, 'released');
@@ -260,7 +308,7 @@ class HandoverController extends Controller
             'channels' => ['In-app', $channel],
         ]);
 
-        \App\Services\AuditLogService::log(Auth::id(), "Queued {$channel} reminder to {$handover->adopter_name} for {$handover->pet?->name}", "Handover", $handover->id);
+        AuditLogService::log(Auth::id(), "Queued {$channel} reminder to {$handover->adopter_name} for {$handover->pet?->name}", 'Handover', $handover->id);
 
         return back()->with('toast', ['type' => 'success', 'message' => "{$channel} reminder queued for adopter."]);
     }
@@ -298,7 +346,7 @@ class HandoverController extends Controller
                     'schedule_confirmed_at' => null, 'schedule_confirmed_by_user_id' => null,
                     'reschedule_status' => null, 'reschedule_options' => null, 'reschedule_reason' => null,
                     'reschedule_requested_at' => null, 'reschedule_reviewed_at' => null, 'reschedule_reviewed_by_user_id' => null,
-                    ...array_fill_keys(\App\Services\HandoverScheduleService::MARKERS, null),
+                    ...array_fill_keys(HandoverScheduleService::MARKERS, null),
                     'released_at' => null,
                     'adopter_outcome' => null,
                     'adopter_confirmed_at' => null,

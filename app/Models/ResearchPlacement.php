@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\PhilippineAddress;
+
 /**
  * Research application and simulated handover state. Real application queries,
  * staff tools, and background jobs continue to use the production table.
@@ -17,6 +19,39 @@ final class ResearchPlacement extends AdoptionApplication
 
     protected function casts(): array
     {
-        return [...parent::casts(), 'application_details' => 'encrypted:array', 'document_consent_at' => 'datetime'];
+        return [
+            ...parent::casts(), 'application_details' => 'encrypted:array', 'document_consent_at' => 'datetime',
+            'approved_at' => 'datetime', 'released_at' => 'datetime', 'received_at' => 'datetime',
+        ];
+    }
+
+    public function getFirstNameAttribute(): string
+    {
+        return $this->application_details['first_name'] ?? parent::getFirstNameAttribute();
+    }
+
+    public function getLastNameAttribute(): string
+    {
+        return $this->application_details['last_name'] ?? parent::getLastNameAttribute();
+    }
+
+    public function getEmailAttribute(): string
+    {
+        return $this->application_details['email'] ?? parent::getEmailAttribute();
+    }
+
+    public function getPhoneNumberAttribute(): ?string
+    {
+        return $this->application_details['phone_number'] ?? null;
+    }
+
+    public function getAddressComponentsAttribute(): array
+    {
+        return PhilippineAddress::normalize($this->application_details['address'] ?? []);
+    }
+
+    public function getKnnScoreAttribute(): ?float
+    {
+        return $this->compatibility_score !== null ? (float) $this->compatibility_score : null;
     }
 }

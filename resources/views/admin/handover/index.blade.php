@@ -4,10 +4,13 @@
 
 @section('notification-bell-in-header', true)
 @section('content')
+    @php
+        $workflowReadOnly = $workflowReadOnly ?? false;
+    @endphp
     <div class="main-content-header">
         <div class="heading-text">
             <h2>Handover &amp; Release</h2>
-            <p>Approved applications waiting on verified physical transfer and release.</p>
+            <p>{{ $workflowReadOnly ? 'Track approved applications and adopter receipt confirmation.' : 'Approved applications waiting on verified physical transfer and release.' }}</p>
         </div>
 
         @include('partials.notification-bell')
@@ -68,7 +71,7 @@
                 $badge = $record->status_badge;
                 $isDelivery = ($record->release_method === 'delivery');
             @endphp
-            <a href="{{ route('admin.handover.show', $record) }}" 
+            <a href="{{ route('admin.handover.show', $record->id) }}"
                class="flex items-center gap-4 bg-white border border-[#e2ddd7] rounded-card p-4 shadow-card hover:border-primary transition duration-150 block no-underline text-text-dark">
                 
                 <!-- Pet Photo -->
@@ -95,14 +98,16 @@
                     <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#777]">
                         <span>Approved {{ $record->approved_at ? \App\Support\ManilaTime::format($record->approved_at, 'M j, Y') : 'Recently' }}</span>
 
-                        @if ($record->released_at)
+                        @if ($workflowReadOnly && $record->released_at)
+                            <span>Handover ready {{ \App\Support\ManilaTime::format($record->released_at, 'M j, Y · g:i A') }}</span>
+                        @elseif ($record->released_at)
                             <span class="flex items-center gap-1">
                                 <i class="{{ $isDelivery ? 'fa-solid fa-truck text-primary' : 'fa-solid fa-house-user text-completed-fg' }}"></i>
                                 {{ $isDelivery ? (($record->courier ?: 'Courier') . ' · ' . ($record->tracking_number ?: 'In transit')) : 'Picked up at shelter' }}
                             </span>
                         @endif
 
-                        @if (app(\App\Services\HandoverTransportIncidentService::class)->isOverdue($record))
+                        @if (!$workflowReadOnly && app(\App\Services\HandoverTransportIncidentService::class)->isOverdue($record))
                             <span class="font-bold text-status-processing-text">
                                 Overdue delivery receipt - staff investigation required
                             </span>

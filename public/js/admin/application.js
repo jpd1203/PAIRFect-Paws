@@ -37,6 +37,7 @@ function getSchedulableApplications() {
     const raw = document.getElementById('applicationData')?.textContent;
     const apps = raw ? JSON.parse(raw) : (Array.isArray(APPLICATIONS) ? APPLICATIONS : []);
     return apps.filter((application) => {
+        if (application.read_only) return false;
         if (application.status === 'primarycandidate' && application.is_primary) return true;
         if (application.status === 'scheduled' && application.is_primary) return true;
 
@@ -107,25 +108,30 @@ function openReviewModal(id) {
         'NeedsResubmission': 'Needs Resubmission',
         'ManualReview': 'Manual Review',
         'LegacyReview': 'Legacy Review',
-        'Verified': 'Verified',
+        'Verified': a.read_only ? 'Name and address matched by OCR' : 'Verified',
         'Pending': 'Pending',
     }[a.document_verification_status] || a.document_verification_status || '—';
     document.getElementById('rDocumentStatus').textContent = docStatusDisplay;
-    document.getElementById('rVerificationLink').href = a.verification_url || '#';
+    const verificationLink = document.getElementById('rVerificationLink');
+    verificationLink.href = a.verification_url || '#';
+    verificationLink.hidden = !a.verification_url;
     const verifRow = document.getElementById('rVerificationRow');
     if (verifRow) {
         verifRow.style.display = (a.verification_url || a.document_verification_status) ? 'flex' : 'none';
     }
-    document.getElementById('rIdentityLink').href = a.identity_url;
+    document.getElementById('rIdentityLink').href = a.identity_url || '#';
     document.getElementById('rQueuePosition').textContent = a.queue_position
         ? `#${a.queue_position}`
         : ['approved', 'rejected', 'withdrawn', 'noshow', 'closed'].includes(a.status)
             ? 'Queue closed'
             : 'Not ranked';
     document.getElementById('rCandidateRole').textContent = a.is_primary ? 'Primary candidate' : (a.status === 'waitlisted' ? 'Waitlisted' : 'Not active');
+    document.getElementById('rPromotionRow').style.display = a.queue_promoted_at ? 'flex' : 'none';
+    document.getElementById('rPromotionTime').textContent = a.queue_promoted_at || '';
     document.getElementById('rTimeoutRow').style.display = a.admin_review_flagged ? 'flex' : 'none';
 
     const history = a.history_summary || {};
+    document.getElementById('rApplicantHistoryContainer').style.display = a.read_only ? 'none' : '';
     const historyBadge = document.getElementById('rHistoryStatus');
     historyBadge.textContent = history.review_label || 'No Recorded Concerns';
     historyBadge.className = `badge ${history.badge_class || 'badge-completed'}`;
@@ -360,9 +366,9 @@ function openReviewModal(id) {
     const decisionForm = document.getElementById('rDecisionForm');
     const outcomeForm = document.getElementById('rQueueOutcomeForm');
     const overrideForm = document.getElementById('rOverrideForm');
-    decisionForm.action = a.decide_action;
-    outcomeForm.action = a.queue_outcome_action;
-    overrideForm.action = a.override_action;
+    decisionForm.action = a.decide_action || '';
+    outcomeForm.action = a.queue_outcome_action || '';
+    overrideForm.action = a.override_action || '';
 
     [scheduleBtn, approveBtn, rejectBtn, noShowBtn, withdrawBtn, overrideBtn]
         .forEach((button) => {
@@ -370,6 +376,11 @@ function openReviewModal(id) {
             button.style.display = 'none';
             button.onclick = null;
         });
+
+    if (a.read_only) {
+        openModal('applicationReviewModal');
+        return;
+    }
 
     scheduleBtn.textContent = 'Schedule Interview';
     scheduleBtn.className = 'btn btn-blue';

@@ -86,6 +86,15 @@ php artisan research:purge-ocr-temp
 
 Verify the purge on every instance that previously used local temporary files. Escalate cleanup failures to the study owner without sharing uploads. Study application details remain encrypted. At the study retention deadline, an authorized operator must revoke access, remove study exports and temporary files, and dispose of research-only records/backups under the approved plan, including any retained encryption keys when no longer needed. App-side cleanup does not affect documents that an earlier release sent to a provider.
 
+### Upgrade the original administrator pages
+
+This upgrade introduces no migrations, new tables, seeders, or Azure settings. It reads the existing research placements and check-ins through the original staff pages. Future automatic approvals create a system audit row in the same transaction. Earlier handovers are presented from their stored timestamps; they are not backfilled into real workflow tables.
+
+1. Before approval, verify a recoverable backup of **the active research database** and preserve its encryption key and uploaded files. Keep `pairfect_paws` untouched. Confirm the previous research schema migrations are already applied. Use the release preflight above to check environment, actual schema name, and migration status; do not run migrations or seeders for this upgrade.
+2. Put the isolated branch through a reviewed PR to `master`. After explicit authorization, merge only after GitHub validation passes. Watch the existing deployment run, then check `RELEASE.json` on App Service against the exact merged commit. Leave the existing research connection, flags, and storage settings in place.
+3. In a staff browser session, inspect existing study records on Applications, Compatibility, Handover & Release and Monitoring. Check a current waitlist rank against the adopter-side rank. Confirm the report shows its actual answers/time without an inferred due date, and staff cannot trigger real actions. For a workflow canary that writes records, use a separate disposable clone; the active study does not need new test submissions.
+4. If rollback is required, deploy a reviewed revert of this release through the same workflow. Do not roll back database migrations or reset the active research schema. Existing research data and the new audit events remain intact.
+
 ## First administrator in the already initialized survey 01
 
 Deploy the reviewed release containing the command first; **do not reinitialize the research database** and do not run an admin/demo seeder. In Azure App Service SSH:

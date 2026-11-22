@@ -108,7 +108,7 @@
 
         {{-- Schedule Interview CTA in same row --}}
         <div class="ml-auto shrink-0">
-            <button type="button" class="btn btn-primary !h-10 !px-3.5 text-sm whitespace-nowrap shadow-xs hover:shadow transition" onclick="openTopScheduleModal()">
+            <button type="button" class="btn btn-primary !h-10 !px-3.5 text-sm whitespace-nowrap shadow-xs hover:shadow transition" onclick="openTopScheduleModal()" @disabled($workflowReadOnly)>
                 <i class="fa-solid fa-calendar-check text-xs"></i> Schedule Interview
             </button>
         </div>
@@ -242,6 +242,8 @@
                                 @if($app->queue_position)
                                     <span class="badge" style="background:#f3f4f6;color:#374151">#{{ $app->queue_position }}</span><br>
                                     <span style="font-size:0.75rem;color:var(--muted)">Score: {{ isset($app->compatibility_result['overall']) ? $app->compatibility_result['overall'].'%' : 'N/A' }}</span>
+                                @elseif($workflowReadOnly && $app->knn_score !== null)
+                                    <span style="font-size:0.75rem;color:var(--muted)">Score: {{ $app->knn_score }}%</span>
                                 @else
                                     <span style="font-size:0.75rem;color:var(--muted)">N/A</span>
                                 @endif
@@ -254,7 +256,7 @@
                                         <span class="badge badge-scheduled">Reschedule Requested</span>
                                     @endif
                                     <button class="btn btn-secondary btn-sm" onclick="openReviewModal({{ $app->id }})"><i class="fa-solid fa-eye"></i>View</button>
-                                    @if ($app->status_slug === 'scheduled')
+                                    @if (!$workflowReadOnly && $app->status_slug === 'scheduled')
                                         <button class="btn btn-yellow btn-sm" onclick="openAddNoteModal({{ $app->id }})"><i class="fa-solid fa-note-sticky"></i>Add Notes</button>
                                     @endif
                                 </div>
@@ -278,7 +280,8 @@
     @endif
 
     <script id="applicationData" type="application/json">
-        {!! $applications->map(function ($app) use ($historySummaries) {
+        {!! $applications->map(function ($app) use ($historySummaries, $workflowReadOnly) {
+            $details = $workflowReadOnly ? ($app->application_details ?? []) : [];
             return [
                 'id' => $app->id,
                 'pet_id' => $app->pet_id,
@@ -286,6 +289,8 @@
                 'status_display' => $app->status_display,
                 'is_primary' => $app->is_primary_candidate,
                 'queue_position' => $app->queue_position,
+                'queue_promoted_at' => $workflowReadOnly && $app->queue_promoted_at ? \App\Support\ManilaTime::format($app->queue_promoted_at, 'M j, Y g:i A') : null,
+                'read_only' => $workflowReadOnly,
                 'knn_score' => $app->knn_score,
                 'admin_review_flagged' => (bool) $app->admin_review_flagged_at,
                 'full_name' => "{$app->first_name} {$app->last_name}",
@@ -296,19 +301,19 @@
                 'contact' => $app->phone_number,
                 'email' => $app->email,
                 'address' => $app->address,
-                'motivation_statement' => $app->motivation_statement,
-                'physical_activity_level' => $app->physical_activity_level,
-                'time_availability' => $app->time_availability,
-                'prior_pet_experience' => $app->prior_pet_experience,
+                'motivation_statement' => $details['motivation_statement'] ?? $app->motivation_statement,
+                'physical_activity_level' => $details['physical_activity_level'] ?? $app->physical_activity_level,
+                'time_availability' => $details['time_availability'] ?? $app->time_availability,
+                'prior_pet_experience' => $details['prior_pet_experience'] ?? $app->prior_pet_experience,
                 'housing_type' => $app->housing_type,
-                'household_composition' => $app->household_composition,
+                'household_composition' => $details['household_composition'] ?? $app->household_composition,
                 'monthly_income_range' => $app->monthly_income_range,
-                'document_url' => route('admin.applications.document', $app),
-                'document_verification_status' => $app->document_verification_status?->value ?? 'Pending',
-                'verification_url' => route('admin.applications.document-verification', $app),
+                'document_url' => $workflowReadOnly ? null : route('admin.applications.document', $app),
+                'document_verification_status' => $app->document_verification_status?->value ?? ($workflowReadOnly ? null : 'Pending'),
+                'verification_url' => $workflowReadOnly ? null : route('admin.applications.document-verification', $app),
                 'has_compatibility' => $app->compatibility_result !== null,
                 'compatibility' => $app->compatibility_result ?? ['overall' => 0, 'rows' => []],
-                'has_history' => (bool) $app->priorHistory,
+                'has_history' => !$workflowReadOnly && (bool) $app->priorHistory,
                 'interview_notes' => $app->interview_notes,
                 'interview_date' => $app->interview_date_display,
                 'interview_time' => $app->interview_time_display,
@@ -318,19 +323,19 @@
                 'interview_meeting_url' => $app->interview_meeting_url,
                 'interview_location' => $app->interview_location,
                 'conducted_by' => $app->conducted_by,
-                'decision_remarks' => $app->decision_remarks,
+                'decision_remarks' => $workflowReadOnly && $app->approved_at ? 'Approved automatically by the system.' : $app->decision_remarks,
                 'reschedule_status' => $app->reschedule_status,
-                'identity_url' => route('admin.applications.identity', $app),
+                'identity_url' => $workflowReadOnly ? null : route('admin.applications.identity', $app),
                 'reschedule_reason' => $app->reschedule_reason,
                 'reschedule_options' => $app->reschedule_options ?? [],
-                'reschedule_decline_action' => route('admin.applications.reschedule.decline', $app),
-                'schedule_action' => route('admin.applications.schedule'),
-                'notes_action' => route('admin.applications.notes', $app),
-                'decide_action' => route('admin.applications.decide', $app),
-                'queue_outcome_action' => route('admin.applications.queue-outcome', $app),
-                'override_action' => route('admin.applications.override', $app),
-                'can_override' => (bool) auth()->user()?->isAdmin(),
-                'history_url' => $app->user_id ? route('admin.adopter-profiles.history', $app->user_id) : null,
+                'reschedule_decline_action' => $workflowReadOnly ? null : route('admin.applications.reschedule.decline', $app),
+                'schedule_action' => $workflowReadOnly ? null : route('admin.applications.schedule'),
+                'notes_action' => $workflowReadOnly ? null : route('admin.applications.notes', $app),
+                'decide_action' => $workflowReadOnly ? null : route('admin.applications.decide', $app),
+                'queue_outcome_action' => $workflowReadOnly ? null : route('admin.applications.queue-outcome', $app),
+                'override_action' => $workflowReadOnly ? null : route('admin.applications.override', $app),
+                'can_override' => !$workflowReadOnly && (bool) auth()->user()?->isAdmin(),
+                'history_url' => !$workflowReadOnly && $app->user_id ? route('admin.adopter-profiles.history', $app->user_id) : null,
                 'history_summary' => $historySummaries[$app->id] ?? null,
             ];
         })->toJson(JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}

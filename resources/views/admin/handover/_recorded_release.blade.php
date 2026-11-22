@@ -11,19 +11,20 @@
         <div>
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-clipboard-check text-primary text-base"></i>
-                <h3 class="font-primary font-bold text-base text-text-dark m-0">Recorded Release</h3>
+                <h3 class="font-primary font-bold text-base text-text-dark m-0">{{ ($workflowReadOnly ?? false) ? 'Recorded Handover' : 'Recorded Release' }}</h3>
             </div>
-            <p class="text-xs text-[#777] m-0 mt-1">Official physical custody transfer record confirmed by shelter staff.</p>
+            <p class="text-xs text-[#777] m-0 mt-1">{{ ($workflowReadOnly ?? false) ? 'The system marked the handover ready. No physical transfer was recorded.' : 'Official physical custody transfer record confirmed by shelter staff.' }}</p>
         </div>
         <div>
             <span class="inline-flex items-center gap-1.5 rounded-full bg-completed-bg px-3 py-1 text-xs font-semibold text-completed-fg border border-completed-fg">
-                <i class="fa-solid fa-circle-check text-xs"></i> Release Completed
+                <i class="fa-solid fa-circle-check text-xs"></i> {{ ($workflowReadOnly ?? false) ? 'Handover ready' : 'Release Completed' }}
             </span>
         </div>
     </div>
 
     <div class="flex flex-col sm:flex-row sm:items-start gap-6">
         <dl class="min-w-0 flex-1 grid gap-3 sm:grid-cols-2 m-0 p-0">
+            @unless($workflowReadOnly ?? false)
             <!-- Method -->
             <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3.5 space-y-1">
                 <div class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#777]">
@@ -35,15 +36,18 @@
                 </dd>
             </div>
 
+            @endunless
+
             <!-- Date & Time -->
             <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3.5 space-y-1">
                 <div class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#777]">
                     <i class="fa-solid fa-calendar-check text-[#9e9e9e]"></i>
-                    <dt>Date &amp; time released</dt>
+                    <dt>{{ ($workflowReadOnly ?? false) ? 'Marked ready at' : 'Date & time released' }}</dt>
                 </div>
                 <dd class="text-sm font-semibold text-text-dark m-0">{{ $dateTime }}</dd>
             </div>
 
+            @unless($workflowReadOnly ?? false)
             <!-- Released By -->
             <div class="rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3.5 space-y-1">
                 <div class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#777]">
@@ -84,9 +88,10 @@
                     </a>
                 </div>
             @endif
+            @endunless
         </dl>
 
-        @if ($record->proof_path || $record->legacyPublicProofPath())
+        @if (!($workflowReadOnly ?? false) && ($record->proof_path || $record->legacyPublicProofPath()))
             <figure class="shrink-0 m-0 rounded-xl border border-[#e2ddd7] bg-[#FAF8F5] p-3 text-center">
                 <img src="{{ route('admin.handover.release-proof', $record) }}" alt="Proof of handover"
                      class="h-32 w-40 rounded-lg border border-[#e2ddd7] object-cover shadow-xs bg-white">

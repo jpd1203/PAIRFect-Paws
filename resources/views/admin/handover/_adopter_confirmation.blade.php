@@ -10,7 +10,9 @@
     <div class="border-b border-[#e2ddd7] px-6 py-4 bg-secondary-bg">
         <h3 class="text-base font-bold text-text-dark font-primary m-0">Adopter Confirmation</h3>
         <p class="mt-0.5 text-xs text-[#777] m-0">
-            {{ $isReceived ? 'Receipt confirmed.' : 'The adopter must confirm receipt separately from staff release.' }}
+            {{ ($workflowReadOnly ?? false)
+                ? ($isReceived ? 'Receipt confirmation recorded.' : 'The adopter has not confirmed receipt in the application.')
+                : ($isReceived ? 'Receipt confirmed.' : 'The adopter must confirm receipt separately from staff release.') }}
         </p>
     </div>
 
@@ -30,7 +32,7 @@
             <div class="min-w-0 flex-1">
                 <p class="text-sm font-bold text-text-dark m-0">
                     @if ($isReceived)
-                        Confirmed received
+                        {{ ($workflowReadOnly ?? false) ? 'Confirmation recorded' : 'Confirmed received' }}
                     @elseif ($isFailed)
                         Adopter says the pet never arrived
                     @else
@@ -50,7 +52,7 @@
                     @if ($isReceived && $record->receipt_proof_path)
                         <a href="{{ route('handover.receipt-proof', $record) }}" target="_blank" rel="noopener" class="inline-block mt-2 text-xs font-semibold text-primary underline">View adopter Proof of Receipt photo</a>
                     @endif
-                @else
+                @elseif(!($workflowReadOnly ?? false))
                     <p class="mt-1 text-xs text-text-muted m-0">
                         Confirmation request sent to {{ $record->adopter_phone }} and {{ $record->adopter_email }}.
                         Delivery follow-up uses the confirmed window: receipt reminder after one hour, staff follow-up after three hours.
@@ -60,7 +62,7 @@
         </div>
 
         <!-- Non-Response Follow-up (When awaiting confirmation) -->
-        @if (!$outcome)
+        @if (!$outcome && !($workflowReadOnly ?? false))
             <div class="rounded-xl border border-[#e2ddd7] bg-secondary-bg p-4">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -88,7 +90,7 @@
         @endif
 
         <!-- Reopen Handover Section -->
-        @if ($isFailed || !$isReceived)
+        @if (($isFailed || !$isReceived) && !($workflowReadOnly ?? false))
             <div class="rounded-xl border border-[#e2ddd7] bg-secondary-bg p-4">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>

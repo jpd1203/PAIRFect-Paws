@@ -1,5 +1,5 @@
 @php
-    $steps = ['approved' => 'Approved', 'handover_set' => 'Released', 'awaiting' => 'Awaiting confirmation', 'monitoring' => 'Post-adoption monitoring'];
+    $steps = ['approved' => 'Approved', 'handover_set' => ($workflowReadOnly ?? false) ? 'Handover ready' : 'Released', 'awaiting' => 'Awaiting confirmation', 'monitoring' => 'Post-adoption monitoring'];
     $completed = $record->completed_steps;
     $current = $record->current_step;
 @endphp

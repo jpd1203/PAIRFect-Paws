@@ -2,27 +2,32 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ApplicationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\AdoptionApplication;
 use App\Support\ApplicationListFilters;
 use App\Support\CsvSafeCell;
 use App\Support\ManilaTime;
+use App\Support\ResearchAdminRecords;
+use App\Support\ResearchMode;
 use Illuminate\Http\Request;
 
 final class AdoptionApplicationsReportController extends Controller
 {
-    public function export(Request $request)
+    public function export(Request $request, ResearchAdminRecords $research)
     {
+        $workflowReadOnly = ResearchMode::ready();
         $query = ApplicationListFilters::apply(
-            AdoptionApplication::query()->with(['user', 'pet']),
+            $workflowReadOnly ? $research->applications() : AdoptionApplication::query()->with(['user', 'pet']),
             ApplicationListFilters::validate($request)
         );
 
-        return response()->streamDownload(function () use ($query): void {
+        return response()->streamDownload(function () use ($query, $workflowReadOnly): void {
             $output = fopen('php://output', 'wb');
             fputcsv($output, ['Application ID', 'Applicant', 'Pet', 'Compatibility Score (%)', 'Application Date (Asia/Manila)', 'Status', 'Interview Date (Asia/Manila)', 'Approval Date (Asia/Manila)']);
 
             foreach ($query->orderByDesc('created_at')->orderByDesc('id')->lazy(200) as $application) {
+                $approvalAt = $workflowReadOnly ? $application->approved_at : ($application->adopted_at ?? $application->queue_closed_at ?? $application->updated_at);
                 fputcsv($output, [
                     $application->id,
                     CsvSafeCell::text(trim($application->first_name.' '.$application->last_name)),
@@ -31,8 +36,8 @@ final class AdoptionApplicationsReportController extends Controller
                     ManilaTime::format($application->created_at, 'Y-m-d H:i'),
                     $application->status_display,
                     $application->interview_date ? ManilaTime::format($application->interview_date, 'Y-m-d H:i') : '',
-                    $application->status === \App\Enums\ApplicationStatus::Approved
-                        ? ManilaTime::format($application->adopted_at ?? $application->queue_closed_at ?? $application->updated_at, 'Y-m-d H:i')
+                    $application->status === ApplicationStatus::Approved && $approvalAt
+                        ? ManilaTime::format($approvalAt, 'Y-m-d H:i')
                         : '',
                 ]);
             }
@@ -44,5 +49,4 @@ final class AdoptionApplicationsReportController extends Controller
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }
-
 }

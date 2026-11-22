@@ -220,11 +220,11 @@
                         <span class="font-semibold text-text-dark">Motivation Statement</span>
                         <p id="camMotivation" class="text-sm text-[#444] bg-white border border-gray-400 p-3 rounded-md w-full whitespace-pre-line m-0 font-normal leading-relaxed"></p>
                     </div>
-                    <div class="review-row">
+                    <div class="review-row" id="camDocRow">
                         <span>Document Upload (valid ID, proof of residence)</span>
                         <a class="btn btn-secondary btn-sm" id="camDocLink" href="#" target="_blank"><i class="fa-solid fa-file-arrow-down"></i> View Document</a>
                     </div>
-                    <div class="review-row">
+                    <div class="review-row" id="camVerificationRow">
                         <span>OCR Verification</span>
                         <span>
                             <strong id="camDocStatus"></strong>
@@ -247,7 +247,8 @@
 </div>
 
 <script id="compatAppData" type="application/json">
-    {!! $applications->keyBy('id')->map(function ($app) {
+    {!! $applications->keyBy('id')->map(function ($app) use ($workflowReadOnly) {
+        $details = $workflowReadOnly ? ($app->application_details ?? []) : [];
         return [
             'id' => $app->id,
             'applicant' => "{$app->first_name} {$app->last_name}",
@@ -259,18 +260,19 @@
             'submitted' => \App\Support\ManilaTime::format($app->created_at, 'F j, Y g:i A'),
             'status' => $app->status_display,
             'status_class' => $app->status_badge_class,
-            'motivation' => $app->motivation_statement,
-            'activity' => $app->physical_activity_level,
-            'time' => $app->time_availability,
-            'experience' => $app->prior_pet_experience,
+            'motivation' => $details['motivation_statement'] ?? $app->motivation_statement,
+            'activity' => $details['physical_activity_level'] ?? $app->physical_activity_level,
+            'time' => $details['time_availability'] ?? $app->time_availability,
+            'experience' => $details['prior_pet_experience'] ?? $app->prior_pet_experience,
             'housing' => $app->housing_type,
-            'household' => $app->household_composition,
+            'household' => $details['household_composition'] ?? $app->household_composition,
             'income' => $app->monthly_income_range,
             'queue_position' => $app->queue_position,
             'is_primary' => $app->is_primary_candidate,
-            'document_url' => route('admin.applications.document', $app),
-            'document_status' => $app->document_verification_status?->value ?? 'Pending',
-            'verification_url' => route('admin.applications.document-verification', $app),
+            'document_url' => $workflowReadOnly ? null : route('admin.applications.document', $app),
+            'read_only' => $workflowReadOnly,
+            'document_status' => $app->document_verification_status?->value ?? ($workflowReadOnly ? null : 'Pending'),
+            'verification_url' => $workflowReadOnly ? null : route('admin.applications.document-verification', $app),
             'applications_url' => route('admin.applications.index', ['highlight' => $app->id]) . '#application-row-' . $app->id,
         ];
     })->toJson(JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}
@@ -371,16 +373,20 @@
         document.getElementById('camHousehold').textContent = app.household || '—';
         document.getElementById('camIncome').textContent = app.income || '—';
         document.getElementById('camMotivation').textContent = app.motivation || 'No statement provided.';
-        document.getElementById('camDocLink').href = app.document_url;
+        document.getElementById('camDocRow').style.display = app.document_url ? '' : 'none';
+        document.getElementById('camDocLink').href = app.document_url || '#';
         const camDocStatusDisplay = {
             'NeedsResubmission': 'Needs Resubmission',
             'ManualReview': 'Manual Review',
             'LegacyReview': 'Legacy Review',
-            'Verified': 'Verified',
+            'Verified': app.read_only ? 'Name and address matched by OCR' : 'Verified',
             'Pending': 'Pending',
         }[app.document_status] || app.document_status || '—';
         document.getElementById('camDocStatus').textContent = camDocStatusDisplay;
-        document.getElementById('camVerifLink').href = app.verification_url;
+        document.getElementById('camVerificationRow').style.display = app.document_status ? '' : 'none';
+        const verificationLink = document.getElementById('camVerifLink');
+        verificationLink.href = app.verification_url || '#';
+        verificationLink.hidden = !app.verification_url;
         document.getElementById('camQueueLink').href = app.applications_url;
 
         openModal('compatAppModal');
