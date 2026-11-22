@@ -16,6 +16,9 @@
 
         <div class="hidden items-center gap-8 md:flex">
             <x-nav-link :href="route('landing')" :active="request()->routeIs('landing') || request()->routeIs('home')">HOME</x-nav-link>
+            <x-nav-link :href="route('our-story')" :active="request()->routeIs('our-story')">OUR STORY</x-nav-link>
+            <x-nav-link :href="route('adopt-dont-shop')" :active="request()->routeIs('adopt-dont-shop')">ADOPT DON'T SHOP</x-nav-link>
+            <x-nav-link :href="route('events')" :active="request()->routeIs('events')">EVENTS</x-nav-link>
             <x-nav-link :href="route('donate')" :active="request()->routeIs('donate')">DONATE</x-nav-link>
 
             @auth
@@ -47,6 +50,9 @@
     <div id="mobile-nav" class="hidden border-t border-white/10 bg-primary-hover-600 px-4 py-3 md:hidden">
         <div class="flex flex-col items-center gap-3">
             <a href="{{ route('home') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">HOME</a>
+            <a href="{{ route('our-story') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">OUR STORY</a>
+            <a href="{{ route('adopt-dont-shop') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">ADOPT DON'T SHOP</a>
+            <a href="{{ route('events') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">EVENTS</a>
             <a href="{{ route('donate') }}" class="w-full max-w-xs rounded-lg px-4 py-2 text-center text-sm font-semibold text-white hover:bg-primary-hover transition">DONATE</a>
             @auth
                 @if (auth()->user()->isStaff())

@@ -39,7 +39,10 @@ $landingPage = function () {
 Route::get('/', $landingPage)->name('landing');
 Route::get('/home', $landingPage)->name('home');
 
+Route::view('/our-story', 'our-story')->name('our-story');
+Route::view('/adopt-dont-shop', 'adopt-dont-shop')->name('adopt-dont-shop');
 Route::view('/donate', 'donate')->name('donate');
+Route::view('/events', 'events')->name('events');
 Route::view('/terms-and-conditions', 'legal.terms')->name('legal.terms');
 Route::view('/privacy-notice', 'legal.privacy')->name('legal.privacy');
 
