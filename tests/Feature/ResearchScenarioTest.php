@@ -245,7 +245,9 @@ final class ResearchScenarioTest extends TestCase
         $this->assertSame(ApplicationStatus::PrimaryCandidate, $placement->status);
         $this->assertSame(DocumentVerificationStatus::NeedsResubmission, $placement->document_verification_status);
         $this->assertStringNotContainsString('Rizal', $placement->getRawOriginal('application_details'));
-        $this->get(route('research.index'))->assertSee('Replacement Required for Verification')->assertDontSee('999 SAMPLE ROAD');
+        $this->get(route('research.index'))->assertSee('Replacement Required for Verification')
+            ->assertSee('You can continue your application without waiting for document verification.')
+            ->assertDontSee('999 SAMPLE ROAD');
         $other = $this->matchingUser();
         $this->agree($other);
         $replace = route('research.document', $placement);
@@ -254,12 +256,19 @@ final class ResearchScenarioTest extends TestCase
         $this->assertSame(DocumentVerificationStatus::Verified, $placement->fresh()->document_verification_status);
         $this->get(route('research.index'))->assertSee('Name and address matched by OCR')->assertSee('not proof of identity');
         $this->post($replace, ['document' => $this->sample(), 'document_consent' => 1])->assertConflict();
+        $this->post(route('research.continue', $placement))->assertRedirect(route('research.index'));
+        $this->assertSame(ApplicationStatus::Approved, $placement->fresh()->status);
+        $this->assertSame(DocumentVerificationStatus::Verified, $placement->fresh()->document_verification_status);
         foreach ([1 => DocumentVerificationStatus::ManualReview, 2 => DocumentVerificationStatus::NeedsResubmission, 3 => DocumentVerificationStatus::ManualReview] as $i => $status) {
             if ($i === 3) {
                 config(['research.ocr_enabled' => false]);
             }
             $this->post(route('research.apply', $pets[$i]), $this->application() + ['document' => $this->sample()])->assertRedirect(route('research.index'));
-            $this->assertSame($status, ResearchPlacement::where('pet_id', $pets[$i]->id)->sole()->document_verification_status);
+            $candidate = ResearchPlacement::where('pet_id', $pets[$i]->id)->sole();
+            $this->assertSame($status, $candidate->document_verification_status);
+            $this->post(route('research.continue', $candidate))->assertRedirect(route('research.index'));
+            $this->assertSame(ApplicationStatus::Approved, $candidate->fresh()->status);
+            $this->assertSame($status, $candidate->fresh()->document_verification_status);
         }
         config(['research.ocr_enabled' => true]);
         $this->post(route('research.apply', $pets[4]), $this->application() + [

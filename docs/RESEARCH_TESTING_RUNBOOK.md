@@ -74,6 +74,8 @@ php artisan config:cache
 
 ### Google Vision opt-in and document retention
 
+Document verification never holds the research reservation or handover flow. Applicants still supply an ID and accept the agreement. The current primary candidate may continue with a match, unavailable check, or replacement notice; the document result stays unchanged. With Vision enabled, submission still makes the OCR request. Keep it off when external request latency is not part of the study.
+
 Google Vision is off by default. The ID upload is required even with OCR off, but is not sent to Google in that case. First approve the third-party processor, provide participants with appropriately labeled synthetic ID samples, and agree on the consent copy, retention period and operator responsible for deletion. Configure `DOCUMENT_OCR_PROVIDER=google_vision` and the app's Application Default Credentials using authorized, read-only secret storage outside Git and the web root. Confirm API enablement, billing, quota/IAM and HTTPS egress from App Service. Do not print the credentials or access token. See [Vision setup](https://docs.cloud.google.com/vision/docs/setup) and [Application Default Credentials](https://docs.cloud.google.com/docs/authentication/application-default-credentials).
 
 After approval, set `RESEARCH_OCR_ENABLED=true` for the research runtime, refresh config, and use a synthetic sample matching example application data in a restricted test session before accepting any participant uploads. Test a mismatched sample too. A text match is not proof of identity. If Vision is unavailable, the UI reports the failure without claiming any staff review has occurred. Switch the flag off on failure. Never use genuine government IDs for the canary.

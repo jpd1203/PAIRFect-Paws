@@ -28,6 +28,8 @@
                             'Verified' => 'Name and address matched by OCR',
                             'NeedsResubmission' => 'Replacement Required for Verification',
                             'ManualReview' => 'Automatic Check Unavailable',
+                            'LegacyReview' => 'Manual Document Review',
+                            'Pending' => 'Pending Document Check',
                             default => 'Not Submitted',
                         } }}</span>
                     </div>
@@ -50,6 +52,10 @@
                         <p>{{ $positions->get($p->id) ? 'Current waitlist position: '.$positions->get($p->id).'.' : 'Your profile or the pet is no longer eligible for promotion.' }}</p>
                     @endif
                 </div>
+                @if($p->status === \App\Enums\ApplicationStatus::PrimaryCandidate && $p->document_verification_status
+                    && $p->document_verification_status->value !== 'Verified')
+                    <p class="mt-3 text-sm">You can continue your application without waiting for document verification.</p>
+                @endif
                 <div class="flex flex-wrap gap-3 mt-4">
                     @if($p->status === \App\Enums\ApplicationStatus::PrimaryCandidate)
                         <form method="POST" action="{{ route('research.continue', $p) }}">@csrf
