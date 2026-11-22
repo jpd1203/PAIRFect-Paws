@@ -21,7 +21,7 @@ final class ResearchApplicationRouting
             if ($request->routeIs('application.apply', 'applications.create')) {
                 return to_route('research.preview', $request->route('pet'));
             }
-            abort_unless($request->routeIs('research.*'), 403, 'Only simulated applications and check-ins are available in research mode.');
+            abort_unless($request->routeIs('research.*'), 403);
         }
 
         return $next($request);

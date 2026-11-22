@@ -49,7 +49,9 @@ Expect **70 / 70 / 210 / 0 / 0** before use. Stop on errors. The catalog transac
 
 ## Upgrade an already active survey to the full participant interface
 
-This is an additive upgrade. Do not provision a new schema, reseed, run the administrator bootstrap again, or rerun the fresh setup for an existing survey. The research consent and document outcome columns are new; prior submissions remain in place and show Not Submitted rather than being treated as verified. The original Government ID upload and Adoption and Data Processing Agreement are required on new applications. Existing respondents see the versioned study introduction once at their next protected step.
+This is an additive upgrade. Do not provision a new schema, reseed, run the administrator bootstrap again, or rerun the fresh setup for an existing survey. Prior submissions remain in place and show Not Submitted rather than being treated as verified. The original Government ID upload and Adoption and Data Processing Agreement are required on new applications.
+
+For the Browse Pets-first follow-up, the app no longer presents Study Information or records study participation consent. Collect voluntary study consent before distributing access and provide fictional example IDs and application details. Explain outside the app that no real placement or delivery occurs and how to withdraw. Do not treat the application's data-processing agreement as study consent. The follow-up adds no migration and does not change earlier consent records; the additive migration below remains required if it was not already applied.
 
 1. Confirm study-owner approval, restore-tested backups of the **research** schema and its necessary configuration, and availability of the existing study APP_KEY. Pause participant traffic during deploy and migration. Keep research-only database credentials in use and leave the original database untouched.
 2. After explicit authorization, publish a reviewed PR targeting master. Wait for validation and the existing automatic deployment. Initially leave `RESEARCH_OCR_ENABLED=false`. In Azure SSH:
@@ -70,7 +72,7 @@ php artisan migrate:status
 php artisan config:cache
 ```
 
-3. Check an existing respondent can accept the updated study disclosure, submit the original adoption form with a synthetic ID and see retained applications. Verify the form rejects a missing file or agreement, and that a non-ID is not marked verified. Confirm reservation, next applicant promotion, continuation, receipt confirmation and the shared welfare form. Test production templates separately with Research Mode off on a disposable environment. Use a reviewed code rollback if needed; leave the additive columns in place to retain study submissions.
+3. Check that an existing respondent can open Browse Pets without an interstitial, submit the original adoption form with a synthetic ID and see retained applications. Verify the form rejects a missing file or agreement, and that a non-ID is not marked verified. Confirm reservation, next applicant promotion, continuation, receipt confirmation and the shared welfare form. Test production templates separately with Research Mode off on a disposable environment. Use a reviewed code rollback if needed; leave the additive columns in place to retain study submissions.
 
 ### Google Vision opt-in and document retention
 
