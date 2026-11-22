@@ -86,9 +86,9 @@ final class ResearchScenarioController extends Controller
         if (! $match->eligible) {
             throw ValidationException::withMessages(['pet_id' => MatchPresenter::reason($match->exclusionReason)]);
         }
-        $validated = $request->validate(AdoptionForm::rules(research: true), [
-            'document.required' => 'Upload a supporting document to continue. It does not have to be an ID.',
-            'document_consent.accepted' => 'Accept the document processing terms to submit your application.',
+        $validated = $request->validate(AdoptionForm::rules(), [
+            'document.required' => 'Upload a government ID showing your name and residential address.',
+            'agreed_to_terms.accepted' => 'Accept the Adoption and Data Processing Agreement to submit your application.',
         ]);
         $details = Arr::only($validated, [
             'first_name', 'last_name', 'email', 'phone_number', 'motivation_statement', 'physical_activity_level',

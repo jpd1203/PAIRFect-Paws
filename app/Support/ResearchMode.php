@@ -25,7 +25,7 @@ final class ResearchMode
 
     public const MILESTONES = ['3-day', '3-week', '3-month'];
 
-    public const CONSENT_VERSION = 'survey01-v2';
+    public const CONSENT_VERSION = 'survey01-v3';
 
     public static function hasConsent(User $user): bool
     {

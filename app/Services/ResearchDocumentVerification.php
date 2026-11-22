@@ -14,7 +14,7 @@ final class ResearchDocumentVerification
 {
     public const DISK = 'research-ocr';
 
-    public const CONSENT_VERSION = 'study-ocr-v2';
+    public const CONSENT_VERSION = 'study-ocr-v3';
 
     public function __construct(private DocumentVerificationService $verification) {}
 
@@ -48,14 +48,7 @@ final class ResearchDocumentVerification
                 'document_verification_status' => $result->status,
                 'document_verification_reasons' => match ($result->status) {
                     DocumentVerificationStatus::Verified => [],
-                    DocumentVerificationStatus::NeedsResubmission => array_map(
-                        static fn (string $reason): string => match (true) {
-                            str_contains($reason, 'upload a government-issued ID') => 'This document could not be automatically verified. A government ID is not required to continue.',
-                            str_starts_with($reason, 'The uploaded ID') => 'The document does not show enough residential address information for automatic verification.',
-                            default => $reason,
-                        },
-                        $result->reasons,
-                    ),
+                    DocumentVerificationStatus::NeedsResubmission => $result->reasons,
                     default => $attributes['document_verification_reasons'],
                 },
             ]);

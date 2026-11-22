@@ -157,31 +157,29 @@
 
                     <div class="form-group">
                         <label for="application_document">
-                            {{ $research ? 'Upload Supporting Document*' : 'Upload Government ID Showing Your Name and Residential Address*' }}
+                            Upload Government ID Showing Your Name and Residential Address*
                         </label>
 
                         <input type="file" id="application_document" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
-                        @if($research)
-                            <p class="mt-2 text-sm">Upload a supporting document, such as redacted proof of address or a sample document. A government ID is not required. Remove sensitive details you don't need to share. PDF, JPG or PNG up to 10 MB.</p>
-                            @if(! config('research.ocr_enabled') || config('document_verification.provider') !== 'google_vision')
-                                <p class="mt-2 text-sm">Automatic document checking is currently unavailable.</p>
-                            @endif
-                            @include('research._document-consent', ['consentId' => 'application'])
-                        @else
                         <p class="mt-2 text-[.72rem] text-[#777]">For automatic verification, use a Philippine National ID or LTO driver's license showing your full name and current residential address. Passports, bills, and other proof-of-address documents are not eligible for automatic verification.</p>
                         <small class="text-[.72rem] text-[#777]">PDF, JPG, or PNG — max 10MB. OCR extracts text only; PAIRfect Paws does not use facial recognition or biometric matching.</small>
-                        <p class="mt-2 text-[.72rem] text-[#777]">Your document and extracted text are stored privately and are accessible only to authorized shelter personnel.</p>
+                        @if($research)
+                            <p class="mt-2 text-[.72rem] text-[#777]">Your document is handled privately. When automatic checking is enabled, Google Cloud Vision receives it for text extraction. The app deletes the file after checking and retains the result, not the extracted text.</p>
+                            @if(! config('research.ocr_enabled') || config('document_verification.provider') !== 'google_vision')
+                                <p class="mt-2 text-[.72rem] text-[#777]">Automatic document checking is currently unavailable.</p>
+                            @endif
+                        @else
+                            <p class="mt-2 text-[.72rem] text-[#777]">Your document and extracted text are stored privately and are accessible only to authorized shelter personnel.</p>
                         @endif
                     </div>
 
                     <div class="checkbox-group">
                         <input type="checkbox" id="agreement_terms" name="agreed_to_terms" value="1" required>
                         <label for="agreement_terms">
-                            @if($research)
-                                I agree to submit these details under the <a class="underline" href="{{ route('study.intro') }}">Adoption and Data Processing Agreement</a>.
-                            @else
                             I have read, understood, and agree to the terms of the 
                             <a href="javascript:void(0)" onclick="openTermsModal()" style="color: var(--primary-color); text-decoration: underline;">Adoption and Data Processing Agreement</a>.
+                            @if($research)
+                                This includes permission to send my uploaded ID to Google Cloud Vision for text extraction when enabled.
                             @endif
                         </label>
                     </div>
@@ -200,13 +198,21 @@
     </div>  
 
 
-    @unless($research)
     <div class="modal-overlay" id="termsModal">
         <div class="pet-modal report-modal" style="max-width: 600px; padding: 30px; text-align: left; background: #fff; border-radius: 8px;">
             <div class="modal-header" style="border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
                 <h3 style="margin: 0; color: #333; font-weight: bold;">Adoption and Data Processing Agreement</h3>
             </div>
             <div class="modal-body custom-scrollbar" style="max-height: 50vh; overflow-y: auto; font-size: 0.95rem; line-height: 1.6; color: #555; padding-right: 10px;">
+                @if($research)
+                    <p><strong>Application and matching</strong><br>
+                        I agree that PAIRfect Paws will use my application and adopter profile to calculate pet compatibility and record my application, handover, and check-in progress.</p>
+                    <br>
+                    <p><strong>Document processing</strong><br>
+                        I agree to the temporary processing of my uploaded ID and, when automatic checking is enabled, to sending the file to Google Cloud Vision for text extraction. The result is used to compare my name and address, not to prove my identity. The uploaded file is deleted after processing and the app keeps the outcome, not the extracted text.</p>
+                    <br>
+                    <p>Read the <a class="underline" href="{{ route('legal.privacy') }}">Privacy Notice</a> or <a class="underline" href="{{ route('study.intro') }}">Study Information</a> for more about data handling and participation.</p>
+                @else
                 <p>By submitting this application, you are making a formal commitment to the welfare of the animal and agreeing to our shelter protocols. Please read and agree to the following terms:</p>
                 <br>
                 <p><strong>1. Commitment to Animal Welfare</strong><br>
@@ -229,6 +235,7 @@
                 <br>
                 <p><strong>7. Data Privacy and Algorithmic Matching</strong><br>
                 In compliance with Republic Act No. 10173 (Data Privacy Act of 2012), I consent to the collection and secure storage of my personal information, lifestyle details, and submitted identification documents. I explicitly agree to let the system use my adopter profile data in an automated pet matching calculation to help shelter staff find the most compatible animal for my household.</p>
+                @endif
             </div>
             <div class="modal-actions" style="margin-top: 25px; text-align: right;">
                 <button type="button" class="btn btn-secondary" onclick="closeTermsModal()">Close</button>
@@ -247,6 +254,5 @@
             if (e.target.id === "termsModal") closeTermsModal();
         });
     </script>
-    @endunless
 
 @endsection

@@ -8,7 +8,7 @@ final class AdoptionForm
 {
     public const DOCUMENT_RULE = 'file|mimes:pdf,jpg,jpeg,png|max:10240';
 
-    public static function rules(bool $research = false): array
+    public static function rules(): array
     {
         return [
             'first_name' => 'required|string|max:255',
@@ -21,7 +21,6 @@ final class AdoptionForm
             'prior_pet_experience' => 'required|string|max:255',
             'household_composition' => 'required|string|max:255',
             'document' => 'required|'.self::DOCUMENT_RULE,
-            ...($research ? ['document_consent' => 'accepted'] : []),
             'agreed_to_terms' => 'accepted',
             ...PhilippineLocationService::validationRules(),
         ];
