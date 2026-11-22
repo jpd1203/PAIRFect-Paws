@@ -9,7 +9,6 @@ use App\Services\KnnRecommendationService;
 use App\Services\Matching\ApplicantRankingService;
 use App\Services\Matching\MatchPresenter;
 use App\Services\PhilippineLocationService;
-use App\Services\ResearchDocumentVerification;
 use App\Services\ReservationQueueService;
 use App\Support\AdoptionForm;
 use App\Support\ResearchMode;
@@ -62,7 +61,7 @@ final class ResearchScenarioController extends Controller
             : view('research.unavailable', compact('pet', 'match'));
     }
 
-    public function apply(Request $request, Pet $pet, ReservationQueueService $queue, KnnRecommendationService $matcher, PhilippineLocationService $locations, ResearchDocumentVerification $documents)
+    public function apply(Request $request, Pet $pet, ReservationQueueService $queue, KnnRecommendationService $matcher, PhilippineLocationService $locations)
     {
         abort_unless(ResearchMode::catalogPet($pet), 404);
         $user = $request->user();
@@ -73,8 +72,8 @@ final class ResearchScenarioController extends Controller
         if (! $match->eligible) {
             throw ValidationException::withMessages(['pet_id' => MatchPresenter::reason($match->exclusionReason)]);
         }
-        $validated = $request->validate(AdoptionForm::rules(), [
-            'document.required' => 'Upload a government ID showing your name and residential address.',
+        $validated = $request->validate(array_replace(AdoptionForm::rules(), ['document' => 'prohibited']), [
+            'document.prohibited' => 'This application does not accept document uploads.',
             'agreed_to_terms.accepted' => 'Accept the Adoption and Data Processing Agreement to submit your application.',
         ]);
         $details = Arr::only($validated, [
@@ -83,25 +82,9 @@ final class ResearchScenarioController extends Controller
         ]);
         $details['address'] = $locations->resolveAddress($validated);
         $details['agreed_at'] = now()->toISOString();
-        $attributes = $documents->process($validated['document'], $details);
-        $queue->submitResearch($user, $pet, ['application_details' => $details, ...$attributes]);
+        $queue->submitResearch($user, $pet, ['application_details' => $details]);
 
         return to_route('research.index')->with('success', 'Application submitted.');
-    }
-
-    public function replaceDocument(Request $request, ResearchPlacement $placement, ResearchDocumentVerification $documents)
-    {
-        $this->owned($request, $placement);
-        abort_unless($placement->acceptsResearchReplacement(), 409);
-        $validated = $request->validate(['document' => 'required|'.AdoptionForm::DOCUMENT_RULE, 'document_consent' => 'accepted']);
-        $attributes = $documents->process($validated['document'], $placement->application_details);
-        DB::transaction(function () use ($placement, $attributes): void {
-            $locked = ResearchPlacement::lockForUpdate()->findOrFail($placement->id);
-            abort_unless($locked->acceptsResearchReplacement() && $locked->document_reupload_count === $placement->document_reupload_count, 409);
-            $locked->update([...$attributes, 'document_reupload_count' => $locked->document_reupload_count + 1]);
-        });
-
-        return to_route('research.index');
     }
 
     public function continueAdoption(Request $request, ResearchPlacement $placement, ReservationQueueService $queue)

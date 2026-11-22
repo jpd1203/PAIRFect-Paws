@@ -49,22 +49,22 @@ Expect **70 / 70 / 210 / 0 / 0** before use. Stop on errors. The catalog transac
 
 ## Upgrade an already active survey to the full participant interface
 
-This is an additive upgrade. Do not provision a new schema, reseed, run the administrator bootstrap again, or rerun the fresh setup for an existing survey. Prior submissions remain in place and show Not Submitted rather than being treated as verified. The original Government ID upload and Adoption and Data Processing Agreement are required on new applications.
+Do not provision a new schema, reseed, run the administrator bootstrap again, or rerun the fresh setup for an existing survey. Prior submissions remain in place. New research applications require the Adoption and Data Processing Agreement, but do not collect or replace IDs. Normal adoption still requires ID upload.
 
-For the Browse Pets-first follow-up, the app no longer presents Study Information or records study participation consent. Collect voluntary study consent before distributing access and provide fictional example IDs and application details. Explain outside the app that no real placement or delivery occurs and how to withdraw. Do not treat the application's data-processing agreement as study consent. The follow-up adds no migration and does not change earlier consent records; the additive migration below remains required if it was not already applied.
+The app no longer presents Study Information or records study participation consent. Before distributing access, collect voluntary study consent, provide example application details, and explain outside the app that no real placement or delivery occurs and how to withdraw. Do not treat the application's data-processing agreement as study consent. This release adds no migration and does not change earlier consent or document status records; the additive migration below remains required if it was not already applied.
 
 1. Confirm study-owner approval, restore-tested backups of the **research** schema and its necessary configuration, and availability of the existing study APP_KEY. Pause participant traffic during deploy and migration. Keep research-only database credentials in use and leave the original database untouched.
-2. After explicit authorization, publish a reviewed PR targeting master. Wait for validation and the existing automatic deployment. Initially leave `RESEARCH_OCR_ENABLED=false`. In Azure SSH:
+2. After explicit authorization, publish a reviewed PR targeting master. Wait for validation and the existing automatic deployment. In Azure SSH:
 
 ```sh
 cd /home/site/wwwroot
 php -r 'echo json_decode(file_get_contents("RELEASE.json"), true)["release_sha"], PHP_EOL;'
 php artisan config:clear
-php artisan tinker --execute='dump(app()->environment(),config("research.enabled"),config("research.ocr_enabled"),DB::selectOne("select database() as name", [], false)->name);'
+php artisan tinker --execute='dump(app()->environment(),config("research.enabled"),DB::selectOne("select database() as name", [], false)->name);'
 php artisan migrate:status
 ```
 
-Stop unless the release SHA matches the approved deployment, environment is production, Research Mode is on, OCR is off, and the actual database is `pairfect_research_survey01`. Review pending migrations, then apply just this migration:
+Stop unless the release SHA matches the approved deployment, environment is production, Research Mode is on, and the actual database is `pairfect_research_survey01`. Review pending migrations. If the following migration is still pending, apply only that migration:
 
 ```sh
 php artisan migrate --force --path=database/migrations/2026_11_23_000001_add_research_consent_and_application_details.php
@@ -72,23 +72,19 @@ php artisan migrate:status
 php artisan config:cache
 ```
 
-3. Check that an existing respondent can open Browse Pets without an interstitial, submit the original adoption form with a synthetic ID and see retained applications. Verify the form rejects a missing file or agreement, and that a non-ID is not marked verified. Confirm reservation, next applicant promotion, continuation, receipt confirmation and the shared welfare form. Test production templates separately with Research Mode off on a disposable environment. Use a reviewed code rollback if needed; leave the additive columns in place to retain study submissions.
+3. Check that an existing respondent can open Browse Pets without an interstitial, submit the adoption form without an ID and see retained applications. Verify the form rejects a missing agreement or an attempted document upload, and that there are no replacement controls. Confirm reservation, next applicant promotion, continuation, receipt confirmation and the shared welfare form. Test the required ID and document verification workflow separately with Research Mode off on a disposable environment. Use a reviewed code rollback if needed; leave the additive columns in place to retain study submissions.
 
-### Google Vision opt-in and document retention
+### Cleanup of temporary files from earlier releases
 
-Document verification never holds the research reservation or handover flow. Applicants still supply an ID and accept the agreement. The current primary candidate may continue with a match, unavailable check, or replacement notice; the document result stays unchanged. With Vision enabled, submission still makes the OCR request. Keep it off when external request latency is not part of the study.
+Research applications no longer send data to Google Vision, and the old `RESEARCH_OCR_ENABLED` setting has no effect. Do not change the normal application's provider settings for this release. Previously recorded verification outcomes and consent metadata are retained.
 
-Google Vision is off by default. The ID upload is required even with OCR off, but is not sent to Google in that case. First approve the third-party processor, provide participants with appropriately labeled synthetic ID samples, and agree on the consent copy, retention period and operator responsible for deletion. Configure `DOCUMENT_OCR_PROVIDER=google_vision` and the app's Application Default Credentials using authorized, read-only secret storage outside Git and the web root. Confirm API enablement, billing, quota/IAM and HTTPS egress from App Service. Do not print the credentials or access token. See [Vision setup](https://docs.cloud.google.com/vision/docs/setup) and [Application Default Credentials](https://docs.cloud.google.com/docs/authentication/application-default-credentials).
-
-After approval, set `RESEARCH_OCR_ENABLED=true` for the research runtime, refresh config, and use a synthetic sample matching example application data in a restricted test session before accepting any participant uploads. Test a mismatched sample too. A text match is not proof of identity. If Vision is unavailable, the UI reports the failure without claiming any staff review has occurred. Switch the flag off on failure. Never use genuine government IDs for the canary.
-
-The app uses `storage/app/research-ocr`, a private, non-served disk outside both the public disk and the normal private download root. Do not symlink it, include it in any backup, or expose it through a storage mount. Use access-restricted storage encrypted at rest; exclude request bodies from diagnostic tracing and apply the same rules to PHP/nginx temporary upload directories. Files are removed after each check. The hourly scheduler or the following dedicated command prunes abandoned files older than one hour; schedule just this command if research does not run the ordinary scheduler:
+An earlier release used `storage/app/research-ocr`, a private, non-served disk. Do not expose it or include it in a backup. The hourly scheduler or the following dedicated command still prunes abandoned files older than one hour. If research does not run the ordinary scheduler, use this command to clear any leftover generated files:
 
 ```sh
 php artisan research:purge-ocr-temp
 ```
 
-Verify the purge runs on every instance that uses local temporary files. Escalate cleanup failures to the study owner without sharing uploads. No raw image, original filename, or extracted text is saved to study tables; the application details are encrypted and the outcome and consent metadata remain. At the study retention deadline, an authorized operator must revoke access, remove study exports/temporary files and securely dispose of research-only records/backups under the approved plan, including any retained encryption keys when no longer needed. App-side cleanup does not control Google's processing or provider-side retention; review those terms before enabling OCR.
+Verify the purge on every instance that previously used local temporary files. Escalate cleanup failures to the study owner without sharing uploads. Study application details remain encrypted. At the study retention deadline, an authorized operator must revoke access, remove study exports and temporary files, and dispose of research-only records/backups under the approved plan, including any retained encryption keys when no longer needed. App-side cleanup does not affect documents that an earlier release sent to a provider.
 
 ## First administrator in the already initialized survey 01
 

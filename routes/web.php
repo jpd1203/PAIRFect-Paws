@@ -178,7 +178,6 @@ Route::middleware('auth')->group(function () {
                     Route::get('/scenarios', 'index')->name('index');
                     Route::get('/pets/{pet}', 'preview')->name('preview');
                     Route::post('/pets/{pet}', 'apply')->middleware('throttle:8,1,research-apply')->name('apply');
-                    Route::post('/placements/{placement}/document', 'replaceDocument')->middleware('throttle:4,1,research-document')->name('document');
                     Route::get('/placements/{placement}/handover', 'handover')->name('handover');
                     Route::get('/placements/{placement}/checkins', 'report')->name('report');
                     Route::post('/placements/{placement}/continue', 'continueAdoption')->whereNumber('placement')->name('continue');

@@ -143,11 +143,10 @@ final class ResearchScenarioTest extends TestCase
             $this->completeMatchingProfile($u, ['bfi_responses' => $this->variedAnswers($rating)]);
             $this->actingAs($u->fresh())->get(route('research.preview', $pet))->assertOk()
                 ->assertViewIs('application.apply')->assertSee('Personal Information')->assertSee('Adopter Profile')
-                ->assertSee('Upload Government ID Showing Your Name and Residential Address')
                 ->assertSee('Adoption and Data Processing Agreement')->assertSee('id="termsModal"', false)
-                ->assertSee('Do not upload a real ID.')
+                ->assertDontSee('name="document"', false)->assertDontSee('Google Cloud Vision')
                 ->assertDontSee('Research testing mode')->assertDontSee('Study Information');
-            $this->post($apply, $this->application() + ['document' => $this->sample()])->assertRedirect(route('research.index'));
+            $this->post($apply, $this->application())->assertRedirect(route('research.index'));
             $this->post($apply, $this->application())->assertRedirect(route('research.index'));
         }
         $primary = ResearchPlacement::where('user_id', $a->id)->sole();
@@ -156,13 +155,13 @@ final class ResearchScenarioTest extends TestCase
         $this->assertSame(ApplicationStatus::PrimaryCandidate, $primary->status);
         $this->assertSame(ApplicationStatus::Waitlisted, $earlier->status);
         $this->assertSame('Soft-Reserved', $pet->fresh()->availability_status->value);
-        $applications = $this->get(route('research.index'))->assertSee('Current waitlist position: 1.')->assertSee('Automatic Check Unavailable')->assertDontSee('Continue Application');
+        $applications = $this->get(route('research.index'))->assertSee('Current waitlist position: 1.')->assertDontSee('Continue Application');
         $this->assertActiveSidebarLink($applications, route('application.index'));
         $handoverList = route('research.index', ['section' => 'handover']);
         $empty = $this->get($handoverList)->assertOk()->assertViewIs('research.handover')
             ->assertSee('No handovers yet')->assertDontSee('Document Verification')->assertDontSee($pet->name);
         $this->assertActiveSidebarLink($empty, $handoverList);
-        $this->assertSame(DocumentVerificationStatus::ManualReview, $later->document_verification_status);
+        $this->assertNull($later->document_verification_status);
         $this->post(route('research.continue', $later))->assertConflict();
         $this->post(route('research.continue', $primary))->assertNotFound();
         $this->post(route('research.receive', $later))->assertNotFound();
@@ -244,18 +243,21 @@ final class ResearchScenarioTest extends TestCase
         $this->completeMatchingProfile($user);
         $this->actingAs($user);
         $pet = Pet::firstOrFail();
-        $this->post(route('research.apply', $pet), $this->application() + ['document' => $this->sample()])->assertRedirect();
+        $this->post(route('research.apply', $pet), $this->application())->assertRedirect();
         $this->post(route('research.withdraw', ResearchPlacement::sole()))->assertRedirect();
         $this->assertSame('Available', $pet->fresh()->availability_status->value);
         $this->post(route('application.submit'), ['pet_id' => $pet->id])->assertForbidden();
         config(['research.enabled' => false]);
         $this->get(route('research.index'))->assertNotFound();
-        $this->get(route('application.apply', $pet))->assertOk()->assertViewIs('application.apply');
+        $this->get(route('application.apply', $pet))->assertOk()->assertViewIs('application.apply')
+            ->assertSee('Upload Government ID Showing Your Name and Residential Address')
+            ->assertSee('name="document"', false)
+            ->assertSee('enctype="multipart/form-data"', false);
     }
 
-    public function test_uploads_use_actual_verifier_without_retaining_files_or_extracted_text(): void
+    public function test_research_accepts_applications_without_collecting_documents_and_preserves_prior_records(): void
     {
-        config(['research.enabled' => true, 'research.ocr_enabled' => true, 'document_verification.provider' => 'google_vision']);
+        config(['research.enabled' => true, 'document_verification.provider' => 'google_vision']);
         Storage::fake('research-ocr');
         $this->seed(ResearchCatalogSeeder::class);
         $user = $this->matchingUser();
@@ -268,66 +270,46 @@ final class ResearchScenarioTest extends TestCase
                 return 'synthetic-token';
             }
         });
-        Http::preventStrayRequests();
-        Http::fake(['vision.googleapis.com/*' => Http::sequence()
-            ->push(['responses' => [['fullTextAnnotation' => ['text' => "PHILIPPINE IDENTIFICATION CARD\nJUAN CRUZ\nADDRESS 999 SAMPLE ROAD CITY OF MANILA"]]]])
-            ->push(['responses' => [['fullTextAnnotation' => ['text' => "PHILIPPINE IDENTIFICATION CARD\nJUAN CRUZ\nADDRESS 123 RIZAL STREET CITY OF MANILA"]]]])
-            ->push(['error' => ['status' => 'PERMISSION_DENIED']], 403)
-            ->push(['responses' => [[]]])
-            ->push(['responses' => [['fullTextAnnotation' => ['text' => "UTILITY BILL\nJUAN CRUZ\nADDRESS 123 RIZAL STREET CITY OF MANILA"]]]])]);
-        $pets = Pet::where('availability_status', 'Available')->take(5)->get();
-        $apply = route('research.apply', $pets[0]);
-        $this->post($apply, $this->application())->assertSessionHasErrors('document');
-        $this->post($apply, array_replace($this->application(), ['document' => $this->sample(), 'agreed_to_terms' => 0]))->assertSessionHasErrors('agreed_to_terms');
-        $this->post($apply, $this->application() + ['document' => UploadedFile::fake()->create('sample.txt', 1)])->assertSessionHasErrors('document');
-        Http::assertNothingSent();
+        Http::fake();
+        $pet = Pet::where('availability_status', 'Available')->firstOrFail();
+        $apply = route('research.apply', $pet);
+        $this->post($apply, array_replace($this->application(), ['agreed_to_terms' => 0]))->assertSessionHasErrors('agreed_to_terms');
+        $this->post($apply, $this->application() + ['document' => UploadedFile::fake()->image('synthetic-id.png')])
+            ->assertSessionHasErrors('document');
         $this->assertDatabaseCount('research_placements', 0);
-        $this->post($apply, $this->application() + ['document' => $this->sample()])->assertRedirect(route('research.index'));
+        $this->post($apply, $this->application())->assertRedirect(route('research.index'));
         $placement = ResearchPlacement::sole();
         $this->assertSame(ApplicationStatus::PrimaryCandidate, $placement->status);
-        $this->assertSame(DocumentVerificationStatus::NeedsResubmission, $placement->document_verification_status);
+        $this->assertNull($placement->document_verification_status);
+        $this->assertNull($placement->document_consent_at);
+        $this->assertNotEmpty($placement->application_details['agreed_at']);
         $this->assertStringNotContainsString('Rizal', $placement->getRawOriginal('application_details'));
-        $this->get(route('research.index'))->assertSee('Replacement Required for Verification')
-            ->assertSee('You can continue your application without waiting for document verification.')
-            ->assertSee('Privacy Notice')->assertDontSee('Study Information')->assertDontSee('999 SAMPLE ROAD');
-        $other = $this->matchingUser();
-        $replace = route('research.document', $placement);
-        $this->actingAs($other)->post($replace, ['document' => $this->sample(), 'document_consent' => 1])->assertNotFound();
-        $this->actingAs($user)->post($replace, ['document' => $this->sample()])->assertSessionHasErrors('document_consent');
-        $this->actingAs($user)->post($replace, ['document' => $this->sample(), 'document_consent' => 1])->assertRedirect();
-        $this->assertSame(DocumentVerificationStatus::Verified, $placement->fresh()->document_verification_status);
-        $this->get(route('research.index'))->assertSee('Name and address matched by OCR')->assertSee('not proof of identity');
-        $this->post($replace, ['document' => $this->sample(), 'document_consent' => 1])->assertConflict();
+
+        // Model an application carried over from before ID collection ended.
+        $consentAt = now()->subDay()->startOfSecond();
+        $placement->update([
+            'document_verification_status' => DocumentVerificationStatus::NeedsResubmission,
+            'document_verification_reasons' => ['Legacy mismatch'],
+            'document_consent_at' => $consentAt,
+            'document_consent_version' => 'study-ocr-v3',
+        ]);
+        $this->get(route('research.index'))->assertSee('Continue Application')
+            ->assertDontSee('Document Verification')->assertDontSee('Submit Replacement')
+            ->assertDontSee('name="document"', false)->assertDontSee('Legacy mismatch');
+        $this->post("/research/placements/{$placement->id}/document", [
+            'document' => UploadedFile::fake()->image('synthetic-id.png'),
+        ])->assertNotFound();
         $this->post(route('research.continue', $placement))->assertRedirect(route('research.index'));
-        $this->assertSame(ApplicationStatus::Approved, $placement->fresh()->status);
-        $this->assertSame(DocumentVerificationStatus::Verified, $placement->fresh()->document_verification_status);
-        foreach ([1 => DocumentVerificationStatus::ManualReview, 2 => DocumentVerificationStatus::NeedsResubmission, 3 => DocumentVerificationStatus::ManualReview] as $i => $status) {
-            if ($i === 3) {
-                config(['research.ocr_enabled' => false]);
-            }
-            $this->post(route('research.apply', $pets[$i]), $this->application() + ['document' => $this->sample()])->assertRedirect(route('research.index'));
-            $candidate = ResearchPlacement::where('pet_id', $pets[$i]->id)->sole();
-            $this->assertSame($status, $candidate->document_verification_status);
-            $this->post(route('research.continue', $candidate))->assertRedirect(route('research.index'));
-            $this->assertSame(ApplicationStatus::Approved, $candidate->fresh()->status);
-            $this->assertSame($status, $candidate->fresh()->document_verification_status);
-        }
-        config(['research.ocr_enabled' => true]);
-        $this->post(route('research.apply', $pets[4]), $this->application() + [
-            'document' => UploadedFile::fake()->image('redacted-proof-of-address.png'),
-        ])->assertRedirect(route('research.index'));
-        $nonId = ResearchPlacement::where('pet_id', $pets[4]->id)->sole();
-        $this->assertSame(ApplicationStatus::PrimaryCandidate, $nonId->status);
-        $this->assertSame(DocumentVerificationStatus::NeedsResubmission, $nonId->document_verification_status);
-        $this->assertStringContainsString('not supported for automatic verification', implode(' ', $nonId->document_verification_reasons));
-        Http::assertSentCount(5);
+        $placement->refresh();
+        $this->assertSame(ApplicationStatus::Approved, $placement->status);
+        $this->assertSame(DocumentVerificationStatus::NeedsResubmission, $placement->document_verification_status);
+        $this->assertSame(['Legacy mismatch'], $placement->document_verification_reasons);
+        $this->assertSame($consentAt->toISOString(), $placement->document_consent_at->toISOString());
+        $this->assertSame('study-ocr-v3', $placement->document_consent_version);
+        $this->assertSame(0, $placement->document_reupload_count);
+        Http::assertNothingSent();
         $this->assertSame([], Storage::disk('research-ocr')->allFiles());
         $this->assertFalse(config('filesystems.disks.research-ocr.serve'));
-    }
-
-    private function sample(): UploadedFile
-    {
-        return UploadedFile::fake()->image('synthetic-id.png');
     }
 
     public function test_ocr_cleanup_only_removes_old_generated_study_files(): void

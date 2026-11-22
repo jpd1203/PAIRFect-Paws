@@ -2,6 +2,5 @@
 
 return [
     'enabled' => env('RESEARCH_MODE', false),
-    'ocr_enabled' => env('RESEARCH_OCR_ENABLED', false),
     'disposable_database' => env('PAIRFECT_DISPOSABLE_MYSQL_DB'),
 ];

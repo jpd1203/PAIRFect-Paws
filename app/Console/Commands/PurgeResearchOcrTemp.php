@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Services\ResearchDocumentVerification;
 use App\Support\ResearchMode;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
@@ -19,7 +18,7 @@ final class PurgeResearchOcrTemp extends Command
             return self::FAILURE;
         }
 
-        $disk = Storage::disk(ResearchDocumentVerification::DISK);
+        $disk = Storage::disk('research-ocr');
         $cutoff = now()->subHour()->timestamp;
         $failed = false;
         foreach ($disk->files() as $path) {
