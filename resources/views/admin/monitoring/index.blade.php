@@ -88,7 +88,7 @@
                     'M j, Y g:i A',
                     '',
                 ),
-                'video_url' => filled($checkIn->video_path) ? route('admin.monitoring.video', $checkIn) : null,
+                'video_url' => filled($checkIn->video_path) ? ($workflowReadOnly ? route('admin.research.video', $checkIn->id) : route('admin.monitoring.video', $checkIn)) : null,
                 'photo_url' => filled($checkIn->photo_path) ? route('admin.monitoring.photo', $checkIn) : null,
             ];
         };

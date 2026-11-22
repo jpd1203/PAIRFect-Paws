@@ -21,6 +21,25 @@
                     <div><h2>{{ $p->pet->name }}</h2><p class="text-sm text-[#777]">Application #{{ $p->id }}</p></div>
                     <span class="badge {{ $p->status_badge_class }}">{{ $p->status->value === 'Closed' ? 'Closed' : $p->status_display }}</span>
                 </div>
+                @if($section !== 'check-ins')
+                    <div class="application-details">
+                        <div class="detail-row">
+                            <span class="label">Document Verification</span>
+                            <span class="value">{{ match($p->document_verification_status?->value) {
+                                'Verified' => 'Name and address matched by OCR',
+                                'ManualReview' => 'Automatic Check Unavailable',
+                                'NeedsResubmission' => 'Could Not Verify Document',
+                                default => $p->document_verification_status?->value ?? 'Not Submitted',
+                            } }}</span>
+                        </div>
+                        @if($p->document_verification_status?->value === 'Verified')
+                            <p class="text-sm">This text match is not proof of identity.</p>
+                        @endif
+                        @foreach($p->document_verification_reasons ?? [] as $reason)
+                            <p class="text-sm">{{ $reason }}</p>
+                        @endforeach
+                    </div>
+                @endif
                 @if($p->status === \App\Enums\ApplicationStatus::Waitlisted)
                     <div class="application-details">
                         <p>{{ $positions->get($p->id) ? 'Current waitlist position: '.$positions->get($p->id).'.' : 'Your profile or the pet is no longer eligible for promotion.' }}</p>
@@ -37,7 +56,7 @@
                             <button class="btn btn-secondary">Withdraw Application</button>
                         </form>
                     @endif
-                    @if($p->status === \App\Enums\ApplicationStatus::Approved && $p->released_at)
+                    @if($p->status === \App\Enums\ApplicationStatus::Approved && $section !== 'check-ins')
                         <a class="btn btn-secondary" href="{{ route('research.handover', $p) }}">Handover Status</a>
                     @endif
                 </div>

@@ -4,8 +4,11 @@ namespace App\Services;
 
 use App\Models\PostAdoptionCaptureChallenge;
 use App\Models\PostAdoptionLog;
+use App\Models\ResearchCaptureChallenge;
+use App\Models\ResearchPlacement;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -14,6 +17,55 @@ use RuntimeException;
 
 final class PostAdoptionCaptureChallengeService
 {
+    public function sessionBinding(Request $request): string
+    {
+        $key = 'post_adoption_capture_session_binding';
+        $binding = $request->session()->get($key);
+        if (! is_string($binding) || strlen($binding) !== 64) {
+            $binding = bin2hex(random_bytes(32));
+            $request->session()->put($key, $binding);
+        }
+
+        return $binding;
+    }
+
+    /** Caller holds the owned placement lock and has checked the next milestone. */
+    public function issueResearchLocked(ResearchPlacement $placement, User $user, string $milestone, string $sessionBinding): array
+    {
+        $ttlSeconds = $this->ttlSeconds();
+        $token = bin2hex(random_bytes(32));
+        ResearchCaptureChallenge::where('placement_id', $placement->id)->where('milestone', $milestone)
+            ->where('user_id', $user->id)->whereNull('consumed_at')->delete();
+        $record = ResearchCaptureChallenge::create([
+            'id' => (string) Str::uuid(), 'placement_id' => $placement->id, 'milestone' => $milestone, 'user_id' => $user->id,
+            'token_hash' => $this->tokenHash($token), 'session_hash' => $this->sessionHash($sessionBinding),
+            'expires_at' => CarbonImmutable::now('UTC')->addSeconds($ttlSeconds),
+        ]);
+
+        return ['record' => $record, 'token' => $token, 'expires_in_seconds' => $ttlSeconds];
+    }
+
+    /** When a hash is supplied, consume under the same transaction as the report insert. */
+    public function validateResearch(
+        string $challengeId,
+        string $token,
+        ResearchPlacement $placement,
+        User $user,
+        string $milestone,
+        string $sessionBinding,
+        CarbonImmutable $capturedAt,
+        ?string $videoHash = null,
+    ): ResearchCaptureChallenge {
+        $challenge = ResearchCaptureChallenge::query()->when($videoHash !== null, fn ($query) => $query->lockForUpdate())
+            ->find($challengeId);
+        $this->assertUsable($challenge, $token, $placement, $user, $sessionBinding, $capturedAt, $milestone);
+        if ($videoHash !== null) {
+            $challenge->update(['consumed_at' => CarbonImmutable::now('UTC'), 'video_sha256' => $videoHash]);
+        }
+
+        return $challenge;
+    }
+
     /**
      * @return array{record: PostAdoptionCaptureChallenge, token: string, expires_in_seconds: int}
      */
@@ -99,10 +151,11 @@ final class PostAdoptionCaptureChallengeService
     private function assertUsable(
         ?PostAdoptionCaptureChallenge $challenge,
         string $token,
-        PostAdoptionLog $log,
+        PostAdoptionLog|ResearchPlacement $log,
         User $user,
         string $sessionBinding,
         CarbonImmutable $capturedAt,
+        ?string $milestone = null,
     ): void {
         $now = CarbonImmutable::now('UTC');
         $clockSkewSeconds = max(
@@ -112,7 +165,10 @@ final class PostAdoptionCaptureChallengeService
 
         $reason = match (true) {
             $challenge === null => 'not_found',
-            $challenge->post_adoption_log_id !== $log->id => 'wrong_log',
+            $log instanceof ResearchPlacement && (
+                (int) $challenge->placement_id !== (int) $log->id || $challenge->milestone !== $milestone
+            ) => 'wrong_log',
+            $log instanceof PostAdoptionLog && $challenge->post_adoption_log_id !== $log->id => 'wrong_log',
             $challenge->user_id !== $user->id => 'wrong_user',
             ! hash_equals($challenge->token_hash, $this->tokenHash($token)) => 'wrong_token',
             ! hash_equals($challenge->session_hash, $this->sessionHash($sessionBinding)) => 'wrong_session',
@@ -125,7 +181,7 @@ final class PostAdoptionCaptureChallengeService
 
         if ($reason !== null) {
             Log::notice('A post-adoption capture challenge was rejected.', [
-                'post_adoption_log_id' => $log->id,
+                $log instanceof ResearchPlacement ? 'research_placement_id' : 'post_adoption_log_id' => $log->id,
                 'challenge_id' => $challenge?->id,
                 'reason_code' => $reason,
             ]);

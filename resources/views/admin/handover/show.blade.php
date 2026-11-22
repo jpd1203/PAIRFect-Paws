@@ -84,9 +84,11 @@
     @else
         @php
             $uiTransportAlert = $uiUnreleased = $uiExpired = false;
-            $uiNextAction = $record->received_at
-                ? 'Receipt confirmation recorded. Post-adoption check-ins are available.'
-                : ($record->released_at ? 'Awaiting adopter receipt confirmation.' : 'Handover is not ready yet.');
+            $uiNextAction = match ($record->adopter_outcome) {
+                'received' => 'Receipt confirmation recorded. Post-adoption check-ins are available.',
+                'not_received' => 'The adopter recorded a Not Received outcome. A new attempt is available to them.',
+                default => $record->released_at ? 'Awaiting adopter receipt confirmation.' : 'Handover is not ready yet.',
+            };
             $uiActionTarget = $record->released_at ? 'adopterConfirmationSection' : 'handoverLog';
             $uiActionLabel = $record->released_at ? 'View receipt confirmation' : 'View handover log';
         @endphp
@@ -133,6 +135,11 @@
                 <h3 class="font-bold text-base m-0">Schedule and verification</h3>
                 @include('admin.handover._schedule')
                 @include('admin.handover._delivery-clearance')
+            @else
+                @include('handover._schedule-summary', ['researchHandover' => true])
+                @if($record->reschedule_reason)
+                    <p class="text-sm text-text-muted">Reschedule reason: {{ $record->reschedule_reason }}</p>
+                @endif
             @endunless
             @if ($record->released_at)
                 @include('admin.handover._recorded_release', ['record' => $record])

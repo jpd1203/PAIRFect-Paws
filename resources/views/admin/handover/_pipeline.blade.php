@@ -11,7 +11,7 @@
                 $done = $completed[$key] ?? false;
                 $active = $current === $key;
                 $concern = $key === 'awaiting' && $record->adopter_outcome === 'not_received';
-                $state = $concern ? 'Needs investigation' : ($active ? ($done ? ($key === 'monitoring' ? 'Active' : 'Complete · current') : 'Current') : ($done ? 'Complete' : 'Locked'));
+                $state = $concern ? (($workflowReadOnly ?? false) ? 'Not received' : 'Needs investigation') : ($active ? ($done ? ($key === 'monitoring' ? 'Active' : 'Complete · current') : 'Current') : ($done ? 'Complete' : 'Locked'));
                 $color = $concern ? 'border-red-200 bg-red-50 text-red-800' : ($active ? 'border-primary bg-primary-muted/20 text-primary' : ($done ? 'border-completed-fg bg-completed-bg text-completed-fg' : 'border-[#e2ddd7] bg-secondary-bg text-text-muted'));
             @endphp
             <li class="border rounded-lg p-3 min-w-0 {{ $color }}" @if($active) aria-current="step" @endif>

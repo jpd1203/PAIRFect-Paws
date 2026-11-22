@@ -25,11 +25,12 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Tests\Concerns\BuildsMatchingFixtures;
+use Tests\Concerns\SubmitsResearchCheckIns;
 use Tests\TestCase;
 
 final class ResearchScenarioTest extends TestCase
 {
-    use BuildsMatchingFixtures, RefreshDatabase;
+    use BuildsMatchingFixtures, RefreshDatabase, SubmitsResearchCheckIns;
 
     public function test_catalog_distribution_and_species_matching(): void
     {
@@ -139,12 +140,12 @@ final class ResearchScenarioTest extends TestCase
             return ['rating' => $rating, 'score' => app(KnnRecommendationService::class)->calculateMatch($profile, $pet)->compatibilityScore];
         })->sortBy('score')->values();
         $this->assertLessThan($profiles->last()['score'], $profiles->first()['score']);
-        foreach ([[$a, 3], [$b, $profiles->first()['rating']], [$c, $profiles->last()['rating']]] as [$u,$rating]) {
+        foreach ([[$a, 3], [$b, $profiles->first()['rating']], [$c, $profiles->last()['rating']]] as [$u, $rating]) {
             $this->completeMatchingProfile($u, ['bfi_responses' => $this->variedAnswers($rating)]);
             $this->actingAs($u->fresh())->get(route('research.preview', $pet))->assertOk()
                 ->assertViewIs('application.apply')->assertSee('Personal Information')->assertSee('Adopter Profile')
                 ->assertSee('Adoption and Data Processing Agreement')->assertSee('id="termsModal"', false)
-                ->assertDontSee('name="document"', false)->assertDontSee('Google Cloud Vision')
+                ->assertSee('name="document"', false)->assertSee('Google Cloud Vision')->assertSee('(optional)')
                 ->assertDontSee('Research testing mode')->assertDontSee('Study Information');
             $this->post($apply, $this->application())->assertRedirect(route('research.index'));
             $this->post($apply, $this->application())->assertRedirect(route('research.index'));
@@ -187,26 +188,29 @@ final class ResearchScenarioTest extends TestCase
         $this->post(route('research.receive', $later))->assertNotFound();
         $report = ['pet_current_status' => 'Good', 'living_conditions' => 'Indoor Only', 'eating_habits' => 'Normal', 'behavioral_observations' => 'Still adjusting'];
         $this->post(route('research.checkin', $later), $report + ['milestone' => '3-day'])->assertNotFound();
-        $handover = $this->actingAs($c)->get($handoverList)->assertOk()->assertViewIs('research.handover')
-            ->assertSee($pet->name)->assertSee('Awaiting confirmation')->assertSee('Confirm Pet Receipt')
-            ->assertSee(route('research.receive', $later))->assertDontSee('Document Verification')->assertDontSee('Submit Replacement');
-        $this->assertActiveSidebarLink($handover, $handoverList);
-        $detail = $this->get(route('research.handover', $later))->assertOk()->assertSee('Confirm Pet Receipt');
+        $this->actingAs($c)->get($handoverList)->assertRedirect(route('research.handover', $later));
+        $detail = $this->get(route('research.handover', $later))->assertOk()->assertViewIs('handover.status')
+            ->assertSee($pet->name)->assertSee('Handover Method Preference')->assertDontSee('Confirm Receipt');
         $this->assertActiveSidebarLink($detail, $handoverList);
         $this->post(route('research.checkin', $later), $report + ['milestone' => '3-day'])->assertConflict();
-        $this->post(route('research.receive', $later))->assertRedirect($handoverList);
-        $this->post(route('research.receive', $later))->assertRedirect($handoverList);
+        $this->post(route('research.receive', $later), ['outcome' => 'received', 'schedule_version' => 0])->assertConflict();
+        $this->post(route('research.handover.method', $later), ['method' => 'pickup', 'schedule_version' => 0])->assertRedirect();
+        $this->post(route('research.handover.confirm', $later), ['schedule_version' => 1])->assertRedirect();
+        $this->get(route('research.receipt', $later))->assertOk()->assertSee('Confirm Pet Receipt');
+        $this->post(route('research.receive', $later), ['outcome' => 'received', 'schedule_version' => 2])->assertRedirect(route('research.receipt', $later));
+        $this->post(route('research.receive', $later), ['outcome' => 'received', 'schedule_version' => 2])->assertConflict();
         $checkins = route('research.index', ['section' => 'check-ins']);
-        $this->get($handoverList)->assertOk()->assertSee('Receipt confirmed')
-            ->assertSee($checkins.'#checkins-'.$later->id)->assertDontSee('Confirm Pet Receipt');
+        $this->get(route('research.handover', $later))->assertOk()->assertSee('Receipt confirmation recorded');
         $this->assertActiveSidebarLink($this->get($checkins)->assertOk(), route('monitoring.my-checkins'));
-        $this->post(route('research.checkin', $later), $report + ['milestone' => '3-month'])->assertConflict();
+        $this->postJson(route('research.capture-challenge', [$later, '3-month']))->assertConflict();
+        $this->probeResearchVideo();
+        Storage::fake('research-private');
         foreach (['3-day', '3-week', '3-month'] as $milestone) {
             $this->get(route('research.report', $later))->assertOk()->assertViewIs('monitoring.create')
-                ->assertSee('Living Conditions')->assertDontSee('Start Camera');
-            $body = $report + ['milestone' => $milestone];
+                ->assertSee('Living Conditions')->assertSee('Start Camera');
+            $body = $report + ['milestone' => $milestone] + $this->researchCapture($later, $milestone, $milestone);
             $this->post(route('research.checkin', $later), $body)->assertRedirect();
-            $this->post(route('research.checkin', $later), $body)->assertRedirect();
+            $this->post(route('research.checkin', $later), $body)->assertConflict();
         }
         $this->get(route('research.index'))->assertSee('3-month: Report filed');
         $this->assertDatabaseCount('research_checkins', 3);
@@ -255,7 +259,7 @@ final class ResearchScenarioTest extends TestCase
             ->assertSee('enctype="multipart/form-data"', false);
     }
 
-    public function test_research_accepts_applications_without_collecting_documents_and_preserves_prior_records(): void
+    public function test_research_accepts_applications_without_documents_and_preserves_prior_records(): void
     {
         config(['research.enabled' => true, 'document_verification.provider' => 'google_vision']);
         Storage::fake('research-ocr');
@@ -275,7 +279,7 @@ final class ResearchScenarioTest extends TestCase
         $apply = route('research.apply', $pet);
         $this->post($apply, array_replace($this->application(), ['agreed_to_terms' => 0]))->assertSessionHasErrors('agreed_to_terms');
         $this->post($apply, $this->application() + ['document' => UploadedFile::fake()->image('synthetic-id.png')])
-            ->assertSessionHasErrors('document');
+            ->assertSessionHasErrors('document_consent');
         $this->assertDatabaseCount('research_placements', 0);
         $this->post($apply, $this->application())->assertRedirect(route('research.index'));
         $placement = ResearchPlacement::sole();
@@ -294,8 +298,7 @@ final class ResearchScenarioTest extends TestCase
             'document_consent_version' => 'study-ocr-v3',
         ]);
         $this->get(route('research.index'))->assertSee('Continue Application')
-            ->assertDontSee('Document Verification')->assertDontSee('Submit Replacement')
-            ->assertDontSee('name="document"', false)->assertDontSee('Legacy mismatch');
+            ->assertSee('Document Verification')->assertDontSee('Submit Replacement')->assertSee('Legacy mismatch');
         $this->post("/research/placements/{$placement->id}/document", [
             'document' => UploadedFile::fake()->image('synthetic-id.png'),
         ])->assertNotFound();
@@ -310,6 +313,51 @@ final class ResearchScenarioTest extends TestCase
         Http::assertNothingSent();
         $this->assertSame([], Storage::disk('research-ocr')->allFiles());
         $this->assertFalse(config('filesystems.disks.research-ocr.serve'));
+    }
+
+    public function test_consented_documents_are_private_and_ocr_outcomes_never_gate_approval(): void
+    {
+        config(['research.enabled' => true, 'research.ocr_enabled' => true, 'document_verification.provider' => 'google_vision']);
+        $disk = Storage::fake('research-private');
+        $this->seed(ResearchCatalogSeeder::class);
+        $user = $this->matchingUser();
+        $this->completeMatchingProfile($user);
+        $this->app->bind(GoogleAccessTokenProvider::class, fn () => new class implements GoogleAccessTokenProvider
+        {
+            public function accessToken(): string
+            {
+                return 'synthetic-token';
+            }
+        });
+        Http::preventStrayRequests();
+        Http::fake(['vision.googleapis.com/*' => Http::sequence()
+            ->push(['responses' => [['fullTextAnnotation' => ['text' => "PHILIPPINE IDENTIFICATION CARD\nJUAN CRUZ\nADDRESS 123 RIZAL STREET CITY OF MANILA\nNONRETAINEDWORD"]]]])
+            ->push(['responses' => [['fullTextAnnotation' => ['text' => "PHILIPPINE IDENTIFICATION CARD\nSAMPLE PERSON\nADDRESS 987 OTHER ROAD QUEZON CITY"]]]])
+            ->push(['error' => ['status' => 'PERMISSION_DENIED']], 403)]);
+        $pets = Pet::where('availability_status', 'Available')->orderBy('id')->take(3)->get();
+        $statuses = [DocumentVerificationStatus::Verified, DocumentVerificationStatus::NeedsResubmission, DocumentVerificationStatus::ManualReview];
+        $this->actingAs($user);
+        foreach ($pets as $index => $pet) {
+            $this->post(route('research.apply', $pet), $this->application() + [
+                'document' => UploadedFile::fake()->image('synthetic-id.png'), 'document_consent' => 1,
+            ])->assertRedirect(route('research.index'));
+            $placement = ResearchPlacement::where('pet_id', $pet->id)->sole();
+            $this->assertSame($statuses[$index], $placement->document_verification_status);
+            $this->assertNotNull($placement->document_consent_at);
+            $this->assertNotNull($placement->document_uploaded_at);
+            $disk->assertExists($placement->document_path);
+            $this->assertStringNotContainsString('NONRETAINEDWORD', $placement->toJson());
+            $this->assertArrayNotHasKey('document_path', $placement->toArray());
+            $this->post(route('research.continue', $placement))->assertRedirect(route('research.index'));
+            $this->assertSame(ApplicationStatus::Approved, $placement->fresh()->status);
+        }
+        Http::assertSentCount(3);
+        $protected = route('admin.research.document', $placement);
+        $this->get($protected)->assertRedirect(route('access-denied'));
+        $this->actingAs($this->matchingUser(Role::Volunteer))->get($protected)->assertRedirect(route('access-denied'));
+        $this->actingAs($this->matchingUser(Role::Administrator))->get($protected)->assertOk()
+            ->assertDownload('identity-document.png')->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertDatabaseCount('adoption_applications', 0);
     }
 
     public function test_ocr_cleanup_only_removes_old_generated_study_files(): void

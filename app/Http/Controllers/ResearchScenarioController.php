@@ -3,20 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ApplicationStatus;
+use App\Enums\DocumentVerificationStatus;
 use App\Models\Pet;
 use App\Models\ResearchPlacement;
+use App\Services\DocumentVerificationService;
 use App\Services\KnnRecommendationService;
 use App\Services\Matching\ApplicantRankingService;
 use App\Services\Matching\MatchPresenter;
 use App\Services\PhilippineLocationService;
+use App\Services\ResearchPrivateMedia;
 use App\Services\ReservationQueueService;
 use App\Support\AdoptionForm;
+use App\Support\PhilippineAddress;
 use App\Support\ResearchMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 final class ResearchScenarioController extends Controller
 {
@@ -24,11 +28,15 @@ final class ResearchScenarioController extends Controller
     {
         $section = $request->query('section');
         $placements = ResearchPlacement::with('pet')->where('user_id', $request->user()->id)
-            ->when($section === 'handover', fn ($query) => $query->where('status', ApplicationStatus::Approved)->whereNotNull('released_at'))
+            ->when($section === 'handover', fn ($query) => $query->where('status', ApplicationStatus::Approved))
             ->when($section === 'check-ins', fn ($query) => $query->whereNotNull('received_at'))
             ->latest('id')->get();
 
         if ($section === 'handover') {
+            if ($placements->count() === 1) {
+                return to_route('research.handover', $placements->first());
+            }
+
             return view('research.handover', compact('placements'));
         }
 
@@ -61,7 +69,7 @@ final class ResearchScenarioController extends Controller
             : view('research.unavailable', compact('pet', 'match'));
     }
 
-    public function apply(Request $request, Pet $pet, ReservationQueueService $queue, KnnRecommendationService $matcher, PhilippineLocationService $locations)
+    public function apply(Request $request, Pet $pet, ReservationQueueService $queue, KnnRecommendationService $matcher, PhilippineLocationService $locations, DocumentVerificationService $ocr, ResearchPrivateMedia $media)
     {
         abort_unless(ResearchMode::catalogPet($pet), 404);
         $user = $request->user();
@@ -72,8 +80,12 @@ final class ResearchScenarioController extends Controller
         if (! $match->eligible) {
             throw ValidationException::withMessages(['pet_id' => MatchPresenter::reason($match->exclusionReason)]);
         }
-        $validated = $request->validate(array_replace(AdoptionForm::rules(), ['document' => 'prohibited']), [
-            'document.prohibited' => 'This application does not accept document uploads.',
+        $rules = array_replace(AdoptionForm::rules(), ['document' => 'nullable|'.AdoptionForm::DOCUMENT_RULE]);
+        if ($request->hasFile('document')) {
+            $rules['document_consent'] = 'accepted';
+        }
+        $validated = $request->validate($rules, [
+            'document_consent.accepted' => 'Accept the document-processing terms before uploading an ID.',
             'agreed_to_terms.accepted' => 'Accept the Adoption and Data Processing Agreement to submit your application.',
         ]);
         $details = Arr::only($validated, [
@@ -82,7 +94,33 @@ final class ResearchScenarioController extends Controller
         ]);
         $details['address'] = $locations->resolveAddress($validated);
         $details['agreed_at'] = now()->toISOString();
-        $queue->submitResearch($user, $pet, ['application_details' => $details]);
+        $attributes = ['application_details' => $details];
+        $path = null;
+        try {
+            if ($file = $validated['document'] ?? null) {
+                $mime = $file->getMimeType();
+                $path = $media->store($file, 'documents', $user->id);
+                $result = config('research.ocr_enabled') === true ? $ocr->verify(ResearchPrivateMedia::DISK, $path, $mime, [
+                    'first_name' => $details['first_name'], 'last_name' => $details['last_name'],
+                    ...PhilippineAddress::ocrPayload($details['address']),
+                ]) : null;
+                $status = $result?->status ?? DocumentVerificationStatus::ManualReview;
+                $attributes += [
+                    'document_path' => $path, 'document_mime_type' => $mime,
+                    'document_type' => $result?->documentType, 'document_match_score' => $result?->matchScore,
+                    'document_uploaded_at' => now(), 'document_consent_at' => now(),
+                    'document_consent_version' => 'research-document-v1', 'document_verification_status' => $status,
+                    'document_verification_reasons' => $status === DocumentVerificationStatus::ManualReview
+                        ? ['Automatic document checking was unavailable. No identity was verified.'] : ($result?->reasons ?? []),
+                ];
+            }
+            if (! $queue->submitResearch($user, $pet, $attributes)) {
+                $media->forget($path);
+            }
+        } catch (Throwable $exception) {
+            $media->forget($path);
+            throw $exception;
+        }
 
         return to_route('research.index')->with('success', 'Application submitted.');
     }
@@ -97,66 +135,6 @@ final class ResearchScenarioController extends Controller
     public function withdraw(Request $request, ResearchPlacement $placement, ReservationQueueService $queue)
     {
         $queue->withdrawResearch($request->user(), $placement);
-
-        return to_route('research.index');
-    }
-
-    public function receive(Request $request, int $placement)
-    {
-        $owned = DB::table('research_placements')->where(['id' => $placement, 'user_id' => $request->user()->id])->where('status', ApplicationStatus::Approved->value)->whereNotNull('released_at');
-        abort_unless((clone $owned)->exists(), 404);
-        $owned->whereNull('received_at')->update(['received_at' => now()]);
-
-        return to_route('research.index', ['section' => 'handover']);
-    }
-
-    public function handover(Request $request, ResearchPlacement $placement)
-    {
-        $this->owned($request, $placement);
-        abort_unless($placement->status === ApplicationStatus::Approved && $placement->released_at, 404);
-
-        return view('research.handover', ['placements' => [$placement]]);
-    }
-
-    public function report(Request $request, ResearchPlacement $placement)
-    {
-        $this->owned($request, $placement);
-        abort_unless($placement->received_at, 409, 'Confirm receipt before recording a check-in.');
-        $milestone = ResearchMode::MILESTONES[DB::table('research_checkins')->where('placement_id', $placement->id)->count()] ?? null;
-        if (! $milestone) {
-            return to_route('research.index');
-        }
-
-        return view('monitoring.create', ['researchPlacement' => $placement, 'researchMilestone' => $milestone]);
-    }
-
-    private function owned(Request $request, ResearchPlacement $placement): void
-    {
-        abort_unless((int) $placement->user_id === (int) $request->user()->id, 404);
-    }
-
-    public function checkin(Request $request, int $placement)
-    {
-        $data = $request->validate([
-            'milestone' => ['required', Rule::in(ResearchMode::MILESTONES)],
-            'pet_current_status' => ['required', Rule::in(['Excellent', 'Good', 'Fair', 'Poor'])],
-            'living_conditions' => ['required', Rule::in(['Indoor Only', 'Outdoor Only', 'Indoor and Outdoor'])],
-            'eating_habits' => ['required', Rule::in(['Normal', 'Reduced Appetite', 'Not Eating'])],
-            'behavioral_observations' => ['required', Rule::in(['Well-adjusted', 'Still adjusting', 'Anxious/Stressed', 'Aggressive'])],
-            'vet_visit_details' => ['nullable', 'string', 'max:2000'],
-            'concerns' => ['nullable', 'string', 'max:2000'],
-        ]);
-        DB::transaction(function () use ($request, $placement, $data) {
-            $p = DB::table('research_placements')->where(['id' => $placement, 'user_id' => $request->user()->id])->lockForUpdate()->first();
-            abort_unless($p, 404);
-            abort_unless($p->received_at, 409, 'Confirm receipt before recording a check-in.');
-            $logs = DB::table('research_checkins')->where('placement_id', $placement);
-            if ((clone $logs)->where('milestone', $data['milestone'])->exists()) {
-                return;
-            }
-            abort_unless((ResearchMode::MILESTONES[$logs->count()] ?? null) === $data['milestone'], 409, 'Complete the earlier check-in first.');
-            $logs->insert(['placement_id' => $placement, 'milestone' => $data['milestone'], 'answers' => json_encode(Arr::except($data, 'milestone'), JSON_THROW_ON_ERROR), 'submitted_at' => now()]);
-        });
 
         return to_route('research.index');
     }

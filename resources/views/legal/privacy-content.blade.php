@@ -197,6 +197,16 @@
                     decision is made.
                 </p>
 
+                @if (\App\Support\ResearchMode::ready())
+                    <p class="mt-3 text-gray-700">
+                        For a practice application, a government ID is optional and a provided example is preferred.
+                        If you consent and automatic checking is enabled, Google Cloud Vision receives the file to extract text for a
+                        name and address comparison. A text match does not prove identity. Authorized administrators can access the
+                        privately stored file; PAIRfect Paws keeps the result but not the extracted text.
+                        Ask the study organizer about the retention period or to request deletion of your upload.
+                    </p>
+                @endif
+
             </div>
         </section>
 

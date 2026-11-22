@@ -9,7 +9,7 @@
         <div class="main-content-header">
             <div class="heading-text">
                 <h2>Handover Status</h2>
-                <p>Track the physical transfer and delivery progress of {{ $record->pet?->name ?? 'your pet' }}.</p>
+                <p>{{ ($researchHandover ?? false) ? 'Track the handover schedule and confirmation for' : 'Track the physical transfer and delivery progress of' }} {{ $record->pet?->name ?? 'your pet' }}.</p>
             </div>
 
             @include('partials.notification-bell')
@@ -21,12 +21,12 @@
 
                 <!-- Sub Navigation Tabs -->
                 <div class="flex items-center gap-2 border-b border-[#e2ddd7] pb-3 flex-wrap">
-                    <a href="{{ route('adopter.handover.status', $record) }}" class="btn btn-primary btn-sm">
+                    <a href="{{ ($researchHandover ?? false) ? route('research.index', ['section' => 'handover']) : route('adopter.handover.status', $record) }}" class="btn btn-primary btn-sm">
                         <i class="fa-solid fa-shield-cat mr-1"></i> Handover Status
                     </a>
 
                     @if (!$record->adopter_outcome && $record->released_at)
-                        <a href="{{ route('adopter.confirm', $record) }}" class="btn btn-secondary btn-sm">
+                        <a href="{{ ($researchHandover ?? false) ? route('research.receipt', $record->id) : route('adopter.confirm', $record) }}" class="btn btn-secondary btn-sm">
                             <i class="fa-solid fa-clipboard-check mr-1"></i> Confirm Receipt
                         </a>
                     @endif
@@ -67,10 +67,10 @@
                         </div>
                         <div class="min-w-0 flex-1">
                             <h3 class="text-base font-bold text-text-dark font-primary m-0">
-                                Welcome home, {{ $record->pet?->name }}!
+                                {{ ($researchHandover ?? false) ? 'Receipt confirmation recorded' : 'Welcome home, '.$record->pet?->name.'!' }}
                             </h3>
                             <p class="mt-1 text-sm text-text-muted m-0">
-                                Your adoption is complete and post-adoption check-ins have started.
+                                {{ ($researchHandover ?? false) ? 'You can now complete your post-adoption check-ins.' : 'Your adoption is complete and post-adoption check-ins have started.' }}
                             </p>
                         </div>
                         <a href="{{ route('monitoring.index') }}" class="btn btn-primary btn-sm shrink-0">
@@ -87,8 +87,15 @@
                                 You reported that {{ $record->pet?->name }} has not arrived
                             </h3>
                             <p class="mt-1 text-sm text-text-muted m-0">
-                                Shelter staff have been notified to investigate your report and follow up with you. This report does not establish a verified delivery failure.
+                                {{ ($researchHandover ?? false) ? 'Your response was recorded. Start a new handover attempt to continue.' : 'Shelter staff have been notified to investigate your report and follow up with you. This report does not establish a verified delivery failure.' }}
                             </p>
+                            @if($researchHandover ?? false)
+                                <form method="POST" action="{{ route('research.handover.retry', $record->id) }}" class="mt-3">
+                                    @csrf
+                                    <input type="hidden" name="schedule_version" value="{{ $record->schedule_version }}">
+                                    <button type="submit" class="btn btn-secondary btn-sm">Start a New Handover Attempt</button>
+                                </form>
+                            @endif
                         </div>
                     </div>
                 @elseif ($isReleased)
@@ -98,21 +105,25 @@
                         </div>
                         <div class="min-w-0 flex-1">
                             <h3 class="text-base font-bold text-text-dark font-primary m-0">
-                                @if ($isUrgent)
+                                @if ($researchHandover ?? false)
+                                    Handover ready for receipt confirmation
+                                @elseif ($isUrgent)
                                     Still waiting on your confirmation for {{ $record->pet?->name }}
                                 @else
                                     {{ $record->pet?->name }} has been released via {{ $record->release_method_label }}
                                 @endif
                             </h3>
                             <p class="mt-1 text-sm text-text-muted m-0">
-                                @if ($isUrgent)
+                                @if ($researchHandover ?? false)
+                                    Record your receipt outcome to continue.
+                                @elseif ($isUrgent)
                                     Your scheduled delivery window has ended and staff follow-up is required. Confirm receipt once your pet has arrived.
                                 @else
                                     Confirm once your pet is with you &mdash; this is the last step of your adoption.
                                 @endif
                             </p>
                         </div>
-                        <a href="{{ route('adopter.confirm', $record) }}" class="btn btn-primary btn-sm shrink-0">
+                        <a href="{{ ($researchHandover ?? false) ? route('research.receipt', $record->id) : route('adopter.confirm', $record) }}" class="btn btn-primary btn-sm shrink-0">
                             Confirm receipt now <i class="fa-solid fa-arrow-right ml-1 text-xs"></i>
                         </a>
                     </div>
@@ -141,7 +152,7 @@
                                 @elseif ($record->schedule_status === 'reschedule_pending')
                                     The shelter will review your requested alternatives before confirming the handover.
                                 @else
-                                    The shelter is arranging when and how {{ $record->pet?->name }} will be released to you.
+                                    {{ ($researchHandover ?? false) ? 'Select a handover method to view a proposed schedule.' : 'The shelter is arranging when and how '.$record->pet?->name.' will be released to you.' }}
                                 @endif
                             </p>
                         </div>

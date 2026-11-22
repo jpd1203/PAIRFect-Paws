@@ -580,13 +580,13 @@ class ReservationQueueService
         return $remaining;
     }
 
-    public function submitResearch(User $user, Pet $catalogPet, array $application = []): void
+    public function submitResearch(User $user, Pet $catalogPet, array $application = []): bool
     {
-        DB::transaction(function () use ($user, $catalogPet, $application): void {
+        return DB::transaction(function () use ($user, $catalogPet, $application): bool {
             $pet = $this->lockResearchPet($user, $catalogPet->id);
             $queue = ResearchPlacement::where('pet_id', $pet->id);
             if ((clone $queue)->where('user_id', $user->id)->lockForUpdate()->first()) {
-                return;
+                return false;
             }
             abort_unless(in_array($pet->availability_status, [AvailabilityStatus::Available, AvailabilityStatus::SoftReserved], true), 422, 'This pet is not accepting research applications.');
             abort_if((clone $queue)->where('status', ApplicationStatus::Approved->value)->lockForUpdate()->first(), 422, 'This research pet has already been adopted.');
@@ -598,6 +598,8 @@ class ReservationQueueService
             if (! $queue->where('is_primary_candidate', true)->lockForUpdate()->first()) {
                 $this->promoteNextLocked($pet, null, '', research: true);
             }
+
+            return true;
         });
     }
 
@@ -632,10 +634,10 @@ class ReservationQueueService
             $now = now();
             $candidate->update([
                 'status' => ApplicationStatus::Approved, 'is_primary_candidate' => false,
-                'approved_at' => $now, 'released_at' => $now, 'queue_closed_at' => $now,
+                'approved_at' => $now, 'queue_closed_at' => $now,
             ]);
             $this->closeQueueLocked($pet, $candidate);
-            AuditLogService::log(null, 'automatically approved an application and marked the handover ready', 'ResearchPlacement', $candidate->id);
+            AuditLogService::log(null, 'automatically approved an application', 'ResearchPlacement', $candidate->id);
         });
     }
 
