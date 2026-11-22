@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ApplicationStatus;
+use App\Enums\Milestone;
+use App\Enums\PetCurrentStatus;
+use App\Models\Pet;
 use App\Models\ResearchPlacement;
 use App\Models\User;
 use App\Services\PostAdoptionCaptureChallengeService;
@@ -14,6 +17,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Fluent;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -25,10 +29,56 @@ final class ResearchCheckInController extends Controller
         $this->authorizeReport($placement, $request->user());
         $milestone = $this->nextMilestone($placement);
         if (! $milestone) {
-            return to_route('research.index', ['section' => 'check-ins']);
+            return to_route('monitoring.my-checkins');
         }
 
         return view('monitoring.create', ['researchPlacement' => $placement, 'researchMilestone' => $milestone]);
+    }
+
+    public function modal(Request $request, int $report)
+    {
+        $row = DB::table('research_checkins')
+            ->join('research_placements', 'research_placements.id', '=', 'research_checkins.placement_id')
+            ->where('research_checkins.id', $report)
+            ->where('research_placements.user_id', $request->user()->id)
+            ->where('research_placements.status', ApplicationStatus::Approved->value)
+            ->whereNotNull('research_placements.received_at')
+            ->first([
+                'research_checkins.id',
+                'research_checkins.placement_id',
+                'research_checkins.milestone',
+                'research_checkins.answers',
+                'research_checkins.submitted_at',
+                'research_placements.pet_id',
+            ]);
+
+        abort_unless($row !== null, 404);
+
+        $pet = Pet::withoutGlobalScope('notArchived')->find($row->pet_id);
+        $answers = json_decode((string) $row->answers, true) ?: [];
+        $milestone = Milestone::from(str_replace('-', '_', $row->milestone).'s');
+        $statusValue = isset($answers['pet_current_status']) ? (string) $answers['pet_current_status'] : null;
+        $statusEnum = $statusValue !== null ? PetCurrentStatus::tryFrom($statusValue) : null;
+
+        $reportModel = new Fluent([
+            'id' => $row->id,
+            'pet' => $pet,
+            'milestone' => $milestone,
+            'milestone_display' => $milestone->label(),
+            'pet_current_status' => $statusEnum ?? ($statusValue !== null ? (object) ['value' => $statusValue] : null),
+            'eating_habits' => $answers['eating_habits'] ?? null,
+            'behavioral_observations' => $answers['behavioral_observations'] ?? null,
+            'vet_visit_details' => filled($answers['vet_visit_details'] ?? null) ? $answers['vet_visit_details'] : null,
+            'living_conditions' => $answers['living_conditions'] ?? null,
+            'concerns' => $answers['concerns'] ?? null,
+            'resolution_outcome' => null,
+            'resolved_at' => null,
+            'is_flagged' => false,
+            'resolution_note' => null,
+            'follow_up_notes' => null,
+        ]);
+
+        return view('monitoring._report-view-modal-content', ['report' => $reportModel]);
     }
 
     public function challenge(Request $request, ResearchPlacement $placement, string $milestone, PostAdoptionCaptureChallengeService $challenges)
@@ -133,7 +183,7 @@ final class ResearchCheckInController extends Controller
             $media->forget($path);
             throw $exception;
         }
-        $redirect = route('research.index', ['section' => 'check-ins']);
+        $redirect = route('monitoring.my-checkins');
 
         return $request->expectsJson() ? response()->json(['redirect' => $redirect]) : redirect($redirect);
     }

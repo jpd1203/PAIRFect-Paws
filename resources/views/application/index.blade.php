@@ -38,6 +38,7 @@
                 <div class="flex flex-col">
                     @foreach ($applications as $application)
                         @php
+                            $isResearch = (bool) ($researchMode ?? false);
                             $status = $application->status->value;
                             $progressStage = match ($status) {
                                 'Pending', 'DocumentFlagged', 'PrimaryCandidate', 'Waitlisted' => 0,
@@ -47,16 +48,17 @@
                                 default => -1,
                             };
                             $unsuccessful = in_array($status, ['Rejected', 'Withdrawn', 'NoShow', 'Closed'], true);
+                            $lastUpdated = $application->last_updated ?? $application->submitted_on ?? now();
                         @endphp
 
                         <article class="application-card shadow-card"
                                 data-application-id="{{ $application->id }}"
-                                data-last-updated="{{ $application->last_updated->toIso8601String() }}">
+                                data-last-updated="{{ $lastUpdated->toIso8601String() }}">
                             <div class="card-header">
                                 <div>
                                     <h2>Application #{{ str_pad($application->id, 4, '0', STR_PAD_LEFT) }}</h2>
                                     <p class="text-sm text-[#777] mt-1">
-                                        Submitted {{ \App\Support\ManilaTime::format($application->submitted_on, 'F j, Y') }}
+                                        Submitted {{ $application->submitted_on ? \App\Support\ManilaTime::format($application->submitted_on, 'F j, Y') : 'Recently' }}
                                     </p>
                                 </div>
 
@@ -69,17 +71,48 @@
                                 <div class="detail-row">
                                     <span class="label">Document Verification</span>
                                     <span class="value font-semibold">
-                                        {{ match($application->document_verification_status?->value) {
-                                            'Verified' => 'Verified by OCR',
-                                            'NeedsResubmission' => 'Replacement Required',
-                                            'ManualReview' => 'Awaiting Staff Review',
-                                            'LegacyReview' => 'Legacy Staff Review',
-                                            default => 'Pending',
-                                        } }}
+                                        @if ($isResearch)
+                                            {{ match($application->document_verification_status?->value) {
+                                                'Verified' => 'Name and address matched by OCR',
+                                                'NeedsResubmission' => 'Could Not Verify Document',
+                                                'ManualReview' => 'Automatic Check Unavailable',
+                                                default => $application->document_verification_status?->value ?? 'Not Submitted',
+                                            } }}
+                                        @else
+                                            {{ match($application->document_verification_status?->value) {
+                                                'Verified' => 'Verified by OCR',
+                                                'NeedsResubmission' => 'Replacement Required',
+                                                'ManualReview' => 'Awaiting Staff Review',
+                                                'LegacyReview' => 'Legacy Staff Review',
+                                                default => 'Pending',
+                                            } }}
+                                        @endif
                                     </span>
                                 </div>
 
-                                @if($application->document_verification_status?->value === 'NeedsResubmission')
+                                @if ($isResearch)
+                                    @if ($application->document_verification_status?->value === 'Verified')
+                                        <div class="note-section">This text match is not proof of identity.</div>
+                                    @elseif ($application->document_verification_status?->value === 'NeedsResubmission' && !empty($application->document_verification_reasons))
+                                        <div class="my-4 rounded-xl border border-red-200 bg-red-50/60 p-5 text-gray-800 shadow-xs">
+                                            <div class="flex items-start gap-2.5 text-red-900 font-bold text-sm">
+                                                <i class="fa-solid fa-circle-exclamation text-red-500 mt-0.5 text-base shrink-0"></i>
+                                                <span>Document check details:</span>
+                                            </div>
+                                            <ul class="mt-2.5 ml-7 list-disc space-y-1 text-xs sm:text-sm text-red-950 font-medium">
+                                                @foreach ($application->document_verification_reasons as $reason)
+                                                    <li>{{ $reason }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @elseif ($application->document_verification_status?->value === 'ManualReview' && !empty($application->document_verification_reasons))
+                                        <div class="note-section">
+                                            @foreach ($application->document_verification_reasons as $reason)
+                                                <div>{{ $reason }}</div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                @elseif($application->document_verification_status?->value === 'NeedsResubmission')
                                     <div class="my-4 rounded-xl border border-red-200 bg-red-50/60 p-5 text-gray-800 shadow-xs">
                                         <div class="flex items-start gap-2.5 text-red-900 font-bold text-sm">
                                             <i class="fa-solid fa-circle-exclamation text-red-500 mt-0.5 text-base shrink-0"></i>
@@ -130,11 +163,39 @@
 
                                 @if ($status === 'Waitlisted')
                                     <div class="note-section">
-                                        <strong>Waitlisted:</strong> Your application remains active and is ordered by submission time. Staff will contact you if you are promoted.
+                                        @if ($isResearch)
+                                            @if ($positions->get($application->id))
+                                                <strong>Waitlisted:</strong> Current waitlist position: {{ $positions->get($application->id) }}. Your application remains active and will advance automatically if the current primary candidate withdraws.
+                                            @else
+                                                <strong>Waitlisted:</strong> Your profile or the pet is no longer eligible for promotion.
+                                            @endif
+                                            <div class="mt-3 flex flex-wrap gap-2">
+                                                <form method="POST" action="{{ route('research.withdraw', $application) }}">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-secondary btn-sm">Withdraw Application</button>
+                                                </form>
+                                            </div>
+                                        @else
+                                            <strong>Waitlisted:</strong> Your application remains active and is ordered by submission time. Staff will contact you if you are promoted.
+                                        @endif
                                     </div>
                                 @elseif ($status === 'PrimaryCandidate')
                                     <div class="note-section">
-                                        <strong>Promoted:</strong> You are now the primary candidate. Staff will contact you to schedule an interview.
+                                        @if ($isResearch)
+                                            <strong>Primary Candidate:</strong> You are the current primary candidate for {{ $application->pet?->name ?? 'this pet' }}. Continue your application to proceed to handover, or withdraw to release your spot.
+                                            <div class="mt-3 flex flex-wrap gap-2">
+                                                <form method="POST" action="{{ route('research.continue', $application) }}">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-primary btn-sm">Continue Application</button>
+                                                </form>
+                                                <form method="POST" action="{{ route('research.withdraw', $application) }}">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-secondary btn-sm">Withdraw Application</button>
+                                                </form>
+                                            </div>
+                                        @else
+                                            <strong>Promoted:</strong> You are now the primary candidate. Staff will contact you to schedule an interview.
+                                        @endif
                                     </div>
                                 @elseif ($status === 'Approved')
                                     <div class="my-4 rounded-xl border border-completed-fg bg-completed-bg p-4 shadow-xs">
@@ -142,16 +203,34 @@
                                             <div class="flex items-start gap-2.5">
                                                 <i class="fa-solid fa-circle-check text-completed-fg mt-0.5 text-base shrink-0"></i>
                                                 <div>
-                                                    <span class="text-sm font-bold text-emerald-950 block">Application Approved! Handover is now open.</span>
-                                                    <span class="text-xs text-completed-fg mt-0.5 block">Select your preferred handover method (pickup or delivery) and track your pet's transfer.</span>
+                                                    @if ($isResearch && $application->received_at)
+                                                        <span class="text-sm font-bold text-emerald-950 block">Application Approved! Handover completed.</span>
+                                                        <span class="text-xs text-completed-fg mt-0.5 block">Receipt confirmation has been recorded. View your handover record or complete your post-adoption check-ins.</span>
+                                                    @else
+                                                        <span class="text-sm font-bold text-emerald-950 block">Application Approved! Handover is now open.</span>
+                                                        <span class="text-xs text-completed-fg mt-0.5 block">Select your preferred handover method (pickup or delivery) and track your pet's transfer.</span>
+                                                    @endif
                                                 </div>
                                             </div>
-                                            @php
-                                                $handoverRecord = \App\Models\Handover::where('application_id', $application->id)->first();
-                                            @endphp
-                                            <a href="{{ $handoverRecord ? route('adopter.handover.status', $handoverRecord) : route('adopter.handover.my') }}" class="btn btn-primary btn-sm shrink-0">
-                                                <i class="fa-solid fa-truck-ramp-box mr-1"></i> Open Handover
-                                            </a>
+                                            @if ($isResearch)
+                                                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                                                    <a href="{{ route('research.handover', $application) }}" class="btn btn-primary btn-sm shrink-0">
+                                                        <i class="fa-solid fa-truck-ramp-box mr-1"></i> {{ $application->received_at ? 'Handover Status' : 'Open Handover' }}
+                                                    </a>
+                                                    @if ($application->received_at)
+                                                        <a href="{{ route('monitoring.my-checkins') }}" class="btn btn-secondary btn-sm shrink-0">
+                                                            <i class="fa-solid fa-circle-check mr-1"></i> My Check-ins
+                                                        </a>
+                                                    @endif
+                                                </div>
+                                            @else
+                                                @php
+                                                    $handoverRecord = \App\Models\Handover::where('application_id', $application->id)->first();
+                                                @endphp
+                                                <a href="{{ $handoverRecord ? route('adopter.handover.status', $handoverRecord) : route('adopter.handover.my') }}" class="btn btn-primary btn-sm shrink-0">
+                                                    <i class="fa-solid fa-truck-ramp-box mr-1"></i> Open Handover
+                                                </a>
+                                            @endif
                                         </div>
                                     </div>
                                 @endif
@@ -165,7 +244,7 @@
 
                                 <div class="detail-row">
                                     <span class="label">Last Updated</span>
-                                    <span class="value">{{ \App\Support\ManilaTime::format($application->last_updated, 'F j, Y g:i A') }}</span>
+                                    <span class="value">{{ \App\Support\ManilaTime::format($lastUpdated, 'F j, Y g:i A') }}</span>
                                 </div>
 
                                 @if ($application->interview_date)
@@ -318,29 +397,31 @@
                                         Pending / Queue
                                     </span>
 
-                                    <span class="arrow">&rarr;</span>
+                                    @unless ($isResearch)
+                                        <span class="arrow">&rarr;</span>
 
-                                    <!-- Interview Scheduled  -->
-                                    <span class="step interview-step 
-                                        {{ $progressStage === 1
-                                            ? 'border border-status-adopted-text bg-status-adopted-bg text-status-adopted-text'
-                                            : ($progressStage > 1
+                                        <!-- Interview Scheduled  -->
+                                        <span class="step interview-step 
+                                            {{ $progressStage === 1
                                                 ? 'border border-status-adopted-text bg-status-adopted-bg text-status-adopted-text'
-                                                : '') }}">
-                                        Interview Scheduled
-                                    </span>
+                                                : ($progressStage > 1
+                                                    ? 'border border-status-adopted-text bg-status-adopted-bg text-status-adopted-text'
+                                                    : '') }}">
+                                            Interview Scheduled
+                                        </span>
 
-                                    <span class="arrow">&rarr;</span>
+                                        <span class="arrow">&rarr;</span>
 
-                                    <!-- Under Review -->
-                                    <span class="step review-step
-                                        {{ $progressStage === 2
-                                            ? 'border border-status-flagged-text bg-status-flagged-bg text-status-flagged-text'
-                                            : ($progressStage > 2
+                                        <!-- Under Review -->
+                                        <span class="step review-step
+                                            {{ $progressStage === 2
                                                 ? 'border border-status-flagged-text bg-status-flagged-bg text-status-flagged-text'
-                                                : '') }}">
-                                        Under Review
-                                    </span>
+                                                : ($progressStage > 2
+                                                    ? 'border border-status-flagged-text bg-status-flagged-bg text-status-flagged-text'
+                                                    : '') }}">
+                                            Under Review
+                                        </span>
+                                    @endunless
 
                                     <span class="arrow">&rarr;</span>
 

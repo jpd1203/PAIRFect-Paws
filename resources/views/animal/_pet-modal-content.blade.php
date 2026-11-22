@@ -159,9 +159,19 @@
         </p>
         <button type="button" class="btn btn-apply rounded-xl px-6 py-2 opacity-50 cursor-not-allowed" disabled>Ineligible to adopt</button>
     @elseif (\App\Support\ResearchMode::allowsAdopter(auth()->user()) && \App\Support\ResearchMode::catalogPet($pet) && in_array($pet->availability_status->value, ['Available', 'Soft-Reserved'], true))
-        <a class="btn btn-apply rounded-xl px-6 py-2" href="{{ route('application.apply', $pet) }}">
-            {{ $pet->availability_status->value === 'Soft-Reserved' ? 'Join Waitlist' : 'Adopt Me!' }}
-        </a>
+        @if (! auth()->user()->hasVerifiedEmail())
+            <div role="alert" class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+                Verify your email address before you can apply to adopt a pet.
+                <a href="{{ route('verification.notice') }}" class="font-bold underline">Verify email</a>
+            </div>
+            <button type="button" class="btn btn-apply rounded-xl px-6 py-2 opacity-50 cursor-not-allowed" disabled>
+                {{ $pet->availability_status->value === 'Soft-Reserved' ? 'Join Waitlist' : 'Adopt Me!' }}
+            </button>
+        @else
+            <a class="btn btn-apply rounded-xl px-6 py-2" href="{{ route('application.apply', $pet) }}">
+                {{ $pet->availability_status->value === 'Soft-Reserved' ? 'Join Waitlist' : 'Adopt Me!' }}
+            </a>
+        @endif
     @elseif ($pet->availability_status->value === 'Available')
         @if (auth()->check() && auth()->user()->isAdopter() && ! auth()->user()->hasVerifiedEmail())
             <div role="alert" class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">

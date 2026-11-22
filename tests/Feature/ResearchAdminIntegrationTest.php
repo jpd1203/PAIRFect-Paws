@@ -9,6 +9,7 @@ use App\Models\AuditLog;
 use App\Models\Pet;
 use App\Models\ResearchPlacement;
 use App\Models\User;
+use App\Notifications\QueuedVerifyEmail;
 use Database\Seeders\ResearchCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -110,7 +111,8 @@ final class ResearchAdminIntegrationTest extends TestCase
         $this->assertNull($waiting->fresh()->document_verification_status);
         Mail::assertNothingOutgoing();
         Queue::assertNothingPushed();
-        Notification::assertNothingSent();
+        Notification::assertSentToTimes($a, QueuedVerifyEmail::class, 1);
+        Notification::assertSentToTimes($b, QueuedVerifyEmail::class, 1);
     }
 
     public function test_staff_actions_cannot_resolve_colliding_normal_ids_in_research_mode(): void
@@ -149,9 +151,11 @@ final class ResearchAdminIntegrationTest extends TestCase
             'first_name' => $firstName, 'last_name' => 'Example', 'email' => $email,
             'password' => 'Testing123!', 'password_confirmation' => 'Testing123!',
             'terms_accepted' => 1, 'privacy_consent' => 1, ...$address,
-        ])->assertRedirect(route('animal.index'));
+        ])->assertRedirect(route('verification.notice'));
         $user = User::where('email', $email)->sole();
         $this->assertAuthenticatedAs($user);
+        $user->markEmailAsVerified();
+        $this->actingAs($user->fresh());
         $this->post(route('recommendation.start'), [
             'housing_type' => 'Single Family Home (Fenced Yard)', 'monthly_income_range' => '₱30,000 - ₱50,000',
             'has_existing_pets' => false, 'has_children' => false, 'bfi_responses' => $this->bfiResponses(),
@@ -161,7 +165,7 @@ final class ResearchAdminIntegrationTest extends TestCase
             'motivation_statement' => 'Submitted motivation from '.$firstName, 'physical_activity_level' => 'Moderate',
             'time_availability' => 'Daily', 'prior_pet_experience' => 'Some', 'household_composition' => 'Adults',
             'agreed_to_terms' => 1, ...$address,
-        ])->assertRedirect(route('research.index'));
+        ])->assertRedirect(route('application.index'));
 
         return $user;
     }

@@ -2,13 +2,13 @@
  * My Check-ins — "View" on a submitted report opens the report modal via AJAX.
  * Authorization (own reports only) is enforced server-side in MonitoringController.
  */
-async function openReportViewModal(reportId) {
+async function openReportViewModal(reportId, modalUrl = null) {
     const overlay = document.getElementById('reportViewModal');
     const content = document.getElementById('reportViewModalContent');
     if (!overlay || !content) return;
 
     try {
-        const res = await fetch(`/monitoring/reports/${reportId}/modal`, {
+        const res = await fetch(modalUrl || `/monitoring/reports/${reportId}/modal`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         });
         if (!res.ok) throw new Error('Failed to load report');

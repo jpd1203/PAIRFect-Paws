@@ -53,6 +53,8 @@ class EmailVerificationController extends Controller
                 ->with('success', $message);
         }
 
+        $request->user()->refresh();
+
         return $this->redirectByRole($request->user())
             ->with('success', 'Your email address has been verified.');
     }

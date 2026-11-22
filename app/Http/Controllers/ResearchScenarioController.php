@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ApplicationStatus;
 use App\Enums\DocumentVerificationStatus;
 use App\Models\Pet;
 use App\Models\ResearchPlacement;
 use App\Services\DocumentVerificationService;
 use App\Services\KnnRecommendationService;
-use App\Services\Matching\ApplicantRankingService;
 use App\Services\Matching\MatchPresenter;
 use App\Services\PhilippineLocationService;
 use App\Services\ResearchPrivateMedia;
@@ -18,36 +16,18 @@ use App\Support\PhilippineAddress;
 use App\Support\ResearchMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
 final class ResearchScenarioController extends Controller
 {
-    public function index(Request $request, ApplicantRankingService $ranking)
+    public function index(Request $request)
     {
-        $section = $request->query('section');
-        $placements = ResearchPlacement::with('pet')->where('user_id', $request->user()->id)
-            ->when($section === 'handover', fn ($query) => $query->where('status', ApplicationStatus::Approved))
-            ->when($section === 'check-ins', fn ($query) => $query->whereNotNull('received_at'))
-            ->latest('id')->get();
-
-        if ($section === 'handover') {
-            if ($placements->count() === 1) {
-                return to_route('research.handover', $placements->first());
-            }
-
-            return view('research.handover', compact('placements'));
-        }
-
-        $submitted = DB::table('research_checkins')->whereIn('placement_id', $placements->pluck('id'))->get()->groupBy('placement_id');
-        $positions = $placements->where('status', ApplicationStatus::Waitlisted)->mapWithKeys(function (ResearchPlacement $p) use ($ranking) {
-            $offset = $ranking->eligibleResearchForPet($p->pet, locked: false)->search(fn ($candidate) => $candidate->id === $p->id);
-
-            return [$p->id => $offset === false ? null : $offset + 1];
-        });
-
-        return view('research.scenarios', compact('placements', 'submitted', 'positions', 'section'));
+        return match ($request->query('section')) {
+            'handover' => to_route('adopter.handover.my'),
+            'check-ins' => to_route('monitoring.my-checkins'),
+            default => to_route('application.index'),
+        };
     }
 
     public function preview(Request $request, Pet $pet, KnnRecommendationService $matcher)
@@ -55,7 +35,7 @@ final class ResearchScenarioController extends Controller
         abort_unless(ResearchMode::catalogPet($pet), 404);
         $existing = ResearchPlacement::where('user_id', $request->user()->id)->where('pet_id', $pet->id)->exists();
         if ($existing) {
-            return to_route('research.index');
+            return to_route('application.index');
         }
         $match = $matcher->calculateMatch($request->user()->adopterProfile, $pet, existingApplication: true);
         if ($match->exclusionReason === 'ADOPTER_PROFILE_INCOMPLETE') {
@@ -74,7 +54,7 @@ final class ResearchScenarioController extends Controller
         abort_unless(ResearchMode::catalogPet($pet), 404);
         $user = $request->user();
         if (ResearchPlacement::where('user_id', $user->id)->where('pet_id', $pet->id)->exists()) {
-            return to_route('research.index');
+            return to_route('application.index');
         }
         $match = $matcher->calculateMatch($user->adopterProfile, $pet, existingApplication: true);
         if (! $match->eligible) {
@@ -122,20 +102,20 @@ final class ResearchScenarioController extends Controller
             throw $exception;
         }
 
-        return to_route('research.index')->with('success', 'Application submitted.');
+        return to_route('application.index')->with('success', 'Application submitted.');
     }
 
     public function continueAdoption(Request $request, ResearchPlacement $placement, ReservationQueueService $queue)
     {
         $queue->approveResearch($request->user(), $placement);
 
-        return to_route('research.index');
+        return to_route('application.index');
     }
 
     public function withdraw(Request $request, ResearchPlacement $placement, ReservationQueueService $queue)
     {
         $queue->withdrawResearch($request->user(), $placement);
 
-        return to_route('research.index');
+        return to_route('application.index');
     }
 }

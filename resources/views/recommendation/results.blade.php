@@ -15,7 +15,7 @@
             Compatibility supports your decision. Shelter staff review every application and make the final adoption decision.
         </div>
     @endunless
-    @if (auth()->check() && ! auth()->user()->hasVerifiedEmail() && ! \App\Support\ResearchMode::allowsAdopter(auth()->user()))
+    @if (auth()->check() && ! auth()->user()->hasVerifiedEmail())
         <div role="alert" class="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             You can view your pet matches now. Verify your email address before you can apply to adopt a pet.
             <a href="{{ route('verification.notice') }}" class="font-bold underline">Verify email</a>

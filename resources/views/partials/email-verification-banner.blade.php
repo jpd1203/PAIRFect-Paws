@@ -1,5 +1,5 @@
 @auth
-    @if (! auth()->user()->hasVerifiedEmail() && ! \App\Support\ResearchMode::allowsAdopter(auth()->user()))
+    @if (! auth()->user()->hasVerifiedEmail())
         <div class="m-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 shadow-sm" role="status">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p>
