@@ -21,40 +21,10 @@
                     <div><h2>{{ $p->pet->name }}</h2><p class="text-sm text-[#777]">Application #{{ $p->id }}</p></div>
                     <span class="badge {{ $p->status_badge_class }}">{{ $p->status->value === 'Closed' ? 'Closed' : $p->status_display }}</span>
                 </div>
-                <div class="application-details">
-                    <div class="detail-row">
-                        <span class="label">Document Verification</span>
-                        <span class="value font-semibold">{{ match($p->document_verification_status?->value) {
-                            'Verified' => 'Name and address matched by OCR',
-                            'NeedsResubmission' => 'Replacement Required for Verification',
-                            'ManualReview' => 'Automatic Check Unavailable',
-                            'LegacyReview' => 'Manual Document Review',
-                            'Pending' => 'Pending Document Check',
-                            default => 'Not Submitted',
-                        } }}</span>
-                    </div>
-                    @if($p->document_verification_status?->value === 'Verified')
-                        <p class="text-sm">This text match is not proof of identity.</p>
-                    @endif
-                    @foreach($p->document_verification_reasons ?? [] as $reason)
-                        <p class="text-sm">{{ $reason }}</p>
-                    @endforeach
-                    @if($p->acceptsResearchReplacement())
-                        <form action="{{ route('research.document', $p) }}" method="POST" enctype="multipart/form-data" class="mt-3 border-t pt-3">
-                            @csrf
-                            <label class="block" for="replacement_document_{{ $p->id }}">Upload a replacement ID for verification</label>
-                            <input id="replacement_document_{{ $p->id }}" type="file" name="document" accept=".pdf,.jpg,.jpeg,.png" required>
-                            @include('research._document-consent', ['consentId' => $p->id])
-                            <button type="submit" class="btn btn-secondary">Submit Replacement</button>
-                        </form>
-                    @endif
-                    @if($p->status === \App\Enums\ApplicationStatus::Waitlisted)
+                @if($p->status === \App\Enums\ApplicationStatus::Waitlisted)
+                    <div class="application-details">
                         <p>{{ $positions->get($p->id) ? 'Current waitlist position: '.$positions->get($p->id).'.' : 'Your profile or the pet is no longer eligible for promotion.' }}</p>
-                    @endif
-                </div>
-                @if($p->status === \App\Enums\ApplicationStatus::PrimaryCandidate && $p->document_verification_status
-                    && $p->document_verification_status->value !== 'Verified')
-                    <p class="mt-3 text-sm">You can continue your application without waiting for document verification.</p>
+                    </div>
                 @endif
                 <div class="flex flex-wrap gap-3 mt-4">
                     @if($p->status === \App\Enums\ApplicationStatus::PrimaryCandidate)
