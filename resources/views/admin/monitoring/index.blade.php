@@ -67,8 +67,9 @@
                 'follow_up_submitted_at' => $checkIn->follow_up_submitted_at
                     ? \App\Support\ManilaTime::format($checkIn->follow_up_submitted_at, 'M j, Y g:i A')
                     : null,
-                'can_resolve' => !$workflowReadOnly && $checkIn->is_flagged && !$checkIn->resolved_at,
-                'resolve_url' => $workflowReadOnly ? null : route('admin.monitoring.resolve', $checkIn),
+                'can_resolve' => $checkIn->is_flagged && !$checkIn->resolved_at,
+                'resolve_url' => $workflowReadOnly ? $checkIn->resolve_url : route('admin.monitoring.resolve', $checkIn),
+                'case_history' => $checkIn->case_history_summary,
                 'verification_method' => data_get($verification, 'method') ?: 'Not available',
                 'challenge_id' => data_get($verification, 'capture_challenge_id') ?: 'Not available',
                 'challenge_issued_at' => \App\Support\ManilaTime::parseAndFormat(
@@ -107,13 +108,16 @@
 
                 // Compute overall adoption status
                 $statuses = $sortedLogs->pluck('status_slug')->all();
+                $scenarioEnded = $workflowReadOnly && $sortedLogs->contains(
+                    fn ($log) => $log->resolution_outcome === \App\Enums\ResolutionOutcome::PetReturned
+                );
                 if (in_array('flagged', $statuses, true)) {
                     $overallStatus = 'flagged';
                 } elseif (in_array('overdue', $statuses, true)) {
                     $overallStatus = 'overdue';
                 } elseif (in_array('pending', $statuses, true)) {
                     $overallStatus = 'pending';
-                } elseif (collect($statuses)->every(fn($s) => $s === 'completed')) {
+                } elseif ($scenarioEnded || collect($statuses)->every(fn($s) => $s === 'completed')) {
                     $overallStatus = 'completed';
                 } else {
                     $overallStatus = 'upcoming';
@@ -126,7 +130,7 @@
                     : $submittedLogs->sortByDesc('submitted_date'))->first();
 
                 // Next pending/overdue/upcoming check-in
-                $nextCheckIn = $sortedLogs
+                $nextCheckIn = $scenarioEnded ? null : $sortedLogs
                     ->whereNull('submitted_date')
                     ->first();
 
@@ -458,12 +462,12 @@
 
                             {{-- Col 6: Primary Quick Action Button --}}
                             <div class="flex justify-center">
-                                @if ($workflowReadOnly && $latestSub)
+                                @if ($workflowReadOnly && $latestSub && $adoption->overall_status !== 'flagged')
                                     <button type="button" class="btn btn-secondary w-[130px] h-[36px]"
                                         data-report="{{ json_encode($buildReportPayload($latestSub), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}" onclick="openMonitoringViewModal(this)">
                                         <i class="fa-solid fa-file-lines text-muted"></i> View Report
                                     </button>
-                                @elseif ($workflowReadOnly)
+                                @elseif ($workflowReadOnly && !$latestSub)
                                     <span class="text-xs text-muted font-medium">Awaiting report</span>
                                 @elseif ($adoption->overall_status === 'flagged')
                                     <button
@@ -611,8 +615,8 @@
                                                             </button>
                                                         @endif
 
-                                                        @if($workflowReadOnly)
-                                                            {{-- No welfare intervention actions for these reports. --}}
+                                                        @if($workflowReadOnly && !$log->flag_url && !$log->display_is_flagged)
+                                                            {{-- Research actions require an actual submitted report. --}}
                                                         @elseif($log->has_presentation_demo)
                                                             @if(auth()->user()->isAdmin())
                                                                 <a class="btn btn-secondary btn-sm !text-xs" href="{{ route('admin.post-adoption-demo.index', ['application_id' => $log->application_id]) }}">Demo controls</a>
@@ -621,7 +625,7 @@
                                                             <button
                                                                 type="button"
                                                                 class="btn btn-danger btn-sm !text-xs !py-1 !px-2.5"
-                                                                data-action="{{ route('admin.monitoring.flag', $log) }}"
+                                                                data-action="{{ $log->flag_url ?? route('admin.monitoring.flag', $log) }}"
                                                                 data-summary="{{ $logSummary }}"
                                                                 onclick="openMonitoringFlagModal(this)"
                                                             >
@@ -913,15 +917,15 @@
                                                             @endif
 
                                                             {{-- Flag --}}
-                                                            @if($workflowReadOnly)
-                                                                {{-- No welfare intervention actions for these reports. --}}
+                                                            @if($workflowReadOnly && !$log->flag_url && !$log->display_is_flagged)
+                                                                {{-- Research actions require an actual submitted report. --}}
                                                             @elseif($log->has_presentation_demo)
                                                                 @if(auth()->user()->isAdmin())
                                                                     <a class="btn btn-secondary btn-sm !text-xs" href="{{ route('admin.post-adoption-demo.index', ['application_id' => $log->application_id]) }}">Demo controls</a>
                                                                 @endif
                                                             @elseif (!$log->display_is_flagged)
                                                                 <button type="button" class="btn btn-danger btn-sm !text-xs !py-1 !px-2.5"
-                                                                    data-action="{{ route('admin.monitoring.flag', $log) }}"
+                                                                    data-action="{{ $log->flag_url ?? route('admin.monitoring.flag', $log) }}"
                                                                     data-summary="{{ $logSummary }}"
                                                                     onclick="openMonitoringFlagModal(this)"
                                                                 >
@@ -1069,6 +1073,12 @@
                     <div>Resolved By: <span id="monitoringViewResolvedBy"></span></div>
                     <div>Resolved At: <span id="monitoringViewResolvedAt"></span></div>
                     <div class="mt-2">Resolution Note: <p id="monitoringViewResolutionNote" class="whitespace-pre-wrap"></p></div>
+                    @if($workflowReadOnly)
+                        <details id="monitoringViewHistory" class="mt-2 hidden">
+                            <summary class="font-semibold cursor-pointer">Case history</summary>
+                            <p id="monitoringViewHistoryText" class="mt-2 whitespace-pre-wrap"></p>
+                        </details>
+                    @endif
                     <div id="monitoringViewReturnDetails" class="mt-2 hidden border-t border-gray-200 pt-2">
                         <div>Return Date: <span id="monitoringViewReturnDate"></span></div>
                         <div>Return Reason: <span id="monitoringViewReturnReason"></span></div>
@@ -1130,7 +1140,7 @@
             </div>
         </div>
     </div>
-    @include('admin.monitoring._return-confirmation')
+    @include('admin.monitoring._return-confirmation', ['researchMonitoring' => $workflowReadOnly])
 @endsection
 
 @push('scripts')
@@ -1444,6 +1454,12 @@
             setMonitoringText('monitoringViewFlagReasons', data.flag_reasons);
             setMonitoringText('monitoringViewResolutionOutcome', data.resolution_outcome);
             setMonitoringText('monitoringViewResolutionNote', data.resolution_note);
+            const history = document.getElementById('monitoringViewHistory');
+            if (history) {
+                history.removeAttribute('open');
+                history.classList.toggle('hidden', !data.case_history);
+                setMonitoringText('monitoringViewHistoryText', data.case_history);
+            }
             setMonitoringText('monitoringViewResolvedBy', data.resolved_by);
             setMonitoringText('monitoringViewResolvedAt', data.resolved_at);
             setMonitoringText('monitoringViewReturnDate', data.return_date);

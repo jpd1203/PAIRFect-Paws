@@ -100,9 +100,11 @@ final class ResearchAdminIntegrationTest extends TestCase
         }
         $this->actingAs($staff)->get(route('admin.monitoring.index'))->assertOk()->assertViewIs('admin.monitoring.index')
             ->assertSee('Filed 3-day report.')->assertSee('Filed 3-week report.')->assertSee('Filed 3-month report.')
-            ->assertSee('Not scheduled')->assertViewHas('statusCounts', ['completed' => 3]);
+            ->assertSee('Not scheduled')->assertViewHas('statusCounts', ['flagged' => 3]);
         $this->get(route('admin.dashboard'))->assertOk()->assertViewHas('activeMonitoring', 0)
+            ->assertViewHas('flaggedMonitoring', 3)
             ->assertViewHas('pipeline', ['scheduled' => 0, 'underreview' => 0, 'approved' => 1, 'rejected' => 0]);
+        $this->get(route('admin.monitoring.flagged'))->assertOk()->assertSee('3 unresolved');
 
         foreach (['adoption_applications', 'handovers', 'post_adoption_logs', 'identity_verifications'] as $table) {
             $this->assertDatabaseCount($table, 0);

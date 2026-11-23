@@ -80,7 +80,7 @@
                                     {{-- Flagged / Resolution status --}}
                                     @if($log->resolution_outcome)
                                         @if($log->resolved_at)
-                                            <span class="badge badge-completed"><i class="fa-solid fa-circle-check mr-1"></i> {{ $log->resolution_outcome === \App\Enums\ResolutionOutcome::Resolved ? 'Flag Resolved' : $log->resolution_outcome->label() }}</span>
+                                            <span class="badge badge-completed"><i class="fa-solid fa-circle-check mr-1"></i> {{ $log->resolution_outcome === \App\Enums\ResolutionOutcome::Resolved ? 'Flag Resolved' : $log->resolution_outcome_label }}</span>
                                         @elseif($log->resolution_outcome === \App\Enums\ResolutionOutcome::FollowUpRequired)
                                             <span class="badge badge-flagged"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Follow-up Required</span>
                                             @if($log->follow_up_notes)
@@ -138,7 +138,7 @@
                                                         <span class="badge badge-completed">Submitted</span>
                                                         @if($report->resolution_outcome)
                                                             @if($report->resolved_at)
-                                                                <span class="badge badge-completed"><i class="fa-solid fa-circle-check mr-1"></i> {{ $report->resolution_outcome === \App\Enums\ResolutionOutcome::Resolved ? 'Resolved' : $report->resolution_outcome->label() }}</span>
+                                                                <span class="badge badge-completed"><i class="fa-solid fa-circle-check mr-1"></i> {{ $report->resolution_outcome === \App\Enums\ResolutionOutcome::Resolved ? 'Resolved' : $report->resolution_outcome_label }}</span>
                                                             @elseif($report->resolution_outcome === \App\Enums\ResolutionOutcome::FollowUpRequired)
                                                                 <span class="badge badge-flagged"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Follow-up Required</span>
                                                                 @if($report->follow_up_notes)

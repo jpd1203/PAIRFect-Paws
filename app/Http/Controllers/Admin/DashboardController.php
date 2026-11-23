@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\ApplicationStatus;
+use App\Enums\ResolutionOutcome;
 use App\Http\Controllers\Controller;
 use App\Models\AdoptionApplication;
 use App\Models\AuditLog;
@@ -63,14 +64,15 @@ class DashboardController extends Controller
             ? $research->receivedHandovers()->whereRaw(
                 '(select count(*) from research_checkins where research_checkins.placement_id = research_placements.id) < ?',
                 [count(ResearchMode::MILESTONES)],
-            )->count()
+            )->whereDoesntHave('researchCheckIns', fn ($query) => $query
+                ->where('resolution_outcome', ResolutionOutcome::PetReturned->value))->count()
             : PostAdoptionLog::query()
                 ->afterCompletedHandover()
                 ->beforeRecordedReturn()
                 ->whereNull('submitted_date')
                 ->count();
 
-        $flaggedMonitoring = $workflowReadOnly ? 0 : PostAdoptionLog::query()
+        $flaggedMonitoring = $workflowReadOnly ? $research->flaggedReports()->count() : PostAdoptionLog::query()
             ->afterCompletedHandover()
             ->where('is_flagged', true)
             ->whereNull('resolved_at')
@@ -99,7 +101,7 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        $unresolvedFlags = $workflowReadOnly ? collect() : PostAdoptionLog::query()
+        $unresolvedFlags = $workflowReadOnly ? $research->flaggedCheckIns(limit: 5) : PostAdoptionLog::query()
             ->afterCompletedHandover()
             ->with(['adoptionApplication.user', 'adoptionApplication.pet'])
             ->where('is_flagged', true)

@@ -114,14 +114,16 @@
                 </div>
                     <p class="mt-3 text-sm text-[#666]">
                         Adopter: <strong>{{ $log->user?->full_name ?: 'Unknown adopter' }}</strong>
-                        &middot; Due {{ $log->due_date->format('M j, Y') }}
-                        &middot; {{ $log->display_reminders_sent }} {{ $log->has_presentation_demo ? 'demo ' : '' }}reminder{{ $log->display_reminders_sent === 1 ? '' : 's' }} sent
+                        @unless($researchMonitoring ?? false)
+                            &middot; Due {{ $log->due_date->format('M j, Y') }}
+                            &middot; {{ $log->display_reminders_sent }} {{ $log->has_presentation_demo ? 'demo ' : '' }}reminder{{ $log->display_reminders_sent === 1 ? '' : 's' }} sent
+                        @endunless
                     </p>
                 </div>
 
                 <div class="flex flex-wrap gap-2">
                     @if (filled($log->video_path))
-                        <a class="btn btn-secondary btn-sm" href="{{ route('admin.monitoring.video', $log) }}" target="_blank" rel="noopener">
+                        <a class="btn btn-secondary btn-sm" href="{{ $log->video_url ?? route('admin.monitoring.video', $log) }}" target="_blank" rel="noopener">
                             <i class="fa-solid fa-video"></i> Open Welfare Video
                         </a>
                     @endif
@@ -151,9 +153,9 @@
 
             @if (filled($log->video_path))
                 <section class="mb-4 rounded-xl border border-[#e5e1da] bg-black p-3">
-                    <h4 class="mb-3 font-bold text-white">Live welfare video</h4>
+                    <h4 class="mb-3 font-bold text-white">{{ ($researchMonitoring ?? false) ? 'Submitted practice recording' : 'Live welfare video' }}</h4>
                     <video class="max-h-[480px] w-full rounded-lg" controls playsinline preload="metadata">
-                        <source src="{{ route('admin.monitoring.video', $log) }}">
+                        <source src="{{ $log->video_url ?? route('admin.monitoring.video', $log) }}">
                         Your browser cannot play this welfare video.
                     </video>
                 </section>
@@ -200,6 +202,13 @@
                 @endif
             </section>
 
+            @if (($researchMonitoring ?? false) && $log->case_history_summary)
+                <details class="mt-4 rounded-xl border border-[#e5e1da] bg-white p-4 text-sm">
+                    <summary class="font-bold cursor-pointer">Case history</summary>
+                    <p class="mt-2 whitespace-pre-wrap">{{ $log->case_history_summary }}</p>
+                </details>
+            @endif
+
             @if ($log->follow_up_notes)
                 <section class="mt-4 rounded-xl border border-purple-200 bg-[#faf6fc] p-4 text-sm">
                     <div class="flex items-center justify-between mb-1">
@@ -225,7 +234,7 @@
 
             @if(auth()->user()->isAdmin())
             @php($demoOnly = $log->has_presentation_demo && !($log->is_flagged && !$log->resolved_at))
-            <form method="POST" action="{{ $demoOnly ? route('admin.post-adoption-demo.resolve', $log) : route('admin.monitoring.resolve', $log) }}" class="mt-4 rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4" @unless($demoOnly) data-resolution-form @endunless>
+            <form method="POST" action="{{ $demoOnly ? route('admin.post-adoption-demo.resolve', $log) : ($log->resolve_url ?? route('admin.monitoring.resolve', $log)) }}" class="mt-4 rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4" @unless($demoOnly) data-resolution-form @endunless>
                 @csrf
                 @if ($demoOnly)
                     <label for="resolution-note-{{ $log->id }}" class="form-label">Demo Resolution Note *</label>

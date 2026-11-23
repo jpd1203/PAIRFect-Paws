@@ -3,21 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\Milestone;
-use App\Enums\PetCurrentStatus;
-use App\Models\Pet;
+use App\Models\ResearchCheckIn;
 use App\Models\ResearchPlacement;
 use App\Models\User;
 use App\Services\PostAdoptionCaptureChallengeService;
 use App\Services\ResearchPrivateMedia;
+use App\Services\ResearchWelfareCaseService;
 use App\Services\VideoDurationProbe;
+use App\Support\ManilaTime;
+use App\Support\ResearchAdminRecords;
 use App\Support\ResearchMode;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Fluent;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -35,50 +35,30 @@ final class ResearchCheckInController extends Controller
         return view('monitoring.create', ['researchPlacement' => $placement, 'researchMilestone' => $milestone]);
     }
 
-    public function modal(Request $request, int $report)
+    public function modal(Request $request, int $report, ResearchAdminRecords $records)
     {
-        $row = DB::table('research_checkins')
-            ->join('research_placements', 'research_placements.id', '=', 'research_checkins.placement_id')
-            ->where('research_checkins.id', $report)
-            ->where('research_placements.user_id', $request->user()->id)
-            ->where('research_placements.status', ApplicationStatus::Approved->value)
-            ->whereNotNull('research_placements.received_at')
-            ->first([
-                'research_checkins.id',
-                'research_checkins.placement_id',
-                'research_checkins.milestone',
-                'research_checkins.answers',
-                'research_checkins.submitted_at',
-                'research_placements.pet_id',
+        $record = ResearchCheckIn::query()->afterReceipt()
+            ->whereHas('placement', fn ($query) => $query->where('user_id', $request->user()->id))
+            ->with(['placement.pet' => fn ($query) => $query->withoutGlobalScope('notArchived')])
+            ->findOrFail($report);
+
+        return view('monitoring._report-view-modal-content', ['report' => $records->adopterReport($record)]);
+    }
+
+    public function followUp(Request $request, int $report, ResearchWelfareCaseService $cases)
+    {
+        $data = $request->validate(['follow_up_notes' => ['required', 'string', 'max:2000']]);
+        $record = $cases->followUp($report, $request->user(), $data['follow_up_notes']);
+        $case = $record->welfare_case;
+        $message = 'Follow-up update submitted successfully.';
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true, 'message' => $message, 'follow_up_notes' => $case['follow_up_notes'],
+                'follow_up_submitted_at' => ManilaTime::parseAndFormat($case['follow_up_submitted_at'], 'M j, Y g:i A'),
             ]);
+        }
 
-        abort_unless($row !== null, 404);
-
-        $pet = Pet::withoutGlobalScope('notArchived')->find($row->pet_id);
-        $answers = json_decode((string) $row->answers, true) ?: [];
-        $milestone = Milestone::from(str_replace('-', '_', $row->milestone).'s');
-        $statusValue = isset($answers['pet_current_status']) ? (string) $answers['pet_current_status'] : null;
-        $statusEnum = $statusValue !== null ? PetCurrentStatus::tryFrom($statusValue) : null;
-
-        $reportModel = new Fluent([
-            'id' => $row->id,
-            'pet' => $pet,
-            'milestone' => $milestone,
-            'milestone_display' => $milestone->label(),
-            'pet_current_status' => $statusEnum ?? ($statusValue !== null ? (object) ['value' => $statusValue] : null),
-            'eating_habits' => $answers['eating_habits'] ?? null,
-            'behavioral_observations' => $answers['behavioral_observations'] ?? null,
-            'vet_visit_details' => filled($answers['vet_visit_details'] ?? null) ? $answers['vet_visit_details'] : null,
-            'living_conditions' => $answers['living_conditions'] ?? null,
-            'concerns' => $answers['concerns'] ?? null,
-            'resolution_outcome' => null,
-            'resolved_at' => null,
-            'is_flagged' => false,
-            'resolution_note' => null,
-            'follow_up_notes' => null,
-        ]);
-
-        return view('monitoring._report-view-modal-content', ['report' => $reportModel]);
+        return back()->with('success', $message);
     }
 
     public function challenge(Request $request, ResearchPlacement $placement, string $milestone, PostAdoptionCaptureChallengeService $challenges)
@@ -102,7 +82,7 @@ final class ResearchCheckInController extends Controller
         ], 201)->header('Cache-Control', 'no-store, private');
     }
 
-    public function store(Request $request, ResearchPlacement $placement, PostAdoptionCaptureChallengeService $challenges, VideoDurationProbe $probe, ResearchPrivateMedia $media)
+    public function store(Request $request, ResearchPlacement $placement, PostAdoptionCaptureChallengeService $challenges, VideoDurationProbe $probe, ResearchPrivateMedia $media, ResearchWelfareCaseService $cases)
     {
         $this->authorizeReport($placement, $request->user());
         $maximumVideoKilobytes = max(1, (int) config('post_adoption.maximum_video_kilobytes', 12288));
@@ -154,7 +134,7 @@ final class ResearchCheckInController extends Controller
 
         $path = $media->store($video, 'checkins', $placement->id);
         try {
-            DB::transaction(function () use ($placement, $user, $challenges, $args, $hash, $path, $mime, $duration, $data, $now, $captured): void {
+            DB::transaction(function () use ($placement, $user, $challenges, $args, $hash, $path, $mime, $duration, $data, $now, $captured, $cases): void {
                 $locked = ResearchPlacement::lockForUpdate()->findOrFail($placement->id);
                 $this->authorizeReport($locked, $user);
                 $this->requireNext($locked, $data['milestone']);
@@ -170,11 +150,12 @@ final class ResearchCheckInController extends Controller
                     'declared_duration_ms' => (int) $data['recording_duration_ms'],
                     'verified_duration_ms' => $duration, 'duration_verification_status' => 'verified',
                 ];
-                DB::table('research_checkins')->insert([
+                $report = ResearchCheckIn::create([
                     'placement_id' => $locked->id, 'milestone' => $data['milestone'],
-                    'answers' => json_encode($answers, JSON_THROW_ON_ERROR), 'submitted_at' => now(),
+                    'answers' => $answers, 'submitted_at' => now(),
                     'video_path' => $path, 'video_sha256' => $hash, 'video_mime_type' => $mime,
                 ]);
+                $cases->evaluateLocked($report);
             }, 3);
         } catch (UniqueConstraintViolationException) {
             $media->forget($path);
@@ -196,6 +177,9 @@ final class ResearchCheckInController extends Controller
 
     private function nextMilestone(ResearchPlacement $placement): ?string
     {
+        if ($placement->hasScenarioReturn()) {
+            return null;
+        }
         $submitted = DB::table('research_checkins')->where('placement_id', $placement->id)->pluck('milestone')->all();
 
         return collect(ResearchMode::MILESTONES)->first(fn ($milestone) => ! in_array($milestone, $submitted, true));

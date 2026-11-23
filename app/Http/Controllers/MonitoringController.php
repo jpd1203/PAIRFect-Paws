@@ -3,10 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\Milestone;
 use App\Mail\WelfareReportReceiptMail;
 use App\Models\PostAdoptionLog;
-use App\Models\ResearchPlacement;
 use App\Services\AuditLogService;
 use App\Services\EmailNotificationService;
 use App\Services\FlagEvaluationService;
@@ -17,6 +15,7 @@ use App\Services\PostAdoptionWebDemoService;
 use App\Services\RecoverableEmailDispatcher;
 use App\Services\VideoDurationProbe;
 use App\Support\ManilaTime;
+use App\Support\ResearchAdminRecords;
 use App\Support\ResearchMode;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,7 +26,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Fluent;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -75,48 +73,7 @@ class MonitoringController extends Controller
     public function myCheckins(Request $request): View
     {
         if (ResearchMode::ready()) {
-            $placements = ResearchPlacement::with('pet')
-                ->where('user_id', $request->user()->id)
-                ->where('status', ApplicationStatus::Approved->value)
-                ->whereNotNull('received_at')
-                ->orderByDesc('received_at')
-                ->orderByDesc('id')
-                ->get();
-
-            $reports = DB::table('research_checkins')
-                ->whereIn('placement_id', $placements->modelKeys())
-                ->get()
-                ->groupBy('placement_id');
-
-            $logs = $placements->flatMap(function (ResearchPlacement $placement) use ($reports) {
-                $submissions = $reports->get($placement->id, collect())->keyBy('milestone');
-                $next = collect(ResearchMode::MILESTONES)->first(fn (string $key) => ! $submissions->has($key));
-
-                return collect(ResearchMode::MILESTONES)->map(function (string $key) use ($placement, $submissions, $next) {
-                    $report = $submissions->get($key);
-                    $milestone = Milestone::from(str_replace('-', '_', $key).'s');
-                    $displayStatus = $report ? 'Submitted' : ($key === $next ? 'Pending' : 'Upcoming');
-
-                    return new Fluent([
-                        'id' => $report?->id,
-                        'application_id' => $placement->id,
-                        'adoptionApplication' => $placement,
-                        'pet' => $placement->pet,
-                        'milestone' => $milestone,
-                        'scheduled_date' => null,
-                        'submitted_date' => $report ? CarbonImmutable::parse($report->submitted_at, 'UTC') : null,
-                        'display_status' => $displayStatus,
-                        'display_is_flagged' => false,
-                        'resolution_outcome' => null,
-                        'resolved_at' => null,
-                        'follow_up_notes' => null,
-                        'has_presentation_demo' => false,
-                        'submit_url' => route('research.report', $placement),
-                        'modal_url' => $report ? route('research.checkin.modal', $report->id) : null,
-                    ]);
-                });
-            });
-
+            $logs = app(ResearchAdminRecords::class)->checkIns($request->user()->id);
             $groupedLogs = $logs->groupBy('application_id');
 
             return view('monitoring.my-checkins', compact('groupedLogs', 'logs'));
@@ -180,6 +137,13 @@ class MonitoringController extends Controller
      */
     public function flaggedNotice(Request $request): View
     {
+        if (ResearchMode::ready()) {
+            return view('monitoring.flagged-notice', [
+                'flaggedLogs' => app(ResearchAdminRecords::class)->flaggedCheckIns($request->user()->id),
+                'researchMonitoring' => true,
+            ]);
+        }
+
         $flaggedLogs = $this->ownedApprovedLogs($request)
             ->orderByDesc('updated_at')
             ->orderByDesc('id')

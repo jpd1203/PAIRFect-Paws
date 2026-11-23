@@ -189,6 +189,9 @@ Route::middleware('auth')->group(function () {
                 ->whereNumber('report')
                 ->middleware(ResearchParticipant::class)
                 ->name('research.checkin.modal');
+            Route::post('/research/checkins/{report}/follow-up', [ResearchCheckInController::class, 'followUp'])
+                ->whereNumber('report')->middleware([ResearchParticipant::class, 'throttle:12,1'])
+                ->name('research.checkin.follow-up');
             Route::prefix('research/placements/{placement}')->name('research.')->middleware(ResearchParticipant::class)->where(['placement' => '[0-9]+'])->group(function () {
                 Route::get('/handover', [ResearchHandoverController::class, 'show'])->name('handover');
                 Route::post('/handover/method', [ResearchHandoverController::class, 'selectMethod'])->middleware('throttle:12,1')->name('handover.method');
@@ -250,6 +253,10 @@ Route::middleware('auth')->group(function () {
             ->whereNumber('placement')->name('research.receipt-photo');
         Route::get('/records/checkins/{report}/video', [ResearchMediaController::class, 'video'])
             ->whereNumber('report')->name('research.video');
+        Route::post('/records/checkins/{report}/flag', [Admin\ResearchWelfareController::class, 'flag'])
+            ->whereNumber('report')->name('research.monitoring.flag');
+        Route::post('/records/checkins/{report}/resolve', [Admin\ResearchWelfareController::class, 'resolve'])
+            ->whereNumber('report')->middleware('admin')->name('research.monitoring.resolve');
 
         // Admin logout (sidebar uses admin.logout)
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
