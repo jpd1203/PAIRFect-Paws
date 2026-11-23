@@ -22,6 +22,64 @@ final class ResearchRestoredWorkflowTest extends TestCase
 {
     use BuildsMatchingFixtures, RefreshDatabase, SubmitsResearchCheckIns;
 
+    public function test_unscheduled_handover_with_a_saved_preference_accepts_pickup_or_delivery(): void
+    {
+        $placement = $this->approvedPlacement();
+        $owner = $placement->user;
+        $handover = route('research.handover', $placement);
+        $method = route('research.handover.method', $placement);
+        $this->actingAs($owner);
+
+        foreach (['pickup' => 'delivery', 'delivery' => 'pickup'] as $selected => $previous) {
+            $placement->update(['handover_schedule' => ['status' => 'unscheduled', 'method' => $previous, 'version' => 4]]);
+            $this->get($handover)->assertOk()->assertSee($method, false)->assertSee('name="schedule_version" value="4"', false);
+            $this->post($method, ['method' => $selected, 'schedule_version' => 4])->assertRedirect($handover)->assertSessionHasNoErrors();
+            $schedule = $placement->fresh()->handover_schedule;
+            $this->assertSame($selected, $schedule['method']);
+            $this->assertSame('proposed', $schedule['status']);
+            $this->assertSame(5, $schedule['version']);
+            $this->assertNull($schedule['confirmed_at']);
+            $this->get($handover)->assertOk()->assertSee('Confirm Proposed Schedule')->assertDontSee($method, false);
+        }
+    }
+
+    public function test_conflicting_method_submissions_reload_the_current_schedule_without_changing_it(): void
+    {
+        $placement = $this->approvedPlacement();
+        $handover = route('research.handover', $placement);
+        $method = route('research.handover.method', $placement);
+        $this->actingAs($placement->user);
+        $this->post($method, ['method' => 'pickup', 'schedule_version' => 0])->assertRedirect($handover);
+        $proposal = $placement->fresh()->handover_schedule;
+
+        // Duplicate click or an outdated tab should land on the actual proposal.
+        $this->post($method, ['method' => 'pickup', 'schedule_version' => 0])->assertRedirect($handover)
+            ->assertSessionHasErrors(['method' => 'This handover changed. Refresh and try again.']);
+        $this->withCookie(config('session.cookie'), session()->getId())
+            ->get($handover)->assertSee('This handover changed.')->assertSee('Confirm Proposed Schedule');
+        $this->post($method, ['method' => 'delivery', 'schedule_version' => 1])->assertRedirect($handover)->assertSessionHasErrors('method');
+        $this->postJson($method, ['method' => 'delivery', 'schedule_version' => 0])->assertConflict();
+        $this->assertSame($proposal, $placement->fresh()->handover_schedule);
+
+        $this->post(route('research.handover.confirm', $placement), ['schedule_version' => 1])->assertRedirect($handover);
+        $confirmed = $placement->fresh()->handover_schedule;
+        $this->post($method, ['method' => 'delivery', 'schedule_version' => 2])->assertRedirect($handover)->assertSessionHasErrors('method');
+        $this->assertSame($confirmed, $placement->fresh()->handover_schedule);
+    }
+
+    public function test_a_handover_window_without_an_explicit_status_is_not_overwritten_by_the_method_picker(): void
+    {
+        $placement = $this->approvedPlacement();
+        $handover = route('research.handover', $placement);
+        $method = route('research.handover.method', $placement);
+        $schedule = ['method' => 'pickup', 'version' => 2, 'start_at' => now()->addHour()->toISOString()];
+        $placement->update(['handover_schedule' => $schedule]);
+
+        $this->actingAs($placement->user)->get($handover)->assertOk()->assertDontSee($method, false);
+        $this->post($method, ['method' => 'delivery', 'schedule_version' => 2])->assertRedirect($handover)->assertSessionHasErrors('method');
+        $this->assertSame($schedule, $placement->fresh()->handover_schedule);
+    }
+
     public function test_delivery_schedule_reschedule_and_negative_receipt_allow_one_successful_attempt(): void
     {
         $placement = $this->approvedPlacement();

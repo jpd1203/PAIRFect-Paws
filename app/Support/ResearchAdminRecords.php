@@ -84,6 +84,7 @@ final class ResearchAdminRecords
             'adopter_outcome' => $outcome, 'adopter_confirmed_at' => $occurredAt, 'adopter_note' => $receipt['note'] ?? null,
             'receipt_proof_path' => $receipt['path'] ?? null,
             'scheduled_method' => $schedule['method'] ?? null, 'schedule_status' => $schedule['status'] ?? 'unscheduled',
+            'can_select_schedule_method' => $placement->canSelectHandoverMethod(),
             'schedule_version' => $schedule['version'] ?? 0, 'reschedule_status' => isset($schedule['reschedule']) ? 'proposal updated' : null,
             'reschedule_reason' => $schedule['reschedule']['reason'] ?? null,
             'scheduled_start_at' => isset($schedule['start_at']) ? CarbonImmutable::parse($schedule['start_at']) : null,

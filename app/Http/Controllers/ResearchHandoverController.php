@@ -13,6 +13,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
 
 final class ResearchHandoverController extends Controller
@@ -46,11 +47,19 @@ final class ResearchHandoverController extends Controller
     public function selectMethod(Request $request, ResearchPlacement $placement)
     {
         $data = $request->validate(['method' => 'required|in:pickup,delivery', 'schedule_version' => 'required|integer|min:0']);
-        $this->change($request, $placement, (int) $data['schedule_version'], function ($row, $schedule) use ($data) {
-            abort_unless($schedule === [] && ! $row->handover_receipt, 409);
-            $start = ManilaTime::now()->startOfMinute()->addHour();
-            $this->saveProposal($row, $schedule, $data['method'], $start, $start->addHour());
-        });
+        try {
+            $this->change($request, $placement, (int) $data['schedule_version'], function ($row, $schedule) use ($data) {
+                abort_unless($row->canSelectHandoverMethod(), 409, 'You can no longer change the handover method here. Review the current schedule below.');
+                $start = ManilaTime::now()->startOfMinute()->addHour();
+                $this->saveProposal($row, $schedule, $data['method'], $start, $start->addHour());
+            });
+        } catch (HttpException $exception) {
+            if ($exception->getStatusCode() !== 409 || $request->expectsJson()) {
+                throw $exception;
+            }
+
+            return to_route('research.handover', $placement)->withErrors(['method' => $exception->getMessage()]);
+        }
 
         return to_route('research.handover', $placement)->with('success', 'Handover method saved. Confirm the proposed schedule to proceed.');
     }

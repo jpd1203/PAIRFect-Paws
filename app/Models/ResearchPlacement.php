@@ -65,6 +65,19 @@ final class ResearchPlacement extends AdoptionApplication
         return false;
     }
 
+    public function canSelectHandoverMethod(): bool
+    {
+        $schedule = $this->handover_schedule ?? [];
+
+        return $this->received_at === null
+            && blank($this->handover_receipt['outcome'] ?? null)
+            && ($schedule['status'] ?? 'unscheduled') === 'unscheduled'
+            && blank($schedule['proposed_at'] ?? null)
+            && blank($schedule['confirmed_at'] ?? null)
+            && blank($schedule['start_at'] ?? null)
+            && blank($schedule['end_at'] ?? null);
+    }
+
     public function getSubmittedOnAttribute()
     {
         return $this->created_at ?? $this->approved_at;

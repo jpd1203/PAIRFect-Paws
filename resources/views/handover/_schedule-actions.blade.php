@@ -1,7 +1,7 @@
 @include('handover._schedule-summary')
 @if((($researchHandover ?? false) || !$record->released_at) && !$record->adopter_outcome)
     <section class="rounded-card border border-[#e2ddd7] bg-white p-5 shadow-card">
-        @if(($researchHandover ?? false) ? $record->schedule_status === 'unscheduled' : $record->canSelectScheduleMethod())
+        @if(($researchHandover ?? false) ? $record->can_select_schedule_method : $record->canSelectScheduleMethod())
             <div class="{{ in_array($record->schedule_status, ['proposed'], true) ? 'border-b border-gray-200' : '' }}">
                 <div class="flex items-center justify-between mb-3">
                     <div>
