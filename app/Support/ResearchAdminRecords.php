@@ -4,12 +4,15 @@ namespace App\Support;
 
 use App\Enums\ApplicationStatus;
 use App\Enums\Milestone;
+use App\Enums\PetCurrentStatus;
+use App\Enums\ResolutionOutcome;
+use App\Models\ResearchCheckIn;
 use App\Models\ResearchPlacement;
+use App\Models\User;
 use App\Services\Matching\ApplicantRankingService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Fluent;
 
 /** Read-only projections for the existing staff pages, never production records. */
@@ -101,32 +104,127 @@ final class ResearchAdminRecords
 
     public function receivedHandovers(): Builder
     {
-        return $this->handovers()->whereNotNull('released_at')->whereNotNull('received_at');
+        return $this->handovers()->whereNotNull('received_at');
     }
 
-    public function checkIns(): Collection
+    public function checkIns(?int $owner = null): Collection
     {
-        $placements = $this->receivedHandovers()->orderByDesc('received_at')->orderByDesc('id')->get();
-        $reports = DB::table('research_checkins')->whereIn('placement_id', $placements->modelKeys())->get()->groupBy('placement_id');
+        $placements = $this->receivedHandovers()
+            ->when($owner !== null, fn (Builder $query) => $query->where('user_id', $owner))
+            ->orderByDesc('received_at')->orderByDesc('id')->get();
+        $reports = ResearchCheckIn::whereIn('placement_id', $placements->modelKeys())->get();
+        $byPlacement = $reports->groupBy('placement_id');
+        $staff = $owner === null ? $this->staffAttribution($reports) : null;
 
-        return $placements->flatMap(function (ResearchPlacement $placement) use ($reports) {
-            $submissions = $reports->get($placement->id, collect())->keyBy('milestone');
+        return $placements->flatMap(function (ResearchPlacement $placement) use ($byPlacement, $staff) {
+            $submissions = $byPlacement->get($placement->id, collect())->keyBy('milestone');
             $next = collect(ResearchMode::MILESTONES)->first(fn ($key) => ! $submissions->has($key));
+            $ended = $submissions->contains('resolution_outcome', ResolutionOutcome::PetReturned);
 
-            return collect(ResearchMode::MILESTONES)->map(function (string $key) use ($placement, $submissions, $next) {
+            return collect(ResearchMode::MILESTONES)->map(function (string $key) use ($placement, $submissions, $next, $ended, $staff) {
                 $report = $submissions->get($key);
-                $milestone = Milestone::from(str_replace('-', '_', $key).'s');
-                $status = $report ? 'completed' : ($key === $next ? 'pending' : 'upcoming');
+                $status = $ended ? 'Placement ended' : ($key === $next ? 'Pending' : 'Upcoming');
 
-                return new Fluent([
-                    'id' => $report?->id, 'application_id' => $placement->id, 'adoptionApplication' => $placement,
-                    'user' => $placement->user, 'pet' => $placement->pet, 'milestone' => $milestone,
-                    'milestone_display' => $milestone->label(), 'status_slug' => $status, 'status_display' => ucfirst($status),
-                    'submitted_date' => $report ? CarbonImmutable::parse($report->submitted_at, 'UTC') : null,
-                    'survey_data' => $report ? json_decode($report->answers, true) : [],
-                    'video_path' => $report?->video_path,
-                ]);
+                return $this->checkInEntry($placement, $key, $report, $status, $staff);
             });
         });
+    }
+
+    public function flaggedReports(?int $owner = null): Builder
+    {
+        return ResearchCheckIn::query()->afterReceipt()->openFlags()
+            ->when($owner !== null, fn (Builder $query) => $query->whereHas('placement', fn (Builder $placement) => $placement->where('user_id', $owner)));
+    }
+
+    public function flaggedCheckIns(?int $owner = null, ?int $limit = null): Collection
+    {
+        $reports = $this->flaggedReports($owner)->with('placement.pet', 'placement.user')
+            ->latest('submitted_at')->latest('id')
+            ->when($limit !== null, fn (Builder $query) => $query->limit($limit))->get();
+        $staff = $owner === null ? $this->staffAttribution($reports) : null;
+
+        return $reports->map(fn (ResearchCheckIn $report) => $this->checkInEntry($report->placement, $report->milestone, $report, 'Submitted', $staff));
+    }
+
+    public function adopterReport(ResearchCheckIn $report): Fluent
+    {
+        return $this->checkInEntry($report->placement, $report->milestone, $report, 'Submitted', null);
+    }
+
+    private function checkInEntry(ResearchPlacement $placement, string $key, ?ResearchCheckIn $report, string $unsubmittedStatus, ?Collection $staff): Fluent
+    {
+        $milestone = Milestone::from(str_replace('-', '_', $key).'s');
+        $case = $report?->welfare_case ?? [];
+        $answers = $report?->answers ?? [];
+        $active = $report?->is_flagged && $report->resolved_at === null;
+        $status = $active ? 'flagged' : ($report ? 'completed' : ($unsubmittedStatus === 'Pending' ? 'pending' : 'upcoming'));
+        $health = data_get($answers, 'pet_current_status');
+        $date = $case['return']['date'] ?? null;
+
+        return new Fluent([
+            'id' => $report?->id, 'application_id' => $placement->id, 'adoptionApplication' => $placement,
+            'pet' => $placement->pet, 'milestone' => $milestone, 'milestone_display' => $milestone->label(),
+            'status_slug' => $status, 'status_display' => ! $report && $unsubmittedStatus === 'Placement ended' ? $unsubmittedStatus : ucfirst($status),
+            'display_status' => $report ? 'Submitted' : $unsubmittedStatus,
+            'scheduled_date' => null, 'submitted_date' => $report ? CarbonImmutable::parse($report->getRawOriginal('submitted_at'), 'UTC') : null,
+            'pet_current_status' => is_string($health) ? (PetCurrentStatus::tryFrom($health) ?? (object) ['value' => $health]) : null,
+            'eating_habits' => $answers['eating_habits'] ?? null, 'living_conditions' => $answers['living_conditions'] ?? null,
+            'behavioral_observations' => $answers['behavioral_observations'] ?? null,
+            'vet_visit_details' => $answers['vet_visit_details'] ?? null, 'concerns' => $answers['concerns'] ?? null,
+            'is_flagged' => $report?->is_flagged ?? false, 'display_is_flagged' => $active,
+            'resolved_at' => $report?->resolved_at, 'resolution_outcome' => $report?->resolution_outcome,
+            'resolution_outcome_label' => $report?->resolution_outcome === ResolutionOutcome::PetReturned
+                ? 'Pet Returned to Shelter (scenario outcome)' : ($report?->resolution_outcome?->label() ?? 'Not resolved'),
+            'resolution_note' => $case['resolution_note'] ?? null, 'return_date' => $date ? CarbonImmutable::parse($date, 'Asia/Manila') : null,
+            'follow_up_notes' => $case['follow_up_notes'] ?? null,
+            'follow_up_submitted_at' => isset($case['follow_up_submitted_at']) ? CarbonImmutable::parse($case['follow_up_submitted_at']) : null,
+            'has_presentation_demo' => false, 'research_monitoring' => true,
+            'submit_url' => route('research.report', $placement, absolute: false),
+            'modal_url' => $report ? route('research.checkin.modal', $report->id) : null,
+            'follow_up_url' => $report ? route('research.checkin.follow-up', $report->id) : null,
+            ...($staff === null ? [] : [
+                'user' => $placement->user, 'survey_data' => $answers, 'video_path' => $report?->video_path,
+                'display_flag_reasons' => $case['flag_reasons'] ?? [],
+                'resolvedBy' => $report?->resolved_at ? $staff->get($case['decision_by_user_id'] ?? 0) : null,
+                'return_reason' => $case['return']['reason'] ?? null, 'return_condition' => $case['return']['condition'] ?? null,
+                'returnHandledBy' => $staff->get($case['return']['handled_by_user_id'] ?? 0),
+                'case_history_summary' => $this->caseHistory($case['history'] ?? [], $staff),
+                'flag_url' => $report && $report->resolution_outcome !== ResolutionOutcome::PetReturned
+                    ? route('admin.research.monitoring.flag', $report->id) : null,
+                'resolve_url' => $report ? route('admin.research.monitoring.resolve', $report->id) : null,
+                'video_url' => $report?->video_path ? route('admin.research.video', $report->id) : null,
+            ]),
+        ]);
+    }
+
+    private function staffAttribution(Collection $reports): Collection
+    {
+        $ids = $reports->flatMap(function (ResearchCheckIn $report): array {
+            $case = $report->welfare_case ?? [];
+
+            return [$case['decision_by_user_id'] ?? null, $case['return']['handled_by_user_id'] ?? null,
+                ...collect($case['history'] ?? [])->pluck('actor_user_id')->all()];
+        })->filter()->unique()->values();
+
+        return User::query()->whereIn('id', $ids)->get(['id', 'first_name', 'last_name'])->keyBy('id');
+    }
+
+    private function caseHistory(array $events, Collection $users): string
+    {
+        return collect($events)->map(function (array $entry) use ($users): string {
+            $actor = isset($entry['actor_user_id']) ? ($users->get($entry['actor_user_id'])?->full_name ?? 'Former user') : 'System';
+            $title = match ($entry['event'] ?? null) {
+                'survey_flagged' => 'Flagged from the check-in',
+                'historical_survey_flagged' => 'Flagged during historical review',
+                'manual_flag' => 'Manually flagged',
+                'adopter_follow_up' => 'Follow-up submitted',
+                default => ResolutionOutcome::tryFrom($entry['outcome'] ?? '')?->label() ?? 'Outcome recorded',
+            };
+            $note = $entry['note'] ?? $entry['reason'] ?? null;
+
+            return sprintf('%s · %s · %s%s',
+                ManilaTime::parseAndFormat($entry['at'] ?? null, 'M j, Y g:i A'), $actor, $title,
+                filled($note) ? ': '.$note : '');
+        })->implode("\n");
     }
 }

@@ -38,7 +38,7 @@ class MonitoringController extends Controller
 
             return view('admin.monitoring.index', [
                 'checkIns' => $checkIns, 'statusCounts' => $checkIns->countBy('status_slug')->all(),
-                'staffHandlers' => collect(), 'workflowReadOnly' => true,
+                'staffHandlers' => $this->staffHandlers(), 'workflowReadOnly' => true,
             ]);
         }
 
@@ -54,16 +54,19 @@ class MonitoringController extends Controller
             ->countBy(fn (PostAdoptionLog $log): string => $log->status_slug)
             ->all();
 
-        $staffHandlers = User::query()->whereIn('role', [Role::Administrator->value, Role::Volunteer->value])
-            ->where('is_active', true)->orderBy('first_name')->orderBy('last_name')->get();
+        $staffHandlers = $this->staffHandlers();
 
         return view('admin.monitoring.index', compact('checkIns', 'statusCounts', 'staffHandlers'));
     }
 
-    public function flagged()
+    public function flagged(ResearchAdminRecords $research)
     {
         if (ResearchMode::ready()) {
-            return view('admin.monitoring.flagged', ['flagged' => collect(), 'staffHandlers' => collect()]);
+            return view('admin.monitoring.flagged', [
+                'flagged' => $research->flaggedCheckIns(),
+                'staffHandlers' => $this->staffHandlers(),
+                'researchMonitoring' => true,
+            ]);
         }
 
         $flagged = PostAdoptionLog::query()
@@ -74,10 +77,15 @@ class MonitoringController extends Controller
             ->get()
             ->filter(fn (PostAdoptionLog $log): bool => $log->display_is_flagged);
 
-        $staffHandlers = User::query()->whereIn('role', [Role::Administrator->value, Role::Volunteer->value])
-            ->where('is_active', true)->orderBy('first_name')->orderBy('last_name')->get();
+        $staffHandlers = $this->staffHandlers();
 
         return view('admin.monitoring.flagged', compact('flagged', 'staffHandlers'));
+    }
+
+    private function staffHandlers()
+    {
+        return User::query()->whereIn('role', [Role::Administrator->value, Role::Volunteer->value])
+            ->where('is_active', true)->orderBy('first_name')->orderBy('last_name')->get();
     }
 
     /** Stream a submitted welfare photo through a staff-authenticated route. */

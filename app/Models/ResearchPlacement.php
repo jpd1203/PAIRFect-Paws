@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\ResolutionOutcome;
 use App\Support\PhilippineAddress;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Research application and simulated handover state. Real application queries,
@@ -71,5 +73,15 @@ final class ResearchPlacement extends AdoptionApplication
     public function getLastUpdatedAttribute()
     {
         return $this->updated_at ?? $this->received_at ?? $this->released_at ?? $this->approved_at ?? $this->created_at;
+    }
+
+    public function researchCheckIns(): HasMany
+    {
+        return $this->hasMany(ResearchCheckIn::class, 'placement_id');
+    }
+
+    public function hasScenarioReturn(): bool
+    {
+        return $this->researchCheckIns()->where('resolution_outcome', ResolutionOutcome::PetReturned->value)->exists();
     }
 }

@@ -27,6 +27,7 @@ final class ResearchApplicationRouting
                     'application.index',
                     'monitoring.index',
                     'monitoring.my-checkins',
+                    'monitoring.flagged-notice',
                     'adopter.handover.my',
                 ),
                 403,

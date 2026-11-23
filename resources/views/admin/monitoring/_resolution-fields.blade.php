@@ -14,7 +14,7 @@
         <textarea id="{{ $fieldPrefix }}-note" name="resolution_note" class="form-control remarks-textarea" rows="3" required maxlength="2000" placeholder="Record the action or recommendation taken...">{{ old('resolution_note') }}</textarea>
     </div>
     <fieldset data-return-fields class="hidden gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
-        <legend class="font-semibold text-amber-900">Physical return details</legend>
+        <legend class="font-semibold text-amber-900">{{ ($researchMonitoring ?? ($workflowReadOnly ?? false)) ? 'Return outcome details' : 'Physical return details' }}</legend>
         <div><label class="form-label" for="{{ $fieldPrefix }}-date">Return Date *</label><input id="{{ $fieldPrefix }}-date" name="return_date" type="date" max="{{ today('Asia/Manila')->toDateString() }}" value="{{ old('return_date') }}" class="form-control" data-return-required disabled></div>
         <div><label class="form-label" for="{{ $fieldPrefix }}-reason">Return Reason *</label><textarea id="{{ $fieldPrefix }}-reason" name="return_reason" rows="2" maxlength="2000" class="form-control" data-return-required disabled>{{ old('return_reason') }}</textarea></div>
         <div><label class="form-label" for="{{ $fieldPrefix }}-condition">Condition Upon Return *</label><textarea id="{{ $fieldPrefix }}-condition" name="return_condition" rows="2" maxlength="2000" class="form-control" data-return-required disabled>{{ old('return_condition') }}</textarea></div>

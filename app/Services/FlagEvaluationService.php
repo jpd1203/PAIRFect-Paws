@@ -17,7 +17,42 @@ class FlagEvaluationService
     public function evaluate(PostAdoptionLog|int $log): array
     {
         $log = $log instanceof PostAdoptionLog ? $log->fresh() : PostAdoptionLog::findOrFail($log);
-        $survey = $this->surveyFor($log);
+        $reasons = $this->surveyReasons($this->surveyFor($log));
+        if ($reasons === []) {
+            return [];
+        }
+
+        $existingReasons = $this->normalizeFlagReasons($log->flag_reasons);
+        $mergedReasons = $this->appendSurveyReasons($existingReasons, $reasons);
+        $wasOpen = $log->is_flagged && $log->resolved_at === null;
+
+        $log->update([
+            'is_flagged' => true,
+            'flag_reasons' => $mergedReasons,
+            ...($wasOpen ? [] : [
+                'resolved_at' => null,
+                'resolved_by_user_id' => null,
+                'resolution_note' => null,
+                'resolution_outcome' => null,
+            ]),
+        ]);
+
+        if (! $wasOpen || count($mergedReasons) > count($existingReasons)) {
+            AuditLogService::log(
+                null,
+                'Post-Adoption Log Flagged',
+                'PostAdoptionLog',
+                $log->id,
+                'Auto-flagged from welfare survey: '.implode(' ', $reasons)
+            );
+        }
+
+        return $reasons;
+    }
+
+    /** @return list<string> */
+    public function surveyReasons(array $survey): array
+    {
         $reasons = [];
 
         if (Str::lower((string) ($survey['pet_current_status'] ?? '')) === 'poor') {
@@ -67,37 +102,7 @@ class FlagEvaluationService
             }
         }
 
-        $reasons = array_values(array_unique($reasons));
-        if ($reasons === []) {
-            return [];
-        }
-
-        $existingReasons = $this->normalizeFlagReasons($log->flag_reasons);
-        $mergedReasons = $this->appendSurveyReasons($existingReasons, $reasons);
-        $wasOpen = $log->is_flagged && $log->resolved_at === null;
-
-        $log->update([
-            'is_flagged' => true,
-            'flag_reasons' => $mergedReasons,
-            ...($wasOpen ? [] : [
-                'resolved_at' => null,
-                'resolved_by_user_id' => null,
-                'resolution_note' => null,
-                'resolution_outcome' => null,
-            ]),
-        ]);
-
-        if (! $wasOpen || count($mergedReasons) > count($existingReasons)) {
-            AuditLogService::log(
-                null,
-                'Post-Adoption Log Flagged',
-                'PostAdoptionLog',
-                $log->id,
-                'Auto-flagged from welfare survey: '.implode(' ', $reasons)
-            );
-        }
-
-        return $reasons;
+        return array_values(array_unique($reasons));
     }
 
     /**

@@ -28,7 +28,7 @@
             @else
                 <div class="mt-6 rounded-xl border border-status-flagged-text bg-status-flagged-bg px-6 py-5 text-status-flagged-text" role="status">
                     <h3 class="font-primary text-xl font-bold">{{ $flaggedLogs->count() }} active {{ Str::plural('notice', $flaggedLogs->count()) }}</h3>
-                    <p class="mt-2 text-sm leading-relaxed">Shelter staff may contact you for clarification or a welfare follow-up. You can continue to view and submit your scheduled check-ins normally.</p>
+                    <p class="mt-2 text-sm leading-relaxed">{{ ($researchMonitoring ?? false) ? 'Open your check-in report to review staff guidance or submit a requested follow-up.' : 'Shelter staff may contact you for clarification or a welfare follow-up. You can continue to view and submit your scheduled check-ins normally.' }}</p>
                 </div>
 
                 <section class="mt-6 overflow-hidden rounded-2xl border border-status-flagged-text bg-white shadow-card" aria-labelledby="flaggedReportsTitle">
@@ -123,7 +123,7 @@
                 </section>
 
                 <div class="contact-card">
-                    <p>If shelter staff need more information, they will contact you using the details on your account. Keep your contact information current and respond promptly to follow-up requests.</p>
+                    <p>{{ ($researchMonitoring ?? false) ? 'Use My Check-ins to view your reports and reply to follow-up requests.' : 'If shelter staff need more information, they will contact you using the details on your account. Keep your contact information current and respond promptly to follow-up requests.' }}</p>
                 </div>
             @endif
         </div>

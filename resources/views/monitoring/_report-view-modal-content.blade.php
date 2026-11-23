@@ -64,7 +64,7 @@
         @if ($report->resolution_outcome)
             <div class="profile-row">
                 <span>Resolution Outcome</span>
-                <span class="font-semibold text-text-dark">{{ $report->resolution_outcome->label() }}</span>
+                <span class="font-semibold text-text-dark">{{ $report->resolution_outcome_label }}</span>
             </div>
         @endif
 
@@ -77,7 +77,7 @@
 
         @if ($report->resolution_outcome === \App\Enums\ResolutionOutcome::PetReturned && $report->return_date)
             <div class="profile-row">
-                <span>Return Date</span>
+                <span>{{ $report->research_monitoring ? 'Recorded return date' : 'Return Date' }}</span>
                 <span>{{ \App\Support\ManilaTime::format($report->return_date, 'F j, Y') }}</span>
             </div>
         @endif
@@ -110,7 +110,7 @@
             @endif
 
             @if ($report->resolution_outcome === \App\Enums\ResolutionOutcome::FollowUpRequired)
-                <form action="{{ route('monitoring.follow-up', $report) }}" method="POST" class="mt-2" id="adopterFollowUpForm">
+                <form action="{{ $report->follow_up_url ?? route('monitoring.follow-up', $report) }}" method="POST" class="mt-2" id="adopterFollowUpForm">
                     @csrf
                     <label for="follow_up_notes" class="block text-xs font-semibold text-purple-950 mb-1">
                         {{ filled($report->follow_up_notes) ? 'Update your follow-up response:' : 'Provide follow-up response for shelter staff:' }}

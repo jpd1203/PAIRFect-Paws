@@ -128,6 +128,37 @@ Give participants the approved processor and retention information before testin
 
 Before enabling uploads, the data owner must assign a retention deadline and an operator. At withdrawal or expiry, use the authorized research record IDs to resolve only that person's generated relative paths from the research database; record the deletion job by internal IDs, not payloads, names, or OCR text. Verify the exact research DB and canonical private disk root, then remove the selected files from that disk and applicable backup/replica copies per policy. Do not delete a whole directory with mixed participants. Clear the associated media reference through an authorized maintenance operation if required by policy; preserve consent and recorded outcome/history only where their retention is approved. Verify the authorized URL now returns no file. Check for orphaned generated files against the same schema after interrupted uploads before purging; do not log file contents or attach uploaded IDs to support tickets. Backups and any processor-side retention follow their own approved access and expiry procedures. The legacy `research:purge-ocr-temp` command is not a retention tool for these uploads.
 
+## Upgrade an existing survey: Flagged Cases and follow-up
+
+Rehearse this upgrade on an isolated restore of the research database. Before an approved merge to `master`, verify a recoverable backup of `pairfect_research_survey01`, keep the existing APP_KEY and private upload storage, and pause participant/staff writes and background writers. Wait for the existing Azure deployment workflow to succeed; it does not run migrations. Do not run these commands on `pairfect_paws`.
+
+In Azure SSH, verify the active release SHA is the approved merge commit and the writer is the exact research schema:
+
+```sh
+cd /home/site/wwwroot
+php -r '$r=json_decode(file_get_contents("RELEASE.json"),true); echo $r["release_sha"],PHP_EOL;'
+php artisan config:clear
+php artisan tinker --execute='dump(app()->environment(), config("app.debug"), config("research.enabled"), DB::selectOne("SELECT DATABASE() AS name", [], false)->name);'
+php artisan migrate:status
+```
+
+Expect `production`, `false`, `true`, and `pairfect_research_survey01`. Stop if the SHA or database differs, or if any previous migration is pending. While writes are still paused, apply only the new migration, then review the non-mutating evaluation:
+
+```sh
+php artisan migrate --force --path=database/migrations/2026_11_26_000001_add_welfare_cases_to_research_checkins.php
+php artisan research:evaluate-welfare --database=pairfect_research_survey01
+```
+
+If the dry-run totals are expected, apply the first-time evaluations and verify a second dry run has nothing left to evaluate:
+
+```sh
+php artisan research:evaluate-welfare --database=pairfect_research_survey01 --apply
+php artisan research:evaluate-welfare --database=pairfect_research_survey01
+php artisan config:cache
+```
+
+The command records only welfare metadata, attributes historical flags to the system, and does not replay notifications. It leaves answers, timestamps, recordings, and existing outcomes intact. Check the administrator Dashboard and Flagged Cases unresolved totals against each other. Use an authorized synthetic case on the isolated restore to verify manual flagging, administrator-only resolution, adopter follow-up, and private playback. A recorded return ends only that research placement's remaining check-ins; it does not mark any pet physically returned or alter pet availability. Review and reopen after the checks pass. Do not reset, truncate, or reseed either database. For recovery, deploy a reviewed code revert and keep the additive schema and recorded history; do not run the down migration.
+
 ## First administrator in the already initialized survey 01
 
 Deploy the reviewed release containing the command first; **do not reinitialize the research database** and do not run an admin/demo seeder. In Azure App Service SSH:

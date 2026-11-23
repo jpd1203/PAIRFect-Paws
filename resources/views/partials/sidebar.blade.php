@@ -43,6 +43,8 @@
                 ->where('status', \App\Enums\ApplicationStatus::Approved->value)
                 ->whereNotNull('received_at')
                 ->exists();
+            $adopterFlaggedCount = $hasReceivedResearchPet
+                ? app(\App\Support\ResearchAdminRecords::class)->flaggedReports($user->id)->count() : 0;
         } else {
             $adopterApplicationsCount = $user->adoptionApplications()
                 ->whereIn('status', [
@@ -147,6 +149,15 @@
             <a href="{{ route('monitoring.my-checkins') }}" class="menu-item{{ $checkinsActive ? ' active' : '' }}"
                @if($checkinsActive) aria-current="page" @endif>
                 <i class="fa-solid fa-circle-check fa-lg"></i> My Check-ins
+            </a>
+            <a href="{{ route('monitoring.flagged-notice') }}" class="menu-item{{ $isActive('monitoring.flagged-notice') ? ' active' : '' }}"
+               @if($isActive('monitoring.flagged-notice')) aria-current="page" @endif
+               data-sidebar-dismissible="adopter_flagged" data-badge-count="{{ $adopterFlaggedCount }}">
+                <i class="fa-solid fa-triangle-exclamation fa-lg"></i> Flagged Notice
+                @if ($adopterFlaggedCount > 0)
+                    <span class="ml-auto min-w-5 rounded-full bg-status-danger-text px-1.5 py-0.5 text-center text-[.7rem] font-bold leading-none text-white sidebar-dismissible-badge"
+                          id="sidebar-badge-adopter_flagged">{{ $adopterFlaggedCount > 99 ? '99+' : $adopterFlaggedCount }}</span>
+                @endif
             </a>
         </div>
 @elseif ($hasReceivedPet)
