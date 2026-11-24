@@ -57,6 +57,16 @@ class PostAdoptionWebDemoTest extends TestCase
         $this->actingAs($admin)->get(route('admin.post-adoption-demo.index'))->assertOk();
     }
 
+    public function test_demo_is_not_linked_from_the_admin_sidebar_when_enabled(): void
+    {
+        $this->actingAs($this->user(Role::Administrator))
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('href="'.route('admin.monitoring.index').'"', false)
+            ->assertSee('href="'.route('admin.monitoring.flagged').'"', false)
+            ->assertDontSee('href="'.route('admin.post-adoption-demo.index').'"', false);
+    }
+
     public function test_only_the_selected_completed_handover_is_fast_forwarded_and_reset_restores_real_date(): void
     {
         [$adopter, $application, $log] = $this->completedAdoption();
