@@ -202,8 +202,9 @@
                         For a practice application, a government ID is optional and a provided example is preferred.
                         If you consent and automatic checking is enabled, Google Cloud Vision receives the file to extract text for a
                         name and address comparison. A text match does not prove identity. Authorized administrators can access the
-                        privately stored file; PAIRfect Paws keeps the result but not the extracted text.
-                        Ask the study organizer about the retention period or to request deletion of your upload.
+                        privately stored file. PAIRfect Paws keeps the verification result. Extracted text is kept only if the upload
+                        form discloses encrypted text storage and you agree. Only authorized administrators can review the retained text.
+                        Ask the study organizer about the retention period or to request deletion of your upload and extracted text.
                     </p>
                 @endif
 

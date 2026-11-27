@@ -19,6 +19,20 @@ final class ResearchMediaController extends Controller
         return $media->response('documents', $placement->user_id, $placement->document_path, $placement->document_mime_type, download: true);
     }
 
+    public function documentOcr(ResearchPlacement $placement)
+    {
+        abort_unless(ResearchMode::ready() && config('research.retain_ocr_text') === true, 404);
+        abort_unless($placement->document_path && $placement->document_consent_at && $placement->document_verification_status, 404);
+
+        $retentionConsent = $placement->document_consent_version === ResearchMode::OCR_TEXT_CONSENT_VERSION;
+        $text = $retentionConsent ? $placement->ocr_extracted_text : null;
+
+        return response()->view('admin.application.research-document-ocr', compact('placement', 'retentionConsent', 'text'))
+            ->header('Cache-Control', 'no-store, private')
+            ->header('Referrer-Policy', 'no-referrer')
+            ->header('X-Content-Type-Options', 'nosniff');
+    }
+
     public function video(int $report, ResearchPrivateMedia $media)
     {
         abort_unless(ResearchMode::ready(), 404);

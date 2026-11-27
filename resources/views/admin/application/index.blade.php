@@ -315,7 +315,10 @@
                 'document_verification_details' => $workflowReadOnly && $app->document_verification_status ? [
                     'type' => $app->document_type, 'reasons' => $app->document_verification_reasons ?? [],
                 ] : null,
-                'verification_url' => $workflowReadOnly ? null : route('admin.applications.document-verification', $app),
+                'verification_url' => $workflowReadOnly
+                    ? (config('research.retain_ocr_text') === true && auth()->user()->isAdmin() && $app->document_path && $app->document_consent_at && $app->document_verification_status
+                        ? route('admin.research.document.ocr', $app) : null)
+                    : route('admin.applications.document-verification', $app),
                 'has_compatibility' => $app->compatibility_result !== null,
                 'compatibility' => $app->compatibility_result ?? ['overall' => 0, 'rows' => []],
                 'has_history' => !$workflowReadOnly && (bool) $app->priorHistory,

@@ -167,9 +167,13 @@
                                 <p class="mt-2 text-[.72rem] text-[#777]">Use a provided sample ID where possible. You can continue without one. Files are stored privately and are available only to authorized administrators.</p>
                                 <div class="checkbox-group mt-2">
                                     <input type="checkbox" id="document_consent" name="document_consent" value="1" @checked(old('document_consent'))>
-                                    <label for="document_consent">If I upload a document, I agree to private storage and to sending it to Google Cloud Vision for text extraction when automatic checking is enabled. <a class="underline" href="{{ route('legal.privacy') }}">Privacy Notice</a></label>
+                                    <label for="document_consent">If I upload a document, I agree to private storage and to sending it to Google Cloud Vision for text extraction when automatic checking is enabled. @if (\App\Support\ResearchMode::retainsOcrTextOnUpload()) I also agree to encrypted storage of the extracted text for administrator review. @endif <a class="underline" href="{{ route('legal.privacy') }}">Privacy Notice</a></label>
                                 </div>
+                                @if (\App\Support\ResearchMode::retainsOcrTextOnUpload())
+                                    <input type="hidden" name="document_consent_version" value="{{ \App\Support\ResearchMode::OCR_TEXT_CONSENT_VERSION }}">
+                                @endif
                                 @error('document_consent')<p class="field-error" role="alert">{{ $message }}</p>@enderror
+                                @error('document_consent_version')<p class="field-error" role="alert">{{ $message }}</p>@enderror
                             @else
                                 <p class="mt-2 text-[.72rem] text-[#777]">Your document and extracted text are stored privately and are accessible only to authorized shelter personnel.</p>
                             @endif

@@ -249,6 +249,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [Admin\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/records/{placement}/document', [ResearchMediaController::class, 'document'])
             ->whereNumber('placement')->middleware('admin')->name('research.document');
+        Route::get('/records/{placement}/document/ocr', [ResearchMediaController::class, 'documentOcr'])
+            ->whereNumber('placement')->middleware('admin')->name('research.document.ocr');
         Route::get('/records/{placement}/receipt-photo', [ResearchMediaController::class, 'receipt'])
             ->whereNumber('placement')->name('research.receipt-photo');
         Route::get('/records/checkins/{report}/video', [ResearchMediaController::class, 'video'])

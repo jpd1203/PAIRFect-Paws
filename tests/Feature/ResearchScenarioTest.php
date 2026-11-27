@@ -11,6 +11,7 @@ use App\Models\ResearchPlacement;
 use App\Models\User;
 use App\Notifications\QueuedVerifyEmail;
 use App\Services\KnnRecommendationService;
+use App\Support\ResearchMode;
 use Database\Seeders\ResearchCatalogSeeder;
 use DOMDocument;
 use DOMXPath;
@@ -349,6 +350,7 @@ final class ResearchScenarioTest extends TestCase
             $this->assertNotNull($placement->document_uploaded_at);
             $disk->assertExists($placement->document_path);
             $this->assertStringNotContainsString('NONRETAINEDWORD', $placement->toJson());
+            $this->assertNull($placement->getRawOriginal('ocr_extracted_text'));
             $this->assertArrayNotHasKey('document_path', $placement->toArray());
             $this->post(route('research.continue', $placement))->assertRedirect(route('application.index'));
             $this->assertSame(ApplicationStatus::Approved, $placement->fresh()->status);
@@ -360,6 +362,77 @@ final class ResearchScenarioTest extends TestCase
         $this->actingAs($this->matchingUser(Role::Administrator))->get($protected)->assertOk()
             ->assertDownload('identity-document.png')->assertHeader('X-Content-Type-Options', 'nosniff');
         $this->assertDatabaseCount('adoption_applications', 0);
+    }
+
+    public function test_consented_ocr_text_is_encrypted_and_visible_only_on_the_administrator_detail_page(): void
+    {
+        config(['research.enabled' => true, 'research.ocr_enabled' => true, 'research.retain_ocr_text' => true, 'document_verification.provider' => 'google_vision']);
+        Storage::fake('research-private');
+        $this->seed(ResearchCatalogSeeder::class);
+        $adopter = $this->matchingUser();
+        $this->completeMatchingProfile($adopter);
+        [$pet, $blankPet] = Pet::where('availability_status', 'Available')->orderBy('id')->take(2)->get();
+        $this->app->bind(GoogleAccessTokenProvider::class, fn () => new class implements GoogleAccessTokenProvider
+        {
+            public function accessToken(): string
+            {
+                return 'synthetic-token';
+            }
+        });
+        Http::preventStrayRequests();
+        $text = "PHILIPPINE IDENTIFICATION CARD\nJUAN CRUZ\nADDRESS 123 RIZAL STREET CITY OF MANILA\n<sample>OCRONLY-EXAMPLE</sample>";
+        Http::fake(['vision.googleapis.com/*' => Http::sequence()
+            ->push(['responses' => [['fullTextAnnotation' => ['text' => $text]]]])
+            ->push(['responses' => [[]]])]);
+
+        $this->actingAs($adopter)->get(route('research.preview', $pet))
+            ->assertSee('encrypted storage of the extracted text')
+            ->assertSee('name="document_consent_version"', false);
+        $this->post(route('research.apply', $pet), $this->application() + [
+            'document' => UploadedFile::fake()->image('example-id.png'), 'document_consent' => 1,
+        ])->assertSessionHasErrors('document_consent_version');
+        Http::assertNothingSent();
+        foreach ([$pet, $blankPet] as $catalogPet) {
+            $this->post(route('research.apply', $catalogPet), $this->application() + [
+                'document' => UploadedFile::fake()->image('example-id.png'),
+                'document_consent' => 1,
+                'document_consent_version' => ResearchMode::OCR_TEXT_CONSENT_VERSION,
+            ])->assertRedirect(route('application.index'));
+        }
+        Http::assertSentCount(2);
+
+        $placement = ResearchPlacement::where('pet_id', $pet->id)->sole();
+        $blank = ResearchPlacement::where('pet_id', $blankPet->id)->sole();
+        $this->assertSame($text, $placement->ocr_extracted_text);
+        $this->assertStringNotContainsString('OCRONLY-EXAMPLE', $placement->getRawOriginal('ocr_extracted_text'));
+        $this->assertArrayNotHasKey('ocr_extracted_text', $placement->toArray());
+        $this->assertNull($blank->getRawOriginal('ocr_extracted_text'));
+
+        $url = route('admin.research.document.ocr', $placement);
+        $urlInJson = str_replace('/', '\/', $url);
+        $this->get($url)->assertRedirect(route('access-denied'));
+        $this->get(route('application.index'))->assertDontSee('OCRONLY-EXAMPLE');
+        $this->actingAs($this->matchingUser(Role::Volunteer))->get($url)->assertRedirect(route('access-denied'));
+        $this->get(route('admin.applications.index'))
+            ->assertDontSee($urlInJson, false)->assertDontSee('OCRONLY-EXAMPLE');
+
+        $this->actingAs($this->matchingUser(Role::Administrator));
+        $this->get(route('admin.applications.index'))
+            ->assertSee($urlInJson, false)->assertDontSee('OCRONLY-EXAMPLE');
+        $this->get($url)->assertOk()
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertHeader('Referrer-Policy', 'no-referrer')
+            ->assertSee('Extracted OCR Text')->assertSee('Match Score')
+            ->assertSee('<sample>OCRONLY-EXAMPLE</sample>')
+            ->assertDontSee('<sample>OCRONLY-EXAMPLE</sample>', false);
+        $this->get(route('admin.research.document.ocr', $blank))->assertOk()->assertSee('No extracted text is available.');
+
+        $blank->update(['document_consent_version' => 'research-document-v1']);
+        $this->get(route('admin.research.document.ocr', $blank))->assertOk()->assertSee('No OCR text was retained');
+        config(['research.retain_ocr_text' => false]);
+        $this->get($url)->assertNotFound();
+        config(['research.retain_ocr_text' => true, 'research.enabled' => false]);
+        $this->get($url)->assertNotFound();
     }
 
     public function test_ocr_cleanup_only_removes_old_generated_study_files(): void

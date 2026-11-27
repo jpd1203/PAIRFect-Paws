@@ -8,6 +8,13 @@ use Illuminate\Support\Facades\DB;
 
 final class ResearchMode
 {
+    public const OCR_TEXT_CONSENT_VERSION = 'research-document-v2';
+
+    public static function retainsOcrTextOnUpload(): bool
+    {
+        return config('research.ocr_enabled') === true && config('research.retain_ocr_text') === true;
+    }
+
     public static function ready(): bool
     {
         if (config('research.enabled') !== true) {

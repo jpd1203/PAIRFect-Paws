@@ -61,11 +61,16 @@ final class ResearchScenarioController extends Controller
             throw ValidationException::withMessages(['pet_id' => MatchPresenter::reason($match->exclusionReason)]);
         }
         $rules = array_replace(AdoptionForm::rules(), ['document' => 'nullable|'.AdoptionForm::DOCUMENT_RULE]);
+        $retainOcrText = ResearchMode::retainsOcrTextOnUpload();
         if ($request->hasFile('document')) {
             $rules['document_consent'] = 'accepted';
+            if ($retainOcrText) {
+                $rules['document_consent_version'] = 'required|in:'.ResearchMode::OCR_TEXT_CONSENT_VERSION;
+            }
         }
         $validated = $request->validate($rules, [
             'document_consent.accepted' => 'Accept the document-processing terms before uploading an ID.',
+            'document_consent_version' => 'The document-processing terms have changed. Review them and reattach your document before submitting.',
             'agreed_to_terms.accepted' => 'Accept the Adoption and Data Processing Agreement to submit your application.',
         ]);
         $details = Arr::only($validated, [
@@ -89,10 +94,14 @@ final class ResearchScenarioController extends Controller
                     'document_path' => $path, 'document_mime_type' => $mime,
                     'document_type' => $result?->documentType, 'document_match_score' => $result?->matchScore,
                     'document_uploaded_at' => now(), 'document_consent_at' => now(),
-                    'document_consent_version' => 'research-document-v1', 'document_verification_status' => $status,
+                    'document_consent_version' => $retainOcrText ? ResearchMode::OCR_TEXT_CONSENT_VERSION : 'research-document-v1',
+                    'document_verification_status' => $status,
                     'document_verification_reasons' => $status === DocumentVerificationStatus::ManualReview
                         ? ['Automatic document checking was unavailable. No identity was verified.'] : ($result?->reasons ?? []),
                 ];
+                if ($retainOcrText && filled($result?->extractedText)) {
+                    $attributes['ocr_extracted_text'] = $result->extractedText;
+                }
             }
             if (! $queue->submitResearch($user, $pet, $attributes)) {
                 $media->forget($path);
